@@ -1,6 +1,6 @@
 """The map of all areas: output/index.html. No AREA needed; run it after any area's 06_map.py.
 
-Every built area's drainage outlines and main rivers (order 4 and up) on one map, from the overview.json each
+Every built area's drainage outlines and main rivers (order 4 and up) and long trail on one map, over terrain shading and place labels, from the overview.json each
 06_map.py writes. Pan and zoom across the country; a click inside an area opens that area's own map (2D, 3D or the
 creek profiles) at the spot. The areas' own maps have a "Go to" menu that leads back here at the same view and
 across to the other areas.
@@ -52,8 +52,9 @@ const map = L.map("map", {zoomSnap: 0.5, preferCanvas: true});
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 const gray = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri, HERE, Garmin", maxZoom: 16}).addTo(map);
 const topo = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}", {attribution: "USGS", maxZoom: 16});
+const shade = L.tileLayer(ESRI + "/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, opacity: .45}).addTo(map);
 const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, pane: "shadowPane"}).addTo(map);
-L.control.layers({"Light gray": gray, "USGS topo": topo}, {"Place names": places}, {collapsed: true}).addTo(map);
+L.control.layers({"Light gray": gray, "USGS topo": topo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
 L.control.scale().addTo(map);
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD");
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
@@ -77,6 +78,11 @@ AREAS.forEach(a => {
     onEachFeature: (f, l) => l.bindTooltip(`<b>${esc(f.properties.drainage)}</b> · ${Math.round(f.properties.km2)} km²<br>${esc(a.label)}`, {sticky: true})}).addTo(map);
   L.geoJSON(a.streams, {style: f => ({color: f.properties.c, weight: Math.max(1, (f.properties.strahler - 3) * 1.1), opacity: .95}),
     onEachFeature: (f, l) => l.bindTooltip(`<b>${esc(f.properties.name || "Unnamed creek")}</b><br>${esc(f.properties.drainage)} · fish score ${f.properties.fish_score}`, {sticky: true})}).addTo(map);
+  if (a.trail) {                                   // the area's long trail: a dark dashed line on a soft yellow band
+    L.geoJSON(a.trail, {interactive: false, style: {color: "#ffd43b", weight: 6, opacity: .5, lineCap: "round"}}).addTo(map);
+    L.geoJSON(a.trail, {style: {color: "#1d1d1f", weight: 1.2, dashArray: "6 5"},
+      onEachFeature: (f, l) => l.bindTooltip(`<b>${esc(a.trail_name || "Long trail")}</b>` + (f.properties.label && f.properties.label !== a.trail_name ? `<br>${esc(f.properties.label)}` : ""), {sticky: true})}).addTo(map);
+  }
   a.marker = L.marker(b.getCenter(), {interactive: true, icon: L.divIcon({className: "alab", html: esc(a.label), iconSize: [0, 0]})}).addTo(map)
     .on("click", () => map.flyToBounds(b, {padding: [20, 20], duration: .8}));
   L.circleMarker([a.home.lat, a.home.lon], {radius: 5, color: "#fff", weight: 2, fillColor: "#0b3d91", fillOpacity: 1}).addTo(map)

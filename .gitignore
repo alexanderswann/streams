@@ -26,3 +26,6 @@ __pycache__/
 
 # Claude Code's per-machine settings (launch.json is shared and kept)
 /.claude/settings.local.json
+
+# The local copy of the GitHub Pages site that scripts/publish_site.sh fills (its own git repository)
+/publish/

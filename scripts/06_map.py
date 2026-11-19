@@ -691,7 +691,7 @@ if gated is not None and len(gated) and roads_json is None:   # older runs: the 
 # ---- fire closure areas (LA County's Eaton Fire closures, via 02d_trails.py) ----
 if os.path.exists(f"{SHARED}/closure_areas.gpkg"):
     ca_ = gpd.read_file(f"{SHARED}/closure_areas.gpkg")
-    folium.GeoJson(ca_.to_json(), name="<span style='color:#c92a2a'>▧</span> Fire closure areas (Eaton Fire)", show=True,
+    folium.GeoJson(ca_.to_json(), name="<span style='color:#c92a2a'>▧</span> Fire closure areas (Eaton Fire)", show=False,
                    style_function=lambda f: {"color": "#c92a2a", "weight": 2, "dashArray": "6 4", "fillColor": "#c92a2a",
                                              "fillOpacity": 0.1},
                    tooltip=folium.GeoJsonTooltip(["Agency", "Closure_Date"], aliases=["Closed by", "Since"])).add_to(m)
@@ -828,9 +828,15 @@ ov_s = ov_s.assign(c=[dcol.get(d_, MINOR_COL) for d_ in ov_s.drainage],
                    geometry=shapely.set_precision(ov_s.geometry.simplify(0.0004).values, 1e-5))
 ov_s = ov_s[~ov_s.geometry.is_empty]
 sb = study_ll.bounds
+# the long trail, for the maps of all areas (drawn there from the start, like here)
+ov_t = None
+if pct_json:
+    tl = gpd.GeoDataFrame.from_features(pct_json["features"], crs=4326)
+    tl = tl.assign(geometry=shapely.set_precision(tl.geometry.simplify(0.0004).values, 1e-5))
+    ov_t = json.loads(tl[~tl.geometry.is_empty][["label", "geometry"]].to_json(drop_id=True))
 with open(f"{MAP_OUT}/overview.json", "w") as f:
     json.dump(dict(key=AREA, label=AREA_LABEL, home=HOME, bounds=[[sb[1], sb[0]], [sb[3], sb[2]]],
-                   reaches=int(len(s_ll)), drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
+                   reaches=int(len(s_ll)), trail=ov_t, trail_name=LONG_TRAIL[0] if LONG_TRAIL else None, drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
                                                     for e in drains if e["name"] != MINOR],
                    basins=json.loads(ov_d.to_json(drop_id=True)), streams=json.loads(ov_s.to_json(na="null", drop_id=True))), f)
 # 3D map: static page + data file (a <script>, so it also works opened straight from disk)

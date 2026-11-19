@@ -278,7 +278,8 @@ function initDrainageMap(map, ctrl) {
         }}),
       ];
     });
-    trailGroup.addTo(map);
+    // (not on the map until it is switched on in the layer list: the map opens with streams, drainages, the long
+    // trail, terrain shading and place labels only)
     // names along named trails and fire roads from z13 (SVG text on smoothed paths, as for the PCT); only the current
     // zoom band's labels near the view are on the map at any time
     const lp2 = map.createPane("trlab");
@@ -345,7 +346,6 @@ function initDrainageMap(map, ctrl) {
         }});
       roadLayers[c] = [edgeL, coreL, minz];
       roadGroups[c] = L.layerGroup();
-      if (on) roadGroups[c].addTo(map);
       roadOverlays.push([roadGroups[c], `<span class="rsym" style="background:${core};border-color:${edge}` +
                          `${dash ? ";border-style:dashed" : ""}"></span> ${label}`]);
     });
@@ -383,8 +383,6 @@ function initDrainageMap(map, ctrl) {
                             {maxWidth: 300});
       pois.push({mk, th, ll: mk.getLatLng(), on: false});
     });
-    thGroup.addTo(map);
-    pkGroup.addTo(map);
   }
   function updatePois() {
     const z = map.getZoom(), view = map.getBounds().pad(0.3);
@@ -497,13 +495,14 @@ function initDrainageMap(map, ctrl) {
   if (window.PCT) ctrl.addOverlay(pctGroup, "<span class='pctsym'>━</span> <b>" + LONGTRAIL + "</b>");
   if (window.TRAILS) ctrl.addOverlay(trailGroup, "<span class='trsym'>┅</span> Trails &amp; fire roads");
   if (window.TRAILS) {
-    bikeView.addTo(map);
+    // the bike colouring comes on with the trail layer (and can then be switched off on its own)
     ctrl.addOverlay(bikeView, "<span class='bksym'></span> Mountain bike access on trails");
     map.on("overlayadd overlayremove", e => {
-      if (e.layer !== bikeView) return;
+      if (e.layer === trailGroup) { e.type === "overlayadd" ? bikeView.addTo(map) : map.removeLayer(bikeView); }
+      if (e.layer !== bikeView && e.layer !== trailGroup) return;
       bikeOn = map.hasLayer(bikeView);
       Object.values(trailLayers).forEach(([h]) => h.setStyle(thalo));
-      box.querySelector(".bk").style.display = bikeOn ? "" : "none";
+      box.querySelector(".bk").style.display = bikeOn && map.hasLayer(trailGroup) ? "" : "none";
     });
   }
   if (window.PARKING) {
@@ -541,6 +540,12 @@ function initDrainageMap(map, ctrl) {
   };
   panel.addTo(map);
   const box = panel.getContainer();
+  // the trail and bike keys show only while the trail layer is on
+  const trailKey = () => { const on = map.hasLayer(trailGroup);
+    box.querySelectorAll(".tk").forEach(el => { el.style.display = on ? "" : "none"; });
+    box.querySelectorAll(".bk").forEach(el => { el.style.display = on && map.hasLayer(bikeView) ? "" : "none"; }); };
+  map.on("overlayadd overlayremove", trailKey);
+  trailKey();
 
   // a focused drainage stays focused across colour modes, so every mode shows how to clear it
   const focusBar = () => focus ? `<div class="fbar">Showing <b>${esc(focus)}</b> · <a href="#" class="clr">show all</a></div>` : "";

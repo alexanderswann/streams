@@ -581,3 +581,39 @@ Still open:
 - Channels with natural names that are concrete (the LA River, Tujunga Wash) still score as streams.
 - The README's validation table for mapped falls (`data/validate.py`) and its counts of reaches and profiles are
   from before this pass; LA's numbers moved slightly (drops 5,083 → 5,068, same 217 at mapped falls).
+
+## 2026-11-18, late: phone, website, defaults
+
+**22:25 — User: "give me the link"; then "i sent the .html to my phone but it would not let me look in depth at the
+different locations".** `output/index.html` is only a front page: it opens each area's map from the folders beside
+it, so alone on a phone its links lead nowhere. Two answers:
+- **A single file with the detail inside** (`scripts/14_portable.py` → `output/stream_maps_all.html`, 23.8 MB, also
+  in `phone/`). It opens as the map of all areas; each area's layers sit in the page as gzip (LA 4.4 MB of streams
+  and points + 3.8 MB of trails and roads; all six 12.2 + 8.2 MB) and are unpacked when you zoom in there (browser
+  `DecompressionStream`, with pako from the CDN for older phones). At most two areas stay unpacked. Every reach has
+  the full map's popup. Tested at phone size: Jackson unpacks 6,257 reaches, North Georgia 14,897; no errors.
+  Fixed on the way: the overview data and the unpacked network both used `a.streams`.
+- On home Wi-Fi the phone can open the Mac's copy directly while the phone preview server runs.
+
+**22:35 — User: "i want to publish this on my alexanderswann.github.io website".** Looked before touching anything:
+the site repository is public, branch `master`, a 3.4 MB hand-written site last changed in 2020, no Jekyll
+features, live (HTTP 200). This Mac has no GitHub CLI and no saved GitHub login (a dry-run push asks for a user
+name), so the push is the user's step. The built pages were scanned for local paths, the user's email and LAN
+addresses: none. Asked two things, since this goes on the public web:
+- What to post → **"Everything"** (the map of all areas, the six full maps, 3D, profiles; not the single file).
+- The start pins and drive times, labelled with ZIP codes → **"Keep the ZIPs"**.
+`scripts/publish_site.sh` copies it all into `publish/alexanderswann.github.io/streams/` (418 MB; LA's map 67 MB
+and 3D data 53 MB are over GitHub's 50 MB warning size and under its 100 MB limit), adds an empty `.nojekyll` at
+the top of the site, and commits in that local copy (commit `595be46`, about 108 MB packed). Not pushed.
+
+**22:40 — User: defaults for all maps = streams, drainages, the long trail, terrain shading and place / road
+labels only; no other trails, roads, parking or trailheads.**
+- 2D (`map_drainages.js`, `06_map.py`): trails, access roads, trailheads, parking and the Eaton Fire closure
+  areas no longer start on; the bike colouring and the trail key come on with the trail layer. Checked: LA and
+  Vermont open with exactly Terrain shading, Place & road labels, Streams, Drainage outlines and the long trail
+  ticked, and trails still switch on with their key.
+- 3D already opened that way.
+- Map of all areas (`13_overview.py`): terrain shading and each area's long trail added (from `overview.json`).
+- Single file (`14_portable.py`): the same five things; drops and waterfalls, trailheads and parking, trails and
+  dirt roads, gauges and road closures, trout records each have a switch, all off.
+- All six areas' maps rebuilt; `phone/` and the publish copy refreshed with them.

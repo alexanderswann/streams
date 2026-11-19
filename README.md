@@ -28,6 +28,17 @@ and 3D map has a "Go to…" menu in the legend that jumps to any other area or b
 The full detail stays in the per-area maps because all six in one page would be over 200 MB. With the local preview
 server it is `http://localhost:8766/`; on the phone copies, `phone/index.html`.
 
+`output/index.html` is only a front page: sent to a phone by itself it has nothing behind its links. Two ways to
+carry the maps:
+- **One file** (`scripts/14_portable.py` → `output/stream_maps_all.html`, about 24 MB): the same map of all areas
+  with every area's detail packed inside it as gzip and unpacked when you zoom in there: every stream reach with the
+  full popup, and switches for drops and waterfalls, trailheads and parking, trails and dirt roads, gauges and road
+  closures, trout records. No 3D view, creek profiles, hillshade or land-status layers. Send this one.
+- **The website** (`scripts/publish_site.sh`): copies the map of all areas and every area's maps into
+  `publish/alexanderswann.github.io/streams/` (a local copy of the GitHub Pages site, about 420 MB) and commits
+  there. It does not push; `git -C publish/alexanderswann.github.io push origin master` publishes it at
+  `https://alexanderswann.github.io/streams/`. The maps show the start ZIPs; that was the owner's choice.
+
 ## Study areas and folders
 The pipeline handles several study **areas**, each its own map with its own UTM zone, home point for drive times,
 ranges and data sources (`AREAS` in `scripts/config.py`). Pick one with `AREA=<key>` (default `la`) and a range
@@ -264,7 +275,7 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   dark dashed line on a soft yellow band, with the PCT section (B–E) on hover. From zoom 11, small labels bend
   along the trail. Each zoom band (11, 12, 13+) has its own smoothed label paths, placed where the real trail
   stays within 5 px of them, so the lettering never kinks on switchbacks or crosses the line.
-- **Trails and fire roads** (on by default in 2D, off in 3D): brown dashes on a white edge, revealed by zoom: hiking routes and named
+- **Trails and fire roads** (off until switched on in the layer list): brown dashes on a white edge, revealed by zoom: hiking routes and named
   trails from zoom 10, named fire roads 11, unnamed trails 12, unnamed fire roads and possibly unofficial paths 13.
   Fire roads have longer dashes; closed or private ways are faded; informal or possibly unofficial ones are dotted.
   Named trails get labels that bend along them from zoom 13. Hover for official status, trail number, allowed uses,
@@ -284,12 +295,14 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
 - Hover highlights are drawn on a separate layer (2D) or as a per-feature state (3D), so they track the cursor.
 - In the 2D map, every vector layer draws on the one canvas the streams use (`map.options.renderer` in
   `map_drainages.js`). Leaflet canvases don't pass mouse events to canvases beneath them. Folium's overlays (the fire
-  closure areas, on by default) used to get their own full-map canvas above the streams, which took every hover and
+  closure areas) used to get their own full-map canvas above the streams, which took every hover and
   click: the cursor stayed the grab hand and nothing could be clicked. Area overlays now sit under the streams;
   point and line overlays sit on top.
-- To keep the map readable, the 3D map starts with only streams, drainage outlines and names, and the PCT
-  (terrain height ×1.6, light gray basemap with place labels). The 2D map also starts with trails, access roads,
-  trailheads and the Eaton Fire closure areas. Everything else is in the layer list. In 3D, each overlay's starting
+- Every map (2D, 3D, the map of all areas and the single-file map) opens with only streams, drainage outlines and
+  names, the area's long trail (PCT, Appalachian Trail, Long Trail), terrain shading and place / road labels
+  (3D: terrain height ×1.6 on a light gray basemap). Trails, access roads, trailheads, parking and the fire closure
+  areas used to start on in the 2D map; since 2026-11-18 they wait in the layer list like everything else. The
+  bike colouring and the trail key come on with the trail layer. In 3D, each overlay's starting
   state is the last entry of its `ov` row in `map3d.html`. Drops, waterfalls, gauges, closures,
   trout waters, trout evidence, springs, trails and trailheads are in the (collapsed) layer list, each named with its map symbol.
 
