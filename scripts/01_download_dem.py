@@ -1,5 +1,5 @@
 """Download a 10 m USGS 3DEP DEM for the study area, tiled, and mosaic it."""
-import os, requests, numpy as np, rasterio
+import os, time, requests, numpy as np, rasterio
 from rasterio.merge import merge
 from config import *
 
@@ -18,9 +18,18 @@ for x0 in range(XMIN, XMAX, step):
         params = dict(bbox=f"{x0},{y0},{x1},{y1}", bboxSR=EPSG, imageSR=EPSG,
                       size=f"{w},{h}", format="tiff", pixelType="F32",
                       interpolation="RSP_BilinearInterpolation", noData=-9999, f="image")
-        r = requests.get(URL, params=params, timeout=600)
-        r.raise_for_status()
-        open(p, "wb").write(r.content)
+        for attempt in range(6):   # the 3DEP server answers 502 / 504 now and then; tiles already on disk are kept
+            try:
+                r = requests.get(URL, params=params, timeout=600)
+                if r.ok and r.content[:2] in (b"II", b"MM"):   # a TIFF, not an error page
+                    break
+            except requests.RequestException:
+                pass
+            time.sleep(20 * (attempt + 1))
+        else:
+            raise SystemExit(f"3DEP download failed for tile {x0},{y0} after 6 tries; run again to resume")
+        open(p + ".tmp", "wb").write(r.content)
+        os.replace(p + ".tmp", p)
         print("got", p, len(r.content) // 1e6, "MB")
 
 mosaic, transform = merge(paths)

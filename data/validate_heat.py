@@ -15,6 +15,7 @@ from shapely.geometry import box
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
 from config import REGIONS, CRS, EPSG, SHARED, NATIONAL, MAP_OUT
 from scoring import HEAT_START, HEAT_FULL
+import watertemp
 
 CACHE = f"{SHARED}/cache"
 os.makedirs(CACHE, exist_ok=True)
@@ -83,7 +84,7 @@ pts = pts[pts.intersects(area.union_all())]
 
 
 def air_at(g):
-    with rasterio.open(f"{NATIONAL}/prism_tmean_aug.tif") as src:
+    with rasterio.open(watertemp.air_tif()) as src:
         ll = g.to_crs(src.crs)
         v = np.array([x[0] for x in src.sample(zip(ll.geometry.x, ll.geometry.y))], float)
     return np.where(v < -100, np.nan, v)

@@ -1,6 +1,6 @@
 """Shared helpers for the map layer downloads (02e_access.py; 02d_trails.py has its own copies): Overpass and ArcGIS
 queries, a relief test, and matching OSM lines to official lines."""
-import os, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
+import os, re, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from scipy.ndimage import maximum_filter, minimum_filter
 from config import EPSG, raw_dir
 
@@ -8,15 +8,18 @@ UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
 
 
 def overpass(q):
-    for attempt in range(6):  # public Overpass servers 502/429 under load; retry and alternate mirrors
-        url = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")[attempt % 2]
+    for attempt in range(14):  # public Overpass servers 502/429 under load (and allow about two queries at once
+        # per address, so several ranges running side by side queue up); retry for ~25 min and alternate mirrors
+        url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
         try:
-            r = requests.post(url, data={"data": q}, timeout=900, headers=UA)
+            # 20 s to connect (a dead mirror), and the query's own time limit plus a minute to answer
+            wait = int(m.group(1)) + 60 if (m := re.search(r"\[timeout:(\d+)\]", q)) else 900
+            r = requests.post(url, data={"data": q}, timeout=(20, wait), headers=UA)
             if r.ok and "elements" in r.json():
                 return r.json()["elements"]
         except (requests.RequestException, ValueError):
             pass
-        time.sleep(30 * (attempt + 1))
+        time.sleep(min(30 * (attempt + 1), 120))
     raise RuntimeError("Overpass failed")
 
 

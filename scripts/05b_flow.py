@@ -53,7 +53,10 @@ s = gpd.read_file(f"{OUT}/streams_scored.gpkg")[["sid", "area_km2", "flow", "geo
 area_box = s.area_km2.copy()
 area_edge = area_box
 if os.path.exists(f"{OUT}/area_streams.csv"):
-    more = s.sid.map(pd.read_csv(f"{OUT}/area_streams.csv").set_index("sid").area_edge_km2) - area_box
+    # (outside California the flow table is NHDPlus's gauge-adjusted mean flow, which has the dams in it, so the
+    # full area, with the water from above reservoirs, is the one that matches its segments)
+    col_ = "area_edge_km2" if has("tnc_flows") else "area_full_km2"
+    more = s.sid.map(pd.read_csv(f"{OUT}/area_streams.csv").set_index("sid")[col_]) - area_box
     area_edge = area_box + more.where(more >= 0.01, 0.0)       # (the CSV is rounded: no inflow keeps the exact area)
 mid = s.geometry.interpolate(0.5, normalized=True)
 

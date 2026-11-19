@@ -11,6 +11,11 @@ pysheds can't route water across a big flat lake surface either, so every large 
 and the creek below the dam starts again near nothing (San Gabriel Reservoir, Castaic, Pyramid, Big Tujunga, Lake
 Hemet...). With through_dams, inflows() also carries a reservoir's area to the cell below its dam where the water
 goes on, found on the NHDPlus flowlines leaving the lake. Drainages still end at dams; only areas use this.
+
+A river that enters from outside every box (the Maury above Goshen Pass, Otter Creek, the Chattahoochee below Lake
+Lanier, the Snake) started with nothing too. Where an NHDPlus V2 river crosses the outer boundary flowing in, its
+drainage there (the flowline's total, less what the box's own routing already has at that spot, so a river that
+only brushes the boundary adds nothing) is carried in the same way ("outside"), in both variants.
 """
 import json, os
 from collections import defaultdict
@@ -19,8 +24,9 @@ from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_di
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 5
+VERSION = 11
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
+OUTSIDE_MIN_KM2 = 10   # a river entering from outside every box brings at least this much, or it isn't carried
 
 
 def fdir_path(region):
@@ -243,7 +249,7 @@ def _build(regions):
     lag = [l.to_crs(CRS)[["gnis_name", "geometry"]] for l in lag if len(l)]
     lakes = pd.concat([reservoirs()[["gnis_name", "geometry"]], *lag], ignore_index=True)
     lakes = gpd.GeoDataFrame(lakes, geometry=lakes.geometry.force_2d(), crs=CRS)
-    v2 = gpd.read_file(f"{FLOW}/nhdplus_v2.gpkg", columns=["comid", "hydroseq", "dnhydroseq", "totdasqkm"]).to_crs(CRS)
+    v2 = gpd.read_file(f"{FLOW}/nhdplus_v2.gpkg", columns=["comid", "hydroseq", "dnhydroseq", "totdasqkm", "ftype", "gnis_name"]).to_crs(CRS)
     by_seq = v2.drop_duplicates("hydroseq").set_index("hydroseq")
     edges = shared_edges(regions)
     fds, exits, own, links = {}, {}, {}, []      # own: (region, outlet) -> its basin km2; links: (src, region, row, col, kind)
@@ -274,9 +280,157 @@ def _build(regions):
                 if hit:
                     links.append(((r, o), b, hit[0], hit[1], "edge"))
                     break
+    # rivers entering from outside every box: NHDPlus rivers that cross the outer boundary flowing in
+    boxes = {r: shapely.box(*REGIONS[r]["bbox"]) for r in regions}
+    union = shapely.unary_union(list(boxes.values()))
+    riv = v2[v2.ftype.isin(["StreamRiver", "ArtificialPath"]) & (v2.totdasqkm >= OUTSIDE_MIN_KM2)]
+    riv = riv[riv.intersects(union.boundary)]
+    found, traces = [], []
+    # what the edge links already bring in, per link: a river weaving along the boxes' edges (the Santa Clara at
+    # Fillmore) comes in from the neighbouring box and from outside within a few km, and must count once
+    edge_links = [l for l in links if l[4] == "edge"]
+    into_e, tot_e = defaultdict(list), {}
+    for src, b_, row_, col_, _ in edge_links:
+        into_e[(b_, walk(fds[b_][0], row_, col_))].append(src)
+    def carried(key, path=frozenset()):
+        if key not in tot_e:
+            tot_e[key] = own.get(key, 0.0) + sum(carried(s_, path | {key}) for s_ in into_e.get(key, [])
+                                                 if s_ not in path and s_ != key)
+        return tot_e[key]
+    for f in riv.sort_values("totdasqkm", ascending=False).itertuples():
+        g = f.geometry if f.geometry.geom_type == "LineString" else max(f.geometry.geoms, key=lambda q: q.length)
+        g = shapely.LineString([c[:2] for c in g.coords])
+        last = shapely.Point(g.coords[-1])                       # flowlines are digitised downstream
+        if not union.contains(last):
+            continue
+        cut = g.intersection(union.boundary)
+        pts = [q for q in getattr(cut, "geoms", [cut]) if q.geom_type == "Point"]
+        if not pts:
+            continue
+        # its last crossing, if that one comes in from outside: the flowline may start outside, or start inside,
+        # leave and come back (the Snake below Jackson Lake weaves across the north edge at Moran)
+        t = max(g.project(q) for q in pts)
+        pt = g.interpolate(t)
+        if union.contains(g.interpolate(max(t - 15, 0))) or t < 15:
+            continue
+        b = next((r for r in regions if boxes[r].buffer(1).contains(last)), None)
+        if b is None:
+            continue
+        x0, y0, x1, y1 = REGIONS[b]["bbox"]
+        away = min(((abs(pt.x - x0), (1, 0)), (abs(pt.x - x1), (-1, 0)), (abs(pt.y - y0), (0, 1)), (abs(pt.y - y1), (0, -1))))[1]
+        fd_b, T_b = fds[b]
+        kind = "outside"
+        lake = lakes[lakes.distance(pt) <= 150]
+        hit = None
+        if len(lake):        # the river comes in through a reservoir (the Chattahoochee in Lake Lanier): its water
+            lk = lake.geometry.union_all()                   # goes on below the dam. Follow the mapped river down
+            lines, seq, length = [shapely.ops.substring(g, t, g.length)], f.dnhydroseq, g.length - t   # to the first
+            while seq in by_seq.index and length < 25000:    # cell outside the lake (up to 25 km)
+                nx_ = by_seq.loc[seq]
+                lines.append(nx_.geometry)
+                length += nx_.geometry.length
+                seq = nx_.dnhydroseq
+            kind, gone = "dam", 0.0
+            for ln in lines:
+                for part in getattr(ln, "geoms", [ln]):
+                    if part.is_empty or part.geom_type != "LineString":
+                        continue
+                    for d_ in np.arange(50.0, part.length, 50.0):
+                        q = part.interpolate(d_)
+                        c_, r_ = ~T_b * (q.x, q.y)
+                        r_, c_ = int(np.floor(r_)), int(np.floor(c_))
+                        if not (0 <= r_ < fd_b.shape[0] and 0 <= c_ < fd_b.shape[1]):
+                            gone = 1e9                       # it leaves the box before the dam: not carried
+                            break
+                        if lk.distance(q) > 60:
+                            hit = (r_, c_)
+                            break
+                    gone += part.length
+                    if hit is not None or gone > 25000:
+                        break
+                if hit is not None or gone > 25000:
+                    break
+            if hit is None:
+                continue
+        if hit is None:
+            hit = next(crossing(b, fd_b, T_b, pt.x, pt.y, away), None)
+        if hit is None:
+            continue
+        if kind == "outside":
+            # A flat river surface cut by the box edge drains back out through the edge (the edge is the lowest way
+            # out the routing can see): the Snake's 2,112 km2 came in at Moran and left again 1 km on. Where the
+            # path from the entry ends back on the border within 3 km, hand the water over further down the
+            # mapped river instead: the first point, 50 m at a time for up to 6 km, whose path ends elsewhere.
+            Hh, Ww = fd_b.shape
+            e0 = walk(fd_b, hit[0], hit[1])
+            er, ec = divmod(int(e0), Ww)
+            ex, ey = T_b * (ec + 0.5, er + 0.5)
+            if (er in (0, Hh - 1) or ec in (0, Ww - 1)) and np.hypot(ex - pt.x, ey - pt.y) < 3000:
+                lines, seq, length = [shapely.ops.substring(g, t, g.length)], f.dnhydroseq, g.length - t
+                while seq in by_seq.index and length < 6000:
+                    nx_ = by_seq.loc[seq]
+                    lines.append(nx_.geometry)
+                    length += nx_.geometry.length
+                    seq = nx_.dnhydroseq
+                hit, gone = None, 0.0
+                for ln in lines:
+                    for part in getattr(ln, "geoms", [ln]):
+                        if part.is_empty or part.geom_type != "LineString":
+                            continue
+                        for d_ in np.arange(50.0, part.length, 50.0):
+                            q = part.interpolate(d_)
+                            c_, r_ = ~T_b * (q.x, q.y)
+                            r_, c_ = int(np.floor(r_)), int(np.floor(c_))
+                            if gone + d_ > 6000 or not (0 <= r_ < Hh and 0 <= c_ < Ww):
+                                break
+                            if walk(fd_b, r_, c_) != e0:
+                                hit = (r_, c_)
+                                break
+                        gone += part.length
+                        if hit is not None or gone > 6000:
+                            break
+                    if hit is not None or gone > 6000:
+                        break
+                if hit is None:
+                    continue                       # the river only brushes the box
+        with rasterio.open(f"{derived_dir(b)}/area_km2.tif") as src:
+            have = float(src.read(1, window=rasterio.windows.Window(int(hit[1]), int(hit[0]), 1, 1))[0, 0])
+        have += sum(carried(src_) for src_, b_, row_, col_, _ in edge_links
+                    if b_ == b and np.hypot(row_ - hit[0], col_ - hit[1]) * RES < 3000)
+        # ... and what an earlier entry of the same river already brought down to here (the Santa Ana clips a
+        # corner of the Santa Ana Mountains box twice)
+        i_, mine = hit[0] * fd_b.shape[1] + hit[1], []
+        for _ in range(200000):
+            mine.append(i_)
+            st_ = D8.get(int(fd_b.flat[i_]))
+            if st_ is None:
+                break
+            r2, c2 = i_ // fd_b.shape[1] + st_[0], i_ % fd_b.shape[1] + st_[1]
+            if not (0 <= r2 < fd_b.shape[0] and 0 <= c2 < fd_b.shape[1]):
+                break
+            i_ = r2 * fd_b.shape[1] + c2
+        # (also what makes a side channel of a river already taken add nothing). Only where that entry's water
+        # passes this spot, within 1.5 km: a tributary that joins the river further down is its own water
+        # (Buffalo Fork and Pacific Creek join the Snake 2 km below where each comes in)
+        # A twin channel of a river already taken (NHDPlus maps both arms of a split with nearly the same
+        # drainage: the Santa Ana's 2,502 and 2,500 km2) is the same water where the two paths meet within 6 km.
+        have += sum(a_ for b_, tr_, a_, q_, tot_ in traces if b_ == b and (
+            not tr_.isdisjoint(mine[:150])
+            or (abs(tot_ - float(f.totdasqkm)) <= 0.02 * tot_ and q_.distance(pt) < 3000 and not tr_.isdisjoint(mine[:600]))))
+        more = float(f.totdasqkm) - have
+        if more < max(OUTSIDE_MIN_KM2, 0.25 * float(f.totdasqkm)):   # the box's routing already carries the river
+            continue
+        key = ("outside", int(f.comid))
+        own[key] = more
+        links.append((key, b, int(hit[0]), int(hit[1]), kind))     # "dam": only in the through-dams totals
+        traces.append((b, set(mine), more, pt, float(f.totdasqkm)))
+        found.append((pt, (f.gnis_name if isinstance(f.gnis_name, str) else "unnamed river", b, round(more))))
+    if found:
+        print("crossbox: rivers entering from outside the boxes (km2 carried in):",
+              ", ".join(f"{n} -> {b} {a}" for _, (n, b, a) in found[:14]) + (f" ... {len(found)} in all" if len(found) > 14 else ""))
     out = {}
     for variant in ("edge", "full"):
-        use = [l for l in links if variant == "full" or l[4] == "edge"]
+        use = [l for l in links if variant == "full" or l[4] in ("edge", "outside")]
         into = defaultdict(list)
         for src, b, row, col, _ in use:
             into[(b, walk(fds[b][0], row, col))].append(src)

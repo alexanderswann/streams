@@ -15,11 +15,21 @@ from crossbox import graph, jump, exit_points, inflows
 MAJOR_KM2 = 25   # outlet basins at least this big are named drainages
 FORK_KM2 = 35    # a tributary this big joining a drainage's trunk becomes its own fork...
 SPLIT_KM2 = 120  # ...in drainages at least this big
-MINOR = "Minor front-range drainages"
+# A tributary of PROMOTE_KM2 that flows straight into a big river is a drainage of its own, with its own colour and
+# forks, and the big river keeps what is left: the Hoback, Gros Ventre and Greys beside the Snake (which would
+# otherwise be one 7,000 km2 drainage, everything in Jackson Hole a shade of it), Sespe Creek beside the Santa
+# Clara, the Mad and Dog rivers beside the Winooski, the Maury beside the James. "Big" is the river's whole size,
+# PROMOTE_INTO_KM2 where it leaves the map (followed down the NHDPlus network past this box). A tributary that is
+# itself that big sheds its own tributaries the same way; below that size its forks stay forks (Granite Creek in
+# the Hoback, 1,450 km2). Areas count what comes in from other boxes, from outside them and over dams.
+PROMOTE_KM2 = 100
+PROMOTE_INTO_KM2 = 2000
 # canals and flood-control channels catch DEM flow on the valley floor; never name a drainage after them
 ARTIFICIAL = re.compile(r"aqueduct|canal|ditch|diversion|drain\b|conduit|spreading|feeder", re.I)
 # drainages whose lower reaches have no NHD name, so the trunk rule lands on a tributary
 NAME_FIX = {("santa_monica", "Garapito Creek"): "Topanga Creek",
+            # the basin above Pyramid Lake: Gorman Creek comes in beside the dam and took the vote from Piru Creek
+            ("piru", "Gorman Creek"): "Piru Creek",
             # the Santa Clara River valley stretch of the Piru box; a short wash near the outlet won the name vote
             ("piru", "Real Wash"): "Santa Clara River",
             # the box reaches the desert floor, where the creek is mapped as a wash
@@ -80,27 +90,76 @@ major = basin_km2[basin_km2 >= MAJOR_KM2]
 # A branch ends where it is the smaller arm at a confluence (the downstream cell gets more area from elsewhere).
 # Branch mouths with >= FORK_KM2, inside drainages >= SPLIT_KM2, are fork candidates; a cell's fork is the outermost
 # candidate on its way down (the one that joins the trunk), so nested forks stay with their parent fork.
-ends = (a[nxt] - a) > a
+# The arms are compared on the full drainage, with the water from above dams: below a dam the river's own count
+# starts again (drainages end at dams), and on that count the Chattahoochee below Buford Dam was the smaller arm at
+# its first side creek.
+a_full = a - extra_edge + extra_full
+ends = (a_full[nxt] - a_full) > a_full
 big_basins = major.index[major >= SPLIT_KM2].values
-cand = np.flatnonzero(ends & (a >= FORK_KM2) & np.isin(outlet, big_basins))
+cand = np.flatnonzero(ends & (a_full >= FORK_KM2) & np.isin(outlet, big_basins))
 stop = np.zeros(N, bool)
 stop[cand] = True
 stop |= nxt == idx
 first = jump(np.where(stop, idx, nxt).astype(np.int32))      # first candidate (or outlet) downstream of each cell
-fork_of = {}
+chain = {}                                                     # candidate -> the candidates below it, down to the outlet
 for s in cand:
-    m = int(s)
+    m, ch = int(s), [int(s)]
     while True:
         p = int(first[nxt[m]])
         if p == outlet[m]:
             break
+        ch.append(p)
         m = p
-    fork_of[int(s)] = m
-unit = first.copy()                                            # fork mouth, or the outlet for trunk cells
-for s, m in fork_of.items():
-    if s != m:
-        unit[unit == s] = m                                    # nested fork -> outermost fork
-del first, stop
+    chain[int(s)] = ch
+# each basin's river where it leaves the map: its own total here, or more if NHDPlus has it growing downstream
+from flowlib import FLOW, match_points
+river = {}
+if len(cand):
+    v2 = gpd.read_file(f"{FLOW}/nhdplus_v2.gpkg", columns=["comid", "hydroseq", "dnhydroseq", "totdasqkm", "ftype"]).to_crs(CRS)
+    by_seq = v2.drop_duplicates("hydroseq").set_index("hydroseq")
+    outs = [int(o) for o in np.unique(outlet[cand]) if a_full[o] >= 300]
+    xs, ys = T * (np.array(outs) % W + 0.5, np.array(outs) // W + 0.5)
+    com = match_points(gpd.GeoSeries(gpd.points_from_xy(xs, ys), crs=CRS), [a_full[o] for o in outs], v2, max_dist=300, lo=0.5, hi=2.0)
+    by_com = v2.drop_duplicates("comid").set_index("comid")
+    for o, c_ in zip(outs, com.values):
+        tot = float(a_full[o])
+        if pd.notna(c_):
+            row = by_com.loc[int(c_)]
+            for _ in range(5000):                               # down its own course: stop where it joins a bigger
+                tot = max(tot, float(row.totdasqkm))            # river (the drainage more than doubles), which is
+                if row.dnhydroseq not in by_seq.index:          # that river's size, not this one's
+                    break
+                below = by_seq.loc[row.dnhydroseq]
+                if float(below.totdasqkm) > 2 * max(float(row.totdasqkm), 1.0):
+                    break
+                row = below
+        river[o] = tot
+promoted = set()
+for s in sorted(chain, key=lambda v: len(chain[v])):            # outer tributaries first, so a parent is settled
+    ch = chain[s]
+    if len(ch) > 1 and ch[1] not in promoted:                   # inside a fork: it joins that fork, not a river
+        continue
+    whole = a_full[ch[1]] if len(ch) > 1 else river.get(int(outlet[s]), float(a_full[outlet[s]]))
+    if a_full[s] >= PROMOTE_KM2 and whole >= PROMOTE_INTO_KM2:
+        promoted.add(s)
+
+
+def assign(promoted):
+    """(unit, root) per cell: root = the drainage it belongs to (the first promoted tributary mouth on its way down,
+    else its outlet); unit = its fork (the outermost fork mouth below it that is still inside that drainage), or
+    the root itself on the drainage's trunk."""
+    lut_unit, lut_root = idx.copy(), idx.copy()
+    for s_, ch in chain.items():
+        j = next((k_ for k_, c_ in enumerate(ch) if c_ in promoted), None)
+        if j is None:
+            lut_unit[s_], lut_root[s_] = ch[-1], outlet[s_]
+        else:
+            lut_unit[s_], lut_root[s_] = (ch[j - 1] if j > 0 else ch[0]), ch[j]
+    return lut_unit[first], lut_root[first]
+
+
+unit, root = assign(promoted)
+del stop
 
 # ---- stream reaches -> unit, by the biggest-area cell within 2 cells of each reach's middle vertex ----
 streams = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
@@ -114,7 +173,7 @@ def reach_cell(g):
     i, j = np.unravel_index(np.argmax(win), win.shape)
     return (r0 + i) * W + c0 + j
 cells = np.array([reach_cell(g) for g in streams.geometry])
-streams["outlet"], streams["unit"] = outlet[cells], unit[cells]
+streams["outlet"], streams["unit"], streams["root"] = outlet[cells], unit[cells], root[cells]
 # Strahler order on the channel cell itself (05_score samples the middle vertex, which can sit beside the channel)
 with rasterio.open(f"{DERIVED}/strahler.tif") as src:
     streams["strahler"] = src.read(1).ravel()[cells]
@@ -131,15 +190,38 @@ def candidates(sub, share=0.5):
     rest = [n for n in named.groupby("name").area_km2.max().sort_values(ascending=False).index if n not in first]
     return first + rest
 
-dname = {}
-for o in major.index:
-    c = candidates(streams[streams.outlet == o], 0.8)
-    n = tidy(c[0]) if c else None
-    dname[int(o)] = NAME_FIX.get((REGION, n), n)
+def name_roots():
+    """{root: name} for the outlets of major basins and the promoted tributaries. A promoted tributary needs a name
+    of its own, different from the river it joins; one without (-> None) goes back to being a fork."""
+    dn = {}
+    for o in major.index:
+        c = candidates(streams[streams.root == o], 0.8)
+        n = tidy(c[0]) if c else None
+        dn[int(o)] = NAME_FIX.get((REGION, n), n)
+    for s_ in sorted(promoted, key=lambda v: -a_full[v]):           # bigger rivers pick first
+        below = chain[s_][1:]
+        parent = next((c_ for c_ in below if c_ in promoted), int(outlet[s_]))
+        taken = {dn.get(parent)} | {dn.get(q) for q in promoted if q != s_ and q in dn}
+        c = [NAME_FIX.get((REGION, tidy(n)), tidy(n)) for n in candidates(streams[streams.root == s_], 0.8)]
+        dn[s_] = next((n for n in c if n and n not in taken), None)
+    return dn
+
+
+dname = name_roots()
+nameless = {s_ for s_ in promoted if not dname.get(s_)}
+if nameless:                                                    # back to forks of the river they join
+    promoted -= nameless
+    unit, root = assign(promoted)
+    streams["unit"], streams["root"] = unit[cells], root[cells]
+    dname = name_roots()
+del first
+if promoted:
+    print(f"tributaries of {PROMOTE_KM2}+ km2 of a river of {PROMOTE_INTO_KM2}+ km2, drainages of their own:",
+          ", ".join(f"{dname[s_]} {a_full[s_]:.0f}" for s_ in sorted(promoted, key=lambda v: -a_full[v])))
 # basins split by a dam / sink share a name; unnamed ones fall in with the minor drainages
-streams["drainage"] = [dname.get(int(o)) or MINOR for o in streams.outlet]
+streams["drainage"] = [dname.get(int(o)) or MINOR for o in streams.root]
 uname = {}
-for o, sub in streams[streams.drainage != MINOR].groupby("outlet"):
+for o, sub in streams[streams.drainage != MINOR].groupby("root"):
     used = {dname[int(o)]}
     uname[int(o)] = dname[int(o)]
     forks = sub[sub.unit != o]
@@ -148,7 +230,7 @@ for o, sub in streams[streams.drainage != MINOR].groupby("outlet"):
         nm = nm or f"{dname[int(o)]}, unnamed fork"
         used.add(nm)
         uname[int(u)] = nm
-uname = {u: FORK_FIX.get((REGION, dname[int(outlet[u])], n), n) for u, n in uname.items()}
+uname = {u: FORK_FIX.get((REGION, dname[int(root[u])], n), n) for u, n in uname.items()}
 streams["fork"] = [uname.get(int(u), d) for u, d in zip(streams.unit, streams.drainage)]
 streams.loc[streams.drainage == MINOR, "fork"] = MINOR
 # Where each reach's basin leaves the study area: the centre of the first cell outside the box, if it drains off an
@@ -156,6 +238,10 @@ streams.loc[streams.drainage == MINOR, "fork"] = MINOR
 # drainage they continue into in the neighbouring range.
 o = streams.outlet.values.astype(np.int64)
 streams["out_x"], streams["out_y"] = exit_points(fdir, T, o)
+# a promoted tributary joins its river inside the box: it doesn't leave the box as a basin of its own, so 06_map.py
+# must not rename it with the river's basin when that is joined to the next range
+inside = streams.root.values != streams.outlet.values
+streams.loc[inside, ["out_x", "out_y"]] = np.nan
 streams["basin_km2"] = basin_km2.reindex(o).values.round(2)
 streams[["sid", "drainage", "fork", "strahler", "out_x", "out_y", "basin_km2"]].to_csv(f"{OUT}/stream_drainage.csv",
                                                                                      index=False)
@@ -183,13 +269,15 @@ uo = basin_km2.index.values
 ex_x, ex_y = exit_points(fdir, T, uo)
 exit_of = {int(o): (x, y) for o, x, y in zip(uo, ex_x, ex_y)}
 edge_minor = uo[~np.isnan(ex_x) & (basin_km2.values >= 0.5) & ~np.isin(uo, list(named_outlets))]
-keep = np.isin(outlet.reshape(H, W)[::k, ::k], list(named_outlets) + edge_minor.tolist())
+keep = np.isin(outlet.reshape(H, W)[::k, ::k], [o for o in named_outlets if o not in promoted] + edge_minor.tolist()) \
+    | np.isin(root.reshape(H, W)[::k, ::k], [o for o in named_outlets if o in promoted])
 rows = []
 for g, v in features.shapes(small, mask=keep, transform=T * rasterio.Affine.scale(k)):
     rows.append(dict(unit=int(v), geometry=shapely.geometry.shape(g)))
 poly = gpd.GeoDataFrame(rows, crs=CRS).dissolve("unit").reset_index()
 poly["outlet"] = outlet[poly.unit.values]
-poly["drainage"] = [dname.get(int(o)) or MINOR for o in poly.outlet]
+poly["root"] = root[poly.unit.values]
+poly["drainage"] = [dname.get(int(o)) or MINOR for o in poly.root]
 poly["fork"] = [uname.get(int(u), d) for u, d in zip(poly.unit, poly.drainage)]
 # dam-split basins of one river merge; an unnamed basin keeps its own outline, keyed by where it leaves the box
 poly["out_x"] = [exit_of[int(o)][0] if d == MINOR else np.nan for o, d in zip(poly.outlet, poly.drainage)]

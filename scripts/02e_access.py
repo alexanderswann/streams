@@ -27,10 +27,9 @@ Writes data/raw/_shared/access_roads.gpkg and data/raw/_shared/parking_trailhead
 Map attribution: (c) OpenStreetMap contributors (ODbL), USFS.
 """
 import os, re, html, json, time, numpy as np, pandas as pd, geopandas as gpd, shapely
-from config import REGIONS, CRS, ROOT, SHARED
+from config import REGIONS, CRS, ROOT, SHARED, has, MIN_RELIEF_M
 from geomatch import overpass, esri, relief_at, follow, wilderness_path
 
-MIN_RELIEF_M = 100
 EDW = "https://apps.fs.usda.gov/arcx/rest/services/EDW"
 TAGS = ["name", "ref", "highway", "service", "surface", "tracktype", "smoothness", "4wd_only", "access",
         "motor_vehicle", "motorcar", "bicycle", "foot", "seasonal", "access:conditional"]
@@ -140,7 +139,8 @@ mv_paved = mvcol("surfacetype").fillna("").str.match(r"^(AC|BST|PCC|P)\b")
 # current fire closures (LA County's Eaton Fire layer: roads closed, or closed to vehicles only; closure areas written
 # by 02d_trails.py): closed roads go in their own class, roads closed to vehicles only are bike roads
 LAC_ = "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Eaton_Fire_Impacted_Trails_and_Roads_WFL1/FeatureServer"
-eaton = stack([esri(f"{LAC_}/14", bb, "OBJECTID,Name,Status,Line_Type") for bb in boxes.values()], "OBJECTID")
+eaton = (stack([esri(f"{LAC_}/14", bb, "OBJECTID,Name,Status,Line_Type") for bb in boxes.values()], "OBJECTID")
+         if has("la_trail_layers") else [])
 e_status = pd.Series(pick(eaton, follow(rd, eaton), "Status") if len(eaton) else [None] * len(rd), index=rd.index).fillna("")
 areas_p = f"{SHARED}/closure_areas.gpkg"
 areas = gpd.read_file(areas_p).to_crs(CRS).union_all() if __import__("os").path.exists(areas_p) else shapely.Polygon()

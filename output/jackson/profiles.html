@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creek Profiles</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script src="profiles_data.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3f0; --surface-1: #fcfcfb; --border: #e2e1dc;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7b7a75;
+    --grid: #ebeae6; --line: #3b3a37; --accent: #2a78d6;
+    /* drop types: same colors as the map so an entity keeps its color; shapes are the second cue.
+       magenta / yellow / violet pass the all-pairs CVD + normal-vision checks in light and dark (validate_palette.js);
+       mapped-waterfall drops and gauges are neutral ink, told apart by shape */
+    --d-step: #e87ba4; --d-cascade: #eda100; --d-short: #6250d6; --d-mapped: #3b3a37;
+    --gauge: #52514e;
+    --strip-perennial: #2a78d6; --strip-burn: #eb6834; --strip-trout: #008300; --strip-habitat: #e34948;
+    --seq-0: #cde2fb; --seq-1: #86b6ef; --seq-2: #3987e5; --seq-3: #1c5cab; --seq-4: #0d366b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2b;
+      --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+      --grid: #2a2a27; --line: #d8d7d2; --accent: #3987e5;
+      --strip-perennial: #3987e5; --strip-burn: #d95926; --strip-trout: #2f9e2f; --strip-habitat: #e66767;
+      --seq-0: #184f95; --seq-1: #256abf; --seq-2: #3987e5; --seq-3: #86b6ef; --seq-4: #cde2fb;
+      --d-step: #d55181; --d-cascade: #c98500; --d-short: #9085e9; --d-mapped: #d8d7d2; --gauge: #c3c2b7;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2b;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --grid: #2a2a27; --line: #d8d7d2; --accent: #3987e5;
+    --strip-perennial: #3987e5; --strip-burn: #d95926; --strip-trout: #2f9e2f; --strip-habitat: #e66767;
+    --seq-0: #184f95; --seq-1: #256abf; --seq-2: #3987e5; --seq-3: #86b6ef; --seq-4: #cde2fb;
+    --d-step: #d55181; --d-cascade: #c98500; --d-short: #9085e9; --d-mapped: #d8d7d2; --gauge: #c3c2b7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; }
+  .sub { color: var(--text-secondary); font-size: 13px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=search], select { font: inherit; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+         background: var(--surface-1); color: var(--text-primary); min-width: 0; }
+  input[type=search] { width: min(360px, 100%); }
+  a { color: var(--accent); }
+  .btn { font: inherit; padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1);
+         color: var(--text-primary); cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn:hover { border-color: var(--text-muted); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1);
+          color: var(--text-secondary); cursor: pointer; }
+  .chip:hover, .chip[aria-pressed=true] { color: var(--text-primary); border-color: var(--text-muted); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  .title-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .title-row h2 { font-size: 18px; margin: 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+  .stats b { color: var(--text-primary); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--text-secondary); margin: 8px 0 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend svg { flex: none; }
+  #chart { width: 100%; height: 620px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--text-secondary); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; }
+  .muted { color: var(--text-muted); }
+  .note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  @media (max-width: 640px) { #chart { height: 560px; } h1 { font-size: 18px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Creek profiles</h1>
+      <div class="sub" id="gen"></div>
+    </div>
+    <div class="controls">
+      <input type="search" id="q" list="creeks" placeholder="Search a creek, e.g. Deep Creek" aria-label="Search creeks">
+      <datalist id="creeks"></datalist>
+      <select id="rangeSel" aria-label="Filter by range">
+        <option value="">All ranges</option>
+      </select>
+      <a class="btn" id="mapLink" href="stream_map.html" target="_blank">Show on map</a>
+    </div>
+  </header>
+  <div class="chips" id="chips" aria-label="Top creeks by fish score"></div>
+  <div class="card" id="missing" role="status" hidden></div>
+
+  <section class="card">
+    <div class="title-row">
+      <h2 id="title">–</h2>
+      <span class="sub" id="where"></span>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="legend" id="legend"></div>
+    <div id="chart" role="img" aria-label="Long profile chart"></div>
+    <div class="note">Distance runs downstream from the channel head (left) to the mouth (right). Elevation is the
+      hydro-conditioned 10 m DEM used by the drop detectors, so short falls look like steep steps rather than vertical
+      drops. Click anywhere on the profile to point “Show on map” at that spot.</div>
+  </section>
+
+  <section class="card">
+    <div class="title-row"><h2 style="font-size:16px">Drops on this creek</h2><span class="sub" id="dropCount"></span></div>
+    <div class="tablewrap"><table id="dropTable" aria-label="Drops on this creek"></table></div>
+  </section>
+</main>
+
+<script>
+const DATA = window.PROFILE_DATA;
+const P = DATA.profiles;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const DROP = {
+  "unmapped waterfall-like step":     { v: "--d-step",    sym: "triangle-down", label: "Waterfall-like step" },
+  "unmapped cascade":                 { v: "--d-cascade", sym: "diamond",       label: "Cascade / knickpoint" },
+  "unmapped short fall (big creek)":  { v: "--d-short",   sym: "circle",        label: "Short fall / pool (big creek)" },
+  "matches mapped waterfall":         { v: "--d-mapped",  sym: "square",        label: "Drop at a mapped waterfall" },
+};
+let current = null, pickedKm = null;
+
+document.getElementById("gen").textContent =
+  `${P.length} creek profiles · generated ${DATA.generated} · ${new Set(P.map(p => p.region)).size} ranges`;
+const ranges = [...new Set(P.map(p => p.region))];
+const rangeSel = document.getElementById("rangeSel");
+ranges.forEach(r => rangeSel.add(new Option(r.replace(" Mountains", ""), r)));
+function fillList() {
+  const dl = document.getElementById("creeks"); dl.innerHTML = "";
+  P.filter(p => !rangeSel.value || p.region === rangeSel.value)
+   .forEach(p => dl.appendChild(new Option(p.label)));
+  const chips = document.getElementById("chips"); chips.innerHTML = "";
+  const seen = new Set();
+  P.filter(p => (!rangeSel.value || p.region === rangeSel.value) && !seen.has(p.name) && seen.add(p.name))
+   .slice(0, 10).forEach(p => {
+     const b = document.createElement("button");
+     b.className = "chip"; b.textContent = p.label; b.onclick = () => show(p);
+     b.setAttribute("aria-pressed", current === p);
+     chips.appendChild(b);
+   });
+}
+rangeSel.onchange = fillList;
+document.getElementById("q").addEventListener("change", e => {
+  const v = e.target.value.trim().toLowerCase();
+  const p = P.find(p => p.label.toLowerCase() === v) || P.find(p => p.label.toLowerCase().includes(v));
+  if (p) show(p);
+});
+
+function legendHTML(p) {
+  const shape = (sym, color) => {
+    const s = {
+      "triangle-down": `<polygon points="1,2 11,2 6,11" fill="${color}"/>`,
+      "diamond": `<polygon points="6,0 12,6 6,12 0,6" fill="${color}"/>`,
+      "circle": `<circle cx="6" cy="6" r="5" fill="${color}"/>`,
+      "square": `<rect x="1" y="1" width="10" height="10" rx="2" fill="${color}"/>`,
+      "star": `<polygon points="6,0 7.6,4 12,4.4 8.6,7.2 9.7,12 6,9.4 2.3,12 3.4,7.2 0,4.4 4.4,4" fill="${color}"/>`,
+      "triangle-up": `<polygon points="6,1 11,11 1,11" fill="${color}"/>`,
+    }[sym];
+    return `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">${s}</svg>`;
+  };
+  const items = [`<span><svg width="18" height="12" aria-hidden="true"><line x1="0" y1="6" x2="18" y2="6" stroke="${css("--line")}" stroke-width="2"/></svg>Elevation</span>`];
+  const present = new Set(p.drops.map(d => d.status));
+  for (const [k, d] of Object.entries(DROP)) if (present.has(k)) items.push(`<span>${shape(d.sym, css(d.v))}${d.label}</span>`);
+  if (p.falls.length) items.push(`<span>${shape("star", css("--text-primary"))}Mapped waterfall (OSM/NHD)</span>`);
+  if (p.gauges.length) items.push(`<span>${shape("triangle-up", css("--gauge"))}USGS gauge</span>`);
+  return items.join("");
+}
+
+function render(p) {
+  const ink = css("--text-primary"), ink2 = css("--text-secondary"), muted = css("--text-muted");
+  const grid = css("--grid"), surf = css("--surface-1"), line = css("--line");
+  const n = p.km.length;
+  const burnAt = i => p.burn[i] >= 0 ? p.burn_vals[p.burn[i]] : "none since 2016";
+  const habAt = i => p.habitat[i] >= 0 ? p.habitat_vals[p.habitat[i]] : "none";
+  const custom = p.km.map((_, i) => [p.grad[i], p.area[i], p.score[i] ?? "–", burnAt(i), habAt(i),
+                                     p.perennial[i] ? "perennial" : "not perennial (NHD)", p.trout[i] ? "Wild/Heritage Trout Water" : ""]);
+  const traces = [{
+    x: p.km, y: p.z, type: "scatter", mode: "lines", name: "Elevation", line: { color: line, width: 2 },
+    customdata: custom, xaxis: "x", yaxis: "y",
+    hovertemplate: "<b>%{x:.2f} km</b> · %{y:.0f} m<br>Gradient %{customdata[0]:.1f}% · drainage %{customdata[1]} km²" +
+      "<br>Fish score %{customdata[2]} · %{customdata[5]}<br>Burned: %{customdata[3]}<br>Critical habitat: %{customdata[4]}" +
+      "<br>%{customdata[6]}<extra></extra>",
+  }];
+  // drops, by type (one trace per type so the legend/tooltip stay per entity)
+  const zAt = km => { let i = p.km.findIndex(k => k >= km); if (i < 0) i = n - 1; return p.z[i]; };
+  for (const [status, d] of Object.entries(DROP)) {
+    const ds = p.drops.filter(x => x.status === status);
+    if (!ds.length) continue;
+    traces.push({
+      x: ds.map(x => x.km), y: ds.map(x => zAt(x.km)), type: "scatter", mode: "markers", name: d.label,
+      marker: { symbol: d.sym, size: ds.map(x => Math.max(9, Math.min(18, 7 + x.drop / 6))), color: css(d.v),
+                line: { color: surf, width: 2 } },
+      customdata: ds.map(x => [x.drop, x.excess ?? "–", x.approach ?? "–", x.bike ?? 0, x.drive ?? "–"]),
+      hovertemplate: `<b>${d.label}</b><br>%{x:.2f} km · drop %{customdata[0]} m` +
+        (status.includes("big creek") ? " (excess %{customdata[1]} m)" : "") +
+        "<br>Approach %{customdata[2]} min (bike %{customdata[3]}) · drive %{customdata[4]} min<extra></extra>",
+      xaxis: "x", yaxis: "y",
+    });
+  }
+  // direct labels for named falls; neighbours closer than ~4% of the creek alternate above/below to avoid collisions
+  const falls = [...p.falls].sort((a, b) => a.km - b.km);
+  let lastKm = -1e9, flip = false;
+  const fallPos = falls.map(f => { flip = (f.km - lastKm < p.length_km * 0.04) ? !flip : false; lastKm = f.km;
+                                   return flip ? "bottom center" : "top center"; });
+  if (falls.length) traces.push({
+    x: falls.map(f => f.km), y: falls.map(f => zAt(f.km)), type: "scatter", mode: "markers+text",
+    name: "Mapped waterfall", text: falls.map(f => f.name === "mapped waterfall" ? "" : f.name),
+    textposition: fallPos, textfont: { color: ink2, size: 11 },
+    marker: { symbol: "star", size: 12, color: ink, line: { color: surf, width: 2 } },
+    hovertemplate: "<b>%{text}</b><br>%{x:.2f} km<extra>mapped waterfall</extra>", xaxis: "x", yaxis: "y",
+  });
+  if (p.gauges.length) traces.push({
+    x: p.gauges.map(g => g.km), y: p.gauges.map(g => zAt(g.km)), type: "scatter", mode: "markers", name: "USGS gauge",
+    marker: { symbol: "triangle-up", size: 12, color: css("--gauge"), line: { color: surf, width: 2 } },
+    customdata: p.gauges.map(g => [g.name, g.cfs, g.status]),
+    hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]} cfs · %{customdata[2]}<extra>gauge</extra>", xaxis: "x", yaxis: "y",
+  });
+  // gradient panel (its own axis: never a second y-scale on the elevation panel)
+  traces.push({ x: p.km, y: p.grad.map(g => Math.min(g, 80)), type: "scatter", mode: "lines", name: "Gradient",
+    line: { color: ink2, width: 1.5 }, fill: "tozeroy", fillcolor: grid, xaxis: "x", yaxis: "y2",
+    hovertemplate: "%{x:.2f} km · gradient %{y:.1f}%<extra></extra>" });
+  // attribute strips
+  // one single-row heatmap per strip, placed by number (several 1-row heatmaps on a category axis break Plotly)
+  const stripNames = [];
+  const strip = (name, vals, color, _, text) => ({
+    x: p.km, y0: stripNames.push(name) - 1, dy: 1, z: [vals], type: "heatmap", xaxis: "x", yaxis: "y3", showscale: false,
+    colorscale: color, zmin: 0, zmax: name === "Fish score" ? 100 : 1, ygap: 3, text: [text],
+    hovertemplate: "%{x:.2f} km · " + name + ": %{text}<extra></extra>",
+  });
+  const on = c => [[0, surf], [0.5, surf], [0.5001, c], [1, c]];
+  const seq = [[0, css("--seq-0")], [0.25, css("--seq-1")], [0.5, css("--seq-2")], [0.75, css("--seq-3")], [1, css("--seq-4")]];
+  traces.push(strip("Critical habitat", p.habitat.map(v => v >= 0 ? 1 : 0), on(css("--strip-habitat")), 0, p.km.map((_, i) => habAt(i))));
+  traces.push(strip("Wild trout water", p.trout, on(css("--strip-trout")), 0, p.trout.map(v => v ? "yes" : "no")));
+  traces.push(strip("Burned since 2016", p.burn.map(v => v >= 0 ? 1 : 0), on(css("--strip-burn")), 0, p.km.map((_, i) => burnAt(i))));
+  traces.push(strip("Perennial (NHD)", p.perennial, on(css("--strip-perennial")), 0, p.perennial.map(v => v ? "yes" : "no")));
+  traces.push(strip("Fish score", p.score.map(v => v ?? null), seq, 0, p.score.map(v => v ?? "–")));
+  if (pickedKm != null) traces.push({ x: [pickedKm], y: [zAt(pickedKm)], type: "scatter", mode: "markers", name: "Picked spot",
+    marker: { symbol: "circle-open", size: 16, color: css("--accent"), line: { width: 2.5 } }, hoverinfo: "skip", xaxis: "x", yaxis: "y" });
+
+  const axis = { gridcolor: grid, zeroline: false, linecolor: grid, tickfont: { color: muted, size: 11 },
+                 title: { font: { color: ink2, size: 12 } } };
+  const layout = {
+    paper_bgcolor: surf, plot_bgcolor: surf, showlegend: false, margin: { l: 120, r: 16, t: 8, b: 44 },
+    font: { family: "system-ui, -apple-system, Segoe UI, sans-serif", color: ink },
+    hovermode: "closest", hoverlabel: { bgcolor: surf, bordercolor: grid, font: { color: ink, size: 12 } },
+    xaxis: { ...axis, title: { ...axis.title, text: "Distance downstream from channel head (km)" }, anchor: "y3",
+             showspikes: true, spikemode: "across", spikecolor: muted, spikethickness: 1, spikedash: "dot" },
+    yaxis: { ...axis, domain: [0.42, 1], title: { ...axis.title, text: "Elevation (m)" } },
+    yaxis2: { ...axis, domain: [0.2, 0.38], title: { ...axis.title, text: "Gradient (%)" }, rangemode: "tozero" },
+    yaxis3: { ...axis, domain: [0, 0.17], showgrid: false, tickfont: { color: ink2, size: 11 }, fixedrange: true,
+              tickvals: stripNames.map((_, i) => i), ticktext: stripNames, range: [-0.5, stripNames.length - 0.5] },
+  };
+  Plotly.react("chart", traces, layout, { responsive: true, displaylogo: false,
+    modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"] });
+}
+
+function show(p, opts = {}) {
+  current = p; pickedKm = opts.km ?? null;
+  document.getElementById("missing").hidden = true;
+  document.getElementById("title").textContent = p.label;
+  document.getElementById("where").textContent = p.region;
+  const drop = p.top_m - p.bottom_m;
+  document.getElementById("stats").innerHTML =
+    `<span>Length <b>${p.length_km.toFixed(1)} km</b></span><span>Elevation <b>${p.top_m}–${p.bottom_m} m</b> (−${drop} m, avg ${(drop / p.length_km / 10).toFixed(1)}%)</span>` +
+    `<span>Drainage at mouth <b>${p.area_km2} km²</b></span><span>Best fish score <b>${p.best_score.toFixed(0)}</b></span>` +
+    `<span>Drops <b>${p.drops.length}</b></span>`;
+  document.getElementById("legend").innerHTML = legendHTML(p);
+  render(p);
+  table(p);
+  setMapLink(pickedKm ?? p.km[Math.floor(p.km.length / 2)], pickedKm == null ? 13 : 16);
+  history.replaceState(null, "", "#id=" + encodeURIComponent(p.id) + (pickedKm != null ? "&km=" + pickedKm.toFixed(3) : ""));
+  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.textContent === p.label));
+}
+
+function setMapLink(km, zoom) {
+  const p = current; let i = p.km.findIndex(k => k >= km); if (i < 0) i = p.km.length - 1;
+  document.getElementById("mapLink").href = `stream_map.html#${p.lat[i]},${p.lon[i]},${zoom}`;
+}
+
+function table(p) {
+  const t = document.getElementById("dropTable");
+  document.getElementById("dropCount").textContent = p.drops.length ? `${p.drops.length} on the profile` : "none detected on this creek";
+  if (!p.drops.length) { t.innerHTML = ""; return; }
+  t.innerHTML = `<thead><tr><th class="num">km</th><th>Type</th><th class="num">Drop (m)</th><th class="num">Excess (m)</th>
+    <th class="num">Drive (min)</th><th class="num">Bike (min)</th><th class="num">Approach (min)</th><th>Map</th></tr></thead><tbody>` +
+    p.drops.map(d => `<tr><td class="num">${d.km.toFixed(2)}</td><td>${DROP[d.status].label}</td><td class="num">${d.drop}</td>
+      <td class="num">${d.excess ?? "–"}</td><td class="num">${d.drive ?? "–"}</td><td class="num">${d.bike ?? "–"}</td>
+      <td class="num">${d.approach ?? "–"}</td><td><a href="stream_map.html#${d.lat},${d.lon},16" target="_blank">map</a></td></tr>`).join("") +
+    "</tbody>";
+}
+
+function wireClick() {
+  document.getElementById("chart").on("plotly_click", ev => {
+    const pt = ev.points && ev.points[0]; if (!pt) return;
+    pickedKm = pt.x; render(current); setMapLink(pickedKm, 16);
+    history.replaceState(null, "", "#id=" + encodeURIComponent(current.id) + "&km=" + pickedKm.toFixed(3));
+  });
+}
+
+function fromHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("id")) {
+    const p = P.find(p => p.id === h.get("id"));
+    if (p) return show(p, { km: h.get("km") ? parseFloat(h.get("km")) : null });
+  }
+  if (h.get("q")) {
+    // from the map: creek name plus a location, pick the same-named profile passing closest to it
+    const name = h.get("q").toLowerCase(), lat = parseFloat(h.get("lat")), lon = parseFloat(h.get("lon"));
+    let best = null;
+    for (const p of P.filter(p => p.name.toLowerCase() === name)) {
+      for (let i = 0; i < p.lat.length; i++) {
+        const d = (p.lat[i] - lat) ** 2 + ((p.lon[i] - lon) * 0.83) ** 2;
+        if (!best || d < best.d) best = { d, p, km: p.km[i] };
+      }
+    }
+    if (best) return show(best.p, { km: isNaN(lat) ? null : best.km });
+    // no profile under that name (they need 2 km of channel named in the USGS hydrography): say so, instead of
+    // opening the first creek in the list as if it were the one asked for
+    show(P[0]);
+    const miss = document.getElementById("missing");
+    miss.textContent = `No long profile for “${h.get("q")}”: profiles are drawn only for creeks with at least 2 km of ` +
+      `channel named in the USGS hydrography. Showing ${P[0].label} instead; search above for another creek.`;
+    miss.hidden = false;
+    return;
+  }
+  show(P[0]);
+}
+
+fillList();
+fromHash();
+wireClick();
+window.addEventListener("hashchange", fromHash);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => current && (document.getElementById("legend").innerHTML = legendHTML(current), render(current)));
+</script>
+</body>
+</html>

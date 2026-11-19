@@ -37,18 +37,20 @@ road_u = drivable.geometry.union_all()
 trail_u = pd.concat([trails.geometry, roads[roads.highway == "track"].geometry]).union_all()
 
 # NHD: perennial (46006) / intermittent (46003) / ephemeral (46007); keep stream/river & artificial paths
-nhd["flow"] = nhd.fcode.map({46006: "perennial", 46003: "intermittent", 46007: "ephemeral"}).fillna("other")
+# Artificial paths (55800, the centrelines of mapped rivers and lakes) take the area's class (config.py)
+nhd["flow"] = nhd.fcode.map({46006: "perennial", 46003: "intermittent", 46007: "ephemeral",
+                             55800: ARTIFICIAL_PATH}).fillna("other")
 known_falls = pd.concat([
     osm_falls.assign(src="OSM")[["name", "src", "geometry"]],
     nhd_pts[nhd_pts.ftype == 487].assign(name=nhd_pts.get("gnis_name"), src="NHD")[["name", "src", "geometry"]],
 ], ignore_index=True)
 known_falls = known_falls[known_falls.geometry.notna() & ~known_falls.geometry.is_empty]
-# CDFW Passage Assessment Database: natural barriers noted in the field (falls, cascades, bedrock chutes), many with a
-# height and plunge-pool depth in the notes. Records whose notes say the barrier is gone are skipped.
+# CDFW Passage Assessment Database (California only): natural barriers noted in the field (falls, cascades, bedrock
+# chutes), many with a height and plunge-pool depth in the notes. Records whose notes say the barrier is gone are skipped.
 from geomatch import esri
 pad = esri("https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds69_fmu/FeatureServer/0",
            gpd.GeoSeries([shapely.box(*REGIONS[REGION]["bbox"])], crs=CRS).to_crs(4326).total_bounds,
-           "PAD_ID,StreamName,SiteName,BarStatus,Notes,SurveyDate", where="SiteType='Non-structural'")
+           "PAD_ID,StreamName,SiteName,BarStatus,Notes,SurveyDate", where="SiteType='Non-structural'") if has("cdfw_pad") else []
 if len(pad):
     pad = pad.to_crs(CRS)
     pad = pad[~pad.Notes.str.contains(r"no longer present|no evidence of|not a barrier|no barrier", case=False, na=False)]
@@ -124,7 +126,7 @@ def band(x, lo, hi, soft):  # 1 inside [lo,hi], linear falloff over `soft`
     return np.clip(1 - np.clip(np.maximum(lo - x, x - hi), 0, None) / soft, 0, 1)
 water = s.flow.map({"perennial": 1.0, "intermittent": 0.35, "unmapped": 0.15, "ephemeral": 0.05, "other": 0.3})
 size = np.clip(np.log10(s.area_km2) / np.log10(50), 0, 1)        # 1 km2 -> 0, 50+ km2 -> 1
-cold = band(s.elev_m, 700, 2300, 400)                             # trout-friendly elevation
+cold = band(s.elev_m, *ELEV_BAND) if ELEV_BAND else 1.0           # trout-friendly elevation (LA; first pass only)
 grad = band(s.gradient_pct, 1, 8, 10)                             # pool-riffle to step-pool
 remote = np.clip(s.road_m / 2000, 0, 1)                           # 2 km+ from a public road
 s["fish_score"] = (100 * water * (0.35 * size + 0.25 * cold + 0.15 * grad + 0.25 * remote)).round(0)

@@ -1,8 +1,15 @@
 """Current flow evidence for all regions (replaces the retired NHD perennial/intermittent label in the score).
 
   nhdplus_v2.gpkg       NHDPlus V2 flowlines (COMID network the flow model is keyed to)
-  natural_flows.csv     California Natural Flows Database (The Nature Conservancy): modelled unimpaired monthly
-                        flow per COMID, 1950 -> last month. We keep the dry season (Jul-Oct) of recent years.
+  natural_flows.csv     Modelled monthly flow per COMID for the dry season (Jul-Oct) of recent years.
+                        California (areas with the "tnc_flows" source): the California Natural Flows Database
+                        (The Nature Conservancy), modelled unimpaired monthly flow, 1950 -> last month.
+                        Elsewhere: NHDPlus V2's EROM mean flow for the month (gauge-adjusted long-term mean, on
+                        every flowline in the country) x that year's regional index from this area's own USGS
+                        gauges: the median, over the gauges, of the month's mean flow / the gauge's long-term mean
+                        for that month. So the year-to-year swing (droughts, wet summers) is measured, and its
+                        spread along the network is EROM's. One index for the whole area: small headwaters that
+                        dry faster than the gauged creeks in a drought are over-rated then.
   gauges_daily.csv.gz   USGS daily discharge since 1950 at every stream gauge in the study area with 5+ years of
                         daily values (ground truth for validation), from the USGS Water Data API
   gauge_sites.gpkg      gauge locations, drainage area, and the span and count of their daily values
@@ -11,7 +18,7 @@ No REGION needed. Re-run to refresh; downloads are cached per COMID batch / site
 """
 import os, time, json, requests, numpy as np, pandas as pd, geopandas as gpd
 from shapely.geometry import box
-from config import REGIONS, CRS, SHARED
+from config import REGIONS, CRS, SHARED, AREA, has
 
 FLOW = f"{SHARED}/flow"
 os.makedirs(f"{FLOW}/nf_batches", exist_ok=True)
@@ -64,7 +71,8 @@ if not os.path.exists(v2_path) or not os.path.exists(v2_meta) or set(json.load(o
         r = get("https://api.water.usgs.gov/geoserver/wmadata/ows", params=dict(
             service="WFS", version="1.0.0", request="GetFeature", typeName="wmadata:nhdflowline_network",
             outputFormat="application/json", srsName="EPSG:4326", bbox=f"{w},{s},{e},{n},EPSG:4326",
-            propertyName="comid,gnis_name,totdasqkm,fcode,ftype,streamorde,qe_ma,lengthkm,hydroseq,dnhydroseq,the_geom"))
+            propertyName="comid,gnis_name,totdasqkm,fcode,ftype,streamorde,qe_ma,lengthkm,hydroseq,dnhydroseq,"
+                         "qe_07,qe_08,qe_09,qe_10,qa_07,qa_08,qa_09,qa_10,the_geom"))
         parts.append(gpd.GeoDataFrame.from_features(r.json()["features"], crs=4326))
     v2 = pd.concat(parts, ignore_index=True).drop_duplicates("comid")
     v2 = gpd.GeoDataFrame(v2, crs=4326).to_crs(CRS)
@@ -76,11 +84,11 @@ if not os.path.exists(v2_path) or not os.path.exists(v2_meta) or set(json.load(o
 v2 = gpd.read_file(v2_path)
 print("NHDPlus V2 flowlines", len(v2))
 
-# ---- Natural Flows (TNC) ----
+# ---- Natural Flows (TNC; California) ----
 comids = sorted(v2.comid.astype(int))
 B = 40
 files = []
-for i in range(0, len(comids), B):
+for i in range(0, len(comids) if has("tnc_flows") else 0, B):
     chunk = comids[i:i + B]
     f = f"{FLOW}/nf_batches/{chunk[0]}_{chunk[-1]}_{len(chunk)}.csv"   # named by content, so a changed network
     files.append(f)                                                    # never reuses a batch of other COMIDs
@@ -94,11 +102,12 @@ for i in range(0, len(comids), B):
     if len(files) % 25 == 0:
         print(f"natural flows: {len(files)} of {-(-len(comids) // B)} batches", flush=True)
     time.sleep(0.3)
-nf = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
-nf = nf[nf.month.between(*DRY_MONTHS) & (nf.year >= FIRST_YEAR)]
-nf.to_csv(f"{FLOW}/natural_flows.csv.tmp", index=False)
-os.replace(f"{FLOW}/natural_flows.csv.tmp", f"{FLOW}/natural_flows.csv")
-print("natural flows rows", len(nf), "| comids", nf.comid.nunique(), "| years", nf.year.min(), "-", nf.year.max())
+if has("tnc_flows"):
+    nf = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+    nf = nf[nf.month.between(*DRY_MONTHS) & (nf.year >= FIRST_YEAR)]
+    nf.to_csv(f"{FLOW}/natural_flows.csv.tmp", index=False)
+    os.replace(f"{FLOW}/natural_flows.csv.tmp", f"{FLOW}/natural_flows.csv")
+    print("natural flows rows", len(nf), "| comids", nf.comid.nunique(), "| years", nf.year.min(), "-", nf.year.max())
 
 # ---- USGS gauges: every stream gauge in the area with 5+ years of daily discharge ----
 # From the USGS Water Data OGC API (api.waterdata.usgs.gov), which replaces WaterServices (shut down on 2027-02-22).
@@ -183,3 +192,36 @@ dv = pd.concat([dv[s].assign(site_no=s) for s in gs.site_no], ignore_index=True)
 dv = dv[dv.date >= "1950-01-01"][["site_no", "date", "cfs"]]
 dv.to_csv(f"{FLOW}/gauges_daily.csv.gz", index=False)
 print("gauges", gs.site_no.nunique(), "| daily rows", len(dv))
+
+# ---- outside California: EROM monthly means x the gauges' index of each year ----
+if not has("tnc_flows"):
+    months = list(range(DRY_MONTHS[0], DRY_MONTHS[1] + 1))
+    g = dv[dv.date.dt.month.isin(months)]
+    mm = g.groupby(["site_no", g.date.dt.year.rename("year"), g.date.dt.month.rename("month")]).cfs.agg(["mean", "size"])
+    mm = mm[mm["size"] >= 25]["mean"].reset_index()                    # whole months only
+    # each gauge's long-term mean for the month: over 1971-2000 (EROM's period) where it has 10+ of those years,
+    # else over its whole record of 10+ years
+    base = mm[mm.year.between(1971, 2000)].groupby(["site_no", "month"])["mean"].agg(["mean", "size"])
+    whole = mm.groupby(["site_no", "month"])["mean"].agg(["mean", "size"])
+    lt = base["mean"].where(base["size"] >= 10).reindex(whole.index).fillna(whole["mean"].where(whole["size"] >= 10))
+    mm["longterm"] = lt.reindex(pd.MultiIndex.from_frame(mm[["site_no", "month"]])).values
+    mm = mm[(mm.year >= FIRST_YEAR) & (mm.longterm > 0)]
+    mm["ratio"] = mm["mean"] / mm.longterm
+    idx = mm.groupby(["year", "month"]).ratio.agg(["median", "size"])
+    idx = idx[idx["size"] >= 3]["median"]                               # 3+ gauges, or no index for that month
+    if idx.empty:
+        raise SystemExit(f"{AREA}: under 3 USGS gauges with 10+ years of record; no yearly flow index can be built")
+    print(f"yearly flow index from {mm.site_no.nunique()} gauges (lowest month of each summer, x the long-term mean):")
+    print("  " + "  ".join(f"{y}: {v:.2f}" for y, v in idx.groupby(level="year").min().items()))
+    q = v2[["comid"]].copy()
+    for m in months:
+        qe, qa = pd.to_numeric(v2[f"qe_{m:02d}"], errors="coerce"), pd.to_numeric(v2[f"qa_{m:02d}"], errors="coerce")
+        q[m] = qe.where(qe >= 0, qa.where(qa >= 0))                     # -9998 = no value
+    q = q.melt("comid", var_name="month", value_name="erom").dropna()
+    q["month"] = q.month.astype(int)
+    nf = q.merge(idx.rename("ratio").reset_index(), on="month")
+    nf = nf.assign(statistic="mean", variable="estimated", value=(nf.erom * nf.ratio).round(4))[
+        ["comid", "statistic", "variable", "year", "month", "value"]].sort_values(["comid", "year", "month"])
+    nf.to_csv(f"{FLOW}/natural_flows.csv.tmp", index=False)
+    os.replace(f"{FLOW}/natural_flows.csv.tmp", f"{FLOW}/natural_flows.csv")
+    print("EROM x gauge index rows", len(nf), "| comids", nf.comid.nunique(), "| years", nf.year.min(), "-", nf.year.max())

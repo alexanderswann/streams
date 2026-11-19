@@ -13,9 +13,33 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 # Per area: crs = NAD83 / UTM zone (EPSG code); home = drive-time origin; ranges = {key: dict(label, hu4, bbox)} with
 # bbox in that zone's metres and hu4 the NHD 4-digit hydrologic units that cover the box. Boxes of one area must not
 # overlap, or streams get drawn twice.
+# sources = the data sources that exist only for that area (has("name") in the scripts); everything else is national:
+#   cdfw_pad   CDFW Passage Assessment Database natural barriers (05_score.py)
+#   tnc_flows  The Nature Conservancy's California Natural Flows model (02b_download_flow.py, 05b_flow.py)
+#   cdfw_trout CDFW trout surveys, stocking and Wild / Heritage Trout Waters (11_context.py)
+#   cal_fire   CAL FIRE historic fire perimeters (11_context.py); elsewhere the national interagency history
+#   cpad       California Protected Areas Database access (11_context.py); elsewhere PAD-US
+#   cdec       CDEC gauges (11_context.py)
+#   ca_closures  Caltrans + county road closures (07_road_closures.py)
+#   pct        the Pacific Crest Trail layer (02c_pct.py)
+#   la_trail_layers  NPS Santa Monica Mountains, State Parks and LA County Eaton Fire trail layers (02d, 02e)
+#   ct_trout, vt_trout, va_trout, ga_trout, wy_trout   each state's surveys, stocking and trout waters (troutdata.py)
+#   tu_brook_trout   Trout Unlimited / EBTJV wild brook trout patches, Connecticut to Georgia (troutdata.py)
+#   grte_roads, teton_county, gdot_511, ne_compass, vdot_511, blri_roads   current road closures (07_road_closures.py)
+# long_trail = (name, OSM ref, regex on the OSM relation or way name) of the area's long-distance trail, drawn as its
+#   own layer and left out of the ordinary trail labels (02c_pct.py, 06_map.py); None where there is none.
+# elev_band = (lo, hi, soft) in m for 05_score.py's first-pass score (None: no elevation term).
+# min_relief = metres of relief within 1 km that count as "mountain terrain" for the trail, road and parking
+#   filters (02d, 02e; default 100). Lower in gentle country, where the creeks are in hills, not mountains.
+# artificial_path = the flow class of NHD artificial paths (river and lake centrelines): "other" in LA, where they
+#   run through dry washes and reservoirs; "perennial" in wet country, where they are the rivers themselves.
 AREAS = {
     "la": dict(
         label="LA mountains", crs=26911,
+        sources=("cdfw_pad", "tnc_flows", "cdfw_trout", "cal_fire", "cpad", "cdec", "ca_closures", "pct",
+                 "la_trail_layers"),
+        elev_band=(700, 2300, 400), artificial_path="other", minor_label="Minor front-range drainages",
+        long_trail=("Pacific Crest Trail", "PCT", r"^PCT|Pacific Crest"),
         # ZIP 90404 (Santa Monica), approximate ZCTA centroid
         home=dict(label="90404 Santa Monica", lon=-118.4735, lat=34.0275),
         ranges={
@@ -47,10 +71,10 @@ AREAS = {
                                    bbox=(435000, 3707000, 471000, 3752000)),
         }),
 
-    # ---- New areas: DRAFT boxes from lon/lat extents, to be checked against HUC-10 divides before the first run.
+    # ---- New areas: boxes from lon/lat extents; HU4 codes checked against the national WBD on 2026-11-18.
     # Home points: the user's ZIPs, at the town centre (rural ZIPs span whole valleys).
     "jackson": dict(
-        label="Jackson Hole & Hoback", crs=26912,
+        label="Jackson Hole & Hoback", crs=26912, sources=("wy_trout", "grte_roads", "teton_county"),
         home=dict(label="83001 Jackson (town square; the ZIP spans the valley)", lon=-110.7624, lat=43.4799),
         ranges={
             "teton_snake": dict(label="Tetons & Snake River", hu4=("1704",),
@@ -65,28 +89,33 @@ AREAS = {
         }),
     "n_georgia": dict(
         label="North Georgia mountains", crs=26917,   # the west boxes reach ~1 degree past zone 17; error < 0.2%
+        sources=("ga_trout", "tu_brook_trout", "gdot_511"),
+        long_trail=("Appalachian Trail", "AT", r"Appalachian (National Scenic )?Trail"),
         home=dict(label="30305 Atlanta (Buckhead)", lon=-84.3850, lat=33.8317),
         ranges={
-            "cohutta": dict(label="Cohutta, Conasauga & Jacks", hu4=("0315", "0601"),
+            "cohutta": dict(label="Cohutta, Conasauga & Jacks", hu4=("0315", "0602"),
                             bbox=(137000, 3815000, 193000, 3880000)),
-            "blue_ridge": dict(label="Toccoa, Blue Ridge & Chattahoochee headwaters", hu4=("0313", "0601", "0315"),
+            "blue_ridge": dict(label="Toccoa, Blue Ridge & Chattahoochee headwaters", hu4=("0602", "0313", "0315"),
                                bbox=(193000, 3815000, 252000, 3880000)),
-            "rabun": dict(label="Rabun, Chattooga & Tallulah", hu4=("0306", "0601", "0313"),
+            "rabun": dict(label="Rabun, Chattooga & Tallulah", hu4=("0306", "0313", "0601", "0602"),
                           bbox=(252000, 3815000, 309000, 3880000)),
-            "hooch_tailwater": dict(label="Chattahoochee tailwater (Buford Dam to Atlanta)", hu4=("0313",),
+            "hooch_tailwater": dict(label="Chattahoochee tailwater (Buford Dam to Atlanta)", hu4=("0313", "0307", "0315"),
                                     bbox=(177000, 3744000, 219000, 3790000)),
         }),
     "central_vt": dict(
-        label="Central Vermont", crs=26918,
+        label="Central Vermont", crs=26918, sources=("vt_trout", "tu_brook_trout", "ne_compass"),
+        long_trail=("Long Trail", "LT", r"^Long Trail\b"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
         ranges={
-            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0415",), bbox=(640000, 4913000, 705000, 4937000)),
-            "mad_winooski": dict(label="Mad River, Winooski & New Haven River", hu4=("0415",), bbox=(640000, 4880000, 705000, 4913000)),
-            "white_river": dict(label="Middlebury River, Breadloaf & White River", hu4=("0108", "0415"),
+            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(640000, 4913000, 705000, 4937000)),
+            "mad_winooski": dict(label="Mad River, Winooski & New Haven River", hu4=("0430", "0108"), bbox=(640000, 4880000, 705000, 4913000)),
+            "white_river": dict(label="Middlebury River, Breadloaf & White River", hu4=("0108", "0430"),
                                 bbox=(640000, 4845000, 705000, 4880000)),
         }),
     "ne_ct": dict(
         label="Northeastern Connecticut", crs=26918,   # straddles the 18N / 19N line at 72 W
+        min_relief=30,                                  # hills of 100-250 m: LA's 100 m test would drop most paths
+        sources=("ct_trout", "tu_brook_trout"),
         home=dict(label="06281 Woodstock", lon=-71.9740, lat=41.9480),
         ranges={
             "natchaug": dict(label="Natchaug, Fenton & Willimantic", hu4=("0110", "0108"),
@@ -95,7 +124,8 @@ AREAS = {
                               bbox=(745000, 4603000, 772000, 4661000)),
         }),
     "lexington_va": dict(
-        label="Lexington, Virginia", crs=26917,
+        label="Lexington, Virginia", crs=26917, sources=("va_trout", "tu_brook_trout", "vdot_511", "blri_roads"),
+        long_trail=("Appalachian Trail", "AT", r"Appalachian (National Scenic )?Trail"),
         home=dict(label="24450 Lexington", lon=-79.4428, lat=37.7840),
         ranges={
             "maury_goshen": dict(label="Maury River, Goshen Pass & Buffalo Creek", hu4=("0208",),
@@ -114,6 +144,19 @@ EPSG = A["crs"]
 CRS = f"EPSG:{EPSG}"
 HOME = A["home"]
 REGIONS = A["ranges"]
+SOURCES = frozenset(A.get("sources", ()))
+ELEV_BAND = A.get("elev_band")
+ARTIFICIAL_PATH = A.get("artificial_path", "perennial")
+MIN_RELIEF_M = A.get("min_relief", 100)
+LONG_TRAIL = A.get("long_trail")
+# the group name for basins too small to be named drainages (05c_drainages.py, 06_map.py)
+MINOR = A.get("minor_label", "Minor drainages")
+
+
+def has(source):
+    """True if this area has the named area-specific data source (see AREAS)."""
+    return source in SOURCES
+
 
 REGION = os.environ.get("REGION", next(iter(REGIONS)))
 if REGION not in REGIONS:

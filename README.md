@@ -21,12 +21,27 @@ Warm, low ranges (Santa Anas, Sierra Pelona, much of Piru) score low for trout b
 swimming: the stream popups' NHD flow class (perennial or not) and the drop / plunge-pool and waterfall layers apply
 there regardless of fish score.
 
+## One map for all areas
+`output/index.html` (`scripts/13_overview.py`, no AREA needed) is a map of every built area: drainage outlines and
+main rivers, with a list of the areas. A click inside an area opens its full map at that spot, and each area's 2D
+and 3D map has a "Go to…" menu in the legend that jumps to any other area or back to this map at the current view.
+The full detail stays in the per-area maps because all six in one page would be over 200 MB. With the local preview
+server it is `http://localhost:8766/`; on the phone copies, `phone/index.html`.
+
 ## Study areas and folders
 The pipeline handles several study **areas**, each its own map with its own UTM zone, home point for drive times,
 ranges and data sources (`AREAS` in `scripts/config.py`). Pick one with `AREA=<key>` (default `la`) and a range
-within it with `REGION=<key>` (default the area's first range). Everything described below is the `la` area. The
-others (`jackson`, `n_georgia`, `central_vt`, `ne_ct`, `lexington_va`) have draft boxes and aren't built yet; see
-`MULTI_AREA_PLAN.md` and `MULTI_AREA_LOG.md`.
+within it with `REGION=<key>` (default the area's first range). Everything described below is the `la` area unless
+it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other areas were added and why.
+
+| Area key | Area | Ranges | Home (drive times) |
+|---|---|---|---|
+| `la` | LA mountains | the eight above | 90404 Santa Monica |
+| `jackson` | Jackson Hole & Hoback, WY | `teton_snake`, `gros_ventre`, `hoback` | 83001 Jackson |
+| `n_georgia` | North Georgia mountains | `cohutta`, `blue_ridge`, `rabun`, `hooch_tailwater` | 30305 Atlanta |
+| `central_vt` | Central Vermont | `stowe_lamoille`, `mad_winooski`, `white_river` | 05753 Middlebury |
+| `ne_ct` | Northeastern Connecticut | `natchaug`, `quinebaug` | 06281 Woodstock |
+| `lexington_va` | Lexington, Virginia | `maury_goshen`, `blue_ridge_va` | 24450 Lexington |
 
 | Folder | What |
 |---|---|
@@ -35,6 +50,39 @@ others (`jackson`, `n_georgia`, `central_vt`, `ne_ct`, `lexington_va`) have draf
 | `data/derived/<area>/_shared/` | Cross-box inflow table (`inflows.json`) |
 | `data/raw/_national/` | Downloads every area reuses: NHD HU4 GeoPackages, the PRISM August air temperature grid |
 | `output/<area>/` | The combined map, CSVs and GPX below, plus one folder per range |
+
+**What differs outside California.** Each area lists the sources that exist only for it (`sources` in `AREAS`;
+`has("name")` in the scripts). LA has all of the California ones; the other areas use national data in their place:
+
+| In LA | In the other areas |
+|---|---|
+| TNC California Natural Flows (modelled monthly flow per year) | NHDPlus V2's EROM mean flow for the month × a yearly index from the area's own USGS gauges (`02b_download_flow.py`). One index per area, so small headwaters that dry faster than the gauged creeks are over-rated in droughts |
+| CAL FIRE fire history | The interagency fire perimeter history (NIFC) |
+| CPAD restricted / no public access | PAD-US holdings recorded as restricted or closed. Most eastern holdings are "unknown" there and aren't flagged |
+| CDFW surveys, stocking, Wild / Heritage Trout Waters | Each state's own (`troutdata.py`): CT DEEP fish samples, stocking and trout management areas; Vermont's brook trout waters and stocking list; Virginia DWR wild trout streams (classes I–IV) and stocked waters; Georgia DNR designated trout streams, stocking and samples; Wyoming Game & Fish trout-stream classes and native cutthroat waters; plus Trout Unlimited's brook trout patches from Connecticut to Georgia, and iNaturalist (rainbow, brown, brook and cutthroat trout). Outside California a no-trout sample counts for the same creek within 1.5 km only, and only Connecticut's electrofishing samples make one |
+| CDFW natural fish-passage barriers as known falls | none (OSM and NHD falls only) |
+| Caltrans and county road closures | Keyless feeds where they exist: Grand Teton NP and Teton County (Jackson), Georgia 511, New England Compass (Vermont), the Blue Ridge Parkway and Virginia 511 (Lexington); none for NE Connecticut |
+| The Pacific Crest Trail layer | The area's own long trail (`long_trail` in `AREAS`): the Appalachian Trail (North Georgia, Lexington), the Long Trail (Vermont); none for Jackson or NE Connecticut |
+| CDEC gauges, the State Parks / NPS / Eaton Fire trail layers | none |
+| NHD "artificial paths" (river and lake centrelines) are not perennial: they cross dry washes and reservoirs | They count as perennial: in wet country they are the rivers |
+| Elevation band in `05_score.py`'s first-pass score | none |
+
+The fish score itself is the same everywhere, but it was tuned for LA, where most channels are dry: in the wet
+areas most reaches score over 50, so scores rank creeks within an area and aren't comparable between areas. The
+water-temperature fit (`watertemp.py`) is made per area from the best of August air, elevation and drainage area
+(LA: air + elevation; NE Connecticut: drainage area; Lexington and Jackson: elevation + drainage area; Vermont:
+air + drainage area; North Georgia: elevation). Tailwaters are listed per area in `scoring.py` (LA's two; in North
+Georgia the Chattahoochee below Buford Dam and the Toccoa below Blue Ridge Dam); diversions in `flowlib.py` (LA
+only).
+
+To build another area, from `scripts/`: `./run_base.sh <area>` (DEM, NHD + OSM, hydrology, drops), then
+`./run_mid.sh <area>` (reach scoring, flow, drainages, trails, access roads, the long trail), then
+`./run_late.sh <area>` (road closures, approach times, sun, drive times, context, water-temperature fit, maps,
+profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes steps 03–05b and `run_late.sh`
+finishes. `./phone_sync.sh` copies every area's maps to `phone/` with an index page.
+`data/validate_flow_areas.py` checks an area's flow table against its gauges. Logs go to `data/base_<area>.log`,
+`mid_<area>.log` and `late_<area>.log`. Run long builds under `caffeinate -i` (a sleeping Mac froze two downloads).
+OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass server second.
 
 ## Outputs (`output/la/`)
 | File | What |
@@ -57,7 +105,14 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    plus OSM roads/trails/waterfalls/dams. Both are read for the lon/lat box around all four corners of the range's
    UTM box. When the public Overpass servers can't be reached, a range keeps the OSM files it already has
    (`OSM=keep` skips that download outright); run the script again later to refresh them
-3. `03_hydrology.py`: fill pits/depressions → D8 flow direction → flow accumulation → streams (≥0.25 km²) → Strahler order
+3. `03_hydrology.py`: fill pits/depressions → D8 flow direction → flow accumulation → streams (≥0.25 km²) → Strahler order.
+   Flats are given their slope in steps of 1e-9 m a cell, not pysheds' default 1e-5: the default piles up across the
+   flattened water surface of a mapped river until the flat becomes a pit, which ended flow paths all along the big
+   rivers of the wetter areas (found 2026-11-18; LA's dry channels showed it only at reservoirs). Flow paths are
+   still ended on purpose at every lake and reservoir of 8+ ha that holds water, at the cell where the water leaves
+   it: drainages end at dams, and `crossbox.py` carries the area on. "Holds water" means 2+ ha of the outline at
+   one elevation in the DEM; water runs through dry flood-control basins and reservoirs that were drawn down when
+   the DEM was flown (San Gabriel Reservoir, Cogswell, Devil's Gate)
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
    with the channel 200 m above and below. Classes:
    - **waterfall-like step**: max slope ≥ 0.6 and ≥ 2.5× steeper than the neighbouring channel
@@ -82,7 +137,11 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    study area or ends in a sink (dams). Basins ≥25 km² are named drainages, named after their natural trunk creek
    (canals and aqueducts are skipped; a few NHD gaps are fixed by hand in `NAME_FIX` / `FORK_FIX`). Drainages
    ≥120 km² are split into forks: tributaries ≥35 km² that join the trunk. Everything smaller is grouped as
-   "Minor front-range drainages". Writes `drainages.gpkg` (fork polygons) and `stream_drainage.csv`
+   "Minor front-range drainages". A tributary of 100+ km² that flows straight into a big river (2,000+ km² where
+   it leaves the map, followed down the NHDPlus network along its own course) is a drainage of its own, with its
+   own colour and forks, and the big river keeps what is left: Piru and Castaic creeks beside the Santa Clara; the
+   Hoback, Gros Ventre and Greys beside the Snake; the Mad and Dog rivers beside the Winooski. A tributary that is
+   itself that big sheds its own the same way; smaller ones keep their forks (Granite Creek stays in the Hoback). Writes `drainages.gpkg` (fork polygons) and `stream_drainage.csv`
    (sid → drainage, fork, and Strahler order taken on the channel cell itself).
    - **Across box edges** (`crossbox.py`): each range's hydrology sees only its own box, so a creek crossing in from
      the next box would start again with no drainage area (the Santa Clara River entered the Piru & Castaic box with
@@ -93,8 +152,13 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
      just inside: Bouquet Canyon entering the Piru box), the trace restarts from the lowest nearby cell that drains
      away from the edge. The inflow table is cached in `data/derived/<area>/_shared/inflows.json` until a `flowdir.tif`,
      the reservoir list or the NHDPlus network changes.
-   - **Past dams**: pysheds can't route water across a big flat lake surface, so every large reservoir ends its D8
-     paths in pits and the creek below the dam started again near nothing. `crossbox.py` links each reservoir's dead
+   - **From outside the boxes**: a river that enters from outside every box (the Santa Clara at Fillmore, the Maury
+     above Goshen Pass, Otter Creek, the Snake) started with nothing too. Where an NHDPlus V2 river of 10+ km² crosses
+     the outer boundary flowing in, its drainage there, less what the box's own routing and the edge links already
+     have at that spot, is carried down the creek the same way. One that comes in through a reservoir (the
+     Chattahoochee in Lake Lanier) is handed to the cell below the dam.
+   - **Past dams**: every lake and reservoir ends its D8 paths at its outlet (`03_hydrology.py`), so the creek below
+     the dam starts again near nothing. `crossbox.py` links each reservoir's dead
      ends to the cell below its dam where the water goes on, found by walking down the NHDPlus flowlines leaving the
      lake (Morris 533 km², Pyramid 514, Castaic Lagoon 412, Big Tujunga 212, Littlerock 165, Lake Hemet 143, Big Bear
      137, Matilija 132). Lakes with no outflow (Baldwin Lake) and dead ends away from lakes (desert fans, the sea)
@@ -245,6 +309,12 @@ want fresh closures on the map; the layer name shows when they were fetched. Sou
 - Closures are kept only in mountain terrain (≥150 m of elevation relief within 1 km), which drops urban roadwork.
 - **Not included:** Forest Service closure orders (Bridge/Eaton fire areas, seasonal gate closures). They are
   only published as PDFs, so check fs.usda.gov/angeles and fs.usda.gov/sbnf before a trip.
+- **Other areas** (feeds that need no account): Grand Teton National Park's road status and Teton County's
+  emergency closures (Jackson); Georgia 511 events; the New England Compass work-zone feed (Vermont, with seasonal
+  closures such as Lincoln Gap); the Blue Ridge Parkway's closure table and Virginia 511's map files (Lexington).
+  Park roads are kept wherever they are, the rest only in mountain terrain. WYDOT's highway conditions and
+  Connecticut's closures need a registered key, so NE Connecticut has no closure layer and Jackson's state highways
+  (Teton Pass) aren't covered.
 
 Drop popups name any full closure within 3 km.
 
@@ -345,7 +415,7 @@ major roads re-download when the ranges outgrow them. `08_hike.py` also download
 for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
 
 ## Fish score (0–100, heuristic; `scripts/scoring.py`)
-`water × (30% size + 30% thermal + 15% gradient + 25% remoteness) × burn × trout × heat`
+`water × (30% size + 30% thermal + 15% gradient + 25% remoteness) × burn × trout × heat × channel`
 - **water:** dry-season flow from the Natural Flows model (`05b_flow.py`): 0.05 + 0.95 × the share of summers since
   2011 the reach kept ≥0.1 cfs through July–October; 0.3 in a reservoir. Reaches the model doesn't cover (about 9%)
   fall back to the NHD class: perennial 1.0, intermittent 0.35, unmapped 0.15, ephemeral 0.05.
@@ -361,9 +431,13 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
   certain they're too warm.
 - **size:** drainage area, log scale from 1 to 50+ km². The full area (`area_full_km2`): with what flows in from
   neighbouring boxes and from above reservoirs, which each box's own routing misses.
-- **thermal:** 50% elevation band (700–2300 m), 35% summer shade, 15% north-facing mountainside. Shade combines the
+- **thermal:** 50% water temperature, 35% summer shade, 15% north-facing mountainside. Water temperature is the
+  reach's estimated July–August daytime water temperature (`watertemp.py`; see *Stream temperature* below): full
+  credit at 20 °C or cooler, none at 25 °C or warmer (`WATER_FULL`, `WATER_ZERO` in `scoring.py`). There's no
+  penalty for cold water, and a reach with no estimate gets half credit. Until 2026-11-18 this part was an elevation
+  band (700–2300 m); the estimate replaced it so the same cutoffs work in every study area. Shade combines the
   terrain's shade with the tree canopy along the reach: 1 − (1 − terrain) × (1 − 0.8 × canopy), full credit at 45%.
-  **Tailwaters** get the elevation part in full whatever their elevation. These are the rivers below a dam that
+  **Tailwaters** get the water-temperature part in full whatever the estimate says. These are the rivers below a dam that
   releases cold water from the bottom of its reservoir: the West Fork San Gabriel below Cogswell Dam, down to the
   San Gabriel Reservoir, and Piru Creek below Pyramid Dam, down to Lake Piru (`TAILWATERS` in `scoring.py`). Other
   dams in the ranges are flood-control basins, dry lakes or warm surface-spill lakes, so they aren't on the list.
@@ -409,6 +483,28 @@ Southern California trout also live in warm water. Deep Creek near Hesperia aver
 the warmest week averaged under about 22 °C, and none above a 32.5 °C weekly maximum. So the gate only takes down
 water hotter than every place trout are recorded. `data/validate_heat.py` (run from `scripts/` after
 `11_context.py`) reproduces these numbers and lists the readings inside the gated zone.
+
+**The water-temperature estimate (thermal term).** `watertemp.py` fits the measured sites' July–August daytime
+medians on PRISM August air temperature and elevation, per study area, and stores the fit in
+`data/raw/<area>/_shared/water_temp_fit.json` (run `../.venv/bin/python watertemp.py` to refit; `06_map.py` only
+reads it). In the LA ranges: water = 10.5 + 0.56 × August air (°C) − 4.17 × elevation (km), on 65 sites, with a
+leave-one-out RMSE of 3.2 °C (air alone 3.45, elevation alone 3.3). Three sites with medians over 30 °C are left out
+(two on Warm Creek in San Bernardino, which is fed by hot springs, and one August afternoon reading in Chino
+Canyon). The estimate is held at the edge of the fitted sites' range (air 17.2–28.7 °C, elevation 142–2,120 m), and
+it runs narrower than reality: 11–26 °C over all reaches. Air and elevation each miss at low elevation in opposite
+ways: the Santa Clara River near Piru measured 26.5 °C under cool coastal air, and Santa Paula Creek 18.9 °C at
+180 m. On the 1,566 reaches with trout evidence the new term gives the same mean credit as the elevation band did
+(0.91). Against the elevation band, 95% of reaches moved by 3 points or less and 33 by 10 or more; 189 of the top
+200 stayed. Stream popups show the estimate ("summer water about 21 °C").
+
+- **channel:** ×0.2 on a built conveyance, by name: aqueduct, canal, flood-control channel, diversion, ditch, flume
+  and the like, with no natural word in the name (creek, river, wash, brook, branch, fork, run) and no trout record.
+  In LA that is the three aqueducts and the named flood channels. A channel with a natural name stays as it is,
+  concrete or not (the Los Angeles River, Tujunga Wash).
+
+The ranked table also has `area_rank_pct`, the share of the area's reaches that score lower, and stream popups show
+it ("ahead of 93% of reaches here"). The score was tuned on LA's mostly dry channels and runs high in wet country,
+so the standing within an area is the number to compare.
 
 Critical habitat, wilderness and non-Forest-Service land are shown as flags, not scored. Critical habitat is USFWS/NMFS
 *designated* habitat clipped to the study areas. It is not a closure map: Forest Service closures for arroyo toad and

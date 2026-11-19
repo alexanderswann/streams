@@ -1,7 +1,7 @@
 """Shared helpers for the flow evidence (05b_flow.py, data/validate_flow.py)."""
 import os, json, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from shapely.geometry import box
-from config import REGIONS, CRS, SHARED, NATIONAL
+from config import REGIONS, CRS, SHARED, NATIONAL, AREA
 
 FLOW = f"{SHARED}/flow"
 MIN_RESERVOIR_KM2 = 0.08     # waterbodies smaller than 8 ha (debris basins, ponds) don't control a creek's base flow
@@ -30,8 +30,30 @@ def match_points(points, areas, v2, max_dist=150, lo=0.3, hi=1.6):
     return out
 
 
+def still_water(hu4, bounds):
+    """NHD lakes and reservoirs of at least MIN_RESERVOIR_KM2, and lagoons of any size, in `bounds` (this area's CRS)
+    from the given HU4 downloads: the waterbodies 03_hydrology.py ends flow paths at, and crossbox.py carries the
+    water past (the same set as reservoirs() plus crossbox's lagoons, read straight from the NHD so it can run
+    before the other ranges are downloaded)."""
+    W, S, E, N = gpd.GeoSeries([box(*bounds)], crs=CRS).to_crs(4269).total_bounds
+    parts = []
+    for hu in hu4:
+        g = f"{NATIONAL}/NHD_H_{hu}_HU4_GPKG.gpkg"
+        lyr = next(l for l in pyogrio.list_layers(g)[:, 0] if l.lower() == "nhdwaterbody")
+        d = gpd.read_file(g, layer=lyr, bbox=(W, S, E, N))
+        d.columns = [c.lower() if c != "geometry" else c for c in d.columns]
+        parts.append(d.to_crs(CRS))
+    wb = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS)
+    if not len(wb):
+        return wb
+    wb = wb[wb.ftype.isin([390, 436]) & ((wb.area >= MIN_RESERVOIR_KM2 * 1e6) | wb.gnis_name.fillna("").str.contains("Lagoon"))]
+    wb = wb.drop_duplicates("permanent_identifier")[["gnis_name", "geometry"]]
+    return wb.assign(geometry=wb.geometry.force_2d()).reset_index(drop=True)
+
+
 def reservoirs():
     """NHD waterbodies >= MIN_RESERVOIR_KM2 in the study areas (cached; rebuilt when ranges are added)."""
+    os.makedirs(FLOW, exist_ok=True)
     path, meta = f"{FLOW}/reservoirs.gpkg", f"{FLOW}/reservoirs.gpkg.regions.json"
     if os.path.exists(path) and os.path.exists(meta) and set(json.load(open(meta))) == set(REGIONS):
         return gpd.read_file(path)
@@ -108,7 +130,7 @@ def water_term(ev):
 # Gauged diversions that leave the creek flowing in 80%+ of summers are not listed: Snow, Falls and Day Creeks,
 # the Whitewater River at White Water, San Antonio Creek, and Sespe Creek at Fillmore.
 # name -> (lon, lat on the creek just below the diversion, creek name in NHDPlus V2, USGS site of the gauge below)
-DIVERSIONS = {
+_DIVERSIONS = {"la": {
     "the Santa Ana River No. 1 diversion dam": ((-117.0156, 34.1614), "Santa Ana River", "11049250"),  # the release
     "the Mill Creek power-canal intakes": ((-116.9380, 34.0904), "Mill Creek", "11054000"),
     "the Mill Creek No. 1 canal": ((-117.0398, 34.0898), "Mill Creek", "11054000"),
@@ -116,7 +138,8 @@ DIVERSIONS = {
     "the Plunge Creek diversions": ((-117.1397, 34.1277), "Plunge Creek", "11055500"),
     "the City Creek canal": ((-117.1884, 34.1472), "City Creek", "11055800"),
     "the San Jacinto River canals": ((-116.8339, 33.7381), "San Jacinto River", "11069500"),
-}
+}}
+DIVERSIONS = _DIVERSIONS.get(AREA, {})      # other areas: none listed yet
 
 
 def below_diversion_comids(v2, share=0.5):
@@ -145,7 +168,7 @@ def below_diversion_comids(v2, share=0.5):
             if a0 / max(row.totdasqkm, 0.01) < share:
                 break
     return (pd.DataFrame(rows, columns=["comid", "below_div", "div_growth", "div_first"]).drop_duplicates("comid")
-            .set_index("comid"))
+            .astype({"div_first": bool, "div_growth": float}).set_index("comid"))   # typed, so an empty table still filters
 
 
 def gauge_summers(sites, first_year=2011, min_summers=5):
@@ -164,4 +187,4 @@ def gauge_summers(sites, first_year=2011, min_summers=5):
         g = recent if len(recent) >= min_summers else g
         out[site] = dict(div_share=round(float((g.low >= FLOWING_CFS).mean()), 2), div_summers=len(g),
                          div_years=f"{g.year.min()}–{g.year.max()}", div_recent=len(recent) >= min_summers)
-    return pd.DataFrame.from_dict(out, orient="index")
+    return pd.DataFrame.from_dict(out, orient="index", columns=["div_share", "div_summers", "div_years", "div_recent"])

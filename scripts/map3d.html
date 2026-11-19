@@ -66,7 +66,7 @@
 <div id="map"></div>
 <div id="err"></div>
 <div id="legend" class="panel">
-  <div class="ph"><b>LA mountain streams · 3D</b><span><a id="to2d" href="stream_map.html">2D map ↗</a>
+  <div class="ph"><b id="ttl">LA mountain streams · 3D</b><span><a id="to2d" href="stream_map.html">2D map ↗</a><select id="areasel" title="Go to another area" style="font:inherit;font-size:11px;max-width:108px;margin-left:6px;border:1px solid #c9ced6;border-radius:5px;background:#fff;color:#1d1d1f;padding:1px 2px"><option value="">Go to…</option><option value="*">All areas map</option></select>
     <button class="tg" title="Hide / show">–</button></span></div>
   <div class="pb">
     <div class="seg" id="modes"><button data-m="d">Drainage</button><button data-m="o">Stream order</button><button data-m="f">Fish score</button></div>
@@ -95,6 +95,7 @@
     return;
   }
   const D = window.MAP3D;
+  if (D.lbl && D.lbl.title) { document.title = D.lbl.title + " · 3D"; document.getElementById("ttl").textContent = D.lbl.title + " · 3D"; }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const mix = (h, t) => "#" + rgb(h).map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0")).join("");
@@ -202,7 +203,7 @@
     map.addLayer({id: "labels-ref", type: "raster", source: "labels", paint: {"raster-opacity": 0.55}});
     const src = (id, data) => map.addSource(id, {type: "geojson", data});
     map.addSource("streams", {type: "geojson", data: D.streams, generateId: true,
-                              attribution: "USGS NHD · TNC Natural Flows · PRISM Group, Oregon State University"});
+                              attribution: "USGS NHD · " + ((D.lbl || {}).credits || "TNC Natural Flows · PRISM Group, Oregon State University")});
     src("forks", D.forks); src("divides", D.divides); src("dlabels", labelPts);
 
     // drainage tints and divides
@@ -220,11 +221,11 @@
         paint: {"fill-color": ["get", "c"], "fill-opacity": 0.28, "fill-outline-color": ["get", "c"]}});
       ov.push(["fires", "Fire perimeters since 2016", "<span style='color:#e8590c'>▧</span>", ["fires"]]);
     }
-    [["wild_trout_waters", "CDFW Wild / Heritage Trout Waters", "#2b8a3e", 0.15],
+    [["wild_trout_waters", (D.lbl || {}).trout_waters || "CDFW Wild / Heritage Trout Waters", "#2b8a3e", 0.15],
      ["wilderness", "Wilderness (no bikes)", "#5c940d", 0.06],
      ["critical_habitat", "Critical habitat (not closure boundaries)", "#c92a2a", 0.22],
      ["non_fs_land", "Non-Forest-Service land", "#e67700", 0.2],
-     ["cpad_restricted", "Restricted or no public access (CPAD)", "#d9480f", 0.25]].forEach(([k, label, c, op]) => {
+     ["cpad_restricted", (D.lbl || {}).access || "Restricted or no public access (CPAD)", "#d9480f", 0.25]].forEach(([k, label, c, op]) => {
       if (!D[k]) return;
       src(k, D[k]);
       map.addLayer({id: k, type: "fill", source: k, layout: {visibility: "none"}, paint: {"fill-color": c, "fill-opacity": op}});
@@ -340,7 +341,7 @@
         paint: {"line-color": "#ffffff", "line-width": pw(3.4), "line-opacity": 0.9}});
       map.addLayer({id: "pct-core", type: "line", source: "pct", layout: {"line-join": "round"},
         paint: {"line-color": "#1d1d1f", "line-width": pw(1.8), "line-dasharray": [3.5, 2.5]}});
-      ov.splice(2, 0, ["pct", "Pacific Crest Trail",
+      ov.splice(2, 0, ["pct", (D.lbl || {}).long_trail || "Pacific Crest Trail",
         "<span style='color:#1d1d1f;text-shadow:0 0 3px #ffd43b,0 0 3px #ffd43b;font-weight:700'>━</span>",
         ["pct-glow", "pct-casing", "pct-core", "pct-label-11", "pct-label-12", "pct-label-13"], true]);
     }
@@ -368,18 +369,18 @@
     src("falls", D.falls);
     map.addLayer({id: "falls", type: "circle", source: "falls", layout: {visibility: "none"},
       paint: {"circle-radius": 5.5, "circle-color": "#74c0fc", "circle-stroke-color": "#0b3d91", "circle-stroke-width": 2}});
-    ov.push(["falls", "Known waterfalls (OSM + NHD + CDFW surveys)", "<span style='color:#0b3d91'>◆</span>", ["falls"]]);
+    ov.push(["falls", (D.lbl || {}).falls || "Known waterfalls (OSM + NHD + CDFW surveys)", "<span style='color:#0b3d91'>◆</span>", ["falls"]]);
     if (D.gauges) {
       src("gauges", D.gauges);
       map.addLayer({id: "gauges", type: "circle", source: "gauges", layout: {visibility: "none"},
         paint: {"circle-radius": 7, "circle-color": ["get", "c"], "circle-stroke-color": "#212529", "circle-stroke-width": 1.2}});
-      ov.push(["gauges", "Stream gauges, USGS + CDEC (live)", "<span style='color:#1c7ed6'>▲</span>", ["gauges"]]);
+      ov.push(["gauges", ((D.lbl || {}).gauges || "Stream gauges, USGS + CDEC") + " (live)", "<span style='color:#1c7ed6'>▲</span>", ["gauges"]]);
     }
     if (D.trout) {   // 11_context.py: CDFW surveys and stocking, iNaturalist sightings
-      map.addSource("trout", {type: "geojson", data: D.trout, attribution: "CDFW · iNaturalist"});
+      map.addSource("trout", {type: "geojson", data: D.trout, attribution: (D.lbl || {}).trout_ev ? "iNaturalist" + (/CDFW/.test(D.lbl.trout_ev) ? " · CDFW" : "") : "CDFW · iNaturalist"});
       map.addLayer({id: "trout", type: "circle", source: "trout", layout: {visibility: "none"},
         paint: {"circle-radius": ["get", "r"], "circle-color": ["get", "c"], "circle-stroke-color": "#fff", "circle-stroke-width": 1.2}});
-      ov.push(["trout", "Trout evidence: CDFW surveys (red = none found), stocking, iNaturalist", "<span style='color:#2b8a3e'>●</span>", ["trout"]]);
+      ov.push(["trout", (D.lbl || {}).trout_ev || "Trout evidence: CDFW surveys (red = none found), stocking, iNaturalist", "<span style='color:#2b8a3e'>●</span>", ["trout"]]);
     }
     if (D.springs) {
       src("springs", D.springs);
@@ -441,7 +442,7 @@
         src("pct-labels-" + zb, {type: "FeatureCollection", features: D.pct_labels.filter(l => l.z === zb).map(l => ({
           type: "Feature", geometry: {type: "LineString", coordinates: l.p}, properties: {}}))});
         map.addLayer({id: "pct-label-" + zb, type: "symbol", source: "pct-labels-" + zb, minzoom: z0, maxzoom: z1,
-          layout: {"symbol-placement": "line-center", "text-field": "Pacific Crest Trail", "text-font": ["Noto Sans Medium"],
+          layout: {"symbol-placement": "line-center", "text-field": (D.lbl || {}).long_trail || "Pacific Crest Trail", "text-font": ["Noto Sans Medium"],
                    "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 15, 12], "text-letter-spacing": 0.03,
                    "text-pitch-alignment": "viewport", "text-max-angle": 40, "text-offset": [0, -0.8], "text-padding": 4},
           paint: {"text-color": "#2b2b2b", "text-halo-color": "#ffffff", "text-halo-width": 1.6}});
@@ -546,7 +547,7 @@
     const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
                      : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
-      `<tr><td>Fish score</td><td><b>${p.fs}</b></td></tr><tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
+      `<tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr><tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${p.el ?? "?"} m · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` + (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
@@ -601,7 +602,7 @@
              (why && why.toLowerCase() !== lab.toLowerCase() && p.b !== "unknown" ? ` <span class="dm">(${esc(why)})</span>` : "") +
              (p.mtb ? ` · MTB difficulty S${esc(p.mtb)}` : "");
          })()].filter(Boolean).join("<br>");
-      if (id === "pct-core") return `<b>Pacific Crest Trail</b><div class="dw">${esc(p.label)}</div>`;
+      if (id === "pct-core") return `<b>${esc((D.lbl || {}).long_trail || "Pacific Crest Trail")}</b><div class="dw">${esc(p.label)}</div>`;
       return esc(p.tip);
     };
     // Hover: at most one lookup per animation frame, and the highlight is a feature-state flag that widens the line
@@ -637,6 +638,12 @@
     const sync = () => { const c = map.getCenter();
       document.getElementById("to2d").href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}`; };
     map.on("moveend", sync); sync();
+    // "Go to": another area's 3D map, or the map of all areas at this view
+    const asel = document.getElementById("areasel");
+    ((D.lbl || {}).areas || []).filter(a => a.k !== D.lbl.area).forEach(a => asel.add(new Option(a.t, a.k)));
+    asel.onchange = () => { const c = map.getCenter();
+      if (asel.value === "*") location.href = `../index.html#${c.lat.toFixed(4)},${c.lng.toFixed(4)},${Math.min(Math.round(map.getZoom()) + 1, 10)}`;
+      else if (asel.value) location.href = `../${asel.value}/stream_map_3d.html`; };
   }
 
   // open at #lat,lon,zoom[,pitch,bearing] (same links as the 2D map). The zoom in a link is the 2D map's: MapLibre

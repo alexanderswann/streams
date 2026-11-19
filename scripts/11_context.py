@@ -23,13 +23,18 @@ from rasterio.transform import from_origin
 from rasterio.windows import from_bounds
 from scipy.ndimage import uniform_filter
 from shapely.geometry import box
-from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir
+from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir, has
 from scoring import HEAT_START
 from geomatch import wilderness_path
+import troutdata
 
 FIRE_SINCE = 2016
+# USFWS critical habitat kept as "stream species": LA's by name; elsewhere any fish, mussel or stream amphibian
 AQUATIC = ["Arroyo (=arroyo southwestern) toad", "Santa Ana sucker", "Mountain yellow-legged frog",
            "California red-legged frog", "tidewater goby"]
+AQUATIC_RE = (r"(?i)\b(trout|salmon|sturgeon|darter|shiner|chub|dace|sucker|madtom|logperch|minnow|sculpin|"
+              r"mussel|pearlymussel|pigtoe|mucket|elktoe|kidneyshell|rabbitsfoot|combshell|riffleshell|bean|"
+              r"hellbender|waterdog|crayfish|frog|toad)\b")
 CTX = f"{MAP_OUT}/context"
 os.makedirs(CTX, exist_ok=True)
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
@@ -39,34 +44,58 @@ area_u = area.union_all()
 W, S, E, N = area.to_crs(4326).total_bounds
 
 def esri(url, where="1=1", fields="*", page=1000):
+    """Every feature of an ArcGIS layer in the study area. A server that can't answer a full page (the Forest
+    Service ownership layer over the Chattahoochee: a thousand detailed parcels at once) is asked for smaller ones."""
     feats, off = [], 0
     while True:
-        for attempt in range(4):
+        js = None
+        for attempt in range(12):
             try:
                 r = requests.get(f"{url}/query", headers=UA, timeout=300, params=dict(
                     where=where, geometry=f"{W},{S},{E},{N}", geometryType="esriGeometryEnvelope", inSR=4326,
                     spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=EPSG, f="geojson",
                     resultOffset=off, resultRecordCount=page))
                 if r.ok and "features" in r.json():
+                    js = r.json()
                     break
-            except requests.RequestException:
+            except (requests.RequestException, ValueError):
                 pass
-            time.sleep(5 * (attempt + 1))
-        batch = r.json()["features"]
+            if attempt >= 1 and page > 1:       # two failures at this size: a quarter of the page, down to one
+                page = max(1, page // 4)        # feature (ten whole-forest parcel maps are too much for one answer)
+            time.sleep(5 * min(attempt + 1, 4))
+        if js is None:
+            raise RuntimeError(f"no usable answer from {url}")
+        batch = js["features"]
         feats += batch
-        if len(batch) < page or not r.json().get("properties", {}).get("exceededTransferLimit", len(batch) == page):
+        if len(batch) < page or not js.get("properties", {}).get("exceededTransferLimit", len(batch) == page):
             break
-        off += page
+        off += len(batch)
     g = gpd.GeoDataFrame.from_features(feats, crs=CRS) if feats else gpd.GeoDataFrame(geometry=[], crs=CRS)
     return g[g.intersects(area_u)] if len(g) else g
 
 # ---- fires ----
-fires = esri("https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/"
-             "FeatureServer/0", where=f"YEAR_ >= {FIRE_SINCE}", fields="YEAR_,FIRE_NAME,GIS_ACRES,ALARM_DATE")
-fires = fires.rename(columns={"YEAR_": "year", "FIRE_NAME": "fire", "GIS_ACRES": "acres"})
-fires["year"] = fires.year.astype(int)
-fires["fire"] = fires.fire.str.title()
-fires = fires.dissolve(by=["fire", "year"], as_index=False, aggfunc={"acres": "sum"}).assign(src="CAL FIRE")
+if has("cal_fire"):
+    fires = esri("https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/"
+                 "FeatureServer/0", where=f"YEAR_ >= {FIRE_SINCE}", fields="YEAR_,FIRE_NAME,GIS_ACRES,ALARM_DATE")
+    fires = fires.rename(columns={"YEAR_": "year", "FIRE_NAME": "fire", "GIS_ACRES": "acres"})
+    HIST = "CAL FIRE"
+else:   # outside California: the interagency fire perimeter history (NIFC), every agency's perimeters in one layer
+    fires = esri("https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
+                 "InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0",
+                 where=f"FIRE_YEAR_INT >= {FIRE_SINCE}", fields="FIRE_YEAR_INT,INCIDENT,GIS_ACRES")
+    fires = fires.rename(columns={"FIRE_YEAR_INT": "year", "INCIDENT": "fire", "GIS_ACRES": "acres"})
+    HIST = "NIFC"
+    if len(fires):   # this layer has unnamed and self-crossing perimeters
+        fires = fires[fires.fire.notna() & fires.year.notna()].copy()
+        fires["fire"] = fires.fire.str.strip()
+        fires["geometry"] = fires.geometry.buffer(0)
+if len(fires):
+    fires["year"] = fires.year.astype(int)
+    fires["fire"] = fires.fire.str.title()
+    fires = fires.dissolve(by=["fire", "year"], as_index=False, aggfunc={"acres": "sum"}).assign(src=HIST)
+else:
+    fires = gpd.GeoDataFrame({"fire": pd.Series(dtype=str), "year": pd.Series(dtype=int), "acres": pd.Series(dtype=float),
+                              "src": pd.Series(dtype=str)}, geometry=[], crs=CRS)
 # CAL FIRE publishes once a year: this year's fires come from the interagency year-to-date perimeters (WFIGS), and a
 # fire in neither from the outline of its Forest Service BAER soil burn severity map (e.g. the 2026 Bouquet Fire)
 SEV = {"Very Low or Unburned": 0.15, "Low": 0.4, "Moderate": 0.75, "High": 1.0}   # share of the full burn penalty
@@ -103,7 +132,7 @@ fires["year"] = fires.year.astype(int)
 fires.to_crs(4326).to_file(f"{CTX}/fires.gpkg")
 print("fires", len(fires), fires.src.value_counts().to_dict(), "| big:",
       sorted(fires[fires.acres > 5000].apply(lambda r: f"{r.fire} {r.year}", axis=1)),
-      "| added this year:", sorted(f"{r.fire} {r.year} ({r.acres:.0f} ac)" for r in fires[fires.src != "CAL FIRE"].itertuples()
+      "| added this year:", sorted(f"{r.fire} {r.year} ({r.acres:.0f} ac)" for r in fires[fires.src != HIST].itertuples()
                                    if r.acres >= 100))
 print("BAER burn severity polygons", len(baer), sorted(set(baer.fire + " " + baer.year.astype(str))) if len(baer) else [])
 # USGS post-fire debris-flow hazard (combined likelihood and volume class) for channels below burns of the last 4
@@ -126,28 +155,51 @@ print("springs and seeps", len(springs))
 # ---- land status ----
 wild = gpd.read_file(wilderness_path())
 wild = wild.rename(columns={c: "wilderness" for c in wild.columns if c.lower() == "wildernessname"})
+if "wilderness" not in wild:   # no wilderness in the area
+    wild["wilderness"] = pd.Series(dtype=str)
 wild.to_crs(4326).to_file(f"{CTX}/wilderness.gpkg")
 own = esri("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_BasicOwnership_02/MapServer/0",
            fields="ownerclassification,forestname")
+if not len(own):   # no national forest in the area (northeastern Connecticut)
+    own = gpd.GeoDataFrame({"ownerclassification": pd.Series(dtype=str), "forestname": pd.Series(dtype=str)}, geometry=[], crs=CRS)
 nonfs = own[~own.ownerclassification.str.contains("USDA FOREST SERVICE", case=False, na=False)]
 nonfs = nonfs[nonfs.area > 2000]  # skip slivers
 nonfs.to_crs(4326).to_file(f"{CTX}/non_fs_land.gpkg")
 # California Protected Areas Database (CPAD 2026a): parks and open space with their public access. Only restricted
 # and no-public-access holdings are kept; land outside CPAD and outside the national forests is private.
-cpad = esri("https://gis.cnra.ca.gov/arcgis/rest/services/Boundaries/CPAD_AccessType/MapServer/0",
-            where="ACCESS_TYP <> 'Open Access'", fields="ACCESS_TYP,UNIT_NAME,MNG_AGNCY")
+if has("cpad"):
+    cpad = esri("https://gis.cnra.ca.gov/arcgis/rest/services/Boundaries/CPAD_AccessType/MapServer/0",
+                where="ACCESS_TYP <> 'Open Access'", fields="ACCESS_TYP,UNIT_NAME,MNG_AGNCY")
+else:   # outside California: PAD-US (USGS), holdings recorded as restricted (RA) or closed (XA) to the public.
+    #     Most eastern holdings are "unknown" (UK) there: those aren't flagged
+    cpad = esri("https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/PADUS_Public_Access/FeatureServer/0",
+                where="Pub_Access IN ('RA','XA')", fields="Pub_Access,Unit_Nm,MngNm_Desc")
+    if len(cpad):
+        # PAD-US files federal wilderness, forest and park units as "restricted" (rules on use, not on entry):
+        # they are open on foot, so they aren't flagged
+        open_fed = cpad.Pub_Access.eq("RA") & (
+            cpad.Unit_Nm.fillna("").str.contains(r"(?i)wilderness|national forest|national park|parkway|national recreation")
+            | cpad.MngNm_Desc.fillna("").str.contains(r"(?i)forest service|national park service"))
+        cpad = cpad[~open_fed]
+    if len(cpad):
+        cpad = cpad.assign(ACCESS_TYP=cpad.Pub_Access.map({"RA": "Restricted Access", "XA": "No Public Access"}),
+                           UNIT_NAME=cpad.Unit_Nm, MNG_AGNCY=cpad.MngNm_Desc, geometry=cpad.geometry.buffer(0))
+        cpad = cpad[["ACCESS_TYP", "UNIT_NAME", "MNG_AGNCY", "geometry"]]
 cpad = cpad[cpad.area > 2000] if len(cpad) else cpad
 cpad.to_crs(4326).to_file(f"{CTX}/cpad_restricted.gpkg")
-print("CPAD restricted / no public access holdings:", len(cpad), cpad.ACCESS_TYP.value_counts().to_dict() if len(cpad) else {})
+print("restricted / no public access holdings (CPAD in California, PAD-US elsewhere):", len(cpad), cpad.ACCESS_TYP.value_counts().to_dict() if len(cpad) else {})
 print("wilderness", list(wild.wilderness), "| non-FS parcels in forests", len(nonfs),
       nonfs.ownerclassification.value_counts().to_dict())
 
 # ---- critical habitat ----
 fws = esri("https://services.arcgis.com/QVENGdaPbd4LUkLV/arcgis/rest/services/USFWS_Critical_Habitat/FeatureServer/0",
            fields="comname,unitname,effectdate")
-fws = fws[fws.comname.isin(AQUATIC)].rename(columns={"comname": "species", "unitname": "unit"})
+CA = has("cdfw_trout")
+if len(fws):
+    fws = fws[fws.comname.isin(AQUATIC) if CA else fws.comname.fillna("").str.contains(AQUATIC_RE)]
+fws = fws.rename(columns={"comname": "species", "unitname": "unit"}) if len(fws) else fws.assign(species=None, unit=None)
 nmfs = esri("https://services2.arcgis.com/C8EMgrsFcRFL6LrL/arcgis/rest/services/NMFS_ESA_Critical_Habitat_gdb/FeatureServer/0",
-            where="COMNAME LIKE '%teelhead%'", fields="COMNAME,LISTENTITY")
+            where="COMNAME LIKE '%teelhead%'", fields="COMNAME,LISTENTITY") if CA else gpd.GeoDataFrame(geometry=[], crs=CRS)
 nmfs = nmfs.assign(species="Southern California steelhead", unit=nmfs.get("LISTENTITY"))
 habitat = pd.concat([fws[["species", "unit", "geometry"]],
                      nmfs[["species", "unit", "geometry"]].assign(geometry=nmfs.buffer(30))], ignore_index=True)
@@ -163,35 +215,16 @@ print("critical habitat", habitat.species.value_counts().to_dict())
 
 # ---- wild trout waters ----
 trout = esri("https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds1356_fpu/FeatureServer/0",
-             fields="Name,Designation,Designation_Boundary")
+             fields="Name,Designation,Designation_Boundary") if CA else []
+if not len(trout):   # outside California: each state's trout waters and the brook trout patches (troutdata.py)
+    trout = troutdata.waters()
+if "broad" not in trout:
+    trout["broad"] = False
 trout.to_crs(4326).to_file(f"{CTX}/wild_trout_waters.gpkg")
 print("wild trout waters", list(trout.Name))
 
 # ---- August mean air temperature (PRISM 1991-2020 normal, 800 m) ----
-PRISM = "ftp://prism.oregonstate.edu/normals/us/800m/tmean/monthly/prism_tmean_us_30s_202008_avg_30y"
-def air_tif():
-    """The normal clipped to the study areas. The national file (~58 MB) is downloaded only when the cached clip
-    doesn't cover the areas (ranges added)."""
-    p_ = f"{NATIONAL}/prism_tmean_aug.tif"
-    if os.path.exists(p_):
-        with rasterio.open(p_) as src:
-            b = src.bounds
-        if b.left <= W and b.bottom <= S and b.right >= E and b.top >= N:
-            return p_
-    z = f"{NATIONAL}/prism_tmean_aug_us.zip"       # GDAL's /vsizip/ wants the .zip extension
-    if not os.path.exists(z):
-        urllib.request.urlretrieve(PRISM + ".zip", z + ".part")
-        os.replace(z + ".part", z)
-    with rasterio.open(f"/vsizip/{z}/{os.path.basename(PRISM)}.tif") as src:
-        win = from_bounds(W - 0.05, S - 0.05, E + 0.05, N + 0.05, src.transform).round_offsets().round_lengths()
-        a = src.read(1, window=win)
-        prof = dict(driver="GTiff", height=a.shape[0], width=a.shape[1], count=1, dtype=a.dtype, crs=src.crs,
-                    transform=src.window_transform(win), nodata=src.nodata, compress="deflate")
-    with rasterio.open(p_ + ".tmp", "w", **prof) as dst:
-        dst.write(a, 1)
-    os.replace(p_ + ".tmp", p_)
-    os.remove(z)
-    return p_
+from watertemp import air_tif     # the PRISM normal clipped to this area (downloaded when missing)
 
 def air_at(pts):
     """August mean air temperature (C) at each point of a GeoSeries."""
@@ -215,7 +248,7 @@ def air_along(gdf):
 BIOS = "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services"
 LAKE = r"(?i)\b(?:lakes?|ponds?|reservoir)\b"
 ev = []
-hwt = esri(f"{BIOS}/HWT_Project_Map_WFL1/FeatureServer/14", fields="ProjectYear,WaterName,SpeciesPresent")
+hwt = esri(f"{BIOS}/HWT_Project_Map_WFL1/FeatureServer/14", fields="ProjectYear,WaterName,SpeciesPresent") if CA else []
 if len(hwt):   # CDFW Heritage & Wild Trout Program: electrofishing / snorkel surveys and what they found
     spp = hwt.SpeciesPresent.fillna("").str.strip()
     found = spp.str.contains("trout", case=False)
@@ -224,7 +257,7 @@ if len(hwt):   # CDFW Heritage & Wild Trout Program: electrofishing / snorkel su
                          label=[f"CDFW survey {y:.0f}: " + (sp if t else "no trout found"
                                                             + (f" (found {sp})" if sp and sp.lower() != "none" else ""))
                                 for y, sp, t in zip(yr_, spp, found)]))
-plant = esri(f"{BIOS}/biosds2897_fmu/FeatureServer/0", fields="WaterName,WeekOfPlantStart,FishType")
+plant = esri(f"{BIOS}/biosds2897_fmu/FeatureServer/0", fields="WaterName,WeekOfPlantStart,FishType") if CA else []
 if len(plant):   # CDFW trout stocking (planting) locations
     plant["when"] = pd.to_datetime(plant.WeekOfPlantStart, errors="coerce")
     plant = plant[plant.FishType.str.contains("trout", case=False, na=False).values
@@ -237,6 +270,7 @@ if len(plant):   # CDFW trout stocking (planting) locations
                             lake=pg.WaterName.str.contains(LAKE), url=None,
                             label=[f"stocked with trout {n}x in the last 12 months, last the week of {d:%b %-d, %Y}"
                                    for n, d in zip(pg.n, pg["last"])]))
+ev += troutdata.evidence()     # the other states' surveys and stocking (none in California)
 def inat(taxon):
     """Research-grade iNaturalist sightings of a taxon in the study box with an exact (not obscured) location."""
     rows, above = [], 0
@@ -260,7 +294,10 @@ def inat(taxon):
         above = res[-1]["id"]
         time.sleep(1.1)   # iNaturalist asks API users for about one request a second
     return rows
+# rainbow and brown trout everywhere; brook trout and cutthroat where they live (none of either in the LA ranges)
 obs = inat("Oncorhynchus mykiss") + inat("Salmo trutta")
+if not CA:
+    obs += inat("Salvelinus fontinalis") + inat("Oncorhynchus clarkii")
 if obs:
     tx = [o.get("taxon") or {} for o in obs]
     nat = gpd.GeoDataFrame(dict(
@@ -278,7 +315,7 @@ if trout_ev is not None:
     # or within 400 m of a stocked lake, don't count for the creeks
     wb = [gpd.read_file(p_, layer="NHDWaterbody", bbox=(W, S, E, N)) for p_ in sorted([f"{NATIONAL}/NHD_H_{h}_HU4_GPKG.gpkg" for h in sorted({h for v in REGIONS.values() for h in v["hu4"]})])]
     wb = [w_[w_.ftype.isin([390, 436]) & (w_.areasqkm >= 0.02)].to_crs(CRS) for w_ in wb if len(w_)]
-    lakes_ = pd.concat([w_.geometry for w_ in wb] + [trout_ev[(trout_ev.kind == "CDFW stocking") & trout_ev.lake]
+    lakes_ = pd.concat([w_.geometry for w_ in wb] + [trout_ev[trout_ev.kind.str.endswith("stocking") & trout_ev.lake]
                                                       .geometry.buffer(300)], ignore_index=True)
     if len(lakes_):
         trout_ev.loc[(trout_ev.kind == "iNaturalist") & (trout_ev.distance(lakes_.union_all()) < 100), "lake"] = True
@@ -319,7 +356,10 @@ def trout_attrs(s):
                 continue
             sel = (d <= 1500) & (named == named[j]) if named[j] else (d.index == j)
         else:   # same name, or the reach's name inside the survey's (NHD calls the East Fork "San Gabriel River")
-            want, wcore, close = norm(e.water), set(norm(e.water).split()) - GENERIC, (d <= 5000) & (named != "")
+            # A no-trout sample outside California speaks for the creek within 1.5 km of its site only: the states
+            # there sample warm lower reaches of creeks whose headwaters hold trout (CDFW's surveys keep 5 km)
+            reach_m = 5000 if (e.trout or CA) else 1500
+            want, wcore, close = norm(e.water), set(norm(e.water).split()) - GENERIC, (d <= reach_m) & (named != "")
             ok = {n: difflib.SequenceMatcher(None, n, want).ratio() >= 0.85
                      or (len(c := set(n.split()) - GENERIC) >= 2 and c <= wcore) for n in set(named[close])}
             sel = close & named.map(lambda n: ok.get(n, False))
@@ -329,7 +369,7 @@ def trout_attrs(s):
     if not hits:
         return out
     h = pd.DataFrame(hits, columns=["sid", "kind", "year", "trout", "label"])
-    pos, neg = h[h.trout], h[~h.trout & (h.kind == "CDFW survey")]
+    pos, neg = h[h.trout], h[~h.trout & h.kind.str.endswith("survey")]
     out["trout_found"] = out.sid.map(pos.groupby("sid").year.max())
     out["trout_absent"] = out.sid.map(neg.groupby("sid").year.max())
     def summary(g):
@@ -505,8 +545,10 @@ gauges["url"] = "https://waterdata.usgs.gov/monitoring-location/" + gauges.site
 # no percentile history)
 CDEC = [("PIR", 20, "Piru Creek above Pyramid Lake (CDEC)", 34.665, -118.823),
         ("PYM", 23, "Pyramid Dam release to lower Piru Creek (CDEC)", 34.644153, -118.764528)]
+if not has("cdec"):
+    CDEC = []
 try:
-    js = get("https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet", Stations=",".join(c[0] for c in CDEC),
+    js = [] if not CDEC else get("https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet", Stations=",".join(c[0] for c in CDEC),
              SensorNums=",".join(str(c[1]) for c in CDEC), dur_code="H", Start=(today - dt.timedelta(days=3)).isoformat(),
              End=(today + dt.timedelta(days=1)).isoformat()).json()
 except (AttributeError, ValueError):
@@ -545,8 +587,12 @@ def attrs(gdf, key, buf):
         out["cpad_access"] = out[key].map(cj.ACCESS_TYP + ": " + cj.UNIT_NAME.fillna(""))
     h = gpd.sjoin(g, habitat[["species", "geometry"]], predicate="intersects")
     out["crit_habitat"] = out[key].map(h.groupby(key).species.agg(lambda s: ", ".join(sorted(set(s)))))
-    t = gpd.sjoin(g, trout[["Name", "Designation", "geometry"]], predicate="intersects")
-    t["label"] = t.Designation + ": " + t.Name
+    t = gpd.sjoin(g, trout[["Name", "Designation", "broad", "geometry"]], predicate="intersects")
+    t["label"] = (t.Designation + ": " + t.Name).str.replace(r": $", "", regex=True)
+    # one label per reach: a mapped stream's designation before a catchment-wide one, and of those the one that
+    # covers most of the reach (at a confluence the neighbouring river's line clips the reach too)
+    t["cover"] = shapely.area(shapely.intersection(t.geometry.values, trout.geometry.reindex(t.index_right).values))
+    t = t.sort_values(["broad", "cover"], ascending=[True, False])
     out["trout_water"] = out[key].map(t.groupby(key).label.first())
     if len(baer):   # area-weighted soil burn severity of the reach's latest fire, where BAER mapped it (>= 30 % cover)
         x = gpd.overlay(g, baer, how="intersection", keep_geom_type=True)

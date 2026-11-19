@@ -103,7 +103,7 @@ function initDrainageMap(map, ctrl) {
     const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
                      : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
-      `<table><tr><td>Fish score</td><td><b>${p.fs}</b></td></tr>` +
+      `<table><tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr>` +
       `<tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
       `<tr><td>Elev / gradient</td><td>${p.el ?? "?"} m · ${p.gr}%</td></tr>` +
@@ -173,6 +173,7 @@ function initDrainageMap(map, ctrl) {
   const basinLayer = L.layerGroup([fills, divides]).addTo(map);
 
   // ---- Pacific Crest Trail (02c_pct.py): thin dark dashed line on a soft yellow band, above the streams ----
+  const LONGTRAIL = (window.LBL || {}).long_trail || "Pacific Crest Trail";   // the area's long-distance trail
   const pctGroup = L.layerGroup();
   const pctLabs = [];   // [label centre, angle, SVG <text>, zoom band]
   let pctLines = [];
@@ -185,7 +186,7 @@ function initDrainageMap(map, ctrl) {
       mk(() => ({color: "#ffffff", weight: 3.4 * pw(), opacity: 0.9, lineCap: "round", lineJoin: "round"}), {interactive: false}),
       mk(() => ({color: "#1d1d1f", weight: 1.7 * pw(), opacity: 1, dashArray: "6 4", lineCap: "butt", lineJoin: "round"}), {
         onEachFeature: (f, l) => l.bindTooltip(
-          `<b>Pacific Crest Trail</b><div class="dw">${esc(f.properties.label)}</div>`,
+          `<b>${LONGTRAIL}</b><div class="dw">${esc(f.properties.label)}</div>`,
           {sticky: true, className: "stip", direction: "top", offset: [0, -8]})}),
     ];
     pctLines.forEach(l => pctGroup.addLayer(l));
@@ -207,7 +208,7 @@ function initDrainageMap(map, ctrl) {
       tp.setAttribute("href", "#pctlp" + i);
       tp.setAttribute("startOffset", "50%");
       tp.setAttribute("text-anchor", "middle");
-      tp.textContent = "Pacific Crest Trail";
+      tp.textContent = LONGTRAIL;
       t.appendChild(tp);
       pl._path.parentNode.appendChild(t);
       pctLabs.push([L.latLng(lab.c), lab.a, t, lab.z]);
@@ -488,11 +489,12 @@ function initDrainageMap(map, ctrl) {
   map.on("overlayadd overlayremove moveend", updateLabels);
   map.on("overlayadd", restack);
   map.attributionControl.addAttribution("Trails &amp; PCT © <a href='https://www.openstreetmap.org/copyright'>" +
-    "OpenStreetMap</a> contributors · USGS National Digital Trails · USFS · CDFW · iNaturalist · CAL FIRE · NIFC WFIGS · " +
-    "USGS gauges &amp; debris-flow hazard · CDEC · TNC Natural Flows · PRISM Group, Oregon State University")
+    "OpenStreetMap</a> contributors · " + ((window.LBL || {}).credits ||
+    "USGS National Digital Trails · USFS · CDFW · iNaturalist · CAL FIRE · NIFC WFIGS · " +
+    "USGS gauges &amp; debris-flow hazard · CDEC · TNC Natural Flows · PRISM Group, Oregon State University"))
   ctrl.addOverlay(streams, "<span style='color:#1864ab'>━</span> Streams (≥1 km² drainage)");
   ctrl.addOverlay(basinLayer, "<span style='color:#3d4651'>▭</span> Drainage outlines &amp; names");
-  if (window.PCT) ctrl.addOverlay(pctGroup, "<span class='pctsym'>━</span> <b>Pacific Crest Trail</b>");
+  if (window.PCT) ctrl.addOverlay(pctGroup, "<span class='pctsym'>━</span> <b>" + LONGTRAIL + "</b>");
   if (window.TRAILS) ctrl.addOverlay(trailGroup, "<span class='trsym'>┅</span> Trails &amp; fire roads");
   if (window.TRAILS) {
     bikeView.addTo(map);
@@ -514,7 +516,8 @@ function initDrainageMap(map, ctrl) {
   const panel = L.control({position: "bottomleft"});
   panel.onAdd = () => {
     const div = L.DomUtil.create("div", "lgd");
-    div.innerHTML = `<div class="lh"><b>LA mountain streams</b><span><a class="to3d" href="stream_map_3d.html">3D view ↗</a>
+    const LBLX = window.LBL || {};
+    div.innerHTML = `<div class="lh"><b>${LBLX.title || "LA mountain streams"}</b><span><a class="to3d" href="stream_map_3d.html">3D view ↗</a><select class="areasel" title="Go to another area" style="font:inherit;font-size:11px;max-width:108px;margin-left:6px;border:1px solid #c9ced6;border-radius:5px;background:#fff;color:#1d1d1f;padding:1px 2px">${["<option value=''>Go to…</option>", "<option value='*'>All areas map</option>"].concat(((LBLX.areas) || []).filter(a => a.k !== LBLX.area).map(a => `<option value="${a.k}">${a.t}</option>`)).join("")}</select>
       <button class="lx" title="Hide / show">–</button></span></div>
       <div class="lb">
         <div class="seg">${[["drainage", "Drainage"], ["order", "Stream order"], ["fish", "Fish score"]]
@@ -522,7 +525,7 @@ function initDrainageMap(map, ctrl) {
         <div class="key"></div>
         <div class="wk"><span class="dm">Line width = Strahler order</span>${[1, 2, 3, 4, 5, 6].map(o =>
           `<span class="wo"><svg width="26" height="10"><line x1="2" y1="5" x2="24" y2="5" stroke="#445" stroke-width="${W[o]}" stroke-linecap="round"/></svg>${o}</span>`).join("")}</div>
-        ${window.PCT ? `<div class="pk"><svg width="40" height="12"><line x1="4" y1="6" x2="36" y2="6" stroke="#ffd43b" stroke-opacity=".45" stroke-width="7" stroke-linecap="round"/><line x1="4" y1="6" x2="36" y2="6" stroke="#fff" stroke-opacity=".9" stroke-width="3.4" stroke-linecap="round"/><line x1="4" y1="6" x2="36" y2="6" stroke="#1d1d1f" stroke-width="1.7" stroke-dasharray="6 4"/></svg>Pacific Crest Trail</div>` : ""}
+        ${window.PCT ? `<div class="pk"><svg width="40" height="12"><line x1="4" y1="6" x2="36" y2="6" stroke="#ffd43b" stroke-opacity=".45" stroke-width="7" stroke-linecap="round"/><line x1="4" y1="6" x2="36" y2="6" stroke="#fff" stroke-opacity=".9" stroke-width="3.4" stroke-linecap="round"/><line x1="4" y1="6" x2="36" y2="6" stroke="#1d1d1f" stroke-width="1.7" stroke-dasharray="6 4"/></svg>${LONGTRAIL}</div>` : ""}
         ${window.TRAILS ? `<div class="pk tk"><svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="#fff" stroke-width="4.4"/><line x1="2" y1="5" x2="32" y2="5" stroke="#5c3317" stroke-width="2" stroke-dasharray="5.2 3.6"/></svg>Trail
           <svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="#fff" stroke-width="4.9"/><line x1="2" y1="5" x2="32" y2="5" stroke="#7a5a3a" stroke-width="2.5" stroke-dasharray="12.5 4.5"/></svg>Fire road</div>
           <div class="bk"><span class="dm">Trail edge = mountain bikes:</span> ${["yes", "likely", "unlikely", "no"].map(k =>
@@ -586,6 +589,11 @@ function initDrainageMap(map, ctrl) {
   const sync3d = () => { const c = map.getCenter();
     box.querySelector(".to3d").href = `stream_map_3d.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()},55`; };
   map.on("moveend", sync3d);
+  // "Go to": another area's map, or the map of all areas at this view
+  const asel = box.querySelector(".areasel");
+  if (asel) asel.onchange = () => { const c = map.getCenter();
+    if (asel.value === "*") location.href = `../index.html#${c.lat.toFixed(4)},${c.lng.toFixed(4)},${Math.min(map.getZoom(), 10)}`;
+    else if (asel.value) location.href = `../${asel.value}/stream_map.html`; };
 
   // open at #lat,lon,zoom (the profile viewer's "Show on map" links)
   function go() {

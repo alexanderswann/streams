@@ -62,7 +62,7 @@ hx.text(100, y0 - 2.2, "outlined = multipliers (scale the whole score)   ·   fi
 
 # ---------------- weight bar ----------------
 wx = fig.add_subplot(gs[1, :])
-segs = [("Size  30", 30, C["size"], 1), ("Thermal: elevation  15", 15, C["thermal"], 1),
+segs = [("Size  30", 30, C["size"], 1), ("Thermal: water temp  15", 15, C["thermal"], 1),
         ("shade  10.5", 10.5, C["thermal"], 0.72), ("north  4.5", 4.5, C["thermal"], 0.45),
         ("Gradient  15", 15, C["grad"], 1), ("Remoteness  25", 25, C["remote"], 1)]
 left = 0
@@ -95,11 +95,11 @@ ax.set_xlabel("drainage area (km², log)"); ax.set_ylim(-0.03, 1.05)
 panel(ax, "S  size", "1 km² → 0,  50+ km² → 1", C["size"])
 
 ax = fig.add_subplot(gs[2, 1])
-e = np.linspace(0, 3200, 400)
-curve(ax, e, band(e, 700, 2300, 400), C["thermal"])
-ax.axvspan(700, 2300, color=C["thermal"], alpha=0.07, lw=0)
-ax.set_xlabel("elevation (m)"); ax.set_ylim(-0.03, 1.05)
-panel(ax, "T · elevation  (×0.5)", "full 700–2300 m; tailwaters always 1", C["thermal"])
+e = np.linspace(10, 28, 400)
+curve(ax, e, np.clip((25 - e) / 5, 0, 1), C["thermal"])
+ax.axvspan(10, 20, color=C["thermal"], alpha=0.07, lw=0)
+ax.set_xlabel("estimated summer water temperature (°C)"); ax.set_ylim(-0.03, 1.05)
+panel(ax, "T · water temperature  (×0.5)", "full ≤ 20 °C, none ≥ 25 °C; tailwaters always 1", C["thermal"])
 
 ax = fig.add_subplot(gs[2, 2])
 sh = np.linspace(0, 80, 200)

@@ -11,7 +11,27 @@ from labelpaths import label_paths
 from folium.plugins import MeasureControl, MousePosition, Fullscreen
 import matplotlib
 from matplotlib import colors
-from config import REGIONS, MAP_OUT, HOME, SHARED, EPSG
+from config import REGIONS, MAP_OUT, HOME, SHARED, EPSG, AREA_LABEL, MINOR, LONG_TRAIL, AREA, AREAS, has
+# Layer names and credits that depend on the area's data sources (config.py); both maps read them (window.LBL, D.lbl)
+CA = has("cdfw_trout")
+LBL = dict(
+    title="LA mountain streams" if AREA_LABEL == "LA mountains" else f"{AREA_LABEL} streams",
+    long_trail=LONG_TRAIL[0] if LONG_TRAIL else None,
+    # for the "go to another area" menu in both maps (every area's map sits in output/<key>/; ../index.html is the
+    # map of all areas, 13_overview.py)
+    area=AREA, areas=[dict(k=k_, t=v_["label"]) for k_, v_ in AREAS.items()],
+    flow="TNC Natural Flows model" if has("tnc_flows") else "NHDPlus mean flow × this area's gauge records",
+    falls="Known waterfalls (OSM + NHD + CDFW surveys)" if has("cdfw_pad") else "Known waterfalls (OSM + NHD)",
+    fires="Fire perimeters since 2016 (" + ("CAL FIRE" if has("cal_fire") else "NIFC") + "; this year's: WFIGS, BAER)",
+    fire_src="CAL FIRE" if has("cal_fire") else "NIFC",
+    trout_waters="CDFW Wild / Heritage Trout Waters" if CA else "Trout waters (state designations, brook trout patches)",
+    access="Restricted or no public access (" + ("CPAD" if has("cpad") else "PAD-US") + ")",
+    gauges="Stream gauges, USGS" + (" + CDEC" if has("cdec") else ""),
+    trout_ev="Trout evidence: " + ("CDFW" if CA else "state") + " surveys (red = none found), stocking, iNaturalist",
+    credits="USGS National Digital Trails · USFS · " + ("CDFW · " if CA else "") + "iNaturalist · "
+            + ("CAL FIRE · " if has("cal_fire") else "NIFC fire history · ") + "NIFC WFIGS · USGS gauges &amp; debris-flow hazard · "
+            + ("CDEC · " if has("cdec") else "") + ("TNC Natural Flows" if has("tnc_flows") else "NHDPlus V2 (EROM)")
+            + " · PRISM Group, Oregon State University")
 from scoring import attach, score
 import crossbox
 
@@ -36,8 +56,10 @@ print("regions:", done)
 # access (08/09), sun (10) and context (11) attributes, then the final fish score (scoring.py)
 dirs = [f"{MAP_OUT}/{r}" for r in done]
 s_ll = score(attach(s_ll.drop(columns="fish_score"), "sid", dirs, "streams"))
+# the share of this area's reaches that score lower: the score was tuned on LA's mostly dry channels and runs high
+# everywhere else, so the standing within the area says more than the number
+s_ll["area_rank_pct"] = ((s_ll.fish_score.rank(method="min") - 1) / max(len(s_ll) - 1, 1) * 100).round(0)
 # drainage / fork / channel Strahler order from 05c_drainages.py
-MINOR = "Minor front-range drainages"
 sd = pd.concat([pd.read_csv(f"{MAP_OUT}/{r}/stream_drainage.csv") for r in done
                 if os.path.exists(f"{MAP_OUT}/{r}/stream_drainage.csv")], ignore_index=True)
 s_ll = s_ll.drop(columns=[c for c in ("drainage", "fork", "strahler") if c in s_ll]).merge(sd, on="sid", how="left")
@@ -115,7 +137,10 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
 basins = basins[basins.drainage != MINOR].drop(columns=["out_x", "out_y", "rkey"]).reset_index(drop=True)
 kp_ll = attach(kp_ll, "did", dirs, "drops")
 CTX = f"{MAP_OUT}/context"
-ctx = lambda n: gpd.read_file(f"{CTX}/{n}.gpkg") if os.path.exists(f"{CTX}/{n}.gpkg") else None
+def ctx(n):
+    """A context layer (11_context.py), or None if it wasn't written or is empty (no fires in Connecticut)."""
+    g = gpd.read_file(f"{CTX}/{n}.gpkg") if os.path.exists(f"{CTX}/{n}.gpkg") else None
+    return g if g is not None and len(g) else None
 
 def approach(r):
     """'Drive 95 min (117 km) → park at X → bike 12 min → hike 40 min' for a reach or drop row."""
@@ -150,7 +175,7 @@ for c_ in CONTEXT + FLOWC:   # older context files may lack a column
 kp_ll.drop(columns="geometry").to_csv(f"{MAP_OUT}/waterfall_candidates.csv", index=False)
 mid = s_ll.geometry.interpolate(0.5, normalized=True)
 s_ll.assign(lat=mid.y.round(6), lon=mid.x.round(6)).sort_values("fish_score", ascending=False)[
-    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "tailwater", "burn_factor", "trout_factor", "heat_factor", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
+    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "water_aug", "tailwater", "burn_factor", "trout_factor", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
      "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["lat", "lon"]
 ].to_csv(f"{MAP_OUT}/stream_reaches_ranked.csv", index=False)
 
@@ -256,7 +281,7 @@ def summer_flow(r):
                     f"drought year")
     if pd.notna(r.flow_years):
         bits.append(f"kept flowing {r.flow_years:.0%} of summers since 2011")
-    src = "TNC Natural Flows model" + (", scaled from the creek below" if r.flow_src == "scaled" else "")
+    src = LBL["flow"] + (", scaled from the creek below" if r.flow_src == "scaled" else "")
     div = r.below_div if isinstance(r.below_div, str) else ""
     gauge = (f"below {div}: the USGS gauge there kept flowing {r.div_share:.0%} of summers in {r.div_years}"
              if div and pd.notna(r.div_share) else "")
@@ -272,6 +297,11 @@ def sev_label(v):
             else "low to moderate soil burn severity" if v >= 0.3 else "very low soil burn severity")
 
 
+# how this area's water-temperature estimate is made (watertemp.py), for the popups
+import watertemp
+_wt = watertemp.fit_record() or {}
+WT_HOW = ("estimated from " + " and ".join({"air": "air temperature", "elev_km": "elevation", "log_area": "stream size"}[t]
+                                           for t in _wt.get("terms", [])) + f", ± {_wt.get('rmse_loo', 3):.0f} °C") if _wt.get("ok") else ""
 # the hottest creek with a trout record (11_context.py), for the heat gate's popup line
 tev = ctx("trout_evidence")
 HOT = (tev[tev.trout.astype(bool) & ~tev.lake.astype(bool)].air_aug.max()
@@ -301,10 +331,12 @@ props = pd.DataFrame({
                 f"tree canopy {cv:.0f}%" if pd.notna(cv) else "",
                 f"slope faces {'north' if n > 0.04 else 'south' if n < -0.04 else 'east/west or mixed'}" if pd.notna(n) else "",
                 f"August air averages {a:.0f} °C" if pd.notna(a) else "",
+                f"summer water about {w:.0f} °C ({WT_HOW})"
+                if pd.notna(w) and not isinstance(tw, str) else "",
                 f"tailwater below {tw}: the dam releases cold water from the bottom of the reservoir" if isinstance(tw, str) else "")
                        if x)
-            for h, p, n, cv, a, tw in zip(s_show.sun_hours, s_show.shade_pct, s_show.northness, pd.to_numeric(s_show.canopy_pct),
-                                          pd.to_numeric(s_show.air_aug), s_show.tailwater)],
+            for h, p, n, cv, a, w, tw in zip(s_show.sun_hours, s_show.shade_pct, s_show.northness, pd.to_numeric(s_show.canopy_pct),
+                                             pd.to_numeric(s_show.air_aug), pd.to_numeric(s_show.water_aug), s_show.tailwater)],
     "ht": [heat_line(a, f) for a, f in zip(pd.to_numeric(s_show.air_aug), s_show.heat_factor)],
     "burn": [" · ".join(x for x in (
                  f"{f} fire {y:.0f}" + (f" ({sev_label(sv)})" if pd.notna(sv) else "") if pd.notna(y) else "",
@@ -315,8 +347,13 @@ props = pd.DataFrame({
     "flags": [" · ".join(x for x in (f"⚠ critical habitat: {c}" if isinstance(c, str) else "",
                                      f"{w} (no bikes)" if isinstance(w, str) else "",
                                      f"⚠ {a}" if isinstance(a, str) else
-                                     "⚠ non-Forest-Service land" if isinstance(o, str) else "") if x)
-              for c, w, o, a in zip(s_show.crit_habitat, s_show.wilderness, s_show.non_fs_land, s_show.cpad_access)],
+                                     "⚠ non-Forest-Service land" if isinstance(o, str) else "",
+                                     "built channel (aqueduct, canal or flood-control channel by name): fish score × 0.2"
+                                     if ch < 1 else "") if x)
+              for c, w, o, a, ch in zip(s_show.crit_habitat, s_show.wilderness, s_show.non_fs_land, s_show.cpad_access,
+                                        s_show.channel_factor)],
+    # where the reach stands among this area's reaches (scores aren't comparable between areas)
+    "rk": s_show.area_rank_pct.astype(int),
     "y": mid_ll.y.round(5), "x": mid_ll.x.round(5)})
 s_feat = gpd.GeoDataFrame(props, geometry=s_show.geometry.values, crs=4326).sort_values(["o", "fs"])
 
@@ -332,7 +369,7 @@ to_ll = lambda geoms: gpd.GeoSeries(geoms, crs=EPSG).to_crs(4326)
 fl_pts = to_ll([label_pt(g) for g in fpoly.geometry])
 dl_pts = to_ll([label_pt(g) for g in dpoly.geometry])
 f_json = json.loads(fpoly[["drainage", "fork", "c", "geometry"]].to_crs(4326).assign(
-    geometry=lambda g: shapely.set_precision(g.geometry.simplify(0.0002).values, 1e-5)).to_json())
+    geometry=lambda g: shapely.set_precision(shapely.make_valid(g.geometry.simplify(0.0002).values), 1e-5)).to_json())
 d_json = json.loads(dpoly[["drainage", "geometry"]].to_crs(4326).assign(
     geometry=lambda g: shapely.set_precision(g.geometry.boundary.simplify(0.0002).values, 1e-5)).to_json())
 region_of = s_ll.groupby("drainage").region.agg(lambda r: r.mode().iloc[0])
@@ -360,16 +397,20 @@ PCT_SECTIONS = {"A": "Campo → Warner Springs", "B": "Warner Springs → San Go
 pct_json, pct_labels = None, []
 if os.path.exists(f"{SHARED}/pct.gpkg"):
     pct = gpd.read_file(f"{SHARED}/pct.gpkg").to_crs(EPSG)
-    pct["sec"] = pct.section.str.extract(r"Section ([A-Z])\b", expand=False).fillna("?")
+    if LONG_TRAIL and LONG_TRAIL[1] == "PCT":
+        pct["sec"] = pct.section.str.extract(r"Section ([A-Z])\b", expand=False).fillna("?")
+    else:   # other trails: the OSM section relation's own name ("Appalachian Trail - Georgia")
+        pct["sec"] = pct.section.fillna(LONG_TRAIL[0] if LONG_TRAIL else "trail")
     secs = pct.dissolve("sec").reset_index()
     secs["geometry"] = [shapely.ops.linemerge(g) if g.geom_type == "MultiLineString" else g for g in secs.geometry]
-    secs["label"] = [f"Section {k}: {PCT_SECTIONS.get(k, '')}".rstrip(": ") for k in secs.sec]
+    secs["label"] = ([f"Section {k}: {PCT_SECTIONS.get(k, '')}".rstrip(": ") for k in secs.sec]
+                     if LONG_TRAIL and LONG_TRAIL[1] == "PCT" else list(secs.sec))
     pct_json = json.loads(secs[["sec", "label", "geometry"]].to_crs(4326).assign(
-        geometry=lambda g: shapely.set_precision(g.geometry.simplify(0.00002).values, 1e-5)).to_json(drop_id=True))
+        geometry=lambda g: shapely.set_precision(shapely.make_valid(g.geometry.simplify(0.00002).values), 1e-5)).to_json(drop_id=True))
     # labels that bend along the trail, one set per zoom band (labelpaths.py); "Pacific Crest Trail" is ~112 px
     PCT_BANDS = [(11, 15, 10000, 12000, [65]), (12, 9, 5000, 6000, [32]), (13, 5, 2500, 3000, [16, 8])]
     pct_lines = merge_lines(pct.geometry.values)
-    pct_labels = [lab for ln in pct_lines for lab in label_paths(ln, PCT_BANDS, 112)]
+    pct_labels = [lab for ln in pct_lines for lab in label_paths(ln, PCT_BANDS, round(5.9 * len(LONG_TRAIL[0])) if LONG_TRAIL else 112)]
     print("PCT", len(secs), "sections,", round(sum(ln.length for ln in pct_lines) / 1000), "km | labels per zoom band:",
           pd.Series([l["z"] for l in pct_labels]).value_counts().sort_index().to_dict())
 # ---- Trails and fire roads (02d_trails.py; older runs fall back to each range's OSM paths) ----
@@ -494,7 +535,7 @@ def beside_creeks(feat, step=10.0, max_d=80.0, min_run=40.0):
 
 TRAIL_BANDS = [(13, 5, 1500, 3000, [16]), (14, 3, 800, 1500, [8, 4, 2])]
 trail_labels = []
-tu = t_feat[t_feat.n.notna() & ~t_feat.n.fillna("").str.contains("Pacific Crest", case=False)].to_crs(EPSG)
+tu = t_feat[t_feat.n.notna() & ~t_feat.n.fillna("").str.contains(LONG_TRAIL[2] if LONG_TRAIL else "Pacific Crest", case=False)].to_crs(EPSG)
 for nm, grp in tu.groupby("n"):
     for ln in merge_lines(grp.geometry.values):
         if ln.length >= 1600:
@@ -535,7 +576,7 @@ print("trails", len(t_feat), "ways |", t_feat.groupby("rk").size().to_dict(), "|
 m.get_root().header.add_child(folium.Element(
     "<script>window.STREAMS=" + s_feat.to_json(na="null", drop_id=True) + ";\nwindow.FORKS=" + json.dumps(f_json)
     + ";\nwindow.DIVIDES=" + json.dumps(d_json) + ";\nwindow.DRAINS=" + json.dumps(drains)
-    + ";\nwindow.PCT=" + json.dumps(pct_json) + ";\nwindow.PCT_LABEL_LINES=" + json.dumps(pct_labels)
+    + ";\nwindow.LBL=" + json.dumps(LBL) + ";\nwindow.PCT=" + json.dumps(pct_json) + ";\nwindow.PCT_LABEL_LINES=" + json.dumps(pct_labels)
     + ";\nwindow.TRAILS=" + t_feat.to_json(na="drop", drop_id=True) + ";\nwindow.TRAIL_LABEL_LINES="
     + json.dumps(trail_labels) + ";\nwindow.ROADS=" + json.dumps(roads_json) + ";\nwindow.PARKING="
     + json.dumps(park_json) + ";</script>"))
@@ -545,7 +586,7 @@ m.get_root().header.add_child(folium.Element(
 
 # every layer is also exported for the 3D map (stream_map_3d.html reads map3d_data.js)
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
-       "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels}
+       "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))
 
 top = s_feat[s_feat.fs >= 55][["geometry"]]
@@ -616,7 +657,7 @@ GAUGE_SVG = ('<svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 1.5 L1
 svg_icon = lambda html, w, h: folium.DivIcon(html=html, icon_size=(w, h), icon_anchor=(w // 2, h // 2), class_name="svgpin")
 if "note" not in known_falls:
     known_falls["note"] = None
-kf = folium.FeatureGroup(name="<span style='color:#0b3d91'>◆</span> Known waterfalls (OSM + NHD + CDFW surveys)", show=False)
+kf = folium.FeatureGroup(name=f"<span style='color:#0b3d91'>◆</span> {LBL['falls']}", show=False)
 for r in known_falls.itertuples():
     note = r.note if isinstance(r.note, str) and r.note else ""
     nm_ = r.name if isinstance(r.name, str) and r.name else "waterfall"
@@ -660,10 +701,10 @@ if os.path.exists(f"{SHARED}/closure_areas.gpkg"):
 fires = ctx("fires")
 if fires is not None:
     if "src" not in fires:
-        fires["src"] = "CAL FIRE"
+        fires["src"] = LBL["fire_src"]
     fcm = matplotlib.colormaps["YlOrRd"]
     yr0, yr1 = fires.year.min(), fires.year.max()
-    folium.GeoJson(fires.assign(geometry=fires.geometry.simplify(0.0003)).to_json(), name="Fire perimeters since 2016 (CAL FIRE; this year's: WFIGS, BAER)",
+    folium.GeoJson(fires.assign(geometry=fires.geometry.simplify(0.0003)).to_json(), name=LBL["fires"],
                    show=False, style_function=lambda f: {
                        "color": colors.to_hex(fcm(0.3 + 0.7 * (f["properties"]["year"] - yr0) / max(yr1 - yr0, 1))),
                        "weight": 1, "fillOpacity": 0.25},
@@ -672,7 +713,7 @@ if fires is not None:
         geometry=fires.geometry.simplify(0.0003),
         c=[colors.to_hex(fcm(0.3 + 0.7 * (y - yr0) / max(yr1 - yr0, 1))) for y in fires.year]))
 for name, label, style, fields in [
-        ("wild_trout_waters", "CDFW Wild / Heritage Trout Waters",
+        ("wild_trout_waters", LBL["trout_waters"],
          {"color": "#2b8a3e", "weight": 2, "fillOpacity": 0.15}, (["Name", "Designation", "Designation_Boundary"],
                                                                     ["Water", "Designation", "Boundary"])),
         ("critical_habitat", "Critical habitat, stream species (not closure boundaries)",
@@ -681,7 +722,7 @@ for name, label, style, fields in [
          {"color": "#5c940d", "weight": 1.5, "fillOpacity": 0.06}, (["wilderness"], ["Wilderness"])),
         ("non_fs_land", "Non-Forest-Service land inside the forests",
          {"color": "#e67700", "weight": 1, "fillOpacity": 0.2}, (["ownerclassification"], ["Owner"])),
-        ("cpad_restricted", "Restricted or no public access (CPAD)",
+        ("cpad_restricted", LBL["access"],
          {"color": "#d9480f", "weight": 1, "fillOpacity": 0.25, "dashArray": "2 3"},
          (["ACCESS_TYP", "UNIT_NAME", "MNG_AGNCY"], ["Access", "Unit", "Manager"]))]:
     g = ctx(name)
@@ -698,7 +739,7 @@ if gauges is not None and len(gauges):
             "much above normal": "#1864ab", "dry": "#c92a2a", "dry (normal for date)": "#adb5bd",
             "flowing (usually dry on this date)": "#1c7ed6", "no history": "#868e96"}
     g3 = []
-    gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> Stream gauges, USGS + CDEC (live, {gauges.time.max()[:10]})",
+    gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> {LBL['gauges']} (live, {gauges.time.max()[:10]})",
                              show=False)
     for r in gauges.itertuples():
         html = (f"<b>{r.name}</b><br>{r.cfs:g} cfs at {r.time}<br>{r.status}"
@@ -717,10 +758,9 @@ if gauges is not None and len(gauges):
 tev = ctx("trout_evidence")
 if tev is not None and len(tev):
     TCOL = {"CDFW survey": "#2b8a3e", "CDFW stocking": "#1c7ed6", "iNaturalist": "#82c91e"}
-    tgrp, t3 = folium.FeatureGroup(name="<span style='color:#2b8a3e'>●</span> Trout evidence: CDFW surveys (red = none "
-                                        "found), stocking, iNaturalist", show=False), []
+    tgrp, t3 = folium.FeatureGroup(name=f"<span style='color:#2b8a3e'>●</span> {LBL['trout_ev']}", show=False), []
     for r in tev.sort_values("kind", ascending=False).itertuples():
-        col = TCOL.get(r.kind, "#2b8a3e") if r.trout else "#e03131"
+        col = (TCOL.get(r.kind) or ("#1c7ed6" if r.kind.endswith("stocking") else "#2b8a3e")) if r.trout else "#e03131"
         head = r.water if isinstance(r.water, str) and r.water else r.kind
         lab = r.label + (" (at a lake: likely stocked)" if r.lake and r.kind == "iNaturalist" else "")
         html_ = (f"<b>{hesc(head)}</b><br>{hesc(lab)}"
@@ -778,6 +818,21 @@ initDrainageMap({{ this._parent.get_name() }}, {{ this.ctrl }});
         self.ctrl = ctrl
 m.add_child(InitDrainages(lc.get_name()))
 m.save(f"{MAP_OUT}/stream_map.html")
+
+# ---- this area's part of the map of all areas (13_overview.py): drainage outlines and the main rivers ----
+ov_d = dpoly[["drainage", "km2", "geometry"]].to_crs(4326)
+ov_d = ov_d.assign(c=[dcol[d_] for d_ in ov_d.drainage], km2=ov_d.km2.round(0),
+                   geometry=shapely.set_precision(shapely.make_valid(ov_d.geometry.simplify(0.0012).values), 1e-4))
+ov_s = s_ll[s_ll.strahler >= 4][["name", "drainage", "strahler", "fish_score", "geometry"]]
+ov_s = ov_s.assign(c=[dcol.get(d_, MINOR_COL) for d_ in ov_s.drainage],
+                   geometry=shapely.set_precision(ov_s.geometry.simplify(0.0004).values, 1e-5))
+ov_s = ov_s[~ov_s.geometry.is_empty]
+sb = study_ll.bounds
+with open(f"{MAP_OUT}/overview.json", "w") as f:
+    json.dump(dict(key=AREA, label=AREA_LABEL, home=HOME, bounds=[[sb[1], sb[0]], [sb[3], sb[2]]],
+                   reaches=int(len(s_ll)), drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
+                                                    for e in drains if e["name"] != MINOR],
+                   basins=json.loads(ov_d.to_json(drop_id=True)), streams=json.loads(ov_s.to_json(na="null", drop_id=True))), f)
 # 3D map: static page + data file (a <script>, so it also works opened straight from disk)
 with open(f"{MAP_OUT}/map3d_data.js", "w") as f:
     f.write("window.MAP3D=" + json.dumps(X3D, separators=(",", ":"), default=str) + ";\n")

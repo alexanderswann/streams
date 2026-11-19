@@ -29,9 +29,9 @@ if not os.path.exists(major_path) or ext is None or not (ext[0] <= W and ext[1] 
     q = f"""[out:json][timeout:600];
     way["highway"~"^(motorway|trunk|primary|secondary)(_link)?$"]({S},{W},{N},{E}); out geom;"""
     for attempt in range(6):
-        url = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")[attempt % 2]
+        url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
         try:
-            r = requests.post(url, data={"data": q}, timeout=900,
+            r = requests.post(url, data={"data": q}, timeout=(20, 900),
                               headers={"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"})
             if r.ok:
                 break

@@ -20,10 +20,9 @@ Map attribution: trails and fire roads (c) OpenStreetMap contributors (ODbL), US
 """
 import os, re, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from scipy.ndimage import maximum_filter, minimum_filter
-from config import REGIONS, CRS, ROOT, SHARED, raw_dir
+from config import REGIONS, CRS, ROOT, SHARED, raw_dir, has, MIN_RELIEF_M
 from geomatch import wilderness_path
 
-MIN_RELIEF_M = 100
 MATCH_M = 25            # an OSM way follows an official line if most of it lies within this distance
 MATCH_SHARE = 0.6
 TAGS = ["name", "ref", "highway", "footway", "sac_scale", "mtb:scale", "trail_visibility", "informal", "surface", "access", "foot",
@@ -60,15 +59,18 @@ def cached(name, fetch, days=CACHE_DAYS):
 
 
 def overpass(q):
-    for attempt in range(6):  # public Overpass servers 502/429 under load; retry and alternate mirrors
-        url = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")[attempt % 2]
+    for attempt in range(14):  # public Overpass servers 502/429 under load (and allow about two queries at once
+        # per address, so several ranges running side by side queue up); retry for ~25 min and alternate mirrors
+        url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
         try:
-            r = requests.post(url, data={"data": q}, timeout=900, headers=UA)
+            # 20 s to connect (a dead mirror), and the query's own time limit plus a minute to answer
+            wait = int(m.group(1)) + 60 if (m := re.search(r"\[timeout:(\d+)\]", q)) else 900
+            r = requests.post(url, data={"data": q}, timeout=(20, wait), headers=UA)
             if r.ok and "elements" in r.json():
                 return r.json()["elements"]
         except (requests.RequestException, ValueError):
             pass
-        time.sleep(30 * (attempt + 1))
+        time.sleep(min(30 * (attempt + 1), 120))
     raise RuntimeError("Overpass failed")
 
 
@@ -266,10 +268,12 @@ def layer(name, url, fields, key, days=CACHE_DAYS):
     return stack([cached(f"{name}_{k}.geojson", lambda bb=bb: esri_lines(url, bb, fields), days) for k, bb in boxes.items()], key)
 fs_tr = layer("usfs_trails_v2", f"{EDW_}/EDW_TrailNFSPublish_01/MapServer/0",
               "objectid,trail_name,trail_no,allowed_terra_use,bicycle_restricted", "objectid")
-csp = layer("csp_routes", f"{CSP_}/RecreationalRoutes/FeatureServer/0", "*", "OBJECTID")
-nps = layer("nps_trail_inventory", f"{CSP_}/NPS_Trail_Inventory__Current_Trail_Usage/FeatureServer/0", "FID,NAME1,CS,CU", "FID")
-eaton = layer("eaton_lines", f"{LAC_}/14", "OBJECTID,Name,Agency,Status,Line_Type", "OBJECTID", days=1)
-eaton_areas = layer("eaton_areas", f"{LAC_}/16", "OBJECTID,Agency,Closure_Date", "OBJECTID", days=1)
+none = gpd.GeoDataFrame(geometry=[], crs=CRS)
+LA = has("la_trail_layers")     # the State Parks, NPS Santa Monica Mountains and Eaton Fire layers exist only there
+csp = layer("csp_routes", f"{CSP_}/RecreationalRoutes/FeatureServer/0", "*", "OBJECTID") if LA else none
+nps = layer("nps_trail_inventory", f"{CSP_}/NPS_Trail_Inventory__Current_Trail_Usage/FeatureServer/0", "FID,NAME1,CS,CU", "FID") if LA else none
+eaton = layer("eaton_lines", f"{LAC_}/14", "OBJECTID,Name,Agency,Status,Line_Type", "OBJECTID", days=1) if LA else none
+eaton_areas = layer("eaton_areas", f"{LAC_}/16", "OBJECTID,Agency,Closure_Date", "OBJECTID", days=1) if LA else none
 print(f"USFS trails {len(fs_tr)}, State Parks routes {len(csp)}, NPS inventory {len(nps)}, Eaton Fire lines {len(eaton)}, "
       f"closure areas {len(eaton_areas)}")
 val = lambda df, m, c: pd.Series([df[c].iat[i] if i >= 0 and c in df else None for i in m], index=gu.index)
@@ -310,10 +314,19 @@ offb = gu.off_bike.fillna("").astype(str).str.upper()
 agency = gu.official.fillna("")
 pct = gu.route.fillna("").str.contains("PCT|Pacific Crest", case=False) | \
     gu["name"].fillna("").str.contains("Pacific Crest", case=False)
+# the other long trails closed to bikes over their whole length: the Appalachian Trail, and Vermont's Long Trail
+at = (gu.route.fillna("") + "|" + gu["name"].fillna("")).str.contains(r"Appalachian (?:National Scenic )?Trail", case=False)
+lt = (gu.route.fillna("") + "|" + gu["name"].fillna("")).str.contains(r"\bLong Trail\b(?! Road)")
+# National Park Service trails are closed to bikes unless a park designates them (36 CFR 4.30). In LA the Santa
+# Monica Mountains inventory above says which are, so the blanket rule is for the other areas (Grand Teton,
+# Blue Ridge Parkway, Chattahoochee River NRA)
+nps_trail = agency.str.contains("National Park Service|NPS", case=False) & (gu.kind == "trail") & (not LA)
 mtb = gu["mtb:scale"] if "mtb:scale" in gu else pd.Series(None, index=gu.index)
 rules = [
     (in_wild, "no", "wilderness: no bikes"),
     (pct, "no", "Pacific Crest Trail: no bikes"),
+    (at, "no", "Appalachian Trail: no bikes"),
+    (lt, "no", "Long Trail: foot travel only"),
     (bik.isin(["no", "dismount", "private"]), "no", "posted no bikes"),
     (offb.str.startswith("N"), "no", "agency: no bikes"),
     (gu.closed, "no", "closed"),
@@ -324,6 +337,7 @@ rules = [
     (csp_bike.eq("Y"), "yes", "State Parks: bikes allowed"),
     (nps_bike.eq("Y"), "yes", "NPS: multi-use trail"),
     (bik.isin(["yes", "designated", "permissive"]), "yes", "open to bikes"),
+    (nps_trail, "no", "National Park Service trail: no bikes unless posted"),
     (offb.str.startswith("Y"), "yes", "agency: open to bikes"),
     (gu.kind == "fire road", "yes", "fire road outside wilderness"),
     (agency.str.contains("State Park", case=False), "unlikely", "state park singletrack: bikes only where posted"),
