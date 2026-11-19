@@ -152,8 +152,18 @@ if (area_edge != area_box).any():
     nhd = s.flow.map({"perennial": 1.0, "intermittent": 0.35, "unmapped": 0.15, "ephemeral": 0.05}).fillna(0.3)
     eff = lambda e: e.water.where(e.water_class.fillna("no data").ne("no data") & e.water.notna(), nhd)  # as scoring.py
     keep = (eff(ev_edge) < eff(ev) - 1e-9).values
+    # ... but only an old estimate that is about this creek. Below a pond the box's own area starts again from
+    # nothing, so the old estimate there is whatever small line happened to match it: the Pachaug River inside
+    # Pachaug Pond (129 km2) took a 2.3 km2 brook's 0.23 cfs and stood as "usually flows", where the estimate with
+    # its real drainage says reservoir. An old estimate from a line with under half the reach's drainage is
+    # dropped whatever it says.
+    line_km2 = ev.comid.map(v2_area).astype(float).values
+    credible = line_km2 >= 0.5 * area_edge.values
+    n_all = int(keep.sum())
+    keep = keep & (np.isnan(line_km2) | credible)      # an old estimate with no line at all (NHD's label) still stands
     print(f"water with the area from other boxes: {int((area_edge > area_box).sum())} reaches get more area; the old "
-          f"estimate is kept on {int(keep.sum())} where the new one would be lower")
+          f"estimate is kept on {int(keep.sum())} where the new one would be lower ({n_all - int(keep.sum())} more "
+          f"were not kept: the old estimate came from a line with under half the reach's drainage)")
     for c_ in ev.columns:
         ev_edge[c_] = ev_edge[c_].where(~keep, ev[c_])
     ev = ev_edge

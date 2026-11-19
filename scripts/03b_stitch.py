@@ -259,7 +259,11 @@ def run(group):
         with rasterio.open(f"{raw_dir(r)}/dem_10m.tif") as src:
             prof = src.profile
         prof.update(compress="deflate", tiled=True, nodata=None)
-        for name, arr, dt in (("flowdir", f, "uint8"), ("area_km2", acc[sl] * (RES * RES) / 1e6, "float32"), ("strahler", od, "uint8")):
+        # (the cell count as float64 before it is multiplied: as int32, cells x 100 m2 wraps past 2,147 km2, which made
+        # the Snake's drainage negative from the Hoback down and 05_score.py threw those 40 km away as a trickle)
+        area = acc[sl].astype(np.float64) * (RES * RES) / 1e6
+        assert area.min() >= 0, f"{r}: negative drainage area"
+        for name, arr, dt in (("flowdir", f, "uint8"), ("area_km2", area, "float32"), ("strahler", od, "uint8")):
             with rasterio.open(f"{derived_dir(r)}/{name}.tif", "w", **dict(prof, dtype=dt)) as dst:
                 dst.write(arr.astype(dt), 1)
         # The lines: pysheds on the box with a ring of one cell of its neighbours around it. pysheds leaves the

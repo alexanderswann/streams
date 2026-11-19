@@ -804,3 +804,66 @@ https://alexanderswann.github.io/streams/ have the same SHA-256 as the pushed on
 built and checked ones for all six areas, and the home page still serves the old `index.html` byte for byte.
 Not opened in a browser on the live address (the same files were looked at locally). The site repository's
 history is now 338 MB.
+
+**User (screenshot of Guys Run, Lexington): one reach with fish score 13 between reaches in the 80s; "is this
+the results of a larger bug".** Yes, a matching bug, separate from the box edges. Counted first: reaches whose
+dry-season flow per km2 is under a quarter of both the reach above and the reach below: 16 (Lexington 10, five of
+them on the Maury itself at 0.00 to 0.08 cfs where it carries 90 to 150; NE Connecticut 5; N Georgia 1; none in
+Vermont, Jackson or LA). Two causes, both fixed where they arise:
+- **Side arms of split channels** (`flowlib.minor_arms`, used by `match_points`). Where a creek splits and
+  rejoins, NHDPlus gives both arms the whole drainage (totdasqkm) and nearly all the flow to the main arm: beside
+  Guys Run's 18.65 km2 / 13 cfs runs an unnamed arm with 18.51 km2 / 0.14 cfs. The matching (nearest line with
+  agreeing drainage) took the side arm when the reach lay 7 m from it. A side arm is now recognised (two lines
+  into the same downstream line, drainage within 3 %, under half the other's flow; and the lines above it on
+  the same arm) and left out of the matching: Lexington 95 lines (all unnamed, 22 km of 4,002), LA 297, NE
+  Connecticut 25, N Georgia 14, Vermont 8, Jackson 7. Flow: qe_ma, or the Natural Flows mean in California.
+- **A stale estimate kept below ponds** (`05b_flow.py`). The step makes two estimates (the reach's area without
+  and with the water carried past dams) and keeps the first where the second would be lower (the user's rule:
+  possible trout water stays in). Below a pond the first area starts again from nothing, so the first estimate
+  there is whatever small line matched it: the Pachaug River inside Pachaug Pond (129 km2) stood as "usually
+  flows, 0.23 cfs" from a 2.3 km2 brook, where the second estimate says reservoir. The first estimate is now
+  dropped when its line has under half the reach's drainage. One with no line at all (NHD's own label) still
+  stands, as before (a first version of this dropped those too and rated two James River reaches dry; caught
+  on the list of changes and corrected before anything was published).
+Result: 0 sudden drop-and-recover reaches in every area. Guys Run's reach: 0.07 cfs "mostly dry", fish 13 ->
+3.2 cfs "year-round", fish 83. Score changes against the build before, reach by reach: Lexington 13 up (Maury
+5, Cowpasture 3, Guys Run), 0 down; NE Connecticut 8 up, 23 down; N Georgia 1 up, 20 down; Jackson 1 up, 2
+down; LA 16 up, 4 down; Vermont none. Every "down" outside LA is a reach lying in a mapped lake or pond that
+now reads "reservoir" (Tallulah River in its lakes, the Chattahoochee in Lake Lanier, the French and Pachaug
+rivers' ponds, the Gros Ventre in Lower Slide Lake). No river of 200 km2 or more outside LA is rated dry or
+seasonal. `run_drainage_refresh.sh` now runs 05b after 05c. All six areas, the map of all areas, the single
+file and `phone/` rebuilt. Not pushed, not committed.
+
+**User (screenshot, Jackson): the Snake River is missing from the Hoback confluence down to Alpine; "is this
+part of a larger bug? why did this happen?"** My bug, from the morning's `03b_stitch.py`: the drainage area was
+written as `acc[sl] * (RES * RES) / 1e6` with `acc` in int32, and cells x 100 m2 wraps past 2,147 km2. The
+Snake passes that exactly where the Hoback joins (1,738 + about 1,500 km2 inside the boxes), so `area_km2.tif`
+was negative along 3,959 cells (39.6 km) from the confluence to Palisades, and `05_score.py` threw every reach
+there away as under 1 km2. Checked every box of every area for negative cells: only Jackson's Hoback box (no
+other area has 2,147 km2 of drainage inside its boxes: the next largest are 1,875 in Lexington and 1,677 in
+Vermont), so one stretch of one river, but it would have hit any bigger river added later. I missed it on the
+morning's check: the test looked at box edges, and on the redrawn Jackson view the Snake ending at the
+confluence was there to be seen.
+- Fix: the count goes to float64 before it is multiplied, and 03b stops if any area is negative.
+- Jackson rebuilt from 03b on (drops, scores, flows, drainages, approach times, maps): no failed steps. The
+  Snake in the Hoback box: 89 reaches, 50.1 km, 6,876 to 10,048 km2, to the box's west edge at Alpine;
+  year-round. Dead ends on shared edges 0, sudden flow drops 0.
+- New standing check (all areas): stream cells of order 3 and up with no reach within 25 m. Jackson 0.1 km,
+  Lexington 0.1, N Georgia 0.1, Vermont 0.0, NE Connecticut 0.0; LA 39.7 km, of which 36.0 in the Santa Monica
+  box, where the sea's flat cells trace channels that 05_score drops on purpose.
+Map of all areas, single file and `phone/` rebuilt. The website (12:09 build) still has the Snake missing and
+the Guys Run flow bug: not pushed. Not committed.
+
+**Published (13:34, by another session).** The user said "Yes, push" to the Snake and flow fixes at 13:35; a
+second session working in this project (a road-crossing ring on the maps and profiles, and the link-preview
+card) had run `publish_site.sh push` a minute earlier, after its own rebuild of the maps, and that push (commit
+`5ba0dcf`, 25 files) is the build that holds both fixes. Nothing more was pushed from here. Checked: the 18 map
+and data files of the six areas as served have the same SHA-256 as the current build (LA's three caught up a
+few minutes after the rest); the front page and `preview.jpg` match what was pushed; the built Jackson data,
+identical to the pushed file, has 69 Snake River reaches west of 110.75 W, below the Hoback (8,571 to 10,046 km2, to Alpine) and
+the built Lexington data has Guys Run's 18.5 km2 reach at fish 83, year-round; nothing outside `streams/`
+differs from the original site and the home page is the old file. A direct download of the live Jackson data
+was cut off by a connection reset and not repeated.
+Three sessions wrote to this folder today; the project's uncommitted changes are a mix of theirs
+(`12_profiles.py`, `13_overview.py`, `15_preview.py`, `map_drainages.js`, `map_style.css`, `publish_site.sh`)
+and this session's (`03b_stitch.py`, `05b_flow.py`, `flowlib.py`, `run_drainage_refresh.sh`, this log).

@@ -7,13 +7,67 @@ FLOW = f"{SHARED}/flow"
 MIN_RESERVOIR_KM2 = 0.08     # waterbodies smaller than 8 ha (debris basins, ponds) don't control a creek's base flow
 
 
+_MINOR = {}
+def minor_arms(v2):
+    """COMIDs of the side arms of split channels. Where a creek splits and rejoins, NHDPlus gives both arms the whole
+    drainage upstream (totdasqkm) but sends nearly all the flow down the main arm: beside Guys Run's 18.65 km2 and
+    13 cfs runs an unnamed arm with 18.51 km2 and 0.14 cfs. Matched by drainage area and distance alone, a reach
+    7 m from the side arm took its trickle and was rated mostly dry between two reaches rated year-round (the same
+    on five reaches of the Maury itself, 0.0 to 0.08 cfs where it carries 90 to 150).
+    A side arm: one of two lines into the same downstream line whose drainage areas agree within 3 %, carrying under
+    half the other's flow; and the lines above it on the same arm (running into a side arm with at least 90 % of
+    its drainage, and under a quarter of the main arm's flow per km2). Flow: NHDPlus's mean annual (qe_ma), or the Natural Flows mean where the table
+    has no qe_ma (California). Pairs with no flow figure for both are left alone."""
+    key = (id(v2), len(v2))
+    if key in _MINOR:
+        return _MINOR[key]
+    d = v2[v2.ftype.isin(["StreamRiver", "ArtificialPath", "Connector"])]
+    d = pd.DataFrame(d.drop(columns="geometry", errors="ignore"))
+    if "qe_ma" in d:
+        q = d.set_index("comid").qe_ma.astype(float)
+    else:
+        nfp = f"{FLOW}/natural_flows.csv"
+        if os.path.exists(nfp):
+            nf_ = pd.read_csv(nfp, usecols=["comid", "variable", "statistic", "value"])
+            q = nf_[(nf_.variable == "estimated") & (nf_.statistic == "mean")].groupby("comid").value.mean()
+        else:
+            q = pd.Series(dtype=float)
+    d = d[d.dnhydroseq.notna() & (d.dnhydroseq != 0) & (d.totdasqkm > 0.5)].assign(q=lambda t: t.comid.map(q))
+    minor, unit = set(), {}                              # side arm -> the main arm's flow per km2
+    for _, g in d.groupby("dnhydroseq"):
+        if len(g) < 2:
+            continue
+        g = g.sort_values("totdasqkm", ascending=False)
+        top = g.iloc[0]
+        for _, r in g.iloc[1:].iterrows():
+            if r.totdasqkm >= 0.97 * top.totdasqkm and pd.notna(r.q) and pd.notna(top.q):
+                lo_, hi_ = (r, top) if r.q < top.q else (top, r)
+                if lo_.q < 0.5 * hi_.q:
+                    minor.add(int(lo_.comid))
+                    unit[float(lo_.hydroseq)] = hi_.q / hi_.totdasqkm
+    da = d.drop_duplicates("hydroseq").set_index("hydroseq").totdasqkm
+    for _ in range(50):                                  # up each side arm: the same drainage, still next to no flow
+        add = d[d.dnhydroseq.isin(list(unit)) & ~d.comid.isin(minor) & d.q.notna()]
+        add = add[(add.q / add.totdasqkm < 0.25 * add.dnhydroseq.map(unit))
+                  & (add.totdasqkm >= 0.9 * add.dnhydroseq.map(da))]
+        if not len(add):
+            break
+        for r in add.itertuples():
+            minor.add(int(r.comid))
+            unit[float(r.hydroseq)] = unit[float(r.dnhydroseq)]
+    _MINOR[key] = minor
+    return minor
+
+
 def match_points(points, areas, v2, max_dist=150, lo=0.3, hi=1.6):
     """COMID for each point: the nearest NHDPlus V2 flowline within max_dist whose total drainage area agrees
     with the point's (ratio point/flowline in [lo, hi]). Stops a small tributary grabbing the main stem beside it.
-    A point with unknown area takes the nearest flowline. Returns a float Series (NaN = no match)."""
+    The side arms of split channels are left out (minor_arms): they carry the main arm's drainage area but not its
+    flow. A point with unknown area takes the nearest flowline. Returns a float Series (NaN = no match)."""
     pts = gpd.GeoDataFrame({"a": np.asarray(areas, float)}, geometry=list(points), crs=CRS)
     pts["pid"] = np.arange(len(pts))
     lines = v2[v2.ftype.isin(["StreamRiver", "ArtificialPath", "Connector"])][["comid", "totdasqkm", "geometry"]]
+    lines = lines[~lines.comid.isin(minor_arms(v2))]
     j = gpd.sjoin(pts.assign(geometry=pts.buffer(max_dist)), lines, predicate="intersects")
     if j.empty:
         return pd.Series(np.nan, index=getattr(points, "index", None))
