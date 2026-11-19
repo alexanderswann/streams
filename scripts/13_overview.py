@@ -2,7 +2,8 @@
 
 Every built area's drainage outlines and main rivers (order 4 and up) and long trail on one map, over terrain shading and place labels, from the overview.json each
 06_map.py writes. Pan and zoom across the country; a click inside an area opens that area's own map (2D, 3D or the
-creek profiles) at the spot. The areas' own maps have a "Go to" menu that leads back here at the same view and
+creek profiles) at the spot. The Open Graph tags in its head give links to it the
+preview card, a screenshot of the site that 15_preview.py takes (output/preview.jpg, published next to it). The areas' own maps have a "Go to" menu that leads back here at the same view and
 across to the other areas.
 
 All six areas in one full-detail page would be over 200 MB (LA's alone is 67 MB), too heavy to open, on a phone
@@ -27,6 +28,18 @@ HTML = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Stream maps: all areas</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Stream maps">
+<meta property="og:title" content="Stream maps: trout water, waterfalls &amp; swimming holes">
+<meta property="og:description" content="Every creek in __NAREAS__ mountain areas, scored for trout and mapped with its waterfalls, plunge pools and the way in.">
+<meta property="og:url" content="https://alexanderswann.github.io/streams/">
+<meta property="og:image" content="https://alexanderswann.github.io/streams/preview.jpg?v=__PREVIEW_V__">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The LA mountains stream map: the San Gabriel River and its forks over terrain shading">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Every creek in __NAREAS__ mountain areas, scored for trout and mapped with its waterfalls, plunge pools and the way in.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
 <style>
@@ -135,7 +148,10 @@ window.addEventListener("hashchange", go);
 sync();
 </script></body></html>
 """
-html = HTML.replace("__AREAS__", json.dumps(areas, separators=(",", ":")))
+words = "one two three four five six seven eight nine ten eleven twelve".split()
+html = HTML.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace(
+    "__NAREAS__", words[len(areas) - 1] if len(areas) <= len(words) else str(len(areas))).replace(
+    "__PREVIEW_V__", str(int(os.path.getmtime(f"{OUT}/preview.jpg"))) if os.path.exists(f"{OUT}/preview.jpg") else "0")   # a new picture, a new link: apps keep the old card otherwise
 with open(f"{OUT}/index.html", "w", encoding="utf-8") as f:
     f.write(html)
 print(f"{OUT}/index.html: {len(areas)} areas ({', '.join(a['key'] for a in areas)}), {len(html) / 1e6:.1f} MB")

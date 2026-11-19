@@ -600,10 +600,47 @@ function initDrainageMap(map, ctrl) {
     if (asel.value === "*") location.href = `../index.html#${c.lat.toFixed(4)},${c.lng.toFixed(4)},${Math.min(map.getZoom(), 10)}`;
     else if (asel.value) location.href = `../${asel.value}/stream_map.html`; };
 
-  // open at #lat,lon,zoom (the profile viewer's "Show on map" links)
+  // The spot being looked at in the creek profile viewer (profiles.html), shown by a ring on the creek. That page
+  // sends it while the mouse is over the profile ("hover": the ring follows, the map only pans to keep it in view)
+  // and when a spot is clicked ("pick": the map goes there). It also comes in a link, as #lat,lon,zoom,pin.
+  // BroadcastChannel reaches the other tabs of the site; the localStorage copy does the same for pages opened from
+  // disk, where some browsers keep the channel to one page. Areas ignore spots outside their own range.
+  const pp = map.createPane("profpin");
+  pp.style.zIndex = 660; pp.style.pointerEvents = "none";
+  const pin = L.layerGroup([
+    L.circleMarker([0, 0], {pane: "profpin", radius: 11, color: "#fff", weight: 5, opacity: 0.9, fill: false, interactive: false}),
+    L.circleMarker([0, 0], {pane: "profpin", radius: 11, color: "#2a78d6", weight: 2.5, fill: true, fillColor: "#2a78d6",
+                            fillOpacity: 0.15, interactive: false}),
+    L.circleMarker([0, 0], {pane: "profpin", radius: 2.5, color: "#2a78d6", weight: 0, fill: true, fillOpacity: 1, interactive: false}),
+  ]);
+  const pinTip = L.tooltip({pane: "profpin", permanent: true, direction: "right", offset: [14, 0], className: "profpin-tip"});
+  const areaBounds = L.geoJSON(window.DIVIDES).getBounds().pad(0.05);
+  let lastSeq = -1;
+  function showPin(m) {
+    if (!m || m.seq === lastSeq || !isFinite(m.lat) || !isFinite(m.lon)) return;
+    lastSeq = m.seq;
+    const ll = L.latLng(m.lat, m.lon);
+    if (!areaBounds.contains(ll)) return;
+    pin.eachLayer(l => l.setLatLng(ll));
+    if (!map.hasLayer(pin)) pin.addTo(map);
+    pinTip.setLatLng(ll).setContent(m.text || "Profile spot");
+    if (!map.hasLayer(pinTip)) pinTip.addTo(map);
+    if (m.kind === "pick") map.setView(ll, Math.max(map.getZoom(), 15), {animate: true});
+    else map.panInside(ll, {padding: [80, 80], animate: false});
+  }
+  if ("BroadcastChannel" in window) new BroadcastChannel("streams-profile-spot").onmessage = e => showPin(e.data);
+  window.addEventListener("storage", e => {
+    if (e.key === "streams-profile-spot" && e.newValue) try { showPin(JSON.parse(e.newValue)); } catch (_) {}
+  });
+
+  // open at #lat,lon,zoom (the overview's links), with ",pin" from the profile viewer's "Show on map" links
   function go() {
-    const h = location.hash.slice(1).split(",").map(Number);
-    if (h.length >= 2 && h.every(v => !isNaN(v))) map.setView([h[0], h[1]], h[2] || 15, {animate: false});
+    const parts = location.hash.slice(1).split(","), h = parts.slice(0, 3).map(Number);
+    if (h.length >= 2 && h.every(v => !isNaN(v))) {
+      map.setView([h[0], h[1]], h[2] || 15, {animate: false});
+      if (parts[3] === "pin") showPin({seq: "hash" + location.hash, kind: "hover", lat: h[0], lon: h[1],
+                                       text: parts[4] ? decodeURIComponent(parts.slice(4).join(",")) : "Profile spot"});
+    }
   }
   if (location.hash.length > 1) go(); else map.fitBounds(L.geoJSON(window.DIVIDES).getBounds(), {padding: [10, 10], animate: false});
   window.addEventListener("hashchange", go);

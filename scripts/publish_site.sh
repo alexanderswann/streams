@@ -6,6 +6,7 @@
 #                              token for this one repository in the Mac's keychain, and it expires: when the push is
 #                              refused, the owner makes a new token and pushes once from a terminal)
 #   streams/index.html                  the map of all areas (13_overview.py)
+#   streams/preview.jpg                 the card shown when the link is sent in iMessage etc. (15_preview.py, run by hand)
 #   streams/<area>/                     that area's 2D map, 3D map and data, creek profiles, hillshades
 # The copy lives in publish/alexanderswann.github.io (ignored by this project's git). Nothing outside streams/ is
 # added, changed or removed: the site that is already there stays exactly as it is (owner's rule, 2026-11-19), and
@@ -32,7 +33,8 @@ git -C $SITE pull -q --ff-only 2>/dev/null
 $PY scripts/13_overview.py || exit 1
 rm -rf $DEST
 mkdir -p $DEST
-cp output/index.html $DEST/index.html
+cp output/index.html $DEST/
+[[ -f output/preview.jpg ]] && cp output/preview.jpg $DEST/
 for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; print(' '.join(config.AREAS))"); do
   [[ -f output/$a/stream_map.html ]] || continue
   mkdir -p $DEST/$a

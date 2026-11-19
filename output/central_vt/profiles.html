@@ -15,7 +15,7 @@
     /* drop types: same colors as the map so an entity keeps its color; shapes are the second cue.
        magenta / yellow / violet pass the all-pairs CVD + normal-vision checks in light and dark (validate_palette.js);
        mapped-waterfall drops and gauges are neutral ink, told apart by shape */
-    --d-step: #e87ba4; --d-cascade: #eda100; --d-short: #6250d6; --d-mapped: #3b3a37;
+    --d-step: #e87ba4; --d-cascade: #eda100; --d-short: #6250d6; --d-mapped: #3b3a37; --d-artifact: #868e96;
     --gauge: #52514e;
     --strip-perennial: #2a78d6; --strip-burn: #eb6834; --strip-trout: #008300; --strip-habitat: #e34948;
     --seq-0: #cde2fb; --seq-1: #86b6ef; --seq-2: #3987e5; --seq-3: #1c5cab; --seq-4: #0d366b;
@@ -28,7 +28,7 @@
       --grid: #2a2a27; --line: #d8d7d2; --accent: #3987e5;
       --strip-perennial: #3987e5; --strip-burn: #d95926; --strip-trout: #2f9e2f; --strip-habitat: #e66767;
       --seq-0: #184f95; --seq-1: #256abf; --seq-2: #3987e5; --seq-3: #86b6ef; --seq-4: #cde2fb;
-      --d-step: #d55181; --d-cascade: #c98500; --d-short: #9085e9; --d-mapped: #d8d7d2; --gauge: #c3c2b7;
+      --d-step: #d55181; --d-cascade: #c98500; --d-short: #9085e9; --d-mapped: #d8d7d2; --d-artifact: #8f8e86; --gauge: #c3c2b7;
     }
   }
   :root[data-theme="dark"] {
@@ -38,7 +38,7 @@
     --grid: #2a2a27; --line: #d8d7d2; --accent: #3987e5;
     --strip-perennial: #3987e5; --strip-burn: #d95926; --strip-trout: #2f9e2f; --strip-habitat: #e66767;
     --seq-0: #184f95; --seq-1: #256abf; --seq-2: #3987e5; --seq-3: #86b6ef; --seq-4: #cde2fb;
-    --d-step: #d55181; --d-cascade: #c98500; --d-short: #9085e9; --d-mapped: #d8d7d2; --gauge: #c3c2b7;
+    --d-step: #d55181; --d-cascade: #c98500; --d-short: #9085e9; --d-mapped: #d8d7d2; --d-artifact: #8f8e86; --gauge: #c3c2b7;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--surface-0); color: var(--text-primary);
@@ -107,7 +107,8 @@
     <div id="chart" role="img" aria-label="Long profile chart"></div>
     <div class="note">Distance runs downstream from the channel head (left) to the mouth (right). Elevation is the
       hydro-conditioned 10 m DEM used by the drop detectors, so short falls look like steep steps rather than vertical
-      drops. Click anywhere on the profile to point “Show on map” at that spot.</div>
+      drops. Hover the profile and a ring follows along the creek on any open map of this area; click to send that
+      map to the spot (and to point “Show on map” at it).</div>
   </section>
 
   <section class="card">
@@ -125,7 +126,11 @@ const DROP = {
   "unmapped cascade":                 { v: "--d-cascade", sym: "diamond",       label: "Cascade / knickpoint" },
   "unmapped short fall (big creek)":  { v: "--d-short",   sym: "circle",        label: "Short fall / pool (big creek)" },
   "matches mapped waterfall":         { v: "--d-mapped",  sym: "square",        label: "Drop at a mapped waterfall" },
+  // set aside by 05_score.py: a road crossing or a filled depression, shown so such a step isn't read as a missed fall
+  "likely DEM artifact":              { v: "--d-artifact", sym: "x",            label: "Likely DEM artifact" },
 };
+const ARTIFACT = "likely DEM artifact";
+const realDrops = p => p.drops.filter(d => d.status !== ARTIFACT);
 let current = null, pickedKm = null;
 
 document.getElementById("gen").textContent =
@@ -163,6 +168,7 @@ function legendHTML(p) {
       "square": `<rect x="1" y="1" width="10" height="10" rx="2" fill="${color}"/>`,
       "star": `<polygon points="6,0 7.6,4 12,4.4 8.6,7.2 9.7,12 6,9.4 2.3,12 3.4,7.2 0,4.4 4.4,4" fill="${color}"/>`,
       "triangle-up": `<polygon points="6,1 11,11 1,11" fill="${color}"/>`,
+      "x": `<path d="M2,2 L10,10 M10,2 L2,10" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`,
     }[sym];
     return `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">${s}</svg>`;
   };
@@ -198,10 +204,11 @@ function render(p) {
       x: ds.map(x => x.km), y: ds.map(x => zAt(x.km)), type: "scatter", mode: "markers", name: d.label,
       marker: { symbol: d.sym, size: ds.map(x => Math.max(9, Math.min(18, 7 + x.drop / 6))), color: css(d.v),
                 line: { color: surf, width: 2 } },
-      customdata: ds.map(x => [x.drop, x.excess ?? "–", x.approach ?? "–", x.bike ?? 0, x.drive ?? "–"]),
+      customdata: ds.map(x => [x.drop, x.excess ?? "–", x.approach ?? "–", x.bike ?? 0, x.drive ?? "–", x.why ?? ""]),
       hovertemplate: `<b>${d.label}</b><br>%{x:.2f} km · drop %{customdata[0]} m` +
         (status.includes("big creek") ? " (excess %{customdata[1]} m)" : "") +
-        "<br>Approach %{customdata[2]} min (bike %{customdata[3]}) · drive %{customdata[4]} min<extra></extra>",
+        (status === ARTIFACT ? "<br>%{customdata[5]}: probably not a real fall<extra></extra>" :
+         "<br>Approach %{customdata[2]} min (bike %{customdata[3]}) · drive %{customdata[4]} min<extra></extra>"),
       xaxis: "x", yaxis: "y",
     });
   }
@@ -271,7 +278,8 @@ function show(p, opts = {}) {
   document.getElementById("stats").innerHTML =
     `<span>Length <b>${p.length_km.toFixed(1)} km</b></span><span>Elevation <b>${p.top_m}–${p.bottom_m} m</b> (−${drop} m, avg ${(drop / p.length_km / 10).toFixed(1)}%)</span>` +
     `<span>Drainage at mouth <b>${p.area_km2} km²</b></span><span>Best fish score <b>${p.best_score.toFixed(0)}</b></span>` +
-    `<span>Drops <b>${p.drops.length}</b></span>`;
+    `<span>Drops <b>${realDrops(p).length}</b></span>` +
+    (p.drops.length > realDrops(p).length ? `<span>Likely DEM artifacts <b>${p.drops.length - realDrops(p).length}</b></span>` : "");
   document.getElementById("legend").innerHTML = legendHTML(p);
   render(p);
   table(p);
@@ -280,29 +288,65 @@ function show(p, opts = {}) {
   document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.textContent === p.label));
 }
 
+// index of the profile point nearest a distance (km is sorted)
+function nearest(p, km) {
+  let lo = 0, hi = p.km.length - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.km[mid] < km) lo = mid; else hi = mid; }
+  return km - p.km[lo] <= p.km[hi] - km ? lo : hi;
+}
+const spotText = (p, i) => `${p.name} · ${p.km[i].toFixed(2)} km · ${Math.round(p.z[i])} m`;
+const pinHash = (lat, lon, zoom, text) => `#${lat},${lon},${zoom},pin,${encodeURIComponent(text)}`;
 function setMapLink(km, zoom) {
-  const p = current; let i = p.km.findIndex(k => k >= km); if (i < 0) i = p.km.length - 1;
-  document.getElementById("mapLink").href = `stream_map.html#${p.lat[i]},${p.lon[i]},${zoom}`;
+  const p = current, i = nearest(p, km);
+  document.getElementById("mapLink").href = "stream_map.html" +
+    (pickedKm == null ? `#${p.lat[i]},${p.lon[i]},${zoom}` : pinHash(p.lat[i], p.lon[i], zoom, spotText(p, i)));
+}
+
+// The spot under the mouse, to the area's map open in another tab (map_drainages.js showPin draws it there):
+// "hover" moves the ring, "pick" (a click) also sends the map to it.
+const spotChan = "BroadcastChannel" in window ? new BroadcastChannel("streams-profile-spot") : null;
+let spotSeq = 0, lastSpot = null;
+function sendSpot(km, kind) {
+  const p = current; if (!p || km == null) return;
+  const i = nearest(p, km), key = p.id + ":" + i + ":" + kind;
+  if (key === lastSpot) return;
+  lastSpot = key;
+  const m = { seq: Date.now() + "-" + (spotSeq++), kind, lat: p.lat[i], lon: p.lon[i], text: spotText(p, i) };
+  if (spotChan) spotChan.postMessage(m);
+  try { localStorage.setItem("streams-profile-spot", JSON.stringify(m)); } catch (_) {}
 }
 
 function table(p) {
   const t = document.getElementById("dropTable");
-  document.getElementById("dropCount").textContent = p.drops.length ? `${p.drops.length} on the profile` : "none detected on this creek";
+  const nReal = realDrops(p).length, nArt = p.drops.length - nReal;
+  document.getElementById("dropCount").textContent = (nReal ? `${nReal} on the profile` : "none detected on this creek") +
+    (nArt ? ` · ${nArt} likely DEM artifact${nArt > 1 ? "s" : ""}` : "");
   if (!p.drops.length) { t.innerHTML = ""; return; }
   t.innerHTML = `<thead><tr><th class="num">km</th><th>Type</th><th class="num">Drop (m)</th><th class="num">Excess (m)</th>
     <th class="num">Drive (min)</th><th class="num">Bike (min)</th><th class="num">Approach (min)</th><th>Map</th></tr></thead><tbody>` +
-    p.drops.map(d => `<tr><td class="num">${d.km.toFixed(2)}</td><td>${DROP[d.status].label}</td><td class="num">${d.drop}</td>
+    p.drops.map(d => `<tr${d.status === ARTIFACT ? ' class="muted"' : ""}><td class="num">${d.km.toFixed(2)}</td><td>${DROP[d.status].label}${d.why ? ` (${d.why})` : ""}</td><td class="num">${d.drop}</td>
       <td class="num">${d.excess ?? "–"}</td><td class="num">${d.drive ?? "–"}</td><td class="num">${d.bike ?? "–"}</td>
-      <td class="num">${d.approach ?? "–"}</td><td><a href="stream_map.html#${d.lat},${d.lon},16" target="_blank">map</a></td></tr>`).join("") +
+      <td class="num">${d.approach ?? "–"}</td><td><a href="stream_map.html${pinHash(d.lat, d.lon, 16, `${DROP[d.status].label}, ${d.drop} m · ${p.name} ${d.km.toFixed(2)} km`)}" target="_blank">map</a></td></tr>`).join("") +
     "</tbody>";
 }
 
 function wireClick() {
-  document.getElementById("chart").on("plotly_click", ev => {
+  const chart = document.getElementById("chart");
+  chart.on("plotly_click", ev => {
     const pt = ev.points && ev.points[0]; if (!pt) return;
     pickedKm = pt.x; render(current); setMapLink(pickedKm, 16);
+    lastSpot = null; sendSpot(pickedKm, "pick");
     history.replaceState(null, "", "#id=" + encodeURIComponent(current.id) + "&km=" + pickedKm.toFixed(3));
   });
+  // every panel shares the distance axis, so the strips and gradient move the ring too
+  let raf = 0, hoverKm = null;
+  chart.on("plotly_hover", ev => {
+    const pt = ev.points && ev.points[0]; if (!pt || typeof pt.x !== "number") return;
+    hoverKm = pt.x;
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; sendSpot(hoverKm, "hover"); });
+  });
+  // leaving the chart puts the ring back on the clicked spot, if there is one (otherwise it stays where it was)
+  chart.on("plotly_unhover", () => { if (pickedKm != null) sendSpot(pickedKm, "hover"); });
 }
 
 function fromHash() {

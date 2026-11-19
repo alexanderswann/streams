@@ -24,7 +24,10 @@ FLOWLINE_FTYPES = {460, 558}   # StreamRiver, ArtificialPath (through ponds / re
 
 reaches = pd.read_csv(f"{MAP_OUT}/stream_reaches_ranked.csv")
 drops_all = pd.read_csv(f"{MAP_OUT}/waterfall_candidates.csv")
-SHOW = {"unmapped waterfall-like step", "unmapped cascade", "unmapped short fall (big creek)", "matches mapped waterfall"}
+# likely DEM artifacts too, drawn apart in the viewer, so a step in the profile that is a road crossing or a filled
+# depression says so rather than looking like a missed fall
+SHOW = {"unmapped waterfall-like step", "unmapped cascade", "unmapped short fall (big creek)", "matches mapped waterfall",
+        "likely DEM artifact"}
 drops_all = drops_all[drops_all.status.isin(SHOW)]
 gauges = gpd.read_file(f"{MAP_OUT}/context/gauges.gpkg").to_crs(CRS)
 to_ll = lambda x, y: gpd.GeoSeries(gpd.points_from_xy(x, y), crs=CRS).to_crs(4326)
@@ -125,7 +128,12 @@ for region, meta in REGIONS.items():
                           approach=None if pd.isna(r_.approach_min) else int(r_.approach_min),
                           bike=None if pd.isna(r_.bike_min) else int(r_.bike_min),
                           drive=None if pd.isna(r_.drive_min) else int(r_.drive_min),
-                          excess=None if pd.isna(r_.excess_drop_m) else r_.excess_drop_m)
+                          excess=None if pd.isna(r_.excess_drop_m) else r_.excess_drop_m,
+                          # why an artifact was set aside (05_score.py): a drivable road within 40 m, or a step in a
+                          # depression the DEM fill raised more than 2 m (dam, culvert, bridge deck, bad pixels)
+                          why=None if r_.status != "likely DEM artifact" else
+                              "road crossing" if str(r_.road_crossing) == "True" else
+                              f"filled depression ({r_.fill_max_m:g} m)")
                      for kk, r_ in sorted(zip(km[on], d_reg[on].itertuples()), key=lambda t: t[0])]
             fd, fkm = snap(kf.geometry.x.values, kf.geometry.y.values)
             falls = [dict(km=round(kk, 3), name=n if isinstance(n, str) else "mapped waterfall")
