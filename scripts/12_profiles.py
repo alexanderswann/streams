@@ -12,7 +12,7 @@ from scipy.ndimage import minimum_filter, maximum_filter
 from scipy.spatial import cKDTree
 from shapely.geometry import LineString
 from shapely.ops import linemerge, unary_union
-from config import REGIONS, CRS, ROOT, MAP_OUT, RES
+from config import REGIONS, CRS, ROOT, MAP_OUT, RES, raw_dir, derived_dir
 
 MIN_KM = 2.0          # skip shorter creeks
 STEP_M = 40           # spacing along the profile
@@ -63,7 +63,7 @@ def main_stems(lines):
 
 profiles = []
 for region, meta in REGIONS.items():
-    raw = f"{ROOT}/data/raw/{region}"; der = f"{ROOT}/data/derived/{region}"
+    raw = raw_dir(region); der = derived_dir(region)
     src = rasterio.open(f"{raw}/dem_10m.tif")
     T, inv = src.transform, ~src.transform
     k = int(BOTTOM_M / RES)

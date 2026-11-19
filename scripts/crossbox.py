@@ -15,16 +15,16 @@ goes on, found on the NHDPlus flowlines leaving the lake. Drainages still end at
 import json, os
 from collections import defaultdict
 import numpy as np, pandas as pd, geopandas as gpd, rasterio, rasterio.windows, shapely, shapely.ops
-from config import REGIONS, ROOT, RES, CRS
+from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_dir
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
-CACHE = f"{ROOT}/data/derived/_shared/inflows.json"
+CACHE = f"{SHARED_DERIVED}/inflows.json"
 VERSION = 5
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 
 
 def fdir_path(region):
-    return f"{ROOT}/data/derived/{region}/flowdir.tif"
+    return f"{derived_dir(region)}/flowdir.tif"
 
 
 def jump(ptr):
@@ -135,7 +135,7 @@ def crossing(region, fd, T, x, y, away, radius=10):
         r1, c1 = min(r + radius + 1, fd.shape[0]), min(c + radius + 1, fd.shape[1])
         if r0 >= r1 or c0 >= c1:
             return
-        with rasterio.open(f"{ROOT}/data/derived/{region}/dem_filled.tif") as src:
+        with rasterio.open(f"{derived_dir(region)}/dem_filled.tif") as src:
             z = src.read(1, window=rasterio.windows.Window(c0, r0, c1 - c0, r1 - r0), masked=True).astype(float)
         for k in np.argsort(z.filled(np.inf), axis=None):
             rr, cc = np.unravel_index(k, z.shape)
@@ -239,7 +239,7 @@ def _build(regions):
     # the reservoir list leaves out lagoons (it's for coastal ones), but Castaic's water ends in Castaic Lagoon, the
     # afterbay below the dam; a coastal lagoon has no flowline below it, so it stays closed anyway
     lag = [gpd.read_file(g, layer="NHDWaterbody", where="gnis_name LIKE '%Lagoon%' AND ftype IN (390, 436)")
-           for g in sorted({f"{SHARED}/NHD_H_{h}_HU4_GPKG.gpkg" for v in REGIONS.values() for h in v["hu4"]})]
+           for g in sorted({f"{NATIONAL}/NHD_H_{h}_HU4_GPKG.gpkg" for v in REGIONS.values() for h in v["hu4"]})]
     lag = [l.to_crs(CRS)[["gnis_name", "geometry"]] for l in lag if len(l)]
     lakes = pd.concat([reservoirs()[["gnis_name", "geometry"]], *lag], ignore_index=True)
     lakes = gpd.GeoDataFrame(lakes, geometry=lakes.geometry.force_2d(), crs=CRS)

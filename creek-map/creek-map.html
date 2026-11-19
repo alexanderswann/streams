@@ -1,0 +1,1049 @@
+<meta charset="utf-8">
+<title>Mystery Creek Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+
+</style>
+<style>
+/* Layout: field-sheet header, then map beside a ranked list of candidate creeks (stacks on phones). */
+:root {
+  --bg: #eef1ec;
+  --panel: #f8faf6;
+  --ink: #1f2a24;
+  --muted: #5c6b62;
+  --rule: #cdd6cc;
+  --land: #e4e9df;
+  --water: #2f78b7;
+  --road: #a38b6d;
+  --freeway: #8b7a63;
+  --rank1: #7b3fa0;
+  --rank2: #c27a12;
+  --rank3: #4f7f8f;
+  --video: #2e7d4f;
+  --closed-all: #6b6b6b;
+  --focus: #2f78b7;
+  --tile-filter: none;
+  --road-open: #b8431f;
+  --trail: #4a2f1c;
+  --casing: #ffffff;
+  --f-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141a17; --panel: #1b2420; --ink: #e3ebe5; --muted: #9aaba1; --rule: #2f3b35;
+  --land: #1a221e; --water: #5ca7e6; --road: #8a7660; --freeway: #a08d74;
+  --rank1: #b98ae0; --rank2: #e5a13f; --rank3: #7fb3c4; --video: #6fcf97; --closed-all: #a0a0a0; --focus: #5ca7e6; --tile-filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92); --road-open: #f08a5d; --trail: #f1dcc4; --casing: #101512; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141a17; --panel: #1b2420; --ink: #e3ebe5; --muted: #9aaba1; --rule: #2f3b35;
+  --land: #1a221e; --water: #5ca7e6; --road: #8a7660; --freeway: #a08d74;
+  --rank1: #b98ae0; --rank2: #e5a13f; --rank3: #7fb3c4; --video: #6fcf97; --closed-all: #a0a0a0; --focus: #5ca7e6; --tile-filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92); --road-open: #f08a5d; --trail: #f1dcc4; --casing: #101512; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+
+header { display: grid; gap: 6px; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.02; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.lede { margin: 0; max-width: 68ch; color: var(--muted); }
+.lede b { color: var(--ink); font-weight: 600; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.mapbox { position: relative; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--land); }
+#map { height: min(72vh, 680px); min-height: 420px; width: 100%; background: var(--land); font-family: var(--f-body); }
+.scalebar { position: absolute; left: 10px; bottom: 26px; z-index: 500; font-family: var(--f-mono); font-size: 11px; color: var(--muted); pointer-events: none; }
+
+.leaflet-container { background: var(--land); }
+.leaflet-tile-pane { filter: var(--tile-filter); }
+.leaflet-control-zoom a { background: var(--panel); color: var(--ink); border-color: var(--rule) !important; }
+.leaflet-control-zoom a:hover { background: var(--bg); }
+.leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 85%, transparent) !important; color: var(--muted) !important; font-size: 10px; }
+.leaflet-control-attribution a { color: var(--water) !important; }
+.leaflet-tooltip.lbl { background: transparent; border: 0; box-shadow: none; padding: 0; color: var(--muted); font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 0 3px var(--panel), 0 0 3px var(--panel), 0 0 2px var(--panel), 0 0 6px var(--panel); }
+.leaflet-tooltip.lbl::before { display: none; }
+.leaflet-tooltip.lbl.peak { text-transform: none; font-family: var(--f-body); font-weight: 500; font-size: 11px; letter-spacing: 0; }
+.leaflet-tooltip.lbl.road { font-family: var(--f-mono); font-size: 10px; font-weight: 500; color: var(--road); text-transform: none; }
+.leaflet-tooltip.lbl.zone { font-size: 15px; font-weight: 700; color: var(--ink); text-transform: none; letter-spacing: .01em; }
+.leaflet-tooltip.lbl.poi { font-family: var(--f-body); text-transform: none; font-size: 11px; font-weight: 500; color: var(--ink); letter-spacing: 0; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--ink); }
+.leaflet-popup-content { font-family: var(--f-body); font-size: 13px; margin: 10px 14px; }
+.leaflet-popup-content b { font-family: var(--f-display); font-size: 16px; }
+
+aside { display: grid; gap: 12px; min-width: 0; }
+.legend-h { font-family: var(--f-display); font-size: 18px; font-weight: 700; margin: 0; letter-spacing: .02em; text-transform: uppercase; }
+.zones { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.zone { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 12px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; }
+.zone:hover { border-color: var(--muted); }
+.zone:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.zone[aria-pressed="true"] { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+.rank { grid-row: span 3; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: var(--panel); font-family: var(--f-display); font-weight: 700; font-size: 20px; display: grid; place-items: center; }
+.zname { font-family: var(--f-display); font-weight: 700; font-size: 20px; line-height: 1.1; }
+.odds { font-family: var(--f-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--c); font-weight: 500; }
+.why { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.why b { color: var(--ink); font-weight: 600; }
+.access { grid-column: 2; font-size: 12.5px; font-family: var(--f-mono); color: var(--ink); margin-top: 4px; }
+
+.key { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12.5px; color: var(--muted); padding-top: 4px; border-top: 1px solid var(--rule); }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 22px; height: 0; border-top: 3px solid var(--water); }
+.sw.road { border-top: 2px solid var(--road); }
+.sw.fwy { border-top: 3px solid var(--freeway); }
+.dot { width: 10px; height: 10px; border-radius: 2px; border: 2px solid var(--ink); background: var(--panel); display: inline-block; transform: rotate(45deg); }
+.sw.open { border-top: 4px solid var(--road-open); }
+.sw.closed { border-top: 3px dashed var(--road-open); }
+.sw.shut { border-top: 3px dashed var(--closed-all); }
+.sw.trail { border-top: 3px dotted var(--trail); }
+.key label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.key input { accent-color: var(--road-open); margin: 0; }
+.leaflet-tooltip.lbl.th { font-family: var(--f-body); text-transform: none; font-size: 11.5px; font-weight: 600; color: var(--ink); letter-spacing: 0; }
+#map.zlow .leaflet-tooltip.lbl.th { display: none; }
+.leaflet-tooltip.hover { background: var(--panel); color: var(--ink); border: 1px solid var(--rule); font-family: var(--f-body); font-size: 12px; box-shadow: none; }
+.leaflet-tooltip.hover::before { display: none; }
+.leaflet-tooltip.hover b { font-weight: 600; }
+
+.notes { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.note { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; min-width: 0; }
+.note h2 { font-family: var(--f-display); font-weight: 700; font-size: 18px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .02em; }
+.note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.note li b { color: var(--ink); font-weight: 600; }
+.note p { margin: 0; font-size: 13.5px; color: var(--muted); }
+.src { font-size: 12px; color: var(--muted); }
+.src a { color: var(--water); }
+@media (prefers-reduced-motion: reduce) { .leaflet-zoom-anim .leaflet-zoom-animated { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">r/SoCalFishing · “Angeles National Forest” · posted Mar 10, 2026</div>
+    <h1>Where was that creek?</h1>
+    <p class="lede">Best guesses for the four photos in the post, based on the rock, the plants, the poster’s mention of <b>barbless-hook rules</b>, and a commenter saying the river <b>“stretches for quite some time.”</b> Nothing in the post names the spot, so treat these as ranked guesses, not a fix.</p>
+  </header>
+
+  <div class="grid">
+    <div class="mapbox">
+      <div id="map" role="region" aria-label="Map of candidate creeks in the San Gabriel Mountains and Deep Creek in the San Bernardino Mountains"></div>
+    </div>
+
+    <aside>
+      <h2 class="legend-h">Candidates, most likely first</h2>
+      <ul class="zones" id="zones"></ul>
+      <h2 class="legend-h">From the YouTube video</h2>
+      <ul class="zones" id="vzones"></ul>
+      <div class="key" role="group" aria-label="Map layers">
+        <span><i class="sw"></i>Candidate creek</span>
+        <label for="lyr-roads"><input type="checkbox" id="lyr-roads" checked><i class="sw open"></i>Road open to cars</label>
+        <label for="lyr-closed"><input type="checkbox" id="lyr-closed" checked><i class="sw closed"></i>Road closed to cars</label>
+        <span><i class="sw shut"></i>Closed to everyone</span>
+        <label for="lyr-trails"><input type="checkbox" id="lyr-trails" checked><i class="sw trail"></i>Trail</label>
+        <label for="lyr-th"><input type="checkbox" id="lyr-th" checked><i class="dot"></i>Trailhead / camp</label>
+      </div>
+      <p class="why" style="margin:0">Hover or tap a road or trail for its name. Trailhead labels appear when you zoom in.</p>
+    </aside>
+  </div>
+
+  <div class="notes">
+    <div class="note">
+      <h2>What the photos show</h2>
+      <ul>
+        <li><b>Pale grey, water-polished granite and gneiss</b> with dark streaks, typical of the LA-facing front range.</li>
+        <li><b>White alder, live oak, ferns, bigcone Douglas-fir</b> and a yucca: a mid-elevation canyon, roughly 2,000–4,000 ft.</li>
+        <li><b>A small creek in a tight gorge</b> with a 6–10 ft fall and log jams. Too small for the main forks.</li>
+        <li>Fresh spring green and clear water fit the early-March posting date.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>What the comments add</h2>
+      <ul>
+        <li>The poster says people stay away because of <b>barbless-hook regulations</b>. Few Angeles NF waters have them; the West Fork system is the best known.</li>
+        <li>A commenter asks where to fish “along the river” because it <b>stretches a long way</b>.</li>
+        <li>The poster used a <b>Tenkara rod</b> and a Rainbow Warrior nymph, and did “extensive research,” which fits a hike-in creek.</li>
+        <li>They didn’t answer the request for the general area, which is common for wild-trout water.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>The Deep Creek video</h2>
+      <ul>
+        <li>“Deep in the San Bernardino Mountains” (Anglin’ Man, filmed 3/21/2026) <b>names no creek or road</b>, so this is worked out from clues.</li>
+        <li>The description puts it on a <b>north-slope creek with deep granite pools and wild rainbows</b>. The angler is following up a Nov 2024 video of the creek just downstream.</li>
+        <li>In that 2024 video he says he <b>used to drive down this road</b>, that it has been <b>closed for several years</b>, and that it used to be <b>overrun with 4x4s</b>. The Forest Service closed the Aztec Falls / Splinters Cabin area for overcrowding.</li>
+        <li>The opening shot shows a <b>rough track over granite ledges on an open hillside</b>. That best fits FR 3N34’s rocky “very horrible” 4x4 grade down to the Deep Creek crossing. FR 2N26Y is paved, and 3N34C runs along the canyon floor.</li>
+        <li>Forest Order 05-12-52-25-02 (to June 7, 2027) <b>closes Deep Creek and 50 ft either side</b> from the Hooks Creek confluence down to Devil’s Hole. It also closes 3N34C and the Splinters Cabin area to everyone, and 2N26Y to vehicles. The <b>upstream</b> stretch he fished in 2026 is outside that zone. Confirm with the Mountaintop Ranger District (909-382-2790).</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h2>Before you go</h2>
+      <p>Check the current CDFW special regulations for the exact creek: some stretches are zero-limit with barbless artificial lures only, and some are closed to protect arroyo toads or native trout. Check Angeles NF alerts for road and area closures, and bring an Adventure Pass or equivalent for parking.</p>
+    </div>
+  </div>
+
+  <p class="src">Topo underlay from the <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS National Map</a> (public domain), detailed down to street-level zoom along the candidate creeks. Creek and landmark lines from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL), simplified. Shaded bands mark the stretches I think are likely, not exact spots.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const ACCESS = {"open":{"Angeles Forest Hwy":[[[34.27068,-118.15363],[34.2714,-118.15402]],[[34.3105,-118.13921],[34.31094,-118.13836],[34.31197,-118.13765],[34.31264,-118.13616],[34.31389,-118.13582]],[[34.31519,-118.13592],[34.31696,-118.13592]],[[34.31389,-118.13582],[34.31519,-118.13592]],[[34.31696,-118.13592],[34.31714,-118.1358]],[[34.31714,-118.1358],[34.31762,-118.13493],[34.31735,-118.1328],[34.31832,-118.13147],[34.32004,-118.13063],[34.3212,-118.12895],[34.3229,-118.12777],[34.32388,-118.12746],[34.32471,-118.12629],[34.32635,-118.12593],[34.32914,-118.1205],[34.32943,-118.1186],[34.3301,-118.11687],[34.33171,-118.11623],[34.33305,-118.11418],[34.33501,-118.11262],[34.33551,-118.11038],[34.33642,-118.109],[34.33699,-118.10896],[34.33845,-118.10973],[34.34355,-118.1108],[34.34569,-118.10977],[34.34744,-118.11036],[34.34871,-118.10987],[34.3526,-118.11085],[34.35477,-118.10995],[34.35823,-118.10962],[34.35988,-118.10978],[34.36261,-118.10731],[34.36588,-118.10615],[34.36853,-118.10371],[34.37049,-118.10078],[34.37095,-118.10052],[34.37204,-118.10056],[34.37348,-118.10204],[34.37417,-118.10187],[34.37491,-118.09858],[34.37587,-118.09796],[34.3782,-118.09728],[34.37912,-118.09643],[34.37976,-118.09635],[34.38147,-118.09691],[34.38325,-118.09846],[34.38546,-118.09945],[34.38606,-118.09859],[34.38533,-118.09713],[34.38531,-118.09641],[34.38596,-118.09493],[34.38616,-118.09352],[34.38744,-118.09126],[34.3862,-118.08957],[34.38634,-118.08796],[34.38822,-118.08609],[34.38902,-118.08476],[34.39091,-118.08473],[34.3924,-118.08373],[34.39269,-118.08257],[34.39182,-118.08135]],[[34.27828,-118.16698],[34.27892,-118.16762],[34.27912,-118.16938],[34.28052,-118.17059],[34.281,-118.17473],[34.28158,-118.17648],[34.28278,-118.17742],[34.2826,-118.17891],[34.28281,-118.17946],[34.28445,-118.18053],[34.28552,-118.18009],[34.28675,-118.18075],[34.2877,-118.18066],[34.28831,-118.17983],[34.28852,-118.17838],[34.28975,-118.17614],[34.29103,-118.17505],[34.29151,-118.1728],[34.29094,-118.17059],[34.29109,-118.16985],[34.29175,-118.16953],[34.29306,-118.17005],[34.29406,-118.16956],[34.29516,-118.1678],[34.29535,-118.16607],[34.29689,-118.16515],[34.29648,-118.16268],[34.29711,-118.16073],[34.29786,-118.16041],[34.29881,-118.16122],[34.2996,-118.1612],[34.30143,-118.15833],[34.30095,-118.15646],[34.30098,-118.15509],[34.29873,-118.15135],[34.29852,-118.14882],[34.29916,-118.14832],[34.29963,-118.14846],[34.30042,-118.14955],[34.30245,-118.15047],[34.30583,-118.15351],[34.30776,-118.15239],[34.30801,-118.15162],[34.30768,-118.15049],[34.30783,-118.14938],[34.30721,-118.14775],[34.30704,-118.146],[34.30986,-118.14049]],[[34.2714,-118.15402],[34.27151,-118.15423]],[[34.27803,-118.16693],[34.27828,-118.16698]],[[34.27151,-118.15423],[34.2717,-118.155],[34.27146,-118.15715],[34.27334,-118.15975],[34.27413,-118.16214],[34.27564,-118.1641],[34.27594,-118.16609],[34.27698,-118.16687],[34.27803,-118.16693]],[[34.27016,-118.15345],[34.27023,-118.15346]],[[34.27023,-118.15346],[34.27068,-118.15363]]],"Angeles Crest Hwy (Hwy 2)":[[[34.25273,-118.19753],[34.25366,-118.19759],[34.2542,-118.19884],[34.25483,-118.19911],[34.25605,-118.19811],[34.25657,-118.1966],[34.25856,-118.19712],[34.25935,-118.19677],[34.25956,-118.19542],[34.2582,-118.19408],[34.25805,-118.19311],[34.25866,-118.19244],[34.2603,-118.19228],[34.26054,-118.19158],[34.26029,-118.18876],[34.26076,-118.18819],[34.26191,-118.18839],[34.26252,-118.18802],[34.26308,-118.18699],[34.26278,-118.18618]],[[34.20706,-118.2001],[34.20728,-118.2001]],[[34.36153,-117.86255],[34.36142,-117.86232]],[[34.36142,-117.86232],[34.36071,-117.86092]],[[34.21908,-118.19603],[34.21902,-118.19553]],[[34.20496,-118.20024],[34.2045,-118.20022]],[[34.20709,-118.20023],[34.20627,-118.20023]],[[34.20586,-118.2001],[34.20624,-118.20011]],[[34.27341,-118.03295],[34.27269,-118.03147],[34.27302,-118.02709],[34.27232,-118.02553],[34.27311,-118.02377],[34.27343,-118.02009],[34.27417,-118.01869],[34.27378,-118.01722],[34.2739,-118.01525],[34.27555,-118.01185],[34.27713,-118.00998],[34.27784,-118.0073],[34.27787,-118.00572],[34.27938,-118.00488],[34.28251,-118.00186],[34.28458,-117.99933],[34.28517,-117.9958],[34.28497,-117.99385],[34.28565,-117.99283],[34.28646,-117.99273],[34.28712,-117.99317],[34.28868,-117.99446],[34.28985,-117.9962],[34.29235,-117.99556],[34.29293,-117.99571],[34.29321,-117.9984],[34.29493,-118.00009],[34.29501,-118.0019],[34.29542,-118.00278],[34.29636,-118.00323],[34.29773,-118.00257],[34.29841,-118.00283],[34.29864,-118.00361],[34.2981,-118.00595],[34.29838,-118.00881],[34.29884,-118.00999],[34.30096,-118.01294],[34.30269,-118.01376],[34.3049,-118.01323],[34.30573,-118.01333],[34.30726,-118.01501],[34.30905,-118.01606],[34.30983,-118.01554],[34.31013,-118.01344],[34.3115,-118.01177],[34.31143,-118.00937],[34.31195,-118.00853],[34.31441,-118.00753],[34.31504,-118.00803],[34.31611,-118.01009],[34.31783,-118.01067],[34.31872,-118.01024],[34.31912,-118.00912],[34.31873,-118.00732],[34.31901,-118.00324],[34.31944,-118.00242],[34.32087,-118.0017],[34.32278,-118.003],[34.32365,-118.00317],[34.32977,-118.00167],[34.33065,-118.00068],[34.33061,-117.99786],[34.33193,-117.99574],[34.33544,-117.99461],[34.33943,-117.99455],[34.34045,-117.99396],[34.34138,-117.9928],[34.34286,-117.99227],[34.34331,-117.9917],[34.34515,-117.98777],[34.34487,-117.98705],[34.34288,-117.98616],[34.34229,-117.98529],[34.34237,-117.98419],[34.34318,-117.98227],[34.34305,-117.98063],[34.34358,-117.9787],[34.34226,-117.97517],[34.34223,-117.97381],[34.34265,-117.97288],[34.34765,-117.96727],[34.3508,-117.96038],[34.35112,-117.9589],[34.35098,-117.95734],[34.34911,-117.95591],[34.34861,-117.95225],[34.34717,-117.94992],[34.34854,-117.94608],[34.34831,-117.94401],[34.34983,-117.94097],[34.35056,-117.9408],[34.35107,-117.94165],[34.3523,-117.94601],[34.35485,-117.94737],[34.35548,-117.94673],[34.35505,-117.94612],[34.3539,-117.946],[34.35307,-117.94455],[34.3524,-117.94089],[34.35336,-117.9392],[34.35256,-117.93809],[34.35253,-117.93645],[34.35153,-117.93514],[34.35051,-117.93089],[34.34951,-117.92881],[34.34957,-117.92811],[34.35039,-117.92657],[34.35023,-117.92536],[34.34718,-117.92153],[34.34556,-117.92088],[34.34298,-117.92125],[34.34227,-117.92066],[34.34206,-117.91956],[34.34449,-117.91539],[34.34441,-117.91239],[34.34358,-117.9102],[34.34364,-117.90962],[34.3443,-117.90928],[34.34534,-117.91011],[34.34634,-117.90995],[34.34792,-117.90607],[34.349,-117.90492],[34.34924,-117.90306],[34.3517,-117.90209],[34.35259,-117.90044],[34.35254,-117.89965],[34.35157,-117.89743],[34.3525,-117.89604],[34.35257,-117.89529],[34.35229,-117.89475],[34.35083,-117.89386],[34.35019,-117.89261],[34.35136,-117.89013],[34.35241,-117.88929],[34.35277,-117.88827],[34.35256,-117.8864],[34.35106,-117.88475],[34.351,-117.88143],[34.3516,-117.88073],[34.35357,-117.88021],[34.35513,-117.87725],[34.35699,-117.87773],[34.35996,-117.87607],[34.36028,-117.8745],[34.36168,-117.87259],[34.36182,-117.87079],[34.36144,-117.86708],[34.36256,-117.86564],[34.3625,-117.86448]],[[34.36153,-117.86255],[34.3625,-117.86448]],[[34.36071,-117.86092],[34.35949,-117.85886],[34.35848,-117.85891],[34.35718,-117.86002],[34.35634,-117.85989],[34.35591,-117.85913],[34.35686,-117.85518],[34.35673,-117.85174],[34.35747,-117.84834],[34.35612,-117.84425],[34.357,-117.84312],[34.35816,-117.84303],[34.35876,-117.84265],[34.3592,-117.84137],[34.35914,-117.84059],[34.35868,-117.84],[34.35744,-117.83943],[34.35666,-117.8374],[34.35438,-117.83713],[34.35333,-117.83559],[34.35174,-117.83504],[34.35052,-117.83518],[34.34994,-117.8349],[34.34959,-117.83271],[34.34982,-117.8312],[34.34868,-117.82884],[34.34741,-117.82793],[34.34595,-117.8278],[34.34539,-117.82715],[34.34569,-117.82525],[34.3451,-117.82404],[34.34465,-117.82115],[34.34523,-117.82034],[34.34692,-117.82057],[34.34787,-117.81993],[34.34968,-117.81984],[34.35014,-117.81922],[34.35003,-117.81783],[34.34915,-117.81652],[34.34842,-117.81368],[34.34793,-117.81085],[34.34827,-117.81011],[34.34984,-117.81021],[34.35102,-117.80908],[34.35228,-117.80921],[34.35422,-117.80843],[34.35504,-117.80925],[34.35644,-117.80966],[34.35713,-117.81078],[34.35811,-117.81154],[34.3586,-117.81261],[34.35928,-117.81287],[34.36011,-117.81198],[34.36046,-117.81013],[34.3621,-117.80978],[34.36397,-117.8073],[34.36494,-117.80685],[34.3664,-117.805],[34.36802,-117.80377],[34.36811,-117.80187],[34.36752,-117.80092],[34.36648,-117.80092],[34.36563,-117.80193],[34.36417,-117.80275],[34.36226,-117.80245],[34.36167,-117.80179],[34.36118,-117.79942],[34.35837,-117.79857],[34.35793,-117.79768],[34.35837,-117.79658],[34.35935,-117.79571],[34.35951,-117.794],[34.36079,-117.79101],[34.36286,-117.79056],[34.3638,-117.78911],[34.36541,-117.78894],[34.36605,-117.78752],[34.36753,-117.78771],[34.36818,-117.78732],[34.36805,-117.78472],[34.36703,-117.78213],[34.36733,-117.7814],[34.36945,-117.78078],[34.372,-117.78217],[34.3739,-117.78123],[34.3761,-117.78257],[34.3773,-117.78137],[34.37747,-117.78023],[34.37715,-117.7795],[34.37513,-117.77926],[34.37453,-117.77846],[34.37465,-117.77618],[34.37549,-117.77453],[34.37491,-117.77277],[34.3758,-117.77092],[34.37574,-117.76887],[34.37534,-117.76804],[34.37455,-117.76758],[34.37326,-117.7674],[34.37264,-117.76681],[34.37244,-117.7656],[34.37319,-117.7641]],[[34.21667,-118.20011],[34.21765,-118.20004],[34.21848,-118.19953]],[[34.20624,-118.20011],[34.20706,-118.2001]],[[34.21544,-118.20013],[34.20879,-118.20023]],[[34.20752,-118.20023],[34.20726,-118.20023]],[[34.20782,-118.2001],[34.20896,-118.20009]],[[34.20726,-118.20023],[34.20709,-118.20023]],[[34.22072,-118.19226],[34.22133,-118.19297],[34.22202,-118.19307]],[[34.223,-118.19058],[34.22512,-118.18791],[34.22636,-118.18837],[34.22701,-118.18798],[34.22719,-118.18635],[34.22838,-118.18532],[34.22899,-118.1828]],[[34.21718,-118.19144],[34.21742,-118.1902]],[[34.21902,-118.19553],[34.21868,-118.19447]],[[34.20917,-118.20009],[34.21023,-118.20008]],[[34.2223,-118.19295],[34.22252,-118.19276]],[[34.20896,-118.20009],[34.20917,-118.20009]],[[34.20762,-118.2001],[34.20782,-118.2001]],[[34.22004,-118.19106],[34.22046,-118.19179]],[[34.21509,-118.20006],[34.21544,-118.20013]],[[34.20781,-118.20023],[34.20776,-118.20023]],[[34.2086,-118.20023],[34.20803,-118.20023]],[[34.20776,-118.20023],[34.20752,-118.20023]],[[34.21614,-118.20013],[34.21667,-118.20011]],[[34.20549,-118.20024],[34.20514,-118.20024]],[[34.20879,-118.20023],[34.2086,-118.20023]],[[34.21023,-118.20008],[34.21057,-118.20008]],[[34.21713,-118.19177],[34.21718,-118.19144]],[[34.21582,-118.20013],[34.21614,-118.20013]],[[34.21544,-118.20013],[34.21582,-118.20013]],[[34.20803,-118.20023],[34.20781,-118.20023]],[[34.21223,-118.20007],[34.21254,-118.20007]],[[34.21254,-118.20007],[34.21509,-118.20006]],[[34.22202,-118.19307],[34.2223,-118.19295]],[[34.21057,-118.20008],[34.21223,-118.20007]],[[34.21911,-118.19779],[34.21912,-118.19725]],[[34.20728,-118.2001],[34.20738,-118.2001]],[[34.21848,-118.19953],[34.21881,-118.19905]],[[34.22046,-118.19179],[34.22072,-118.19226]],[[34.21912,-118.19725],[34.21908,-118.19603]],[[34.20627,-118.20023],[34.20596,-118.20023]],[[34.22252,-118.19276],[34.22284,-118.19212]],[[34.21881,-118.19905],[34.21911,-118.19779]],[[34.23246,-118.18289],[34.23289,-118.1835],[34.23349,-118.18365]],[[34.20738,-118.2001],[34.20762,-118.2001]],[[34.22004,-118.19106],[34.21869,-118.18944],[34.21795,-118.18957],[34.21742,-118.1902]],[[34.21812,-118.18935],[34.21911,-118.18959],[34.22004,-118.19106]],[[34.20584,-118.20023],[34.20549,-118.20024]],[[34.20596,-118.20023],[34.20584,-118.20023]],[[34.21778,-118.18956],[34.21793,-118.18943]],[[34.21742,-118.1902],[34.21778,-118.18956]],[[34.21793,-118.18943],[34.21812,-118.18935]],[[34.21868,-118.19447],[34.21732,-118.19273],[34.21713,-118.19177]],[[34.2045,-118.20022],[34.20586,-118.2001]],[[34.2045,-118.20022],[34.2044,-118.20026]],[[34.22899,-118.1828],[34.22978,-118.18258],[34.2306,-118.18143],[34.23182,-118.18166],[34.23246,-118.18289]],[[34.23349,-118.18365],[34.23403,-118.18362]],[[34.26278,-118.18618],[34.2618,-118.18523]],[[34.2618,-118.18523],[34.26063,-118.18442],[34.26056,-118.1837],[34.26089,-118.18309],[34.26291,-118.18266],[34.26444,-118.18291],[34.26501,-118.18203],[34.26415,-118.17877],[34.26303,-118.17698],[34.26307,-118.17564],[34.26395,-118.17424],[34.26603,-118.17404]],[[34.26603,-118.17404],[34.26697,-118.17364],[34.2674,-118.17272]],[[34.26968,-118.16764],[34.26857,-118.16372],[34.26752,-118.1622],[34.26763,-118.16144]],[[34.26994,-118.15398],[34.27016,-118.15345]],[[34.27035,-118.15285],[34.26929,-118.14692],[34.26835,-118.14461],[34.26955,-118.14075],[34.26922,-118.14019],[34.26813,-118.13957],[34.26778,-118.13781],[34.26597,-118.13433],[34.26576,-118.13321],[34.26605,-118.13122],[34.26518,-118.12874],[34.26536,-118.12726],[34.26415,-118.12537],[34.26376,-118.12416],[34.26347,-118.12282],[34.26359,-118.12095],[34.26239,-118.1193],[34.26166,-118.11702],[34.26073,-118.11598],[34.26089,-118.1154],[34.26146,-118.11527],[34.26221,-118.11648],[34.26384,-118.11714],[34.26636,-118.11626],[34.26681,-118.11677],[34.26698,-118.11813],[34.26755,-118.11848],[34.26818,-118.11812],[34.2682,-118.11745],[34.26706,-118.11617],[34.26626,-118.11464],[34.26569,-118.11449],[34.26461,-118.11523],[34.26381,-118.11525],[34.26329,-118.11494],[34.2622,-118.11329],[34.26218,-118.11239],[34.26349,-118.11204],[34.26404,-118.11115],[34.26369,-118.10972],[34.26385,-118.10781],[34.26336,-118.10761],[34.26267,-118.10824],[34.26215,-118.10829],[34.25948,-118.10656],[34.25847,-118.10523]],[[34.25847,-118.10523],[34.25876,-118.10423],[34.26063,-118.10287],[34.26132,-118.1005],[34.26268,-118.09974],[34.26387,-118.09969],[34.26533,-118.09825],[34.26568,-118.09749],[34.26527,-118.09506],[34.26575,-118.09279],[34.26438,-118.09061],[34.2643,-118.08999],[34.26571,-118.08799],[34.26578,-118.08609],[34.26657,-118.08494],[34.26633,-118.0833],[34.26719,-118.08209],[34.26725,-118.08075],[34.26861,-118.07952],[34.26841,-118.07701],[34.26955,-118.07593],[34.26985,-118.07514],[34.26971,-118.07438],[34.26777,-118.07078],[34.26793,-118.06668],[34.26897,-118.06334],[34.26987,-118.06167],[34.2703,-118.06126],[34.27136,-118.06104],[34.27164,-118.06049],[34.27089,-118.05873],[34.27169,-118.05587],[34.27059,-118.05088],[34.27273,-118.04575],[34.27298,-118.04323],[34.27361,-118.04132],[34.27351,-118.03784],[34.27383,-118.03482],[34.27341,-118.03295]],[[34.25212,-118.19744],[34.25273,-118.19753]],[[34.24804,-118.19299],[34.24814,-118.19398],[34.24856,-118.19449],[34.2504,-118.19402],[34.25185,-118.19536]],[[34.23403,-118.18362],[34.23549,-118.18413],[34.23617,-118.18508],[34.23738,-118.18584],[34.23741,-118.18904],[34.23781,-118.18964],[34.23874,-118.18979],[34.23946,-118.1886],[34.24028,-118.18829]],[[34.24205,-118.18939],[34.2425,-118.18969]],[[34.2425,-118.18969],[34.24335,-118.18967],[34.24443,-118.19055],[34.24594,-118.19061],[34.24775,-118.19223],[34.24804,-118.19299]],[[34.2411,-118.18827],[34.24163,-118.18854],[34.24205,-118.18939]],[[34.24028,-118.18829],[34.2411,-118.18827]],[[34.27033,-118.15291],[34.27035,-118.15285]],[[34.26978,-118.1545],[34.26994,-118.15398]],[[34.27023,-118.15346],[34.26978,-118.1545]],[[34.27035,-118.15298],[34.27023,-118.15346]],[[34.27016,-118.15345],[34.27033,-118.15291]],[[34.25185,-118.19536],[34.25185,-118.19698],[34.25212,-118.19744]],[[34.26763,-118.16144],[34.2697,-118.15914],[34.26978,-118.1545]],[[34.2674,-118.17272],[34.26743,-118.17101],[34.26931,-118.16882],[34.26968,-118.16764]],[[34.20514,-118.20024],[34.20496,-118.20024]],[[34.27035,-118.15285],[34.27035,-118.15298]],[[34.22284,-118.19212],[34.223,-118.19058]]],"Switzer road":[[[34.26634,-118.14575],[34.26603,-118.14454]],[[34.26644,-118.144],[34.26644,-118.144]],[[34.26912,-118.14648],[34.26876,-118.14672],[34.26853,-118.14637],[34.26839,-118.14707],[34.26777,-118.14622],[34.26794,-118.14564],[34.26717,-118.14568],[34.26672,-118.14504],[34.26674,-118.14418],[34.2662,-118.14476],[34.26634,-118.14575]]],"Big Tujunga Canyon Rd":[[[34.27215,-118.31575],[34.27635,-118.30895],[34.27688,-118.30495],[34.27633,-118.30121],[34.27664,-118.29991],[34.27784,-118.2978]],[[34.29218,-118.28612],[34.29342,-118.2846],[34.29621,-118.28211],[34.29933,-118.27677],[34.29941,-118.27581],[34.29857,-118.2742],[34.29984,-118.27136],[34.30004,-118.26924]],[[34.3105,-118.13921],[34.30986,-118.14049]],[[34.28364,-118.1976],[34.28317,-118.19646]],[[34.28317,-118.19646],[34.28302,-118.19472],[34.28397,-118.19309],[34.28461,-118.19108],[34.2852,-118.19083],[34.2866,-118.19138],[34.28852,-118.19034],[34.28886,-118.18961],[34.2889,-118.18782],[34.28928,-118.18743],[34.29025,-118.18722],[34.29069,-118.18666],[34.29184,-118.18154],[34.29576,-118.17925],[34.2978,-118.17629],[34.29794,-118.17536],[34.29754,-118.17444],[34.2968,-118.17404],[34.29541,-118.17418],[34.29473,-118.17332],[34.2959,-118.1707],[34.29739,-118.16943],[34.29736,-118.1687],[34.29642,-118.16744],[34.29646,-118.1666],[34.29696,-118.16613],[34.29789,-118.16597],[34.29838,-118.16523],[34.29823,-118.16442],[34.29738,-118.16356],[34.29691,-118.16126]],[[34.30004,-118.26924],[34.3007,-118.26831]],[[34.3007,-118.26831],[34.30274,-118.2645],[34.30446,-118.2638],[34.3049,-118.26319],[34.30493,-118.26105],[34.30398,-118.25873]],[[34.27784,-118.2978],[34.28087,-118.2958],[34.28329,-118.29238],[34.28933,-118.2901],[34.2911,-118.28801],[34.29218,-118.28612]],[[34.30281,-118.25595],[34.30162,-118.25255],[34.29777,-118.24699],[34.29736,-118.24229],[34.29604,-118.23886],[34.29413,-118.23593],[34.29334,-118.23389],[34.29185,-118.23296],[34.29014,-118.2304],[34.28948,-118.22664],[34.28758,-118.22483],[34.28699,-118.22254],[34.28515,-118.22106],[34.28448,-118.21753],[34.28315,-118.2167],[34.28173,-118.2166],[34.28102,-118.2153],[34.27985,-118.21426],[34.27993,-118.21328],[34.28058,-118.21193],[34.28394,-118.20869],[34.28379,-118.20772],[34.282,-118.207],[34.28143,-118.20585],[34.28174,-118.20453],[34.28312,-118.20331],[34.28349,-118.20258],[34.28317,-118.20028],[34.28384,-118.19872],[34.28364,-118.1976]],[[34.30286,-118.25608],[34.30281,-118.25595]],[[34.30398,-118.25873],[34.30318,-118.25698]],[[34.30318,-118.25698],[34.30286,-118.25608]]],"Hwy 39 (San Gabriel Canyon Rd)":[[[34.23742,-117.86237],[34.23761,-117.86269]],[[34.23761,-117.86269],[34.241,-117.86527],[34.24126,-117.86873]],[[34.24126,-117.86873],[34.2417,-117.86947]],[[34.30421,-117.84586],[34.30256,-117.84629],[34.30303,-117.84516],[34.30301,-117.84406],[34.30203,-117.84252],[34.30376,-117.84112],[34.30431,-117.83939],[34.30395,-117.83944],[34.30389,-117.84017],[34.30337,-117.8409],[34.30239,-117.84142],[34.30163,-117.84133],[34.2992,-117.83994],[34.29906,-117.84087],[34.3002,-117.84193],[34.30086,-117.84367],[34.30069,-117.84413],[34.29985,-117.84218],[34.29894,-117.84167],[34.29819,-117.84074],[34.29831,-117.83997],[34.29771,-117.8387],[34.30054,-117.83796],[34.30135,-117.83813],[34.30079,-117.83697],[34.29987,-117.83666],[34.29947,-117.83562],[34.29992,-117.83332],[34.29927,-117.83359],[34.29873,-117.83433],[34.29707,-117.83506],[34.2958,-117.83514],[34.29394,-117.83621],[34.29328,-117.83598],[34.29316,-117.83391],[34.29251,-117.83357],[34.29156,-117.83604],[34.2908,-117.83641],[34.28912,-117.83593],[34.28885,-117.83503],[34.28931,-117.83425],[34.28792,-117.83224],[34.28778,-117.83271],[34.28892,-117.83406],[34.2886,-117.83521],[34.28899,-117.83706],[34.28957,-117.8379],[34.2909,-117.83823]],[[34.28573,-117.84487],[34.28489,-117.84572],[34.28409,-117.84588],[34.28331,-117.84555],[34.28267,-117.84434],[34.28279,-117.84298],[34.28463,-117.84012]],[[34.26044,-117.85403],[34.25908,-117.85631],[34.25689,-117.85856],[34.25606,-117.85872],[34.25493,-117.85838],[34.25368,-117.85869],[34.25108,-117.86049],[34.2492,-117.86404],[34.24894,-117.86521],[34.24652,-117.86684],[34.24495,-117.86907],[34.24287,-117.86988],[34.2417,-117.86947]],[[34.23911,-117.85131],[34.23709,-117.8514],[34.23604,-117.85085],[34.23521,-117.84964],[34.23492,-117.84761],[34.23433,-117.84682],[34.23307,-117.84663],[34.23157,-117.84568],[34.22989,-117.84567],[34.22616,-117.84831],[34.22418,-117.85097],[34.22206,-117.85173],[34.22181,-117.85236],[34.22191,-117.85444],[34.2214,-117.85509]],[[34.28463,-117.83931],[34.28392,-117.83811],[34.28272,-117.83793],[34.27941,-117.84012],[34.27888,-117.84103],[34.2787,-117.84241]],[[34.28463,-117.83931],[34.28463,-117.84012]],[[34.27863,-117.84331],[34.27837,-117.84487],[34.27761,-117.84578],[34.27248,-117.84701],[34.27024,-117.84679],[34.26427,-117.84432],[34.26241,-117.84485],[34.26199,-117.84569],[34.26202,-117.85017],[34.26262,-117.85123],[34.26044,-117.85403]],[[34.2787,-117.84241],[34.27863,-117.84331]],[[34.2909,-117.83823],[34.29121,-117.83881],[34.29066,-117.84018]],[[34.31448,-117.83665],[34.31449,-117.83507],[34.31372,-117.83417],[34.31281,-117.83398],[34.31165,-117.83447],[34.30876,-117.83899],[34.30866,-117.84014],[34.30948,-117.8424],[34.30916,-117.84371],[34.30586,-117.84606],[34.30421,-117.84586]],[[34.29059,-117.8403],[34.29013,-117.84077],[34.28864,-117.84085],[34.28768,-117.84178]],[[34.29066,-117.84018],[34.29059,-117.8403]],[[34.2214,-117.85509],[34.22121,-117.85512]],[[34.22121,-117.85512],[34.21989,-117.85508],[34.21909,-117.85546],[34.21787,-117.85513],[34.21704,-117.85565],[34.21676,-117.85638],[34.2167,-117.85961],[34.21457,-117.86177],[34.21461,-117.86256],[34.21538,-117.86357],[34.215,-117.86435],[34.21349,-117.86414],[34.21175,-117.86332],[34.21109,-117.86374],[34.21057,-117.86486],[34.20964,-117.86548],[34.20726,-117.86527],[34.20544,-117.86669],[34.2047,-117.86671],[34.20385,-117.86579],[34.20311,-117.86363],[34.20252,-117.86163],[34.20227,-117.85926],[34.20175,-117.85874],[34.2008,-117.85864],[34.20016,-117.85935],[34.19989,-117.86113],[34.19946,-117.86178],[34.19815,-117.86266],[34.19615,-117.86303],[34.19416,-117.86386],[34.19281,-117.8657],[34.19173,-117.86601],[34.19039,-117.86575],[34.18891,-117.86781]],[[34.28768,-117.84178],[34.28573,-117.84487]],[[34.23742,-117.86237],[34.23713,-117.86107],[34.23737,-117.85979],[34.23998,-117.8563],[34.24022,-117.85559],[34.24022,-117.85222],[34.23982,-117.85145],[34.23911,-117.85131]]],"Upper Big Tujunga Canyon Rd":[[[34.27295,-118.04339],[34.27337,-118.04306],[34.27423,-118.04025],[34.27443,-118.03732],[34.27529,-118.03451],[34.27553,-118.0318],[34.27719,-118.02799],[34.278,-118.02754],[34.27886,-118.02776],[34.27947,-118.02876],[34.28069,-118.03297],[34.28035,-118.03702],[34.28173,-118.04186],[34.28292,-118.04245],[34.28445,-118.04173],[34.28555,-118.04202],[34.28783,-118.04495],[34.28859,-118.04685],[34.29035,-118.04809],[34.29096,-118.04988],[34.2926,-118.05091],[34.29422,-118.05271],[34.29548,-118.05736],[34.29633,-118.05798],[34.29785,-118.05785],[34.29963,-118.05843],[34.30182,-118.0616],[34.30394,-118.06324],[34.305,-118.06649],[34.30752,-118.06885],[34.30899,-118.06921],[34.30954,-118.06964],[34.30996,-118.07066],[34.30989,-118.07147],[34.30836,-118.07427],[34.30819,-118.07546],[34.30899,-118.07918],[34.31029,-118.08173],[34.31067,-118.08323],[34.30998,-118.08929],[34.31077,-118.0941],[34.3114,-118.09511],[34.31305,-118.09546],[34.31392,-118.0962],[34.31486,-118.0988],[34.31485,-118.10102],[34.3154,-118.10331],[34.31515,-118.10441],[34.31392,-118.10629],[34.31392,-118.10981],[34.31271,-118.11172],[34.31375,-118.11634],[34.31423,-118.11722],[34.31629,-118.11897],[34.31733,-118.12253],[34.32126,-118.12465],[34.32253,-118.12442],[34.32529,-118.1217],[34.32746,-118.12108],[34.3287,-118.11986]],[[34.32891,-118.11981],[34.32929,-118.1198]],[[34.3287,-118.11986],[34.32891,-118.11981]]]},"closed":{"West Fork road (paved, no cars)":[[[34.23127,-118.00646],[34.23106,-118.00639],[34.23074,-118.00665],[34.23,-118.00658],[34.22968,-118.00568],[34.22921,-118.00532],[34.22957,-118.00343],[34.23013,-118.003],[34.22988,-118.00243],[34.22996,-118.00176],[34.22938,-118.00135],[34.22912,-118.00034],[34.22893,-118.0002],[34.2282,-118.00037],[34.2279,-117.99958],[34.22856,-117.99869],[34.22872,-117.99803],[34.22834,-117.99604],[34.22854,-117.99521],[34.22827,-117.99496],[34.22752,-117.99498],[34.22756,-117.99365],[34.22836,-117.99271],[34.22844,-117.99231],[34.2278,-117.9921],[34.22752,-117.99119],[34.22618,-117.9898],[34.22579,-117.98976],[34.22554,-117.98945],[34.22646,-117.98894],[34.22732,-117.9891],[34.22904,-117.98857],[34.22901,-117.98711],[34.22843,-117.98705],[34.22803,-117.98661],[34.22807,-117.98551],[34.22763,-117.98488],[34.22693,-117.98492],[34.22677,-117.98476],[34.22694,-117.98418],[34.22748,-117.98374],[34.22775,-117.9829],[34.22766,-117.98221],[34.22784,-117.98179],[34.22734,-117.98091],[34.22855,-117.98124],[34.22915,-117.98248],[34.23,-117.98302],[34.23075,-117.9825],[34.23125,-117.9826],[34.23134,-117.98208],[34.23197,-117.98192],[34.23197,-117.98121],[34.23141,-117.98052],[34.23188,-117.97979],[34.23177,-117.97905],[34.23247,-117.97891],[34.23261,-117.97778],[34.23197,-117.97745],[34.23188,-117.9772],[34.23239,-117.97645],[34.23279,-117.9762],[34.2328,-117.97564],[34.23255,-117.97522],[34.23283,-117.97508],[34.23333,-117.97525],[34.23417,-117.97511],[34.2349,-117.97468],[34.23528,-117.97416],[34.23578,-117.97418],[34.23586,-117.97277],[34.23681,-117.97272],[34.23773,-117.9724],[34.23801,-117.97182],[34.23794,-117.97151],[34.23678,-117.97097],[34.23647,-117.97103]],[[34.2374,-117.96817],[34.23677,-117.97014],[34.23657,-117.97006],[34.23649,-117.96917],[34.23626,-117.96927],[34.23595,-117.971],[34.2361,-117.97118],[34.23647,-117.97103]],[[34.2374,-117.96817],[34.23824,-117.9683],[34.23861,-117.96811],[34.23907,-117.96844],[34.23909,-117.96769],[34.2384,-117.96727],[34.23835,-117.96687],[34.23863,-117.96698],[34.23899,-117.96676],[34.23967,-117.96709],[34.23981,-117.96657],[34.24023,-117.96689],[34.24022,-117.96751],[34.2409,-117.96741],[34.24141,-117.96671],[34.24142,-117.96597],[34.2421,-117.96598],[34.24234,-117.96534],[34.24283,-117.96526]],[[34.24362,-117.95424],[34.2433,-117.95497],[34.24265,-117.95568],[34.2424,-117.9571],[34.2425,-117.95742],[34.24337,-117.95802],[34.24286,-117.96007],[34.24295,-117.96076],[34.24369,-117.96259],[34.24334,-117.96408]],[[34.24009,-117.8934],[34.2401,-117.8958],[34.24039,-117.89653],[34.24118,-117.89702],[34.24304,-117.89723],[34.24425,-117.89775],[34.2447,-117.89816],[34.24528,-117.89921],[34.24578,-117.90071],[34.24561,-117.90297],[34.24605,-117.90428],[34.24636,-117.90623],[34.24612,-117.90655],[34.24504,-117.90671],[34.24468,-117.90716],[34.24428,-117.90882],[34.24375,-117.90962],[34.24282,-117.9103],[34.24228,-117.91116],[34.24201,-117.91394],[34.2409,-117.91485],[34.24071,-117.91543],[34.24086,-117.91679],[34.24217,-117.91965],[34.24185,-117.92139],[34.24193,-117.9219],[34.24233,-117.92221],[34.24388,-117.92231],[34.24445,-117.9228],[34.24457,-117.92345],[34.24432,-117.92443],[34.24354,-117.92606],[34.24369,-117.92825],[34.24302,-117.92822],[34.24224,-117.92845],[34.24137,-117.92958],[34.24137,-117.93052],[34.24184,-117.93322],[34.24146,-117.93367],[34.24064,-117.9337],[34.24026,-117.9343],[34.24044,-117.93694],[34.23998,-117.94071],[34.2402,-117.94102],[34.24128,-117.94093],[34.24118,-117.94185],[34.24142,-117.9426],[34.24265,-117.94374],[34.24421,-117.94577],[34.24492,-117.94605],[34.24474,-117.94643],[34.24322,-117.94737],[34.24265,-117.94798],[34.24265,-117.94938],[34.24086,-117.95071],[34.24023,-117.95152],[34.24018,-117.95194],[34.24057,-117.95239],[34.24178,-117.95207],[34.24375,-117.95267],[34.24401,-117.95345],[34.24362,-117.95424]],[[34.24006,-117.88404],[34.23994,-117.88428]],[[34.24024,-117.89329],[34.24009,-117.8934]],[[34.23994,-117.88428],[34.23966,-117.88491],[34.24003,-117.88864],[34.24042,-117.88991],[34.24139,-117.8917],[34.24126,-117.89222],[34.24024,-117.89329]],[[34.24124,-117.86865],[34.24135,-117.87011],[34.24267,-117.87198],[34.24285,-117.87527],[34.24236,-117.87716],[34.24192,-117.87771],[34.24192,-117.87923],[34.24167,-117.88003],[34.2407,-117.88082],[34.2404,-117.88163],[34.24006,-117.88404]]],"Gould Mesa fire road (no cars)":[[[34.22206,-118.18714],[34.22227,-118.18734],[34.22229,-118.18868],[34.22273,-118.19001]],[[34.22251,-118.17875],[34.22188,-118.17882],[34.22132,-118.17843],[34.22123,-118.17864],[34.22175,-118.17973],[34.22167,-118.18006],[34.22093,-118.18027],[34.22055,-118.18006],[34.22043,-118.18019],[34.22102,-118.18101],[34.22143,-118.18112],[34.22162,-118.18201],[34.22124,-118.18333],[34.22099,-118.18349],[34.22072,-118.18479],[34.22087,-118.1851],[34.22178,-118.18511],[34.22209,-118.18538],[34.22222,-118.18722]],[[34.22273,-118.19001],[34.223,-118.19058]]],"Gabrielino fire road (no cars)":[[[34.20878,-118.16935],[34.20894,-118.1705],[34.20966,-118.17124],[34.21064,-118.17148],[34.21111,-118.17106],[34.21154,-118.17095],[34.21237,-118.17194]],[[34.20474,-118.16582],[34.205,-118.16574]],[[34.20533,-118.16584],[34.20551,-118.16603]],[[34.20551,-118.16603],[34.20641,-118.1667],[34.20689,-118.16785]],[[34.205,-118.16574],[34.20533,-118.16584]],[[34.1941,-118.16802],[34.19535,-118.16747],[34.19659,-118.1666],[34.20035,-118.16536],[34.20234,-118.16524],[34.20362,-118.16599],[34.20411,-118.16605],[34.20474,-118.16582]],[[34.20689,-118.16785],[34.20701,-118.16801]],[[34.21237,-118.17194],[34.21246,-118.17213]],[[34.21286,-118.17327],[34.21284,-118.17347]],[[34.21246,-118.17213],[34.21306,-118.17266],[34.21286,-118.17327]],[[34.19544,-118.02251],[34.19657,-118.02186],[34.19701,-118.02198],[34.19713,-118.02167],[34.19675,-118.02146],[34.19708,-118.02128],[34.19737,-118.02153],[34.19744,-118.02249],[34.19764,-118.02264],[34.19832,-118.02187],[34.19835,-118.02107],[34.19904,-118.02043],[34.19918,-118.01973],[34.19949,-118.0197],[34.20031,-118.02015]],[[34.20701,-118.16801],[34.2073,-118.16822],[34.20811,-118.16822],[34.20864,-118.16885],[34.20878,-118.16935]]]},"trail":{"Dark Canyon Trail":[[[34.25047,-118.18416],[34.2517,-118.18603],[34.25239,-118.18636],[34.25271,-118.18739],[34.25367,-118.18792],[34.25396,-118.18893],[34.25538,-118.19012],[34.25553,-118.19081],[34.25641,-118.19241]],[[34.25047,-118.18416],[34.25071,-118.18612],[34.25114,-118.18653],[34.25127,-118.18721],[34.25214,-118.18865],[34.25222,-118.18935],[34.25273,-118.18973],[34.25272,-118.19084],[34.25303,-118.19166],[34.25374,-118.19187],[34.25412,-118.19318],[34.25455,-118.19339],[34.25468,-118.19417],[34.254,-118.19392],[34.25367,-118.19431],[34.25367,-118.19464],[34.25351,-118.19435],[34.25389,-118.19352],[34.25315,-118.19258],[34.25235,-118.19258],[34.25189,-118.19228],[34.25161,-118.19078],[34.25101,-118.19039],[34.25078,-118.18912],[34.25043,-118.18886],[34.25026,-118.189],[34.2491,-118.18801],[34.24831,-118.18627],[34.24796,-118.18596],[34.24755,-118.1859],[34.24732,-118.18552],[34.24675,-118.18523],[34.24603,-118.18518],[34.24568,-118.18478],[34.24539,-118.1838],[34.24501,-118.18362]]],"Vogel Flat Trail":[[[34.28619,-118.22118],[34.28683,-118.22177],[34.28716,-118.22158],[34.28744,-118.22165],[34.28761,-118.222],[34.28732,-118.22221],[34.28731,-118.22284],[34.28757,-118.2235],[34.28751,-118.22411],[34.28778,-118.22436],[34.28761,-118.22487]]],"Alder Creek Trail":[[[34.3146,-118.07089],[34.31442,-118.07008],[34.31409,-118.07041],[34.31375,-118.06996],[34.31327,-118.07006],[34.31337,-118.07071],[34.31314,-118.07061],[34.31315,-118.0708],[34.31272,-118.07082],[34.31263,-118.07099],[34.31238,-118.07083],[34.31214,-118.07108],[34.3118,-118.07091],[34.31161,-118.07135],[34.31122,-118.07129],[34.31085,-118.07178],[34.31023,-118.07213],[34.31015,-118.07243],[34.30992,-118.07243],[34.30927,-118.07315],[34.30903,-118.0731]]],"Gabrielino Trail":[[[34.25833,-118.10564],[34.25822,-118.10586],[34.25776,-118.10579],[34.25743,-118.10624],[34.25735,-118.10674],[34.25744,-118.10856],[34.25822,-118.10901],[34.25814,-118.1098],[34.25847,-118.11053],[34.2584,-118.11222],[34.25792,-118.11282],[34.25783,-118.11344],[34.25814,-118.11416],[34.25811,-118.11521],[34.25827,-118.11526],[34.2583,-118.11424],[34.25811,-118.11332],[34.25876,-118.11257],[34.25923,-118.11056],[34.25904,-118.10999],[34.25944,-118.11],[34.25961,-118.10943],[34.25965,-118.11024],[34.25943,-118.11037],[34.2596,-118.11149],[34.25934,-118.11238],[34.25987,-118.11303],[34.25944,-118.11375],[34.25935,-118.11442],[34.25985,-118.115],[34.25956,-118.11524],[34.25927,-118.11688],[34.25843,-118.11769],[34.25939,-118.11931],[34.25934,-118.11969],[34.25998,-118.12044],[34.26007,-118.12086],[34.25987,-118.12169],[34.26101,-118.12143],[34.26184,-118.12167],[34.26109,-118.1212],[34.26066,-118.12131],[34.26079,-118.12087],[34.2606,-118.12042],[34.26082,-118.12014],[34.26113,-118.1204],[34.26158,-118.12041],[34.26184,-118.12087],[34.26251,-118.12138],[34.26197,-118.12358],[34.26274,-118.12419],[34.26252,-118.12459],[34.26266,-118.12525],[34.26371,-118.12602],[34.26388,-118.12668],[34.26461,-118.12751],[34.26454,-118.12844],[34.26382,-118.12921],[34.26382,-118.13003],[34.26405,-118.13045],[34.26445,-118.13042],[34.26494,-118.13138],[34.26483,-118.13193],[34.26497,-118.13165],[34.26507,-118.13208],[34.26486,-118.13362],[34.26467,-118.13383],[34.26471,-118.13483],[34.2653,-118.13557],[34.26528,-118.13628],[34.26576,-118.1373],[34.26645,-118.13822],[34.26684,-118.13839],[34.26637,-118.13952],[34.26658,-118.1396],[34.26669,-118.14057],[34.2664,-118.14207],[34.26611,-118.1424],[34.26614,-118.14295]],[[34.22775,-118.17793],[34.22781,-118.17785]],[[34.22781,-118.17785],[34.22785,-118.17685],[34.22816,-118.17682],[34.22852,-118.17719],[34.22912,-118.17709],[34.22971,-118.17666],[34.23,-118.17678],[34.23056,-118.17803],[34.23083,-118.17815],[34.23152,-118.17727],[34.23246,-118.17818],[34.23319,-118.17807],[34.23354,-118.17773],[34.23388,-118.17783],[34.23398,-118.17846],[34.2342,-118.17863],[34.23447,-118.17851],[34.23485,-118.17779],[34.23527,-118.17766],[34.23598,-118.17875],[34.23639,-118.17901],[34.23649,-118.17954],[34.23669,-118.1797],[34.23686,-118.17953],[34.2365,-118.1807],[34.23716,-118.17986],[34.23701,-118.18028],[34.23777,-118.18066],[34.23853,-118.18055],[34.23878,-118.17999],[34.23896,-118.18046],[34.23954,-118.18061],[34.23901,-118.18104],[34.2399,-118.18124],[34.24003,-118.18195],[34.24101,-118.1825],[34.24097,-118.18289],[34.24119,-118.18313],[34.24074,-118.18373],[34.24071,-118.18419],[34.24087,-118.18436],[34.24265,-118.18415],[34.243,-118.18295],[34.24332,-118.1826],[34.24382,-118.18268],[34.24524,-118.18365],[34.2451,-118.18279],[34.24521,-118.18219],[34.24583,-118.18182],[34.24622,-118.18204],[34.24714,-118.18193],[34.24635,-118.18007],[34.24638,-118.17964],[34.2472,-118.1793],[34.24759,-118.17979],[34.2475,-118.18012],[34.24773,-118.1806],[34.24821,-118.18047],[34.24852,-118.18005],[34.24837,-118.1795],[34.24848,-118.17915],[34.24986,-118.17736],[34.2504,-118.17742],[34.25077,-118.1783],[34.25137,-118.17819],[34.2521,-118.1786],[34.25255,-118.17863],[34.25258,-118.17831],[34.25196,-118.17722],[34.25189,-118.17667],[34.25209,-118.17617],[34.25194,-118.17546],[34.25227,-118.17504],[34.2523,-118.17451],[34.25297,-118.17357],[34.253,-118.17306],[34.25262,-118.17249],[34.25265,-118.17216],[34.25291,-118.1719],[34.25327,-118.17201],[34.25326,-118.17107],[34.25302,-118.17075],[34.25341,-118.1698],[34.25337,-118.16948],[34.25364,-118.16928],[34.25387,-118.16853],[34.2538,-118.16789],[34.25428,-118.16722],[34.25418,-118.16621],[34.25445,-118.16543],[34.25432,-118.16453],[34.25452,-118.16431],[34.25527,-118.16415],[34.25536,-118.16432],[34.25615,-118.16452],[34.25575,-118.16409],[34.25632,-118.1642],[34.25762,-118.16381],[34.25779,-118.16401],[34.25805,-118.16376],[34.25781,-118.16384],[34.2575,-118.16321],[34.25756,-118.1627],[34.25716,-118.16315],[34.25694,-118.16314],[34.25663,-118.16256],[34.25643,-118.16254],[34.25629,-118.16172],[34.25515,-118.16202],[34.25491,-118.16165],[34.2542,-118.16159],[34.254,-118.1607],[34.25336,-118.16026],[34.253,-118.16023],[34.25328,-118.15939],[34.25305,-118.15902],[34.2536,-118.15836],[34.25372,-118.15784],[34.25405,-118.15765],[34.25408,-118.15724],[34.2545,-118.15707],[34.25439,-118.15627],[34.25473,-118.15592],[34.25451,-118.15499],[34.25514,-118.15482],[34.25514,-118.15424],[34.25599,-118.15479],[34.25646,-118.15406],[34.257,-118.15378]],[[34.257,-118.15378],[34.25705,-118.15491],[34.25814,-118.15541],[34.25927,-118.15498],[34.25915,-118.15473],[34.25959,-118.15415],[34.25994,-118.15254],[34.26092,-118.15267],[34.26191,-118.15234],[34.26228,-118.15242],[34.26239,-118.15274],[34.26204,-118.15307],[34.26256,-118.15322],[34.2629,-118.15391],[34.2635,-118.15314],[34.26408,-118.15295],[34.26422,-118.15276],[34.2641,-118.15197],[34.26447,-118.15088],[34.26505,-118.15065],[34.26523,-118.15038],[34.26506,-118.14945],[34.26604,-118.14581]],[[34.26614,-118.14295],[34.26615,-118.14332]],[[34.26641,-118.14348],[34.26645,-118.14391]],[[34.21583,-118.17463],[34.21603,-118.1758],[34.21636,-118.17599],[34.21698,-118.17589],[34.21733,-118.17618],[34.21797,-118.17633],[34.22003,-118.17805],[34.2207,-118.17828],[34.22143,-118.17747],[34.22225,-118.17824],[34.22369,-118.18081],[34.22436,-118.18079],[34.22459,-118.17958],[34.22509,-118.1796]],[[34.26604,-118.14581],[34.26608,-118.1458]],[[34.26613,-118.14575],[34.26633,-118.14571]],[[34.26615,-118.14332],[34.2662,-118.14337]],[[34.26608,-118.1458],[34.26613,-118.14575]],[[34.2662,-118.14337],[34.26641,-118.14348]],[[34.22527,-118.17954],[34.22722,-118.17978],[34.22782,-118.17954],[34.22796,-118.17877],[34.22775,-118.17793]],[[34.22509,-118.1796],[34.22527,-118.17954]]],"Grizzly Flat Trail":[[[34.2848,-118.22343],[34.28448,-118.22281],[34.28365,-118.22225],[34.28354,-118.2216],[34.28317,-118.22137],[34.28221,-118.22138],[34.27986,-118.22072],[34.27948,-118.21995],[34.27963,-118.21958],[34.27934,-118.21791],[34.27809,-118.21737],[34.27711,-118.2167],[34.2768,-118.216],[34.27685,-118.2149],[34.2765,-118.21403],[34.27607,-118.21429],[34.27549,-118.21434],[34.27612,-118.21344],[34.27557,-118.21343],[34.27511,-118.21368],[34.27509,-118.21298],[34.27486,-118.21318],[34.27476,-118.21289],[34.27457,-118.21308],[34.27352,-118.21271],[34.27238,-118.21295],[34.27217,-118.21276],[34.2719,-118.21141],[34.27063,-118.21085],[34.2703,-118.21121],[34.27013,-118.2108],[34.26919,-118.21037],[34.26819,-118.20922],[34.26846,-118.20871]]],"Fall Creek Trail":[[[34.31762,-118.13493],[34.31856,-118.13472],[34.31912,-118.13491],[34.31937,-118.13475],[34.31938,-118.13529],[34.3185,-118.13664],[34.31916,-118.13817],[34.31879,-118.13883],[34.31938,-118.13946],[34.31881,-118.13949],[34.31803,-118.14033],[34.3182,-118.14097],[34.31783,-118.14167],[34.31755,-118.14262],[34.31762,-118.14311],[34.31732,-118.14345],[34.31728,-118.14397],[34.31701,-118.14438],[34.31587,-118.1452],[34.315,-118.14679],[34.31606,-118.14672],[34.31594,-118.14765],[34.31557,-118.14805],[34.31589,-118.14845],[34.3155,-118.14881],[34.31498,-118.14886],[34.31487,-118.14931],[34.31433,-118.14953],[34.3141,-118.15036],[34.31441,-118.15074],[34.31453,-118.15135],[34.31492,-118.15176],[34.31444,-118.15221],[34.31552,-118.15377],[34.31452,-118.15443],[34.31473,-118.15479],[34.31415,-118.15539],[34.31412,-118.15584],[34.3131,-118.15661],[34.31285,-118.15725],[34.31237,-118.15758],[34.31188,-118.15746],[34.31168,-118.15762],[34.31178,-118.158],[34.31149,-118.15802],[34.31136,-118.15835],[34.31054,-118.15832],[34.30985,-118.15892],[34.31005,-118.15964],[34.30974,-118.15978],[34.3096,-118.16019],[34.31,-118.16073],[34.30997,-118.16134],[34.30971,-118.16133],[34.30924,-118.16185],[34.30893,-118.1617],[34.30859,-118.16213],[34.30848,-118.16277],[34.30849,-118.16241],[34.30822,-118.16209],[34.30851,-118.16182],[34.30867,-118.16128],[34.30832,-118.16084],[34.30817,-118.15986],[34.30776,-118.15945],[34.30781,-118.15992],[34.30764,-118.15971],[34.30756,-118.16011]]],"Silver Moccasin Trail":[[[34.27747,-118.02727],[34.27711,-118.02693],[34.27665,-118.02734],[34.27641,-118.02732],[34.27635,-118.02709],[34.27632,-118.02731],[34.27624,-118.02711],[34.27603,-118.02724],[34.27575,-118.02696],[34.27582,-118.02752],[34.27531,-118.02767],[34.27518,-118.02842],[34.27405,-118.02863],[34.27429,-118.02945],[34.27395,-118.02978],[34.27367,-118.0298],[34.27304,-118.03135],[34.27319,-118.03213],[34.27361,-118.03223],[34.27341,-118.03295]],[[34.29291,-118.01284],[34.2923,-118.01256],[34.29185,-118.01259],[34.29141,-118.01226],[34.29118,-118.01254],[34.29031,-118.01228],[34.29022,-118.01252],[34.28999,-118.01251],[34.29006,-118.01277],[34.28975,-118.01291],[34.28995,-118.013],[34.29009,-118.01369],[34.29043,-118.01395],[34.28969,-118.01399],[34.28935,-118.01378],[34.28937,-118.01353],[34.28908,-118.01347],[34.28935,-118.01435],[34.28893,-118.01496],[34.28915,-118.0151],[34.28869,-118.0151],[34.28873,-118.01535],[34.28896,-118.01541],[34.28881,-118.01556],[34.28809,-118.01599],[34.28784,-118.01588],[34.28764,-118.01627],[34.28706,-118.01651],[34.28675,-118.01638],[34.2859,-118.01691],[34.28488,-118.01789],[34.28435,-118.01779],[34.28379,-118.01814],[34.28339,-118.01812],[34.28237,-118.01954],[34.28198,-118.01963],[34.28213,-118.01972],[34.28162,-118.02013],[34.28155,-118.01979],[34.2814,-118.02024],[34.28153,-118.02077],[34.28108,-118.02047],[34.28083,-118.02054],[34.27989,-118.02144],[34.27849,-118.02232],[34.2784,-118.02331],[34.27797,-118.02424],[34.27793,-118.02599],[34.27783,-118.0263],[34.27745,-118.02639],[34.27736,-118.02661],[34.27747,-118.02727]],[[34.27268,-118.03264],[34.27297,-118.03274],[34.27314,-118.0331],[34.27317,-118.03284],[34.2733,-118.03315],[34.27341,-118.03295]]],"Bear Creek Trail":[[[34.28639,-117.8621],[34.28597,-117.86231],[34.28554,-117.86313],[34.28494,-117.86321],[34.28513,-117.86443],[34.28437,-117.86465],[34.28457,-117.86535],[34.2845,-117.86583],[34.2844,-117.86635],[34.28403,-117.86686],[34.28467,-117.86662],[34.285,-117.86619],[34.285,-117.86688],[34.2844,-117.86755],[34.28461,-117.86741],[34.2852,-117.86752],[34.28567,-117.86698],[34.28499,-117.86904],[34.28598,-117.86843],[34.28571,-117.87025],[34.28537,-117.87085],[34.28495,-117.87039],[34.28449,-117.87218],[34.28515,-117.87332],[34.28522,-117.87407],[34.28488,-117.87485],[34.28533,-117.87526],[34.28469,-117.87537],[34.28584,-117.87568],[34.28511,-117.87581],[34.28593,-117.87625],[34.28606,-117.87685],[34.28584,-117.87861],[34.28609,-117.88033],[34.28586,-117.8816],[34.28548,-117.88276],[34.28485,-117.88368],[34.28506,-117.88385],[34.28457,-117.88395],[34.28518,-117.8844],[34.28452,-117.88429],[34.28374,-117.88467],[34.2834,-117.88455],[34.28301,-117.88405],[34.28343,-117.88486],[34.28327,-117.88479],[34.28334,-117.88501],[34.28308,-117.88505],[34.28274,-117.88471],[34.28217,-117.88457],[34.28174,-117.88481],[34.28097,-117.88586],[34.28017,-117.88653],[34.27925,-117.88683],[34.27886,-117.88797],[34.27781,-117.88869],[34.27756,-117.88865],[34.27723,-117.8882],[34.2765,-117.88834],[34.27592,-117.88878],[34.2756,-117.88838],[34.2748,-117.88834],[34.27423,-117.88868],[34.27359,-117.88871],[34.27212,-117.88977],[34.27142,-117.89067],[34.27023,-117.89057],[34.26949,-117.89091],[34.26926,-117.89135],[34.26882,-117.89142],[34.26853,-117.89126],[34.26815,-117.89316],[34.26846,-117.89442],[34.26763,-117.89521],[34.26726,-117.89514],[34.26616,-117.89437],[34.26584,-117.89365],[34.26587,-117.89328],[34.2655,-117.89285],[34.26462,-117.89286],[34.2642,-117.89262],[34.26376,-117.89205],[34.26322,-117.89045],[34.26284,-117.89006],[34.26252,-117.88924],[34.26233,-117.88926],[34.26137,-117.88843],[34.26052,-117.8884],[34.26026,-117.8882],[34.25988,-117.88839],[34.25973,-117.88815],[34.2599,-117.88776],[34.25919,-117.88722],[34.25945,-117.88553],[34.25886,-117.88481],[34.25887,-117.8845],[34.2584,-117.88403],[34.25818,-117.88407],[34.25702,-117.88288],[34.25669,-117.88294],[34.25622,-117.88261],[34.25565,-117.88284],[34.25495,-117.88277],[34.25469,-117.88245],[34.25403,-117.88246],[34.25368,-117.88255],[34.25349,-117.88298],[34.25272,-117.88309],[34.25179,-117.88388],[34.25146,-117.88382],[34.25111,-117.88328],[34.25022,-117.88373],[34.24945,-117.88365],[34.24928,-117.88383],[34.24887,-117.88383],[34.24887,-117.88449],[34.24856,-117.88465],[34.24842,-117.88505],[34.24817,-117.88527],[34.24782,-117.88515],[34.24697,-117.88536],[34.24672,-117.88575],[34.24642,-117.88571],[34.24613,-117.88675],[34.2455,-117.88719],[34.24524,-117.88695],[34.24483,-117.88714],[34.24376,-117.88653],[34.24281,-117.88693],[34.24254,-117.88678],[34.24196,-117.88707],[34.24182,-117.88687],[34.24156,-117.88693],[34.24123,-117.88533],[34.24058,-117.88421],[34.2399,-117.88421],[34.23987,-117.88436]]],"Bear Canyon Trail":[[[34.23557,-118.13003],[34.23625,-118.13002],[34.2367,-118.12935],[34.23683,-118.12943],[34.23676,-118.13019],[34.23629,-118.13084],[34.23662,-118.1318],[34.238,-118.13256],[34.23909,-118.13386],[34.23947,-118.13316],[34.23906,-118.13331],[34.23846,-118.1318],[34.23842,-118.1311],[34.23871,-118.13085],[34.2394,-118.13179],[34.23985,-118.13157],[34.24031,-118.13196],[34.24052,-118.13279],[34.24039,-118.13301],[34.24085,-118.13403],[34.24146,-118.13423],[34.24206,-118.1339],[34.24252,-118.13399],[34.24265,-118.13484],[34.2431,-118.13541],[34.24261,-118.13691],[34.2428,-118.13799],[34.24368,-118.13823],[34.24364,-118.1388],[34.2439,-118.13935],[34.24429,-118.1396],[34.24489,-118.13932],[34.24496,-118.14006],[34.24534,-118.14025],[34.24536,-118.14124],[34.24485,-118.14113],[34.24452,-118.1413],[34.24468,-118.14244],[34.24524,-118.14347],[34.24597,-118.14366],[34.24678,-118.14421],[34.24726,-118.14402],[34.24778,-118.14469],[34.2484,-118.14458],[34.24863,-118.14549],[34.24904,-118.14543],[34.24973,-118.14572],[34.24997,-118.14674],[34.24987,-118.14717],[34.25034,-118.14782],[34.25027,-118.14924],[34.2515,-118.14991],[34.25277,-118.14983],[34.2533,-118.15066],[34.25353,-118.15055],[34.25366,-118.14989],[34.25419,-118.14947],[34.2547,-118.14999],[34.25514,-118.15007],[34.2553,-118.1507],[34.25464,-118.15125],[34.25439,-118.15228],[34.25471,-118.15237],[34.25502,-118.15312],[34.25548,-118.153],[34.25594,-118.15417],[34.25649,-118.15377],[34.257,-118.15378]]],"Lower Switzer Falls Trail":[[[34.25462,-118.15163],[34.25486,-118.15177],[34.25512,-118.15241],[34.25581,-118.15257],[34.2561,-118.15295],[34.25639,-118.15288]]],"Colby Canyon Trail":[[[34.28216,-118.13424],[34.28207,-118.13378],[34.2819,-118.13407],[34.28198,-118.13358],[34.28153,-118.13415],[34.28173,-118.13366],[34.28154,-118.13346],[34.28156,-118.13306],[34.28103,-118.13255],[34.28102,-118.13179],[34.28119,-118.13151],[34.28048,-118.13243],[34.28064,-118.13133],[34.28019,-118.13194],[34.28022,-118.13058],[34.27978,-118.13051],[34.27933,-118.13011],[34.27857,-118.13033],[34.2776,-118.13118],[34.27709,-118.13132],[34.27717,-118.13093],[34.27696,-118.13109],[34.27619,-118.13231],[34.27625,-118.13267],[34.27601,-118.13248],[34.27602,-118.13167],[34.27528,-118.13277],[34.27512,-118.13227],[34.2745,-118.13264],[34.27437,-118.13233],[34.27403,-118.13296],[34.27366,-118.13296],[34.27354,-118.13332],[34.27301,-118.1331],[34.27184,-118.13422],[34.27141,-118.13427],[34.27106,-118.1352],[34.27062,-118.13514],[34.27076,-118.13561],[34.27039,-118.13618],[34.27033,-118.13693],[34.27089,-118.13646],[34.27047,-118.13714],[34.27061,-118.13724],[34.27036,-118.13855],[34.27056,-118.13946],[34.26985,-118.14061],[34.26955,-118.14075]]],"Stone Canyon Trail":[[[34.29372,-118.2389],[34.29334,-118.23834],[34.29315,-118.23749],[34.29286,-118.23732],[34.29269,-118.23656],[34.29241,-118.23646]],[[34.29241,-118.23646],[34.29208,-118.23698],[34.29082,-118.2376],[34.28841,-118.23795],[34.28889,-118.2376],[34.28909,-118.23694],[34.28862,-118.23671],[34.28819,-118.23709],[34.28737,-118.23688],[34.28693,-118.23579],[34.28632,-118.23614],[34.28618,-118.23585],[34.28605,-118.23626],[34.28516,-118.23731],[34.28514,-118.2379],[34.28466,-118.23893],[34.28476,-118.23789],[34.28443,-118.23736],[34.28455,-118.23702]]]},"trailheads":[{"name":"Bear Creek Trailhead","lat":34.2399,"lon":-117.8844,"note":"Start of the Bear Creek Trail, about 1 mile up the West Fork road from Hwy 39.","zone":"bear"},{"name":"West Fork Trailhead (Hwy 39)","lat":34.2412,"lon":-117.8687,"note":"Park on Hwy 39 at the West Fork bridge. The paved road west is closed to cars; walk or bike.","zone":"westfork"},{"name":"Glen Camp","lat":34.241,"lon":-117.953,"note":"Walk-in camp about 6 miles up the West Fork road.","zone":"westfork"},{"name":"Cogswell Dam gate","lat":34.2429,"lon":-117.9608,"note":"Upper end of the West Fork catch-and-release stretch.","zone":"westfork"},{"name":"Lower Bear Canyon camp","lat":34.2533,"lon":-117.8827,"note":"Trail camp about 1 mile up the Bear Creek Trail.","zone":"bear"},{"name":"Switzer Falls Trailhead","lat":34.2663,"lon":-118.1457,"note":"Off Hwy 2. Gabrielino Trail drops to the Arroyo Seco and Switzer Falls.","zone":"arroyo"},{"name":"Red Box","lat":34.2586,"lon":-118.1044,"note":"Trailhead at the Hwy 2 / Mt Wilson Rd junction. Gabrielino Trail heads down the upper Arroyo Seco.","zone":"arroyo"},{"name":"Oakwilde Trail Camp","lat":34.2457,"lon":-118.1838,"note":"Unmaintained trail camp in the middle Arroyo Seco on the Gabrielino Trail.","zone":"arroyo"},{"name":"Gould Mesa Trail Camp","lat":34.2219,"lon":-118.1783,"note":"Camp on the lower Gabrielino Trail, reached from Altadena / JPL.","zone":"arroyo"},{"name":"Gabrielino Trail start (Windsor Ave, Altadena)","lat":34.1985,"lon":-118.168,"note":"Approximate. Lower Arroyo Seco entry; fire road closed to cars.","zone":"arroyo"},{"name":"Trail Canyon Trailhead","lat":34.3038,"lon":-118.258,"note":"Off Big Tujunga Canyon Rd.","zone":"tujunga"},{"name":"Vogel Flat trailhead","lat":34.2876,"lon":-118.2249,"note":"Unnamed trailhead in OpenStreetMap near Vogel Flat, off Big Tujunga Canyon Rd.","zone":"tujunga"},{"name":"Alder Creek Trailhead","lat":34.309,"lon":-118.0731,"note":"Off Upper Big Tujunga Canyon Rd.","zone":"tujunga"}]};
+const DATA = {"creeks":{"westfork":[[[34.2444,-117.96257],[34.24519,-117.961],[34.24412,-117.95977],[34.24464,-117.95803],[34.24292,-117.95677],[34.24369,-117.95572],[34.24409,-117.95282],[34.2432,-117.95219],[34.24043,-117.95176],[34.24082,-117.95102],[34.24283,-117.94951],[34.24279,-117.94813],[34.24317,-117.94766],[34.24504,-117.94664],[34.24528,-117.9459],[34.24403,-117.94519],[34.24142,-117.94226],[34.24143,-117.94071],[34.24042,-117.94085],[34.24017,-117.94049],[34.24053,-117.93872],[34.24038,-117.93464],[34.24073,-117.93386],[34.24157,-117.93378],[34.24195,-117.93312],[34.24155,-117.92963],[34.24268,-117.92856],[34.24401,-117.92843],[34.24376,-117.92594],[34.24458,-117.92451],[34.24476,-117.92275],[34.24367,-117.92192],[34.24235,-117.92163],[34.24269,-117.91945],[34.24125,-117.9171],[34.24084,-117.91542],[34.24253,-117.91362],[34.24251,-117.91122],[34.24461,-117.90939],[34.245,-117.90698],[34.2464,-117.90684],[34.2467,-117.90617],[34.24584,-117.90307],[34.24606,-117.90055],[34.24486,-117.89806],[34.24386,-117.89725],[34.2412,-117.89674],[34.24038,-117.89591],[34.24015,-117.89299],[34.2412,-117.89158],[34.23988,-117.88974],[34.2394,-117.88503],[34.2396,-117.88403],[34.24023,-117.88412],[34.24057,-117.88367],[34.24065,-117.88211]],[[34.24362,-117.96514],[34.2444,-117.96257]]],"arroyo":[[[34.25235,-118.1497],[34.25087,-118.14986],[34.24977,-118.1506],[34.24965,-118.15172],[34.24907,-118.15233],[34.25,-118.15447],[34.25063,-118.1548],[34.25164,-118.15415],[34.25238,-118.15555],[34.25199,-118.15619],[34.2504,-118.156],[34.25098,-118.15761],[34.24974,-118.15702],[34.24943,-118.15794],[34.24973,-118.15879],[34.24799,-118.1591],[34.24928,-118.16141],[34.24852,-118.16221],[34.24787,-118.16173],[34.24759,-118.16225],[34.24813,-118.1632],[34.24758,-118.16403],[34.24857,-118.16471],[34.24854,-118.16506],[34.24829,-118.16539],[34.24705,-118.16498],[34.24666,-118.1668],[34.246,-118.16742],[34.24703,-118.16858],[34.24654,-118.16955],[34.24761,-118.17045],[34.24773,-118.17155],[34.24705,-118.17213],[34.2476,-118.17257],[34.24736,-118.17379],[34.24805,-118.17461],[34.24869,-118.17697],[34.24908,-118.17575],[34.24983,-118.17531],[34.2502,-118.17596],[34.2506,-118.17578],[34.2515,-118.17626],[34.25172,-118.17722],[34.25277,-118.17859],[34.25093,-118.17839],[34.25046,-118.17745],[34.24992,-118.17747],[34.24858,-118.1793],[34.24862,-118.18059],[34.2477,-118.18083],[34.24722,-118.17948],[34.24655,-118.17976],[34.24724,-118.18193],[34.24606,-118.18226],[34.24572,-118.18197],[34.24529,-118.18401],[34.24421,-118.18358],[34.24328,-118.18247],[34.2428,-118.18294],[34.24276,-118.18411],[34.24143,-118.18418]],[[34.24143,-118.18418],[34.24077,-118.18409],[34.24132,-118.18306],[34.24101,-118.18211],[34.24007,-118.18149],[34.23807,-118.18158],[34.23627,-118.18113],[34.23576,-118.1802],[34.2365,-118.17875],[34.23526,-118.17768],[34.23436,-118.17873],[34.23387,-118.17862],[34.23355,-118.17758],[34.23257,-118.17796],[34.23191,-118.17639],[34.2309,-118.17753],[34.22983,-118.17604],[34.2293,-118.17613],[34.22871,-118.17728],[34.22769,-118.1763],[34.22745,-118.17704],[34.22816,-118.17907],[34.2279,-118.17988],[34.22726,-118.18013],[34.22512,-118.17952]],[[34.25104,-118.11373],[34.25251,-118.11601],[34.25361,-118.11587],[34.25453,-118.11647],[34.25513,-118.11585],[34.2557,-118.11637],[34.25642,-118.11609],[34.25787,-118.11675],[34.25843,-118.11761],[34.26175,-118.11844],[34.26202,-118.1202],[34.263,-118.12144],[34.26239,-118.12294],[34.26311,-118.12408],[34.26309,-118.12525],[34.26473,-118.12736],[34.26434,-118.1286],[34.26528,-118.13097],[34.26523,-118.13493],[34.26568,-118.13645],[34.26706,-118.13843],[34.26684,-118.14099],[34.26585,-118.14473],[34.26621,-118.14686],[34.26422,-118.15251],[34.26318,-118.15387],[34.26279,-118.15392],[34.26217,-118.1524],[34.26013,-118.15264],[34.2595,-118.15459],[34.25814,-118.15507],[34.25747,-118.15437],[34.25763,-118.15356],[34.2571,-118.15282],[34.25614,-118.15289],[34.25498,-118.15207],[34.25498,-118.14996],[34.25413,-118.14954],[34.25332,-118.15063],[34.25291,-118.1498],[34.25235,-118.1497]]],"bear":[[[34.31576,-117.87064],[34.31509,-117.8733],[34.31574,-117.87371],[34.31581,-117.87441],[34.31494,-117.87584],[34.31465,-117.87763],[34.31315,-117.87842],[34.31175,-117.88004],[34.31111,-117.88152],[34.30877,-117.88039],[34.30861,-117.87998],[34.30702,-117.88045],[34.30308,-117.87847],[34.30057,-117.87872],[34.29821,-117.881],[34.29753,-117.88101],[34.29552,-117.87973],[34.29418,-117.87968],[34.29283,-117.88167],[34.29176,-117.88158],[34.29045,-117.8827],[34.28827,-117.88607],[34.28608,-117.8867],[34.28221,-117.88439],[34.28178,-117.88452],[34.28077,-117.88642],[34.27932,-117.88661],[34.27839,-117.88846],[34.27681,-117.88817],[34.27371,-117.88889],[34.27169,-117.89053],[34.26994,-117.89043],[34.26907,-117.89158],[34.26834,-117.89158],[34.26817,-117.89263],[34.2685,-117.89342],[34.2674,-117.89534],[34.26672,-117.89518],[34.26607,-117.89326],[34.26531,-117.89238],[34.26444,-117.89324],[34.26406,-117.89313],[34.26319,-117.89132],[34.26283,-117.8893],[34.26082,-117.88892],[34.26019,-117.88843],[34.25959,-117.88733],[34.25984,-117.88526],[34.25875,-117.88459],[34.25798,-117.88291],[34.25483,-117.88304],[34.25396,-117.88153],[34.25322,-117.88159],[34.2527,-117.88231],[34.25255,-117.88402],[34.25202,-117.88397],[34.2515,-117.88324],[34.25022,-117.88387],[34.24865,-117.88359],[34.24867,-117.88549],[34.24811,-117.88563],[34.24691,-117.88498],[34.24617,-117.88753],[34.24369,-117.88637],[34.24195,-117.88726],[34.2405,-117.88381]]],"tujunga":[[[34.27799,-118.02787],[34.27862,-118.03071],[34.27789,-118.03265],[34.27978,-118.03435],[34.27888,-118.03636],[34.27968,-118.0374],[34.2794,-118.03839],[34.28006,-118.03873],[34.27922,-118.03965],[34.27881,-118.04151],[34.27953,-118.0422],[34.2793,-118.04315],[34.28044,-118.0458],[34.28146,-118.04684],[34.28317,-118.04645],[34.28467,-118.04716],[34.28684,-118.04736],[34.28762,-118.04703],[34.28882,-118.04873],[34.28966,-118.04894],[34.29032,-118.05054],[34.29101,-118.05115],[34.29257,-118.05151],[34.29387,-118.05351],[34.29521,-118.058],[34.29682,-118.05868],[34.2991,-118.05853],[34.29963,-118.06034],[34.30075,-118.06083],[34.30143,-118.06194],[34.30373,-118.06341],[34.3034,-118.06527],[34.30364,-118.06618],[34.30593,-118.06827],[34.30618,-118.06905],[34.30585,-118.07035],[34.30629,-118.07116],[34.30737,-118.07185],[34.30739,-118.07369]],[[34.29307,-118.18925],[34.29142,-118.19045],[34.29085,-118.19245],[34.28989,-118.1937],[34.28808,-118.19462],[34.28598,-118.19446],[34.28538,-118.19576],[34.28325,-118.19737],[34.28212,-118.19896],[34.2808,-118.20198],[34.27885,-118.20262],[34.27871,-118.2043],[34.27784,-118.20562],[34.27823,-118.20623],[34.27941,-118.20645],[34.27949,-118.20738],[34.27847,-118.21087],[34.27716,-118.21058],[34.27688,-118.21199],[34.27776,-118.21263],[34.27817,-118.21352],[34.2766,-118.21458],[34.27717,-118.21741],[34.28012,-118.21848],[34.27933,-118.2195],[34.27909,-118.22073],[34.27947,-118.22121],[34.28412,-118.22209],[34.28422,-118.22328],[34.28662,-118.23003],[34.28777,-118.23063],[34.28844,-118.23214],[34.29291,-118.23663],[34.29361,-118.24163],[34.29672,-118.24416],[34.29715,-118.24769],[34.2968,-118.24925],[34.29779,-118.24983],[34.29891,-118.25158],[34.30076,-118.25338],[34.30184,-118.25583],[34.30133,-118.25765],[34.30161,-118.25932],[34.30207,-118.26013],[34.30334,-118.26049],[34.30368,-118.26134],[34.30327,-118.26283],[34.29987,-118.26274],[34.29888,-118.26431],[34.30017,-118.26731],[34.30075,-118.27155],[34.30075,-118.2753],[34.29947,-118.27887],[34.29596,-118.28327],[34.29341,-118.28501],[34.29238,-118.28754],[34.28996,-118.28989]],[[34.30739,-118.07369],[34.30803,-118.07802],[34.30765,-118.07947],[34.30874,-118.08354],[34.309,-118.08392],[34.31044,-118.08417],[34.30964,-118.08556],[34.3097,-118.08743],[34.30886,-118.08983],[34.31027,-118.09493],[34.30877,-118.0977],[34.31132,-118.102],[34.3113,-118.10293],[34.30974,-118.10576],[34.30858,-118.1069],[34.30885,-118.10879],[34.30616,-118.10873],[34.30576,-118.10974],[34.30602,-118.1106],[34.30874,-118.11188],[34.31091,-118.11423],[34.31003,-118.1148],[34.30915,-118.11647],[34.31002,-118.11976],[34.31115,-118.11918],[34.31139,-118.11946],[34.31117,-118.1217],[34.31176,-118.12287],[34.30978,-118.12479],[34.31136,-118.12639],[34.30997,-118.12883],[34.3099,-118.13136],[34.3091,-118.13416],[34.30982,-118.13466],[34.31098,-118.13451],[34.31118,-118.13705],[34.30987,-118.13848],[34.30984,-118.1395],[34.3104,-118.14076],[34.31004,-118.14222],[34.30881,-118.14435],[34.30926,-118.14593],[34.30836,-118.14693],[34.30953,-118.14755],[34.3099,-118.14927],[34.30931,-118.15039],[34.30999,-118.15088],[34.31005,-118.15228],[34.31077,-118.15375],[34.31058,-118.15503],[34.30844,-118.15617],[34.30758,-118.15717],[34.30675,-118.1568],[34.30464,-118.15931],[34.30517,-118.16062],[34.30608,-118.16024],[34.30692,-118.16221],[34.30512,-118.16402],[34.30559,-118.16572],[34.30513,-118.16662],[34.30522,-118.16746],[34.30401,-118.16721],[34.3028,-118.16846],[34.30228,-118.16961],[34.3013,-118.16995],[34.30088,-118.17262],[34.30113,-118.17306],[34.30215,-118.17298],[34.30204,-118.17522]]]},"pois":[{"name":"Red Box","lat":34.25836,"lon":-118.1051},{"name":"West Fork Trail Camp","lat":34.24642,"lon":-118.04937},{"name":"Wildwood Canyon Park","lat":34.20292,"lon":-118.29676},{"name":"Switzer Camp","lat":34.25878,"lon":-118.1547},{"name":"Upper Switzer Falls","lat":34.25786,"lon":-118.15495},{"name":"West Fork National Recreation Trailhead","lat":34.2412,"lon":-117.8687},{"name":"Lower Switzer Falls","lat":34.25655,"lon":-118.15282},{"name":"Switzer Picnic Area","lat":34.26613,"lon":-118.14478},{"name":"Red Box","lat":34.25802,"lon":-118.10518},{"name":"Switzer Falls Trailhead","lat":34.26631,"lon":-118.14572},{"name":"Red Box Gap","lat":34.2585,"lon":-118.10487},{"name":"West Fork Waterfall","lat":34.23925,"lon":-117.88612}]};
+
+const VIDEO = {"creek":[[34.24576,-117.10958],[34.24681,-117.10952],[34.24727,-117.11016],[34.247,-117.1108],[34.24682,-117.11121],[34.2467,-117.11181],[34.2467,-117.1128],[34.24691,-117.11377],[34.24738,-117.1144],[34.24789,-117.11463],[34.24829,-117.11453],[34.24872,-117.11456],[34.24885,-117.11476],[34.24915,-117.11523],[34.24967,-117.11566],[34.24997,-117.11564],[34.25033,-117.11541],[34.25056,-117.11536],[34.25076,-117.1155],[34.2512,-117.11638],[34.25152,-117.1166],[34.25225,-117.11684],[34.25266,-117.11678],[34.25279,-117.11722],[34.25366,-117.11778],[34.25405,-117.11786],[34.25436,-117.11765],[34.25449,-117.11726],[34.2546,-117.11713],[34.2548,-117.11676],[34.25519,-117.11681],[34.25554,-117.1171],[34.25631,-117.11749],[34.25679,-117.11817],[34.25679,-117.11858],[34.25646,-117.11931],[34.25653,-117.12029],[34.25676,-117.1208],[34.25722,-117.12135],[34.25723,-117.12263],[34.25724,-117.12333],[34.25743,-117.12387],[34.25836,-117.12399],[34.25885,-117.12385],[34.26082,-117.12477],[34.26119,-117.12448],[34.26159,-117.1245],[34.262,-117.12453],[34.26244,-117.12517],[34.26282,-117.12526],[34.26363,-117.12596],[34.26397,-117.12602],[34.26462,-117.12553],[34.2649,-117.12551],[34.26511,-117.12566],[34.26529,-117.12609],[34.26512,-117.12706],[34.26522,-117.1275],[34.26592,-117.12798],[34.26727,-117.12869],[34.26877,-117.12922],[34.26919,-117.12913],[34.26944,-117.12926],[34.26968,-117.12959],[34.26977,-117.13005],[34.27003,-117.13046],[34.27042,-117.13078],[34.27076,-117.13092],[34.27119,-117.13076],[34.27118,-117.13],[34.27142,-117.12953],[34.27175,-117.12898],[34.272,-117.12872],[34.27259,-117.12833],[34.27314,-117.12819],[34.27363,-117.12821],[34.27375,-117.12817],[34.27386,-117.12812],[34.27414,-117.12745],[34.27439,-117.12705],[34.27469,-117.1268],[34.27538,-117.12691],[34.27564,-117.12723],[34.27588,-117.12735],[34.27646,-117.12747],[34.27671,-117.12757],[34.27724,-117.12752],[34.27772,-117.12728],[34.27898,-117.1279],[34.27985,-117.12827],[34.28064,-117.12825],[34.28149,-117.12786],[34.28161,-117.12558],[34.28187,-117.12469],[34.2822,-117.12462],[34.28274,-117.12516],[34.28426,-117.12565],[34.28421,-117.12607],[34.2835,-117.12684],[34.28343,-117.12753],[34.2833,-117.12798],[34.28341,-117.12844],[34.28373,-117.12844],[34.28396,-117.1282],[34.28484,-117.12829],[34.28556,-117.128],[34.28711,-117.12687],[34.28761,-117.12688],[34.2878,-117.12683],[34.28892,-117.12635],[34.28943,-117.12741],[34.28985,-117.12796],[34.29045,-117.12848],[34.291,-117.12838],[34.2915,-117.12705],[34.29192,-117.12628],[34.29265,-117.12582],[34.29428,-117.12586],[34.2949,-117.12556],[34.2964,-117.1245],[34.29733,-117.12413],[34.29851,-117.12409],[34.29882,-117.12428],[34.29967,-117.12442],[34.30045,-117.12438],[34.301,-117.12447],[34.30133,-117.12489],[34.30109,-117.12692],[34.30128,-117.12816],[34.30148,-117.1283],[34.30227,-117.12873],[34.30307,-117.12874],[34.30365,-117.1298],[34.30429,-117.13041]],"fished":[[34.25724,-117.12333],[34.25743,-117.12387],[34.25836,-117.12399],[34.25885,-117.12385],[34.26082,-117.12477],[34.26119,-117.12448],[34.26159,-117.1245],[34.262,-117.12453],[34.26244,-117.12517],[34.26282,-117.12526],[34.26363,-117.12596],[34.26397,-117.12602],[34.26462,-117.12553],[34.2649,-117.12551],[34.26511,-117.12566],[34.26529,-117.12609],[34.26512,-117.12706],[34.26522,-117.1275],[34.26592,-117.12798],[34.26727,-117.12869],[34.26877,-117.12922]],"open":{"Hook Creek Rd":[[[34.2537,-117.17378],[34.25361,-117.17364],[34.2536,-117.17354],[34.25364,-117.17341],[34.25379,-117.17321],[34.25414,-117.17292],[34.25443,-117.17259],[34.25464,-117.17225],[34.25481,-117.1719],[34.25486,-117.17163],[34.25484,-117.1714],[34.25476,-117.1712],[34.25472,-117.17113]],[[34.25472,-117.17113],[34.25469,-117.17107],[34.25457,-117.17096],[34.25449,-117.17089],[34.25428,-117.17073],[34.2539,-117.17056],[34.25375,-117.17055],[34.25364,-117.17055]],[[34.25364,-117.17055],[34.2536,-117.17041],[34.25359,-117.17036],[34.2536,-117.17031],[34.25365,-117.1702],[34.25373,-117.17007],[34.25375,-117.16994],[34.25373,-117.16981],[34.25368,-117.16969],[34.25356,-117.1695],[34.25353,-117.16933],[34.2536,-117.16921],[34.25372,-117.1691],[34.25378,-117.16891],[34.25387,-117.16869],[34.25399,-117.16866],[34.25418,-117.16872],[34.25433,-117.16874],[34.25441,-117.16867]],[[34.25441,-117.16867],[34.25448,-117.16856],[34.25445,-117.16834],[34.25425,-117.16809],[34.25395,-117.16772],[34.25376,-117.16753],[34.25361,-117.16736],[34.25334,-117.16695],[34.25284,-117.16616],[34.25246,-117.16562],[34.25214,-117.16506],[34.25206,-117.16484],[34.25189,-117.16455],[34.25173,-117.16434],[34.2514,-117.16408],[34.2511,-117.16378],[34.25088,-117.16345],[34.25079,-117.16316],[34.25074,-117.16277],[34.25071,-117.16243],[34.25071,-117.16188],[34.25067,-117.16141],[34.25065,-117.16098],[34.25068,-117.16052],[34.25071,-117.16014],[34.25075,-117.16],[34.25082,-117.15989],[34.25108,-117.15951],[34.25127,-117.15908],[34.25143,-117.15892],[34.25163,-117.15877],[34.25183,-117.15861],[34.25207,-117.15842],[34.25223,-117.15838],[34.25236,-117.15828],[34.25265,-117.15789],[34.25306,-117.1576],[34.25321,-117.15745],[34.25336,-117.15731],[34.25357,-117.15696],[34.25368,-117.15676],[34.25381,-117.15669],[34.2539,-117.15667],[34.25404,-117.15665],[34.25424,-117.15668],[34.25438,-117.15683],[34.25447,-117.15702],[34.25473,-117.15723],[34.25502,-117.15733],[34.25527,-117.15739],[34.25545,-117.15739],[34.25562,-117.15728],[34.25571,-117.15711],[34.25583,-117.15678],[34.25597,-117.15669],[34.25637,-117.15664],[34.25666,-117.15655],[34.25707,-117.15631],[34.25735,-117.1562],[34.25773,-117.15609],[34.25792,-117.15597],[34.25804,-117.15587],[34.25823,-117.15565],[34.25834,-117.15541],[34.25836,-117.15521],[34.25842,-117.155],[34.25871,-117.15456],[34.25894,-117.15421]],[[34.25894,-117.15421],[34.25905,-117.15401],[34.25917,-117.15372],[34.25928,-117.15346],[34.25964,-117.153],[34.25993,-117.15256],[34.26019,-117.15206],[34.26063,-117.15163],[34.26085,-117.15141],[34.26119,-117.15108],[34.2613,-117.15093],[34.26148,-117.15071],[34.26162,-117.15053],[34.26169,-117.15028],[34.26174,-117.14991],[34.26174,-117.14971],[34.26179,-117.14947],[34.26197,-117.14914],[34.26216,-117.14891],[34.26237,-117.14867],[34.26256,-117.14835],[34.26269,-117.14811],[34.26279,-117.14788],[34.26282,-117.14761],[34.26281,-117.14728],[34.26275,-117.14705],[34.26278,-117.14691],[34.2629,-117.14677]]]},"closedVeh":{"FR 2N26Y (Hook Creek Rd extension)":[[[34.2629,-117.14677],[34.26297,-117.14672],[34.26326,-117.14657],[34.26348,-117.14641],[34.26357,-117.1463],[34.26365,-117.14598],[34.26373,-117.14579],[34.26384,-117.14563],[34.26417,-117.14536],[34.26439,-117.14517],[34.26444,-117.14493],[34.26443,-117.14441],[34.26447,-117.14423],[34.2645,-117.14412],[34.26456,-117.14407],[34.26467,-117.14402],[34.26495,-117.14408],[34.26503,-117.14405],[34.26515,-117.14382],[34.26529,-117.1436],[34.26536,-117.14352],[34.26549,-117.1435],[34.26573,-117.14357],[34.26584,-117.14347],[34.26593,-117.14332],[34.26602,-117.14313],[34.26607,-117.14291],[34.26609,-117.14273],[34.26625,-117.14251],[34.26633,-117.14216],[34.26651,-117.14187],[34.26659,-117.14171],[34.26699,-117.14136],[34.26725,-117.14113],[34.2675,-117.14081],[34.26757,-117.1407],[34.26759,-117.14048],[34.2676,-117.14033],[34.26764,-117.14021],[34.26762,-117.14005],[34.2676,-117.13991],[34.2676,-117.13983],[34.26764,-117.13976],[34.26775,-117.13977],[34.26781,-117.13988],[34.26787,-117.14006],[34.26796,-117.14023],[34.2681,-117.14041],[34.26823,-117.14049],[34.26834,-117.14049],[34.26849,-117.14043],[34.26858,-117.14033],[34.26861,-117.14021],[34.26862,-117.14011],[34.2686,-117.14001],[34.26855,-117.13994],[34.26844,-117.13988],[34.26839,-117.13983],[34.26834,-117.13973],[34.26829,-117.13965],[34.26819,-117.1395],[34.26807,-117.13938],[34.26798,-117.1393],[34.26796,-117.1392],[34.26801,-117.13909],[34.2681,-117.13903],[34.26819,-117.13901]],[[34.26819,-117.13901],[34.26827,-117.13894],[34.26836,-117.13887],[34.26841,-117.13879],[34.26849,-117.13872],[34.26866,-117.1387],[34.26908,-117.13869],[34.26919,-117.13862],[34.26933,-117.13837],[34.26949,-117.13815],[34.26967,-117.13794],[34.26972,-117.13788]]]},"closedAll":{"FR 3N34C (Splinters Cabin Rd)":[[[34.27145,-117.13624],[34.27138,-117.1361],[34.27136,-117.13595],[34.27142,-117.13566],[34.27143,-117.13535],[34.27147,-117.13526],[34.27155,-117.13519],[34.27159,-117.13512],[34.27164,-117.135],[34.27164,-117.13469],[34.27171,-117.13444],[34.27201,-117.13393],[34.27219,-117.13362],[34.27222,-117.13349],[34.27231,-117.13335],[34.27248,-117.13318],[34.27252,-117.1331],[34.27247,-117.13301],[34.27244,-117.13292],[34.27249,-117.13274],[34.27249,-117.13244],[34.27251,-117.13214],[34.27254,-117.13175],[34.27253,-117.13128],[34.27245,-117.1311],[34.27241,-117.13101],[34.27241,-117.13087],[34.27256,-117.1306],[34.27262,-117.13041],[34.27263,-117.13002],[34.27266,-117.12953],[34.27264,-117.12942],[34.27262,-117.12934],[34.27249,-117.12915],[34.2725,-117.12903],[34.27255,-117.12894],[34.27263,-117.12891],[34.27268,-117.12896],[34.27278,-117.12906]]]},"videoRoad":{"FR 3N34 (Crab Flats Rd), Deep Creek to Tent Peg":[[[34.26826,-117.12909],[34.26822,-117.12898]],[[34.27112,-117.13202],[34.27068,-117.13193],[34.27049,-117.13187],[34.27019,-117.13179],[34.27009,-117.13158],[34.26998,-117.13142],[34.26983,-117.13129],[34.26976,-117.131],[34.26967,-117.13073],[34.26952,-117.13062],[34.26951,-117.13037],[34.26944,-117.1302],[34.26931,-117.12999],[34.26921,-117.12972],[34.26902,-117.12947],[34.26885,-117.12944],[34.26869,-117.12941],[34.26848,-117.12951],[34.26837,-117.12939],[34.26826,-117.12909]],[[34.26822,-117.12898],[34.26821,-117.12896],[34.26826,-117.1288],[34.26851,-117.1286],[34.26887,-117.1283],[34.26914,-117.12823],[34.2693,-117.12805],[34.26951,-117.12807],[34.26962,-117.12844],[34.26986,-117.12898],[34.26996,-117.12922],[34.27015,-117.12939],[34.2703,-117.12935],[34.27044,-117.12919],[34.27074,-117.1288],[34.27077,-117.12832],[34.27086,-117.12818],[34.27119,-117.12803],[34.27132,-117.12789],[34.27134,-117.12756],[34.27151,-117.1272],[34.27151,-117.12702],[34.27135,-117.12681],[34.27118,-117.12642],[34.27116,-117.12589],[34.27107,-117.12562],[34.27107,-117.12539],[34.27143,-117.1251],[34.27158,-117.12494],[34.27164,-117.12471],[34.27176,-117.12452],[34.27176,-117.12439],[34.27162,-117.12436],[34.27146,-117.12451],[34.27111,-117.12448],[34.27069,-117.12443],[34.27037,-117.1243],[34.27021,-117.1243],[34.2699,-117.12389],[34.26979,-117.12391],[34.26973,-117.124],[34.26976,-117.12432],[34.26972,-117.12446],[34.26972,-117.12458],[34.26981,-117.12475],[34.27003,-117.1249],[34.27012,-117.12505],[34.27013,-117.12553],[34.27007,-117.12571],[34.27001,-117.12573],[34.26996,-117.12568],[34.26995,-117.12549],[34.26992,-117.12535],[34.26982,-117.12531],[34.26972,-117.12539],[34.26961,-117.12542],[34.26952,-117.12536],[34.26946,-117.12511],[34.2693,-117.12484],[34.26928,-117.12444],[34.26916,-117.12424],[34.2691,-117.1241],[34.26897,-117.12397],[34.26885,-117.12375],[34.26874,-117.12364],[34.26872,-117.12349],[34.26881,-117.12333],[34.26881,-117.12307],[34.26867,-117.12275],[34.26877,-117.12197],[34.26857,-117.12137],[34.26862,-117.12122],[34.26871,-117.12103],[34.26876,-117.12087],[34.26876,-117.12061],[34.26865,-117.12029],[34.2687,-117.11996],[34.26864,-117.11953],[34.26853,-117.11945],[34.26823,-117.11943],[34.26812,-117.1195],[34.26794,-117.11951],[34.2677,-117.11926],[34.26745,-117.11924],[34.26726,-117.11928],[34.26715,-117.11925],[34.26714,-117.11886],[34.2671,-117.11864],[34.26691,-117.11832],[34.26685,-117.11824],[34.26684,-117.11814],[34.26697,-117.11803],[34.26697,-117.11791],[34.26687,-117.11783],[34.26678,-117.11781],[34.26658,-117.11788],[34.26646,-117.11784],[34.26614,-117.11753],[34.26606,-117.11743],[34.26587,-117.11733],[34.26565,-117.11733],[34.26547,-117.1175],[34.26523,-117.11774],[34.26512,-117.1177],[34.26498,-117.11744],[34.26483,-117.11706],[34.26481,-117.11679],[34.26493,-117.11664],[34.26504,-117.1164],[34.26509,-117.11592],[34.26512,-117.11522],[34.26522,-117.11496],[34.26526,-117.11483],[34.26521,-117.11453],[34.2652,-117.11434],[34.26542,-117.1139],[34.26563,-117.11377],[34.26571,-117.11366],[34.26568,-117.11345],[34.26555,-117.1131],[34.26552,-117.11279],[34.26551,-117.11244],[34.26555,-117.11223],[34.26563,-117.11204],[34.26563,-117.11189],[34.26538,-117.11159],[34.2653,-117.11114],[34.26511,-117.1109],[34.26495,-117.1105],[34.26499,-117.11022],[34.26473,-117.10977],[34.26461,-117.10948],[34.26421,-117.10885],[34.26405,-117.10862],[34.26397,-117.10853],[34.26397,-117.10831],[34.26411,-117.10805],[34.26434,-117.10762],[34.26433,-117.10742],[34.26425,-117.10716],[34.26418,-117.10668],[34.26414,-117.10625],[34.26408,-117.10602],[34.26395,-117.10587],[34.26365,-117.10569],[34.26347,-117.10558],[34.26322,-117.10531],[34.2632,-117.10512],[34.26332,-117.10492],[34.26325,-117.1047],[34.26315,-117.10455],[34.26299,-117.10445],[34.26283,-117.10442],[34.26276,-117.10431],[34.26278,-117.10395],[34.26281,-117.10371],[34.26281,-117.10343],[34.26271,-117.10318],[34.26261,-117.10304],[34.26251,-117.10304],[34.26239,-117.10304],[34.26233,-117.1029],[34.26234,-117.10263],[34.26221,-117.10242],[34.26217,-117.10218],[34.2621,-117.10206],[34.26193,-117.10207],[34.26178,-117.10225],[34.26165,-117.10228],[34.26149,-117.10219],[34.26136,-117.10209],[34.2613,-117.10196],[34.26136,-117.10181],[34.26154,-117.10153],[34.26158,-117.10124],[34.26172,-117.10101],[34.26182,-117.1008],[34.26198,-117.10047],[34.26205,-117.10039]]]},"road":{"FR 3N34 (Crab Flats Rd)":[[[34.27145,-117.13624],[34.27123,-117.13657],[34.27108,-117.13681],[34.27102,-117.13692],[34.27095,-117.13707],[34.27078,-117.13723],[34.2706,-117.13718],[34.27041,-117.13727],[34.27019,-117.13745],[34.26994,-117.13772],[34.26979,-117.13786],[34.26972,-117.13788]],[[34.26972,-117.13788],[34.26974,-117.1378],[34.26982,-117.13766]],[[34.26982,-117.13766],[34.26997,-117.13738],[34.27019,-117.13701],[34.27025,-117.1368],[34.27031,-117.13654],[34.27044,-117.13625],[34.27058,-117.13606],[34.27068,-117.13577],[34.27073,-117.13536],[34.2707,-117.13513],[34.27067,-117.13493],[34.27057,-117.13471],[34.27042,-117.13455],[34.27043,-117.13433],[34.27043,-117.13421],[34.27043,-117.13405],[34.27048,-117.13389],[34.27061,-117.1336],[34.27071,-117.13345],[34.271,-117.13305],[34.27111,-117.13285],[34.27117,-117.13278],[34.2713,-117.13272],[34.27136,-117.13258],[34.27136,-117.13245],[34.27132,-117.13233],[34.27128,-117.1322],[34.2712,-117.13208],[34.27112,-117.13202]],[[34.27554,-117.13343],[34.27544,-117.13346],[34.27528,-117.13345],[34.27507,-117.13344],[34.27494,-117.13332],[34.27489,-117.13312],[34.27466,-117.13293],[34.27445,-117.1329],[34.27424,-117.13312],[34.2741,-117.1332],[34.27391,-117.13309],[34.27375,-117.13311],[34.27355,-117.1333],[34.27342,-117.13348],[34.27323,-117.13392],[34.27319,-117.13418],[34.27309,-117.13439],[34.27291,-117.13453],[34.27258,-117.13459],[34.27244,-117.13465],[34.27239,-117.13479],[34.27236,-117.13506],[34.27234,-117.13526],[34.27231,-117.13543],[34.27217,-117.1355],[34.27203,-117.13569],[34.27194,-117.13583],[34.27188,-117.13596],[34.27176,-117.13603],[34.27159,-117.13613],[34.27145,-117.13624]],[[34.26205,-117.10039],[34.26242,-117.10029],[34.26268,-117.10006],[34.26288,-117.0996],[34.2628,-117.09926],[34.26256,-117.09903],[34.26235,-117.09881],[34.2622,-117.09841],[34.26213,-117.09775],[34.26212,-117.09733],[34.26213,-117.09713],[34.26238,-117.09668],[34.2625,-117.09659],[34.26261,-117.09639],[34.26288,-117.09584],[34.26327,-117.09518],[34.26353,-117.09498],[34.26358,-117.09474],[34.2636,-117.09461],[34.26372,-117.09442],[34.26386,-117.09417],[34.26408,-117.09371],[34.26409,-117.09351],[34.26401,-117.09339],[34.26353,-117.093],[34.26343,-117.09274],[34.26341,-117.09244],[34.26367,-117.09228],[34.26396,-117.09197],[34.26414,-117.09172],[34.26429,-117.09137],[34.26437,-117.09097],[34.26459,-117.09034],[34.26461,-117.09009],[34.26461,-117.08995],[34.26456,-117.08973],[34.26431,-117.08915],[34.2642,-117.08899],[34.26403,-117.08889],[34.26394,-117.08873],[34.26394,-117.08843],[34.26369,-117.08786],[34.26363,-117.08756],[34.26362,-117.08715],[34.26356,-117.087],[34.26338,-117.08685],[34.26316,-117.08671],[34.26312,-117.08668],[34.26285,-117.08637],[34.26272,-117.08627]],[[34.26069,-117.0844],[34.26107,-117.08472],[34.26128,-117.08509],[34.26181,-117.08552],[34.26199,-117.08597],[34.26245,-117.08617],[34.26272,-117.08627]]]},"trail":{"Pacific Crest Trail":[[[34.27415,-117.12806],[34.27431,-117.12786],[34.27439,-117.12775],[34.2745,-117.12755],[34.27457,-117.12742],[34.27464,-117.12737],[34.27474,-117.12734],[34.275,-117.12737],[34.27505,-117.12741],[34.27515,-117.12743],[34.27532,-117.12744],[34.27543,-117.12741],[34.27547,-117.12745],[34.27549,-117.12754],[34.27554,-117.12759],[34.27569,-117.12767],[34.27583,-117.12769],[34.27594,-117.12773],[34.27616,-117.1279],[34.2763,-117.12795],[34.27641,-117.12801],[34.27667,-117.128],[34.27678,-117.12802],[34.27686,-117.12803],[34.27699,-117.12811],[34.27705,-117.12819],[34.2771,-117.12821],[34.27717,-117.12821],[34.27738,-117.12803],[34.27747,-117.12799],[34.27758,-117.128],[34.2777,-117.12808],[34.27778,-117.12817],[34.27782,-117.12825],[34.27784,-117.12834],[34.27787,-117.12839],[34.27794,-117.12841],[34.27805,-117.1284],[34.27812,-117.1284],[34.27818,-117.12843],[34.27822,-117.12849],[34.27828,-117.12855],[34.27837,-117.12854],[34.27853,-117.12857],[34.27862,-117.12861],[34.27867,-117.1287],[34.27872,-117.12875],[34.27879,-117.12877],[34.27889,-117.12877],[34.27899,-117.12881],[34.27906,-117.12885],[34.27919,-117.12885],[34.27928,-117.12887],[34.27934,-117.12889],[34.27956,-117.12889],[34.27962,-117.12893],[34.27966,-117.12899],[34.27969,-117.12908],[34.27976,-117.12914],[34.27984,-117.12918],[34.27994,-117.12917],[34.28009,-117.12904],[34.28017,-117.12902],[34.28024,-117.12903],[34.28031,-117.12908],[34.2804,-117.1291],[34.28058,-117.12905],[34.28074,-117.12901],[34.28086,-117.129],[34.28096,-117.12896],[34.28103,-117.12891],[34.28111,-117.12893],[34.28115,-117.129],[34.2812,-117.12914],[34.2813,-117.1292],[34.28135,-117.12918],[34.28141,-117.12911],[34.28147,-117.12909],[34.28151,-117.12906],[34.28156,-117.12897],[34.28168,-117.1288],[34.28206,-117.12837],[34.28216,-117.12829],[34.28222,-117.12826],[34.28227,-117.12828],[34.28232,-117.12844],[34.28238,-117.12856],[34.28244,-117.12871],[34.28252,-117.12881],[34.28267,-117.12894],[34.28278,-117.12904],[34.28281,-117.12913],[34.28284,-117.12928],[34.28288,-117.12939],[34.28291,-117.12949],[34.28298,-117.12955],[34.28307,-117.12959],[34.28316,-117.12967],[34.28328,-117.12975],[34.28338,-117.12977],[34.28352,-117.12979],[34.28359,-117.12984],[34.28367,-117.12993],[34.28381,-117.13023],[34.28388,-117.13029],[34.28393,-117.13029],[34.28395,-117.13024],[34.28401,-117.1302],[34.28409,-117.13018],[34.28414,-117.13014],[34.28423,-117.12992],[34.28429,-117.1298],[34.28433,-117.12964],[34.28437,-117.12955],[34.28442,-117.12952],[34.28448,-117.1295],[34.2846,-117.12951],[34.28472,-117.12953],[34.28479,-117.12954],[34.28486,-117.12954],[34.28492,-117.12948],[34.28498,-117.12945],[34.28507,-117.12944],[34.28511,-117.12939],[34.28513,-117.12933],[34.28522,-117.12922],[34.28543,-117.12897],[34.28552,-117.12891],[34.28561,-117.1289],[34.28571,-117.12884],[34.28581,-117.12881],[34.2859,-117.12875],[34.28604,-117.12864],[34.28612,-117.12858],[34.28619,-117.12858],[34.28628,-117.12864],[34.28638,-117.12871],[34.28648,-117.12877],[34.28655,-117.12876],[34.2866,-117.12871],[34.28663,-117.12861],[34.2867,-117.12847],[34.28673,-117.12843],[34.28678,-117.12844],[34.28687,-117.12851],[34.28691,-117.12852],[34.28695,-117.12845],[34.287,-117.12828],[34.28709,-117.12805],[34.28718,-117.12798],[34.28729,-117.12797],[34.28733,-117.12793],[34.28741,-117.12788],[34.28757,-117.12788],[34.28762,-117.12786],[34.28768,-117.12782],[34.28774,-117.12779],[34.28788,-117.12778],[34.28798,-117.12782],[34.28811,-117.12799],[34.28821,-117.12801],[34.28831,-117.12804],[34.28842,-117.12806],[34.28849,-117.1281],[34.28854,-117.12816],[34.28859,-117.12828],[34.28866,-117.12832],[34.28872,-117.12833],[34.28883,-117.12831],[34.28887,-117.12829],[34.28894,-117.12831],[34.28897,-117.12837],[34.28896,-117.12846],[34.28887,-117.12856],[34.28875,-117.12874],[34.28872,-117.12882],[34.28867,-117.12887],[34.2886,-117.12893],[34.28857,-117.12902],[34.28856,-117.12909],[34.28849,-117.12927],[34.28849,-117.12936],[34.28851,-117.12946],[34.28855,-117.12951],[34.28859,-117.12949],[34.28864,-117.12942],[34.28873,-117.12935],[34.28886,-117.12931],[34.28894,-117.12925],[34.28912,-117.12907],[34.28918,-117.12902],[34.28927,-117.12899],[34.28934,-117.12893],[34.28941,-117.12891],[34.28949,-117.12889],[34.28957,-117.12881],[34.28962,-117.12877],[34.28967,-117.12876],[34.28972,-117.12881],[34.28975,-117.1289],[34.28985,-117.12895],[34.28994,-117.12895],[34.29004,-117.12896],[34.29013,-117.12899],[34.29025,-117.12906],[34.29037,-117.12904],[34.29043,-117.12906],[34.29052,-117.12915],[34.2906,-117.12916],[34.29074,-117.12901],[34.29087,-117.12903],[34.29092,-117.12897],[34.29098,-117.12882],[34.29116,-117.12874],[34.29131,-117.12873],[34.29139,-117.12868],[34.29142,-117.1286],[34.29148,-117.12858],[34.29154,-117.12859],[34.29161,-117.12852],[34.29168,-117.12837],[34.29178,-117.12834],[34.29182,-117.12829],[34.29181,-117.12821],[34.29189,-117.12799],[34.29212,-117.12769],[34.29233,-117.12748],[34.2925,-117.12731],[34.29262,-117.12722],[34.29267,-117.12718],[34.29273,-117.12717],[34.29283,-117.12725],[34.29296,-117.12729],[34.29299,-117.12725],[34.29297,-117.1271],[34.29297,-117.12697],[34.29303,-117.12684],[34.29309,-117.12674],[34.2932,-117.12662],[34.29331,-117.12654],[34.2934,-117.12654],[34.29347,-117.12651],[34.29353,-117.12645],[34.29362,-117.12641],[34.29373,-117.12631],[34.29378,-117.12629],[34.2939,-117.12641],[34.29392,-117.12646],[34.29394,-117.12656],[34.294,-117.1267],[34.2941,-117.12677],[34.29424,-117.12684],[34.29435,-117.12685],[34.29445,-117.12688],[34.29453,-117.12687],[34.29458,-117.1268],[34.29465,-117.1267],[34.2947,-117.12665],[34.2948,-117.12664],[34.29489,-117.12659],[34.29493,-117.12648],[34.29496,-117.12628],[34.29493,-117.12616],[34.29497,-117.12615],[34.29505,-117.12617],[34.29518,-117.12619],[34.29526,-117.12613],[34.29531,-117.12603],[34.29531,-117.12588],[34.29533,-117.12581],[34.29536,-117.12578],[34.29543,-117.12577],[34.29549,-117.1258],[34.29554,-117.12585],[34.2956,-117.12588],[34.29566,-117.12586],[34.29571,-117.12579],[34.29577,-117.12567],[34.2958,-117.12551],[34.29576,-117.12527],[34.29579,-117.1252],[34.29585,-117.12515],[34.29592,-117.12518],[34.29599,-117.12519],[34.29605,-117.12516],[34.29614,-117.12517],[34.29619,-117.1252],[34.29627,-117.12521],[34.29632,-117.12515],[34.29636,-117.12506],[34.29645,-117.125],[34.29667,-117.12497],[34.29677,-117.12492],[34.29686,-117.12492],[34.29697,-117.12498],[34.29704,-117.12497],[34.29711,-117.12493],[34.29717,-117.12485],[34.29728,-117.12481],[34.29739,-117.1248],[34.29762,-117.12469],[34.29775,-117.12465],[34.29794,-117.12465],[34.29808,-117.12461],[34.2982,-117.12463],[34.29861,-117.12475],[34.29867,-117.1248],[34.29872,-117.12488],[34.29873,-117.12499],[34.29883,-117.12503],[34.29887,-117.12501],[34.29892,-117.12491],[34.29903,-117.12489],[34.29966,-117.12489],[34.2999,-117.12492],[34.30004,-117.12489],[34.30026,-117.12481],[34.3006,-117.12474],[34.30063,-117.12472],[34.30067,-117.12475],[34.30074,-117.12491],[34.30085,-117.12512],[34.30088,-117.12522],[34.30087,-117.12532],[34.30086,-117.12545],[34.30086,-117.12568],[34.30071,-117.126],[34.30072,-117.12606],[34.30076,-117.12614],[34.30074,-117.1262],[34.30064,-117.12634],[34.30056,-117.1264],[34.30054,-117.12653],[34.30047,-117.12666],[34.30045,-117.12678],[34.30045,-117.1269],[34.30047,-117.12702],[34.30049,-117.1271],[34.30047,-117.12722],[34.30047,-117.12738],[34.30046,-117.12754],[34.30049,-117.12764],[34.30051,-117.12774],[34.30061,-117.12796],[34.30062,-117.1281],[34.30063,-117.12819],[34.30059,-117.12828],[34.30072,-117.12835],[34.30089,-117.12865],[34.30111,-117.12894],[34.30119,-117.12898],[34.30123,-117.12898],[34.30136,-117.12904],[34.30143,-117.12907],[34.30149,-117.12901],[34.30152,-117.12893],[34.30156,-117.12891],[34.30162,-117.12893],[34.3017,-117.12898],[34.30183,-117.1291],[34.30202,-117.1293],[34.30205,-117.12936],[34.30207,-117.1295],[34.30215,-117.12949],[34.30232,-117.12941],[34.30243,-117.1294],[34.30252,-117.12942],[34.30265,-117.12944],[34.30277,-117.12943],[34.3029,-117.12943],[34.303,-117.12947],[34.30305,-117.12955],[34.30308,-117.12963],[34.30314,-117.12984],[34.30321,-117.12998],[34.30331,-117.1301],[34.30338,-117.13026],[34.30355,-117.13053],[34.30365,-117.13066],[34.30373,-117.13078],[34.30381,-117.13083],[34.30386,-117.13084],[34.30392,-117.13088],[34.30399,-117.13087],[34.30404,-117.13083],[34.30411,-117.13083],[34.30423,-117.13084],[34.30431,-117.13089],[34.30443,-117.13098],[34.30452,-117.13099],[34.3046,-117.13094],[34.30468,-117.13093],[34.30475,-117.13093],[34.30486,-117.13102],[34.30492,-117.13104],[34.30498,-117.13099],[34.30503,-117.13097],[34.30512,-117.131],[34.30522,-117.13107],[34.30528,-117.13117],[34.30535,-117.1312],[34.30542,-117.1312],[34.30548,-117.13123],[34.30553,-117.1313],[34.30565,-117.13145],[34.30581,-117.13162],[34.30587,-117.13171],[34.30591,-117.13182],[34.30591,-117.1319],[34.30587,-117.13202],[34.30578,-117.13217],[34.3057,-117.13228],[34.30553,-117.13248],[34.30545,-117.1327],[34.3054,-117.13277],[34.30531,-117.13282],[34.30529,-117.13288],[34.3053,-117.13302],[34.3053,-117.13311],[34.30525,-117.13324],[34.30519,-117.13333],[34.3052,-117.13342],[34.30522,-117.13349],[34.30518,-117.13357],[34.30518,-117.13369],[34.30519,-117.13383],[34.30519,-117.13392],[34.30515,-117.13398],[34.30514,-117.13405],[34.3052,-117.13409],[34.30531,-117.13423],[34.30547,-117.13443],[34.3056,-117.13451],[34.30567,-117.13456],[34.30569,-117.13463],[34.30564,-117.13474],[34.30555,-117.13481],[34.30552,-117.1349],[34.30551,-117.13506],[34.30559,-117.13514],[34.30567,-117.13509],[34.30575,-117.13502],[34.30583,-117.13497],[34.30594,-117.13499],[34.30601,-117.13498],[34.30607,-117.13497],[34.30613,-117.13493],[34.3062,-117.13493],[34.30628,-117.135],[34.30645,-117.13505],[34.3067,-117.13517],[34.30682,-117.13531],[34.30693,-117.13551],[34.307,-117.13559],[34.30712,-117.13571],[34.30715,-117.13579],[34.30717,-117.13589],[34.30718,-117.13601],[34.3072,-117.13606],[34.30725,-117.13614],[34.30733,-117.13653],[34.30733,-117.13661],[34.30732,-117.13677],[34.30728,-117.13697],[34.30734,-117.13711],[34.30739,-117.13717],[34.3074,-117.13724],[34.30745,-117.13735],[34.30748,-117.13744],[34.30748,-117.13753],[34.30749,-117.13758],[34.30746,-117.13771],[34.30746,-117.13779],[34.30752,-117.13792],[34.30758,-117.13867],[34.30759,-117.13878],[34.30762,-117.13891],[34.30772,-117.13911],[34.30781,-117.13921],[34.30792,-117.13927],[34.30797,-117.13938],[34.30805,-117.13945],[34.30823,-117.13947],[34.30832,-117.1395],[34.30844,-117.13956],[34.30853,-117.13956],[34.30859,-117.13953],[34.30865,-117.13949],[34.30875,-117.13948],[34.30883,-117.13947],[34.30896,-117.13959],[34.30899,-117.13961]],[[34.27469,-117.09072],[34.27441,-117.0914],[34.27436,-117.0916],[34.2744,-117.09176],[34.27446,-117.09197],[34.27437,-117.09232],[34.2745,-117.09253],[34.27464,-117.093],[34.27438,-117.09334],[34.27412,-117.09355],[34.2743,-117.09376],[34.27436,-117.09405],[34.27416,-117.09456],[34.27417,-117.09468],[34.2743,-117.09474],[34.27437,-117.09483],[34.27438,-117.09498],[34.27434,-117.09522],[34.27416,-117.09538],[34.27447,-117.09562],[34.27448,-117.09573],[34.27405,-117.09635],[34.27393,-117.09636],[34.27372,-117.09649],[34.27283,-117.09739],[34.27278,-117.09753],[34.27254,-117.09753],[34.27245,-117.0976],[34.27273,-117.09848],[34.27299,-117.09861],[34.27307,-117.09873],[34.27316,-117.09927],[34.27326,-117.09933],[34.27336,-117.0995],[34.27335,-117.09971],[34.27345,-117.10007],[34.2734,-117.10049],[34.27304,-117.10141],[34.27247,-117.10206],[34.27236,-117.10234],[34.27234,-117.10247],[34.27252,-117.10384],[34.27253,-117.10397],[34.27266,-117.10415],[34.27271,-117.10435],[34.2728,-117.10446],[34.27286,-117.10457],[34.27303,-117.10464],[34.27308,-117.10474],[34.27312,-117.10489],[34.27342,-117.10529],[34.27345,-117.10543],[34.27342,-117.10555],[34.27333,-117.10567],[34.27347,-117.10584],[34.27375,-117.10598],[34.27394,-117.10614],[34.27409,-117.10632],[34.27417,-117.10637],[34.27425,-117.10644],[34.27433,-117.10647],[34.27442,-117.10658],[34.2745,-117.1067],[34.27456,-117.10674],[34.27467,-117.10702],[34.27463,-117.10731],[34.27436,-117.10815],[34.27435,-117.10828],[34.27449,-117.10884],[34.27452,-117.10948],[34.27438,-117.11065],[34.27412,-117.11154],[34.27358,-117.11276],[34.27369,-117.11314],[34.27369,-117.11354],[34.27377,-117.11364],[34.27371,-117.11392],[34.27357,-117.11407],[34.2736,-117.11428],[34.27344,-117.11454],[34.27336,-117.11466],[34.27334,-117.11481],[34.27342,-117.11499],[34.27373,-117.11539],[34.2738,-117.11579],[34.27377,-117.11607],[34.27371,-117.11621],[34.27356,-117.11633],[34.27365,-117.1166],[34.27385,-117.1168],[34.27406,-117.11714],[34.2741,-117.11745],[34.27406,-117.11769],[34.27393,-117.1179],[34.27402,-117.11808],[34.27395,-117.11824],[34.27403,-117.11842],[34.27393,-117.1185],[34.27403,-117.11864],[34.27404,-117.11875],[34.27398,-117.11885],[34.27409,-117.11933],[34.27391,-117.11963],[34.27383,-117.11969],[34.27376,-117.12017],[34.27387,-117.12047],[34.27385,-117.12094],[34.27408,-117.12105],[34.2741,-117.12124],[34.27423,-117.12125],[34.27445,-117.12142],[34.27459,-117.12142],[34.27496,-117.1213],[34.27534,-117.12142],[34.27539,-117.12156],[34.27532,-117.12168],[34.27487,-117.12211],[34.27461,-117.12224],[34.2743,-117.12252],[34.27422,-117.12265],[34.27428,-117.12276],[34.27467,-117.12267],[34.27499,-117.12274],[34.27505,-117.12288],[34.27535,-117.12314],[34.27548,-117.12316],[34.27563,-117.12333],[34.27541,-117.12359],[34.27528,-117.12347],[34.27501,-117.12366],[34.27478,-117.12372],[34.27483,-117.12384],[34.27446,-117.12429],[34.27437,-117.12453],[34.2741,-117.12464],[34.27389,-117.12457],[34.27366,-117.12498],[34.27334,-117.12512],[34.27328,-117.12545],[34.27317,-117.12566],[34.27308,-117.12578],[34.27288,-117.12577],[34.27273,-117.12607],[34.27251,-117.12632],[34.27257,-117.12666],[34.27272,-117.12674],[34.27287,-117.12703],[34.27302,-117.12714],[34.2732,-117.12721],[34.27329,-117.12731],[34.27335,-117.12747],[34.27333,-117.12756],[34.27338,-117.12759],[34.27346,-117.12719],[34.27345,-117.12707],[34.27335,-117.12699],[34.27335,-117.12694],[34.27342,-117.1269],[34.27357,-117.12683],[34.27368,-117.1268],[34.27398,-117.12685],[34.274,-117.12693],[34.27375,-117.12687],[34.27364,-117.12689],[34.27359,-117.12691],[34.2736,-117.127],[34.27371,-117.12725],[34.27369,-117.12778],[34.27372,-117.12774],[34.27381,-117.1274],[34.2738,-117.12758],[34.2738,-117.12773]]],"Hook Creek Connector 2W11":[[[34.27108,-117.13681],[34.27129,-117.13683],[34.27143,-117.13689],[34.27159,-117.13676],[34.27176,-117.13655],[34.27177,-117.13646],[34.27186,-117.13641],[34.27194,-117.13645],[34.27223,-117.1364],[34.27231,-117.13626],[34.27239,-117.13614],[34.2724,-117.13598],[34.27244,-117.13578],[34.27252,-117.13572],[34.27262,-117.13568],[34.27266,-117.13561],[34.27272,-117.13548],[34.27281,-117.13543],[34.27286,-117.13534],[34.27291,-117.13518],[34.27309,-117.13487],[34.27331,-117.13458],[34.27346,-117.13454],[34.27358,-117.13438],[34.27366,-117.13435],[34.27413,-117.13439],[34.27438,-117.13435],[34.27449,-117.13435],[34.2749,-117.13449],[34.27497,-117.13454],[34.27497,-117.13471],[34.27498,-117.13478],[34.27504,-117.13495],[34.27507,-117.13513],[34.27507,-117.13525],[34.2751,-117.13527],[34.27515,-117.13527],[34.27523,-117.13522],[34.27531,-117.1352],[34.27541,-117.13525],[34.27558,-117.13528],[34.27566,-117.13532],[34.27573,-117.13541]]]}};
+const VZONE = { id: "deepcreek", cvar: "--video", name: "Deep Creek above Splinters Cabin", odds: "Best match for the video",
+  why: "Wild rainbows in granite pools on the north slope. The angler walks a closed, rocky 4x4 road down to the creek and fishes upstream. Lines show the likely road and the stretch fished (both approximate).",
+  access: "Hwy 173 → Hook Creek Rd → walk FR 2N26Y / FR 3N34 (closed to cars)" };
+
+const ZONES = [
+  { id: "bear", rank: 1, cvar: "--rank1", name: "Bear Creek", odds: "Most likely",
+    why: "<b>Wild-trout water with barbless rules</b> in the West Fork system. Its narrow white-rock gorge, small falls and log jams match the photos best, especially the gorge in photo 2.",
+    access: "Hwy 39 → West Fork trailhead, walk ~1 mi up the West Fork road to the Bear Creek Trail",
+    lines: ["bear"], dir: "left", off: [-16, -30] },
+  { id: "westfork", rank: 2, cvar: "--rank2", name: "West Fork San Gabriel", odds: "Likely",
+    why: "The <b>catch-and-release stretch</b> runs ~7 miles from the Hwy 39 area up to Cogswell Dam, which fits “stretches for quite some time.” The main channel is a bit wider than what the photos show.",
+    access: "Hwy 39 → West Fork trailhead, paved road closed to cars",
+    lines: ["westfork"], dir: "bottom", off: [0, 14] },
+  { id: "arroyo", rank: 3, cvar: "--rank3", name: "Arroyo Seco near Switzer", odds: "Possible",
+    why: "Same polished rock, alders and small falls, and it holds wild rainbows. Less tied to the barbless-hook comment, and I’m not sure of the current rules there.",
+    access: "Hwy 2 → Switzer Picnic Area, ~1 mi down-canyon to the falls",
+    lines: ["arroyo"], dir: "bottom", off: [0, 22] },
+  { id: "tujunga", rank: 3, cvar: "--rank3", name: "Upper Big Tujunga", odds: "Possible",
+    why: "Similar rock and plants, and a long river. Parts may be closed to protect arroyo toads, so check before going.",
+    access: "Angeles Forest Hwy or Big Tujunga Canyon Rd",
+    lines: ["tujunga"], dir: "top", off: [0, -14] },
+];
+
+ACCESS.trailheads.push(
+  { name: "Hook Creek Rd gate", lat: 34.2629, lon: -117.1468, note: "Where FR 2N26Y starts. Closed to vehicles past here. Parking nearby may be private; check before leaving a car.", zone: "deepcreek" },
+  { name: "Splinters Cabin (closed)", lat: 34.2728, lon: -117.1291, note: "Trailhead and day-use area closed to everyone under Forest Order 05-12-52-25-02.", zone: "deepcreek" },
+  { name: "Deep Creek crossing (FR 3N34)", lat: 34.2682, lon: -117.129, note: "Where 3N34 meets the creek. The video fishes upstream (south) from about here. Approximate.", zone: "deepcreek" },
+  { name: "Aztec Falls (closed)", lat: 34.2798, lon: -117.1283, note: "Inside the Deep Creek closure. Likely the Nov 2024 video’s downstream stretch.", zone: "deepcreek" },
+  { name: "Tent Peg Group Campground", lat: 34.2602, lon: -117.1005, note: "Upper end of the rocky FR 3N34 segment that drops to Deep Creek.", zone: "deepcreek" }
+);
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const map = L.map("map", { zoomSnap: 0.25, minZoom: 10, maxZoom: 16, attributionControl: true })
+  .fitBounds([[34.17, -118.31], [34.36, -117.80]]);
+map.attributionControl.setPrefix(false).addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>');
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+const TILE_BOUNDS = [[34.15, -118.34], [34.38, -117.08]];
+map.setMaxBounds(L.latLngBounds(TILE_BOUNDS).pad(0.15));
+map.attributionControl.addAttribution('Topo: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS</a>');
+L.tileLayer("tiles/{z}/{x}/{y}.jpg", { minZoom: 10, maxNativeZoom: 13, maxZoom: 16, bounds: TILE_BOUNDS, errorTileUrl: BLANK }).addTo(map);
+L.tileLayer("tiles/{z}/{x}/{y}.jpg", { minZoom: 14, maxNativeZoom: 14, maxZoom: 16, bounds: TILE_BOUNDS, errorTileUrl: BLANK }).addTo(map);
+L.control.scale({ imperial: true, metric: false, position: "bottomleft" }).addTo(map);
+
+const layers = { base: L.layerGroup().addTo(map), zones: L.layerGroup().addTo(map), roads: L.layerGroup().addTo(map), closed: L.layerGroup().addTo(map), trails: L.layerGroup().addTo(map), th: L.layerGroup().addTo(map), labels: L.layerGroup().addTo(map) };
+const zoneLayers = {};
+
+function lbl(latlng, text, cls, dir = "center", offset = [0, 0]) {
+  return L.circleMarker(latlng, { radius: 0, opacity: 0, fillOpacity: 0, interactive: false })
+    .bindTooltip(text, { permanent: true, direction: dir, className: "lbl " + cls, offset });
+}
+function mid(segs) {
+  const all = segs.flat();
+  return all[Math.floor(all.length / 2)];
+}
+
+function draw() {
+  Object.values(layers).forEach(g => g.clearLayers());
+  const water = css("--water"), ink = css("--ink"), panel = css("--panel");
+
+
+  ZONES.forEach(z => {
+    const col = css(z.cvar);
+    const segs = z.lines.flatMap(k => DATA.creeks[k] || []);
+    const band = L.polyline(segs, { color: col, weight: z.rank === 1 ? 26 : 20, opacity: .38, lineCap: "round", lineJoin: "round" });
+    const line = L.polyline(segs, { color: water, weight: 3, opacity: 1 });
+    const g = L.featureGroup([band, line]).addTo(layers.zones);
+    g.bindPopup(`<b>${z.rank}. ${z.name}</b><br>${z.odds}<br><span style="font-family:var(--f-mono);font-size:12px">${z.access}</span>`);
+    g.on("click", () => select(z.id, false));
+    zoneLayers[z.id] = { group: g, band, segs };
+    const m = mid(segs);
+    lbl(m, `${z.rank}. ${z.name}`, "zone", z.dir, z.off).addTo(layers.labels);
+  });
+
+
+  const rd = css("--road-open"), tr = css("--trail"), cs = css("--casing");
+  const tip = (name, status) => [`<b>${name}</b><br>${status}`, { sticky: true, className: "hover" }];
+  Object.entries(ACCESS.open).forEach(([n, segs]) => {
+    L.polyline(segs, { color: cs, weight: 7, opacity: .9, interactive: false }).addTo(layers.roads);
+    L.polyline(segs, { color: rd, weight: 4, opacity: 1 }).bindTooltip(...tip(n, "Open to cars")).addTo(layers.roads);
+  });
+  Object.entries(ACCESS.closed).forEach(([n, segs]) => {
+    L.polyline(segs, { color: cs, weight: 6, opacity: .85, interactive: false }).addTo(layers.closed);
+    L.polyline(segs, { color: rd, weight: 3.5, opacity: 1, dashArray: "7 6" }).bindTooltip(...tip(n, "Closed to cars: walk or bike")).addTo(layers.closed);
+  });
+  Object.entries(ACCESS.trail).forEach(([n, segs]) => {
+    L.polyline(segs, { color: cs, weight: 5, opacity: .7, interactive: false }).addTo(layers.trails);
+    L.polyline(segs, { color: tr, weight: 3, opacity: 1, dashArray: "1 6", lineCap: "round" }).bindTooltip(...tip(n, "Foot trail")).addTo(layers.trails);
+  });
+  {
+    const col = css(VZONE.cvar), shut = css("--closed-all");
+    L.polyline(VIDEO.creek, { color: water, weight: 3, opacity: 1, interactive: false }).addTo(layers.base);
+    const band = L.polyline(VIDEO.fished, { color: col, weight: 22, opacity: .38, lineCap: "round", lineJoin: "round" });
+    const line = L.polyline(VIDEO.fished, { color: water, weight: 3, opacity: 1 });
+    const g = L.featureGroup([band, line]).addTo(layers.zones);
+    g.bindPopup(`<b>${VZONE.name}</b><br>Stretch fished in the video (approximate)<br><span style="font-family:var(--f-mono);font-size:12px">${VZONE.access}</span>`);
+    g.on("click", () => select(VZONE.id, false));
+    zoneLayers[VZONE.id] = { group: g, band, segs: VIDEO.fished };
+    lbl(mid([VIDEO.fished]), VZONE.name, "zone", "right", [16, 0]).addTo(layers.labels);
+    Object.entries(VIDEO.open).forEach(([n, segs]) => {
+      L.polyline(segs, { color: cs, weight: 7, opacity: .9, interactive: false }).addTo(layers.roads);
+      L.polyline(segs, { color: rd, weight: 4, opacity: 1 }).bindTooltip(...tip(n, "Open to cars")).addTo(layers.roads);
+    });
+    Object.entries(VIDEO.closedVeh).forEach(([n, segs]) => {
+      L.polyline(segs, { color: cs, weight: 6, opacity: .85, interactive: false }).addTo(layers.closed);
+      L.polyline(segs, { color: rd, weight: 3.5, opacity: 1, dashArray: "7 6" }).bindTooltip(...tip(n, "Closed to vehicles by Forest Order (walking allowed)")).addTo(layers.closed);
+    });
+    Object.entries(VIDEO.road).forEach(([n, segs]) => {
+      L.polyline(segs, { color: cs, weight: 6, opacity: .85, interactive: false }).addTo(layers.closed);
+      L.polyline(segs, { color: rd, weight: 3.5, opacity: 1, dashArray: "7 6" }).bindTooltip(...tip(n, "Rough 4x4 track; reported closed to vehicles")).addTo(layers.closed);
+    });
+    Object.entries(VIDEO.videoRoad).forEach(([n, segs]) => {
+      L.polyline(segs, { color: col, weight: 12, opacity: .45, lineCap: "round", interactive: false }).addTo(layers.closed);
+      L.polyline(segs, { color: rd, weight: 3.5, opacity: 1, dashArray: "7 6" }).bindTooltip(...tip(n, "Best match for the road in the video’s opening shot. Rocky 4x4 grade; reported closed to vehicles")).addTo(layers.closed);
+    });
+    Object.entries(VIDEO.closedAll).forEach(([n, segs]) => {
+      L.polyline(segs, { color: cs, weight: 6, opacity: .85, interactive: false }).addTo(layers.closed);
+      L.polyline(segs, { color: shut, weight: 3.5, opacity: 1, dashArray: "4 5" }).bindTooltip(...tip(n, "Closed to everyone (Forest Order 05-12-52-25-02)")).addTo(layers.closed);
+    });
+    Object.entries(VIDEO.trail).forEach(([n, segs]) => {
+      L.polyline(segs, { color: cs, weight: 5, opacity: .7, interactive: false }).addTo(layers.trails);
+      L.polyline(segs, { color: tr, weight: 3, opacity: 1, dashArray: "1 6", lineCap: "round" }).bindTooltip(...tip(n, "Foot trail")).addTo(layers.trails);
+    });
+  }
+  const zc = Object.fromEntries([...ZONES, VZONE].map(z => [z.id, css(z.cvar)]));
+  ACCESS.trailheads.forEach(p => {
+    const icon = L.divIcon({ className: "", iconSize: [14, 14], iconAnchor: [7, 7],
+      html: `<span style="display:block;width:12px;height:12px;transform:rotate(45deg);background:${zc[p.zone]};border:2px solid ${ink};border-radius:2px"></span>` });
+    L.marker([p.lat, p.lon], { icon, keyboard: true, title: p.name })
+      .bindPopup(`<b>${p.name}</b><br>${p.note}<br><span style="font-family:var(--f-mono);font-size:12px">${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}</span>`)
+      .bindTooltip(p.name, { permanent: true, direction: "right", offset: [9, 0], className: "lbl th" })
+      .addTo(layers.th);
+  });
+  applyLayerToggles();
+
+
+  if (current) highlight(current);
+}
+
+let current = null;
+function highlight(id) {
+  [...ZONES, VZONE].forEach(z => zoneLayers[z.id] && zoneLayers[z.id].band.setStyle({ opacity: !id || z.id === id ? .38 : .15 }));
+  if (id) zoneLayers[id].band.setStyle({ opacity: .55 });
+}
+function select(id, fly = true) {
+  current = current === id && fly ? null : id;
+  document.querySelectorAll(".zone").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === current)));
+  highlight(current);
+  if (current && fly) {
+    map.flyToBounds(zoneLayers[current].group.getBounds(), { padding: [50, 50], maxZoom: 14, duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.8 });
+  } else if (!current && fly) {
+    map.flyToBounds([[34.17, -118.31], [34.36, -117.80]], { duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.8 });
+  }
+}
+
+const list = document.getElementById("zones");
+ZONES.forEach(z => {
+  const li = document.createElement("li");
+  li.innerHTML = `<button class="zone" id="zone-${z.id}" data-id="${z.id}" aria-pressed="false" style="--c: var(${z.cvar})">
+      <span class="rank" aria-hidden="true">${z.rank}</span>
+      <span class="zname">${z.name}</span>
+      <span class="odds">${z.odds}</span>
+      <p class="why">${z.why}</p>
+      <span class="access">${z.access}</span>
+    </button>`;
+  li.firstElementChild.addEventListener("click", () => select(z.id));
+  list.appendChild(li);
+});
+{
+  const li = document.createElement("li"), z = VZONE;
+  li.innerHTML = `<button class="zone" id="zone-${z.id}" data-id="${z.id}" aria-pressed="false" style="--c: var(${z.cvar})">
+      <span class="rank" aria-hidden="true">▶</span>
+      <span class="zname">${z.name}</span>
+      <span class="odds">${z.odds}</span>
+      <p class="why">${z.why}</p>
+      <span class="access">${z.access}</span>
+    </button>`;
+  li.firstElementChild.addEventListener("click", () => select(z.id));
+  document.getElementById("vzones").appendChild(li);
+}
+
+function applyLayerToggles() {
+  [["lyr-roads", "roads"], ["lyr-closed", "closed"], ["lyr-trails", "trails"], ["lyr-th", "th"]].forEach(([id, k]) => {
+    const on = document.getElementById(id).checked;
+    if (on && !map.hasLayer(layers[k])) layers[k].addTo(map);
+    if (!on && map.hasLayer(layers[k])) map.removeLayer(layers[k]);
+  });
+}
+["lyr-roads", "lyr-closed", "lyr-trails", "lyr-th"].forEach(id => document.getElementById(id).addEventListener("change", applyLayerToggles));
+const zoomClass = () => document.getElementById("map").classList.toggle("zlow", map.getZoom() < 12);
+map.on("zoomend", zoomClass);
+zoomClass();
+draw();
+const mq = matchMedia("(prefers-color-scheme: dark)");
+mq.addEventListener?.("change", draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>

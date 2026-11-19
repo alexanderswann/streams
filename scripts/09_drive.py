@@ -6,10 +6,10 @@ roads; no traffic, so LA rush hour can add a lot.
 """
 import os, time, json, requests, numpy as np, pandas as pd, geopandas as gpd
 from scipy.sparse import coo_matrix
-from scipy.sparse.csgraph import dijkstra
+from scipy.sparse.csgraph import dijkstra, connected_components
 from scipy.spatial import cKDTree
 from shapely.geometry import Point
-from config import REGIONS, CRS, ROOT, MAP_OUT, SHARED, HOME
+from config import REGIONS, CRS, ROOT, MAP_OUT, SHARED, HOME, raw_dir
 
 KMH = {"motorway": 100, "motorway_link": 60, "trunk": 80, "trunk_link": 50, "primary": 60, "primary_link": 40,
        "secondary": 50, "secondary_link": 35, "tertiary": 45, "unclassified": 35, "residential": 30, "service": 15}
@@ -49,7 +49,7 @@ major = gpd.read_file(major_path)
 
 local = []
 for r in REGIONS:
-    rd = gpd.read_file(f"{ROOT}/data/raw/{r}/osm_roads.gpkg")
+    rd = gpd.read_file(f"{raw_dir(r)}/osm_roads.gpkg")
     local.append(rd[~rd.access.isin(["private", "no"]) & ~rd.motor_vehicle.isin(["no", "private"])
                     & rd.highway.isin(KMH.keys())])
 roads = pd.concat([major[["highway", "name", "geometry"]]] + [l[["highway", "name", "geometry"]] for l in local],
@@ -84,30 +84,77 @@ for c in coords:
     n = len(c)
     a_idx.append(inv[pos:pos + n - 1]); b_idx.append(inv[pos + 1:pos + n]); pos += n
 a, b, w, d = map(np.concatenate, (a_idx, b_idx, mins, dist))
+# One edge per pair of nodes. Every motorway-to-secondary road inside a study box is in the regional file and in that
+# range's own file, and a road crossing between two boxes is in both of theirs. The sparse matrices below add up
+# repeated entries, so those segments counted twice: drive times and distances came out 1.2-1.7x too long. Keep the
+# fastest copy of each segment.
+ea, eb = np.minimum(a, b), np.maximum(a, b)
+order = np.lexsort((w, eb, ea))
+ea, eb, w, d = ea[order], eb[order], w[order], d[order]
+once = np.r_[True, (ea[1:] != ea[:-1]) | (eb[1:] != eb[:-1])] & (ea != eb)
+print(f"road segments {int(once.sum()):,} ({int((~once).sum()):,} repeats of a segment from another file dropped)")
+a, b, w, d = ea[once], eb[once], w[once], d[once]
 M = len(uniq)
-A = coo_matrix((np.r_[w, w], (np.r_[a, b], np.r_[b, a])), shape=(M, M)).tocsr()
-D = coo_matrix((np.r_[d, d], (np.r_[a, b], np.r_[b, a])), shape=(M, M)).tocsr()
 tree = cKDTree(uniq)
 home = gpd.GeoSeries([Point(HOME["lon"], HOME["lat"])], crs=4326).to_crs(CRS).iloc[0]
 hd, hi = tree.query([home.x, home.y])
-t_min, pred = dijkstra(A, indices=hi, return_predecessors=True)
+
+
+def solve(a, b, w, d):
+    """Minutes and distance matrices, and the fastest times and their predecessors from HOME."""
+    A = coo_matrix((np.r_[w, w], (np.r_[a, b], np.r_[b, a])), shape=(M, M)).tocsr()
+    D = coo_matrix((np.r_[d, d], (np.r_[a, b], np.r_[b, a])), shape=(M, M)).tocsr()
+    return (A, D) + dijkstra(A, indices=hi, return_predecessors=True)
+
+
+A, D, t_min, pred = solve(a, b, w, d)
 print(f"graph nodes {M:,}; home snapped {hd:.0f} m; reachable {np.isfinite(t_min).mean():.0%}")
 
-def path_km(j):
-    km, k = 0.0, j
-    while pred[k] >= 0:
-        km += D[pred[k], k]; k = pred[k]
-    return km / 1000
+# Roads that leave a study box and join the network only through local streets outside every box (Bautista Road in
+# the San Jacintos) are islands the graph can't reach. Each island that holds trailheads is joined to the reachable
+# network across its narrowest gap (up to BRIDGE_M), driven at GAP_KMH; its trailheads are flagged approximate.
+FAR_SNAP_M, GAP_KMH, BRIDGE_M = 2000, 25, 3000
+ths = {r: gpd.read_file(f"{MAP_OUT}/{r}/trailheads.gpkg") for r in REGIONS}
+snap = {r: tree.query(np.c_[th.geometry.x, th.geometry.y]) for r, th in ths.items()}
+_, comp = connected_components(A, directed=False)
+bridged = np.zeros(M, bool)
+for _ in range(4):
+    reached = np.isfinite(t_min)
+    islands = {int(c) for dd, ii in snap.values() for c in np.unique(comp[ii[(dd < SNAP_M) & ~reached[ii]]])}
+    reach_idx = np.flatnonzero(reached)
+    rtree = cKDTree(uniq[reach_idx])
+    na, nb, ng = [], [], []
+    for c in islands:
+        nodes = np.flatnonzero(comp == c)
+        g, j = rtree.query(uniq[nodes])
+        k = int(np.argmin(g))
+        if g[k] <= BRIDGE_M:
+            na.append(nodes[k]); nb.append(reach_idx[j[k]]); ng.append(g[k])
+            bridged[nodes] = True
+    if not na:
+        break
+    ng = np.array(ng)
+    a, b, w, d = np.r_[a, na], np.r_[b, nb], np.r_[w, ng / 1000 / GAP_KMH * 60], np.r_[d, ng]
+    A, D, t_min, pred = solve(a, b, w, d)
+    print(f"joined {len(na)} road islands with trailheads across gaps of {ng.min():.0f}-{ng.max():.0f} m")
+
+# distance along each fastest route: add each node's last leg to its predecessor's total, nearest nodes first
+has = np.flatnonzero(pred >= 0)
+leg_km = np.zeros(M)
+leg_km[has] = np.asarray(D[pred[has], has]).ravel() / 1000
+km = np.zeros(M)
+for j in np.argsort(t_min)[:int(np.isfinite(t_min).sum())]:
+    if pred[j] >= 0:
+        km[j] = km[pred[j]] + leg_km[j]
 
 # Some trailheads sit on road pieces that only connect through streets outside the downloaded areas.
 # Snap those to the nearest reachable node within FAR_SNAP_M and add the gap at GAP_KMH, flagged approximate.
-FAR_SNAP_M, GAP_KMH = 2000, 25
 reach_idx = np.flatnonzero(np.isfinite(t_min))
 rtree = cKDTree(uniq[reach_idx])
 for r in REGIONS:
-    th = gpd.read_file(f"{MAP_OUT}/{r}/trailheads.gpkg")
+    th = ths[r]
     pts = np.c_[th.geometry.x, th.geometry.y]
-    dd, ii = tree.query(pts)
+    dd, ii = snap[r]
     ok = (dd < SNAP_M) & np.isfinite(t_min[ii])
     fd, fi = rtree.query(pts)
     fi = reach_idx[fi]
@@ -116,8 +163,8 @@ for r in REGIONS:
     gap = np.where(ok, 0.0, fd)
     use = ok | far
     th["drive_min"] = np.where(use, np.round(t_min[node] + gap / 1000 / GAP_KMH * 60), np.nan)
-    th["drive_km"] = [round(path_km(j) + g / 1000, 1) if u else np.nan for j, g, u in zip(node, gap, use)]
-    th["drive_approx"] = far
+    th["drive_km"] = np.where(use, np.round(km[node] + gap / 1000, 1), np.nan)
+    th["drive_approx"] = far | (use & bridged[node])
     th.to_file(f"{MAP_OUT}/{r}/trailheads.gpkg")
-    print(f"{REGIONS[r]['label']}: {use.sum()}/{len(th)} trailheads routed ({far.sum()} approximate); drive {np.nanmin(th.drive_min):.0f}–"
+    print(f"{REGIONS[r]['label']}: {use.sum()}/{len(th)} trailheads routed ({int(th.drive_approx.sum())} approximate); drive {np.nanmin(th.drive_min):.0f}–"
           f"{np.nanmax(th.drive_min):.0f} min (median {np.nanmedian(th.drive_min):.0f})")

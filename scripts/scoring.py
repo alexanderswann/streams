@@ -45,11 +45,31 @@ def band(x, lo, hi, soft):
     return np.clip(1 - np.clip(np.maximum(lo - x, x - hi), 0, None) / soft, 0, 1)
 
 
+# per-range tables attach() merges on the reach / drop key, and the script that writes each
+WRITERS = {"hike": "08_hike.py", "sun": "10_sun.py", "context": "11_context.py", "flow": "05b_flow.py",
+           "area": "05c_drainages.py"}
+
+
 def attach(gdf, key, region_dirs, kind):
     """Merge hike_/sun_/context_/flow_/area_ CSVs (kind = 'streams' or 'drops') and trailhead drive times onto gdf."""
     parts = {}
-    for name in ("hike", "sun", "context", "flow", "area"):
-        frames = [pd.read_csv(f"{d}/{name}_{kind}.csv") for d in region_dirs if os.path.exists(f"{d}/{name}_{kind}.csv")]
+    src = "streams_scored.gpkg" if kind == "streams" else "waterfall_candidates.gpkg"
+    for name, script in WRITERS.items():
+        frames = []
+        for d in region_dirs:
+            p = f"{d}/{name}_{kind}.csv"
+            if not os.path.exists(p):
+                continue
+            t = pd.read_csv(p)
+            # The keys are row numbers 05_score.py gives the reaches and drops of a range. A table written for an
+            # earlier set of them would attach its values to the wrong ones, so the two must list the same keys.
+            mine = gdf[key][gdf[key].str.startswith(os.path.basename(d) + ":")]
+            if t[key].duplicated().any() or set(t[key]) != set(mine):
+                raise SystemExit(f"{p} doesn't list the same {kind} as {d}/{src} ({len(t)} rows against {len(mine)}): "
+                                 f"run {script} again for this range (after 05_score.py, before 06_map.py)")
+            if os.path.getmtime(p) < os.path.getmtime(f"{d}/{src}"):   # same keys, but they may have been renumbered
+                print(f"NOTE: {p} is older than {src}; if 05_score.py changed the {kind} since, run {script} again")
+            frames.append(t)
         if frames:
             parts[name] = pd.concat(frames, ignore_index=True)
     out = gdf

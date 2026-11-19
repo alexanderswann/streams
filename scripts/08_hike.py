@@ -29,7 +29,7 @@ from skimage.graph import MCP_Geometric
 from scipy.ndimage import map_coordinates
 from shapely.geometry import Point, MultiPoint, box
 from config import *
-from geomatch import overpass
+from geomatch import overpass, wilderness_path
 
 TRAIL_MAX_GRADE = 0.15
 CHANNEL_FACTOR, OFFTRAIL_FACTOR = 0.45, 0.30
@@ -96,7 +96,9 @@ def burn(geoms):
     return features.rasterize(((g, 1) for g in geoms), out_shape=shape, transform=T, all_touched=True,
                               dtype="uint8").astype(bool)
 on_path = burn(pd.concat([trails.geometry, roads.geometry]))   # anything with a tread is walkable at trail speed
-source = burn(open_roads.geometry)
+# A freeway is no place to leave a car: its lanes and ramps aren't trailheads (476 reaches used to start from I-5, the
+# 210 and others). The exits' surface roads and the roads beside it still are; freeways stay in the network test above.
+source = burn(open_roads[~open_roads.highway.isin(["motorway", "motorway_link"])].geometry)
 
 
 def cycleways():
@@ -126,21 +128,7 @@ def cycleways():
 
 
 # ---- bikeable lines (see the docstring) ----
-wpath = f"{SHARED}/wilderness.gpkg"
-allb = np.array([v["bbox"] for v in REGIONS.values()])
-env = gpd.GeoSeries([__import__("shapely").geometry.box(allb[:, 0].min(), allb[:, 1].min(), allb[:, 2].max(),
-                                                       allb[:, 3].max())], crs=CRS).to_crs(4326).total_bounds
-ext_path = wpath + ".extent.json"   # the box it was downloaded for; re-download when the study areas outgrow it
-ext = __import__("json").load(open(ext_path)) if os.path.exists(ext_path) else None
-if not os.path.exists(wpath) or ext is None or not (ext[0] <= env[0] and ext[1] <= env[1] and ext[2] >= env[2]
-                                                   and ext[3] >= env[3]):
-    import requests
-    js = requests.get("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_Wilderness_01/MapServer/0/query",
-                      params=dict(where="1=1", geometry=",".join(map(str, env)), geometryType="esriGeometryEnvelope",
-                                  inSR=4326, outSR=26911, outFields="WILDERNESSNAME", f="geojson"), timeout=300).json()
-    gpd.GeoDataFrame.from_features(js["features"], crs=CRS).to_file(wpath)
-    __import__("json").dump([float(v) for v in env], open(ext_path, "w"))
-wild = gpd.read_file(wpath).to_crs(CRS).union_all().intersection(box(XMIN, YMIN, XMAX, YMAX).buffer(2000))
+wild = gpd.read_file(wilderness_path()).to_crs(CRS).union_all().intersection(box(XMIN, YMIN, XMAX, YMAX).buffer(2000))
 shapely.prepare(wild)
 clip = lambda d: d.cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
 closed_roads = roads[roads.intersects(closed)] if closed is not None else roads.iloc[:0]
@@ -312,7 +300,8 @@ both = pd.concat([ts, td], ignore_index=True)
 both["th_id"] = REGION + ":t" + ((both.th_x // 250).astype(int).astype(str) + "_" + (both.th_y // 250).astype(int).astype(str))
 th = both.groupby("th_id").agg(x=("th_x", "median"), y=("th_y", "median"), n=("th_x", "size")).reset_index()
 th = gpd.GeoDataFrame(th, geometry=gpd.points_from_xy(th.x, th.y), crs=CRS)
-named = drivable[drivable.name.notna()]
+# a start point is never on a freeway (see `source`), so it isn't named after one that runs beside its road either
+named = drivable[drivable.name.notna() & ~drivable.highway.isin(["motorway", "motorway_link"])]
 th["road"] = gpd.sjoin_nearest(th[["geometry"]], named[["name", "geometry"]], how="left",
                                max_distance=300).groupby(level=0).first().name
 ts = ts.merge(both[["th_x", "th_y", "th_id"]].drop_duplicates(["th_x", "th_y"]), on=["th_x", "th_y"])

@@ -190,7 +190,9 @@
     const need = ["+", ["/", ["+", ["*", ["at", so, ["literal", W]], at(ZW, z, 1.5)], ["case", [">=", so, 3], 2.6, 0]], 2],
                   half(z) + 1];
     return [z, ["*", ["coalesce", ["get", "sd"], 0],
-                ["max", 0, ["-", need, ["/", ["coalesce", ["get", "dm"], 0], 129500 / 2 ** z]]]]];
+                // metres per pixel at 34° N: MapLibre's zoom is one behind Leaflet's at the same scale (512 px tiles),
+                // so it is 64750 / 2^z here, half the 2D map's 129500 / 2^z
+                ["max", 0, ["-", need, ["/", ["coalesce", ["get", "dm"], 0], 64750 / 2 ** z]]]]];
   })];
 
   // layer ids filled in by the load handler; wireInteraction() (outside it) hovers and clicks them
@@ -290,7 +292,8 @@
       const MINZ = {1: 10, 2: 11, 3: 12, 4: 13};
       const tw3 = (f, add = 0) => ["interpolate", ["linear"], ["zoom"], 10, f + add, 13, 2.2 * f + add, 16, 3.2 * f + add];
       const trailOff = k => besideOffset(z => (at([[10, 1], [13, 2.2], [16, 3.2]], z) * (k === "trail" ? 1 : 1.25) + 3.6) / 2);
-      const combos = [[4, "fire road"], [3, "trail"], [2, "fire road"], [1, "fire road"], [1, "trail"]];
+      // rank 4 trails are the possibly unofficial paths: more than half of all trail pieces, and they were never drawn
+      const combos = [[4, "trail"], [4, "fire road"], [3, "trail"], [2, "fire road"], [1, "fire road"], [1, "trail"]];
       const flt = (rk, k) => ["all", ["==", ["get", "rk"], rk], ["==", ["get", "k"], k]];
       const tid = (pre, rk, k) => `${pre}-${rk}-${k === "trail" ? "t" : "f"}`;
       combos.forEach(([rk, k]) => {
@@ -318,7 +321,7 @@
           paint: {"line-color": k === "trail" ? "#5c3317" : "#7a5a3a",
                   "line-width": ["interpolate", ["linear"], ["zoom"], ...[[10, 1], [13, 2.2], [16, 3.2]].flatMap(([z, m]) =>
                     [z, ["+", m * (k === "trail" ? 1 : 1.25), HOVER(2)]])],
-                  "line-dasharray": k === "trail" ? [2.6, 1.8] : [5, 1.8], "line-offset": trailOff(k),
+                  "line-dasharray": k !== "trail" ? [5, 1.8] : rk === 4 ? [0.8, 2.2] : [2.6, 1.8], "line-offset": trailOff(k),
                   "line-opacity": ["case", ["==", ["get", "cl"], 1], 0.4, ["==", ["get", "f"], 1], 0.75, 1]}});
         trailIds.push(tid("trail-line", rk, k));
         trailLineIds.push(tid("trail-line", rk, k));
@@ -632,15 +635,16 @@
     });
     // keep the 2D link pointed at the current view
     const sync = () => { const c = map.getCenter();
-      document.getElementById("to2d").href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom())}`; };
+      document.getElementById("to2d").href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}`; };
     map.on("moveend", sync); sync();
   }
 
-  // open at #lat,lon,zoom[,pitch,bearing] (same links as the 2D map)
+  // open at #lat,lon,zoom[,pitch,bearing] (same links as the 2D map). The zoom in a link is the 2D map's: MapLibre
+  // shows the same scale one zoom level lower, so it is shifted by one here and in the link back to 2D above
   function go() {
     const h = location.hash.slice(1).split(",").map(Number);
     if (h.length >= 2 && h.every(v => !isNaN(v)))
-      map.jumpTo({center: [h[1], h[0]], zoom: h[2] || 13, pitch: h.length > 3 ? h[3] : 60, bearing: h.length > 4 ? h[4] : map.getBearing()});
+      map.jumpTo({center: [h[1], h[0]], zoom: h[2] ? h[2] - 1 : 13, pitch: h.length > 3 ? h[3] : 60, bearing: h.length > 4 ? h[4] : map.getBearing()});
   }
   window.addEventListener("hashchange", go);
 })();

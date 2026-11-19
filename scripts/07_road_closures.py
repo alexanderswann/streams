@@ -14,7 +14,7 @@ USFS closure orders are published only as PDFs and are not included.
 import json, re, time, datetime as dt, requests, numpy as np, pandas as pd, geopandas as gpd, networkx as nx
 from shapely.geometry import LineString, Point, box
 from shapely.ops import linemerge, substring
-from config import REGIONS, CRS, ROOT, MAP_OUT
+from config import REGIONS, CRS, EPSG, ROOT, MAP_OUT, raw_dir
 
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
 NOW = dt.datetime.now()
@@ -26,6 +26,8 @@ ROUTES = {"SR-1", "SR-2", "SR-18", "SR-23", "SR-27", "SR-38", "SR-39", "SR-138",
           "SR-243", "SR-74",             # San Jacinto (Idyllwild) and the Ortega Highway (Santa Ana Mountains)
           "I-5"}                         # the Grapevine, for Piru / Pyramid / Mt. Pinos
 FULL_ONLY = {"I-5"}                      # freeway: only full closures matter for access
+# Caltrans "facility" values that aren't the highway's own lanes (the others seen: Mainline, Conventional Hwy)
+SIDE = re.compile(r"ramp|connector|rest area|vista|weigh|inspection|park\s*(?:and|&)\s*ride", re.I)
 
 area = gpd.GeoSeries([box(*v["bbox"]).buffer(2000) for v in REGIONS.values()], crs=CRS).union_all()
 
@@ -38,10 +40,10 @@ def get_json(url, params=None):
         except requests.RequestException:
             pass
         time.sleep(5 * (attempt + 1))
-    r.raise_for_status()
+    raise RuntimeError(f"no usable answer from {url} after 4 tries")
 
 # ---- OSM highway graph for routing Caltrans begin/end points ----
-roads = pd.concat([gpd.read_file(f"{ROOT}/data/raw/{r}/osm_roads.gpkg") for r in REGIONS], ignore_index=True)
+roads = pd.concat([gpd.read_file(f"{raw_dir(r)}/osm_roads.gpkg") for r in REGIONS], ignore_index=True)
 roads = gpd.GeoDataFrame(roads, crs=CRS)
 # Every road type is routable (closed highways such as upper SR-39 are tagged as gated service roads in OSM),
 # but minor roads cost 3x so routes stick to highways where they exist.
@@ -97,14 +99,17 @@ for d in (6, 7, 8, 12):
         q = to_utm(float(e["endLongitude"] or b["beginLongitude"]), float(e["endLatitude"] or b["beginLatitude"]))
         if not (area.contains(Point(p)) or area.contains(Point(q))):
             continue
-        full = c["typeOfClosure"] == "Full" or c["lanesClosed"] == c["totalExistingLanes"]
+        # A "Full" closure of a ramp, connector or rest area closes that, not the highway: the Tejon Pass rest areas
+        # and a truck escape ramp used to count as full closures of I-5, and the routing cut the freeway there
+        side = bool(SIDE.search(c.get("facility") or ""))
+        full = not side and (c["typeOfClosure"] == "Full" or c["lanesClosed"] == c["totalExistingLanes"])
         if b["beginRoute"] in FULL_ONLY and not full:
             continue
         rows.append(dict(
             source="Caltrans", road=f"{b['beginRoute']} ({l['location']['travelFlowDirection']})",
             from_=b["beginLocationName"], to=e["endLocationName"],
             severity="full closure (one direction)" if full and c["typeOfClosure"] != "Full" else
-                     "full closure" if full else "lane / one-way",
+                     "full closure" if full else "ramp / rest area closed" if side else "lane / one-way",
             work=c["typeOfWork"],
             reason=f"{c['typeOfWork']} · {c['typeOfClosure']} closure, {c['lanesClosed']}/{c['totalExistingLanes']} lanes"
                    + ("" if c["facility"] == "Mainline" else f" ({c['facility']})"),
@@ -117,7 +122,7 @@ print("Caltrans", len(rows))
 
 # ---- County Public Works ----
 def county(url, fields, mk, where="1=1"):
-    js = get_json(url, dict(where=where, outFields=",".join(fields), outSR=26911, f="geojson"))
+    js = get_json(url, dict(where=where, outFields=",".join(fields), outSR=EPSG, f="geojson"))
     n = 0
     for f in js.get("features", []):
         if not f.get("geometry"):
@@ -130,20 +135,22 @@ def county(url, fields, mk, where="1=1"):
         n += 1
     return n
 
-def stale(reopen):
-    """County lists sometimes keep closures whose estimated reopening has already passed."""
+def reopening(reopen):
+    """LA County's estimated reopening ("12 31 26 12:00 AM") as a datetime; None for "TBD" or anything else."""
     try:
-        return dt.datetime.strptime(reopen, "%m %d %y %I:%M %p") < NOW
+        return dt.datetime.strptime(reopen, "%m %d %y %I:%M %p")
     except ValueError:
-        return False
+        return None
 
 def la(p):
     reopen = (p.get("ESTIMATEDREOPENING") or "").strip()
-    note = " · still listed, but est. reopening has passed" if stale(reopen) else ""
+    due = reopening(reopen)
+    # county lists sometimes keep closures whose estimated reopening has already passed
+    note = " · still listed, but est. reopening has passed" if due is not None and due < NOW else ""
     return dict(source="LA County DPW", road=(p.get("MAIN_") or "").strip(), from_=p.get("FROM_"), to=p.get("TO_"),
                 severity="full closure", reason=(p.get("REASON") or "") + note, start=p.get("ACTUALCLOSUREDATEFORMATTED"),
                 end=reopen or "TBD", when="active now",
-                long_term=reopen.upper() in ("TBD", "") or "26" not in reopen[-12:])
+                long_term=due is None or due - NOW > dt.timedelta(days=7))   # as for Caltrans: no date, or over a week off
 print("LA County", county("https://dpw.gis.lacounty.gov/dpw/rest/services/Road_Closures/MapServer/0/query",
                           ["MAIN_", "FROM_", "TO_", "REASON", "ACTUALCLOSUREDATEFORMATTED", "ESTIMATEDREOPENING"], la))
 
@@ -175,7 +182,7 @@ print("Riverside County", county("https://gis.countyofriverside.us/arcgis/rest/s
 def ventura():
     js = get_json("https://services5.arcgis.com/LU8yNTyyh8FrdvWy/arcgis/rest/services/ActiveRoadClosures/FeatureServer/0/query",
                   dict(where="RoadStatus='Closed'", outFields="RoadName,From_,To_,StartDate,EndDate,ClosureType,Description",
-                       outSR=26911, f="geojson"))
+                       outSR=EPSG, f="geojson"))
     norm = lambda t: " ".join(w for w in str(t or "").lower().replace(".", " ").split()
                               if w not in {"road", "rd", "street", "st", "avenue", "ave", "highway", "hwy"})
     n = 0
@@ -220,7 +227,7 @@ cl = gpd.GeoDataFrame(rows, crs=CRS).rename(columns={"from_": "from"})
 # This drops urban stretches (PCH in Marina del Rey, foothill freeways) that fall inside the study boxes.
 MIN_RELIEF = 150
 import rasterio
-dems = [rasterio.open(f"{ROOT}/data/raw/{r}/dem_10m.tif") for r in REGIONS]
+dems = [rasterio.open(f"{raw_dir(r)}/dem_10m.tif") for r in REGIONS]
 def relief(pt):
     for d in dems:
         if d.bounds.left <= pt.x <= d.bounds.right and d.bounds.bottom <= pt.y <= d.bounds.top:

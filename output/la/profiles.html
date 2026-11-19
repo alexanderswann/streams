@@ -95,6 +95,7 @@
     </div>
   </header>
   <div class="chips" id="chips" aria-label="Top creeks by fish score"></div>
+  <div class="card" id="missing" role="status" hidden></div>
 
   <section class="card">
     <div class="title-row">
@@ -128,7 +129,7 @@ const DROP = {
 let current = null, pickedKm = null;
 
 document.getElementById("gen").textContent =
-  `${P.length} named creeks · generated ${DATA.generated} · Santa Monica, San Gabriel and San Bernardino Mountains`;
+  `${P.length} creek profiles · generated ${DATA.generated} · ${new Set(P.map(p => p.region)).size} ranges`;
 const ranges = [...new Set(P.map(p => p.region))];
 const rangeSel = document.getElementById("rangeSel");
 ranges.forEach(r => rangeSel.add(new Option(r.replace(" Mountains", ""), r)));
@@ -263,6 +264,7 @@ function render(p) {
 
 function show(p, opts = {}) {
   current = p; pickedKm = opts.km ?? null;
+  document.getElementById("missing").hidden = true;
   document.getElementById("title").textContent = p.label;
   document.getElementById("where").textContent = p.region;
   const drop = p.top_m - p.bottom_m;
@@ -320,6 +322,14 @@ function fromHash() {
       }
     }
     if (best) return show(best.p, { km: isNaN(lat) ? null : best.km });
+    // no profile under that name (they need 2 km of channel named in the USGS hydrography): say so, instead of
+    // opening the first creek in the list as if it were the one asked for
+    show(P[0]);
+    const miss = document.getElementById("missing");
+    miss.textContent = `No long profile for “${h.get("q")}”: profiles are drawn only for creeks with at least 2 km of ` +
+      `channel named in the USGS hydrography. Showing ${P[0].label} instead; search above for another creek.`;
+    miss.hidden = false;
+    return;
   }
   show(P[0]);
 }

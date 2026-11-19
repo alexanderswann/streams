@@ -1,0 +1,28 @@
+# Version control covers what can't be rebuilt: the scripts, the README and notes, the validators, the hand-made
+# pages (output/<area>/profiles.html, creek-map/). Everything the pipeline downloads or builds stays out.
+
+# Python and macOS
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Downloaded and derived data (6+ GB): rebuilt by the pipeline, see "Pipeline" in the README
+/data/raw/
+/data/derived/
+# run logs, and the folder copies made before git existed
+/data/*.log
+/data/backup_*/
+/data/refactor_parked/
+
+# Build outputs: rebuilt by 06_map.py and 12_profiles.py. The profile viewer page has no generator, so it is kept.
+/output/*
+!/output/*/
+/output/*/*
+!/output/*/profiles.html
+
+# Copies of the maps for the phone
+/phone/
+
+# Claude Code's per-machine settings (launch.json is shared and kept)
+/.claude/settings.local.json

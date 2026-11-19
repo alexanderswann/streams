@@ -45,7 +45,7 @@
 .to3d { font-size: 11px; color: #1864ab; text-decoration: none; margin-right: 6px; }
 .pctt { font: 600 10px system-ui, -apple-system, sans-serif; letter-spacing: .03em; fill: #2b2b2b;
   paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
-.pk { display: flex; align-items: center; gap: 6px; margin-top: 6px; border-top: 1px solid #eee; padding-top: 5px; }
+.pk:not(.poi) { display: flex; align-items: center; gap: 6px; margin-top: 6px; border-top: 1px solid #eee; padding-top: 5px; }
 .pctsym { color: #1d1d1f; text-shadow: 0 0 3px #ffd43b, 0 0 3px #ffd43b; font-weight: 700; }
 .trlt { font: 600 9.5px system-ui, -apple-system, sans-serif; letter-spacing: .02em; fill: #4a2a12;
   paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }

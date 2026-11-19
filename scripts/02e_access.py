@@ -28,7 +28,7 @@ Map attribution: (c) OpenStreetMap contributors (ODbL), USFS.
 """
 import os, re, html, json, time, numpy as np, pandas as pd, geopandas as gpd, shapely
 from config import REGIONS, CRS, ROOT, SHARED
-from geomatch import overpass, esri, relief_at, follow
+from geomatch import overpass, esri, relief_at, follow, wilderness_path
 
 MIN_RELIEF_M = 100
 EDW = "https://apps.fs.usda.gov/arcx/rest/services/EDW"
@@ -49,17 +49,17 @@ for key, (W, S, E, N) in boxes.items():
     cache_p = f"{SHARED}/cache/access_osm_{key}.json"   # a week-long cache (REFRESH=1 to force a new download)
     if os.path.exists(cache_p) and time.time() - os.path.getmtime(cache_p) < 7 * 86400 and os.environ.get("REFRESH") != "1":
         els = json.load(open(cache_p))
-    else:
-        els = None
-    els = els if els is not None else overpass(f"""[out:json][timeout:600];
+    else:   # written only after a download: re-saving a cached copy made it look new, so it never turned a week old
+        els = overpass(f"""[out:json][timeout:600];
 (way["highway"~"^(primary|secondary|tertiary|unclassified|track)$"]({S},{W},{N},{E});
  way["highway"~"^(residential|service)$"]["surface"~"^(unpaved|gravel|fine_gravel|compacted|dirt|earth|ground|sand|rock)$"]({S},{W},{N},{E});
  way["highway"~"^(residential|service)$"]["tracktype"]({S},{W},{N},{E}););
 out geom;
 (nwr["amenity"="parking"]({S},{W},{N},{E}); node["highway"="trailhead"]({S},{W},{N},{E}););
 out center tags;""")
-    os.makedirs(f"{SHARED}/cache", exist_ok=True)
-    json.dump(els, open(cache_p, "w"))
+        os.makedirs(f"{SHARED}/cache", exist_ok=True)
+        json.dump(els, open(cache_p + ".tmp", "w"))
+        os.replace(cache_p + ".tmp", cache_p)
     # cycleways: a separate query (and cache) so the big one above stays cached
     cyc_p = f"{SHARED}/cache/access_osm_cycleway_{key}.json"
     if os.path.exists(cyc_p) and time.time() - os.path.getmtime(cyc_p) < 7 * 86400 and os.environ.get("REFRESH") != "1":
@@ -129,8 +129,7 @@ closed_cars = rd.motor_vehicle.isin(NO) | rd.motorcar.isin(NO) | \
     rd.highway.eq("cycleway") & ~rd.motor_vehicle.isin(OK)              # cycleways are closed to cars by default
 bikes_barred = rd.bicycle.isin({"no", "private", "dismount"})
 private = rd.access.eq("private") & ~rd.bicycle.isin(OK) & rd.fs_id.isna()
-wild_p = f"{SHARED}/wilderness.gpkg"
-wild = gpd.read_file(wild_p).to_crs(CRS).union_all() if __import__("os").path.exists(wild_p) else shapely.Polygon()
+wild = gpd.read_file(wilderness_path()).to_crs(CRS).union_all()   # downloaded here if 08_hike.py hasn't yet
 in_wild = rd.geometry.interpolate(0.5, normalized=True).within(wild)
 smooth = rd.smoothness.fillna("")
 four = rd["4wd_only"].eq("yes") | rd.tracktype.eq("grade5") | smooth.isin({"horrible", "very_horrible", "impassable"})

@@ -354,9 +354,9 @@ function initDrainageMap(map, ctrl) {
     let added = false;
     Object.entries(roadLayers).forEach(([c, [edgeL, coreL, minz]]) => {
       const g = roadGroups[c];
-      if (z >= minz && !g.hasLayer(coreL)) { g.addLayer(edgeL); g.addLayer(coreL); added = true; }
-      else if (z < minz && g.hasLayer(coreL)) g.clearLayers();
-      else if (z >= minz) { edgeL.setStyle(edgeL.options.style); coreL.setStyle(coreL.options.style); }
+      if (z < minz) { if (g.hasLayer(coreL)) g.clearLayers(); return; }
+      if (!g.hasLayer(coreL)) { g.addLayer(edgeL); g.addLayer(coreL); added = true; }
+      edgeL.setStyle(edgeL.options.style); coreL.setStyle(coreL.options.style);   // also when just re-added (stale width)
     });
     if (added) restack();
   }
@@ -399,7 +399,11 @@ function initDrainageMap(map, ctrl) {
   // keep the shared canvas's draw order: streams, then roads, then trails, then the PCT (re-added layers go on top)
   function restack() {
     Object.values(roadGroups).forEach(g => { if (map.hasLayer(g)) g.eachLayer(l => l.bringToFront()); });
-    if (map.hasLayer(trailGroup)) trailGroup.eachLayer(l => l.bringToFront());
+    // halos first, then lines, rank 1 last so it ends on top (the group's own order is the order the layers were made)
+    if (map.hasLayer(trailGroup)) [0, 1].forEach(i => [4, 3, 2, 1].forEach(rk => {
+      const l = trailLayers[rk] && trailLayers[rk][i];
+      if (l && trailGroup.hasLayer(l)) l.bringToFront();
+    }));
     if (map.hasLayer(pctGroup)) pctLines.forEach(l => l.bringToFront());
     adopted.forEach(l => { if (!(l instanceof L.Polygon)) l.bringToFront(); });   // overlay points and lines on top
   }
@@ -412,9 +416,10 @@ function initDrainageMap(map, ctrl) {
       want.forEach(rk => trailGroup.addLayer(trailLayers[rk][1]));
       trailShown = want.join();
       restack();
-    } else {
-      want.forEach(rk => { trailLayers[rk][0].setStyle(thalo); trailLayers[rk][1].setStyle(tstyle); });
     }
+    // widths follow the zoom on every step, also the one that changes the tiers: a re-added layer keeps the style it
+    // last had, so trails stayed at the width of the zoom they were first shown at
+    want.forEach(rk => { trailLayers[rk][0].setStyle(thalo); trailLayers[rk][1].setStyle(tstyle); });
   }
 
   // ---- labels: drainages always (small ones from z10), forks from z11 ----

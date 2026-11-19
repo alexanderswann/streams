@@ -11,7 +11,7 @@ from labelpaths import label_paths
 from folium.plugins import MeasureControl, MousePosition, Fullscreen
 import matplotlib
 from matplotlib import colors
-from config import REGIONS, MAP_OUT, HOME, SHARED, ROOT as ROOT_DIR
+from config import REGIONS, MAP_OUT, HOME, SHARED, EPSG
 from scoring import attach, score
 import crossbox
 
@@ -27,8 +27,8 @@ closures = gpd.read_file(f"{MAP_OUT}/road_closures.gpkg") if os.path.exists(f"{M
 gated = gpd.read_file(f"{MAP_OUT}/gated_roads.gpkg") if os.path.exists(f"{MAP_OUT}/gated_roads.gpkg") else None
 if closures is not None and len(closures):
     # nearest full closure within 3 km of each drop, for the popup
-    full = closures[closures.severity.str.startswith("full")].to_crs(26911).reset_index(drop=True)
-    near = gpd.sjoin_nearest(kp_ll[["geometry"]].to_crs(26911), full[["road", "geometry"]], how="left",
+    full = closures[closures.severity.str.startswith("full")].to_crs(EPSG).reset_index(drop=True)
+    near = gpd.sjoin_nearest(kp_ll[["geometry"]].to_crs(EPSG), full[["road", "geometry"]], how="left",
                              max_distance=3000, distance_col="closure_m").groupby(level=0).first()
     kp_ll["closure_road"], kp_ll["closure_m"] = near.road, near.closure_m.round(-1)
 print("regions:", done)
@@ -60,7 +60,7 @@ for c_ in ("out_x", "out_y"):
 basins["rkey"] = basins.region.map({cfg_["label"]: k_ for k_, cfg_ in REGIONS.items()})
 if "out_x" in s_ll and s_ll.out_x.notna().any():
     s_ll["rkey"] = s_ll.sid.str.split(":").str[0]
-    tree = s_ll.to_crs(26911).sindex
+    tree = s_ll.to_crs(EPSG).sindex
     # positions in the full s_ll (grouping a filtered copy would give positions within the copy)
     groups = {g: np.asarray(ix) for g, ix in s_ll.reset_index(drop=True).groupby(["rkey", "out_x", "out_y"],
                                                                                    dropna=True).indices.items()}
@@ -206,7 +206,7 @@ hs_group.add_to(m)
 PALETTE = ["#1864ab", "#d9480f", "#0b7285", "#2b8a3e", "#c92a2a", "#9c36b5", "#5c940d", "#1098ad", "#a05a2c",
            "#364fc7"]
 MINOR_COL = "#8193a6"
-bm = basins.to_crs(26911)
+bm = basins.to_crs(EPSG)
 def fill_small_holes(g, min_m2=50000):
     """Drop pockets under 0.05 km2 (a few 50 m cells left between forks), which would draw as tiny rings."""
     parts = g.geoms if g.geom_type == "MultiPolygon" else [g]
@@ -328,7 +328,7 @@ def label_pt(g):
 fpoly = bm.dissolve(["drainage", "fork"]).reset_index()
 fpoly["geometry"] = [fill_small_holes(g) for g in fpoly.geometry]
 fpoly["c"] = [fcol.get((d, f), dcol[d]) for d, f in zip(fpoly.drainage, fpoly.fork)]
-to_ll = lambda geoms: gpd.GeoSeries(geoms, crs=26911).to_crs(4326)
+to_ll = lambda geoms: gpd.GeoSeries(geoms, crs=EPSG).to_crs(4326)
 fl_pts = to_ll([label_pt(g) for g in fpoly.geometry])
 dl_pts = to_ll([label_pt(g) for g in dpoly.geometry])
 f_json = json.loads(fpoly[["drainage", "fork", "c", "geometry"]].to_crs(4326).assign(
@@ -359,7 +359,7 @@ PCT_SECTIONS = {"A": "Campo → Warner Springs", "B": "Warner Springs → San Go
                 "E": "Agua Dulce → Tehachapi Pass (Hwy 58)", "F": "Tehachapi Pass → Walker Pass"}
 pct_json, pct_labels = None, []
 if os.path.exists(f"{SHARED}/pct.gpkg"):
-    pct = gpd.read_file(f"{SHARED}/pct.gpkg").to_crs(26911)
+    pct = gpd.read_file(f"{SHARED}/pct.gpkg").to_crs(EPSG)
     pct["sec"] = pct.section.str.extract(r"Section ([A-Z])\b", expand=False).fillna("?")
     secs = pct.dissolve("sec").reset_index()
     secs["geometry"] = [shapely.ops.linemerge(g) if g.geom_type == "MultiLineString" else g for g in secs.geometry]
@@ -370,8 +370,7 @@ if os.path.exists(f"{SHARED}/pct.gpkg"):
     PCT_BANDS = [(11, 15, 10000, 12000, [65]), (12, 9, 5000, 6000, [32]), (13, 5, 2500, 3000, [16, 8])]
     pct_lines = merge_lines(pct.geometry.values)
     pct_labels = [lab for ln in pct_lines for lab in label_paths(ln, PCT_BANDS, 112)]
-    whole = shapely.MultiLineString(pct_lines) if pct_lines else u_
-    print("PCT", len(secs), "sections,", round(whole.length / 1000), "km | labels per zoom band:",
+    print("PCT", len(secs), "sections,", round(sum(ln.length for ln in pct_lines) / 1000), "km | labels per zoom band:",
           pd.Series([l["z"] for l in pct_labels]).value_counts().sort_index().to_dict())
 # ---- Trails and fire roads (02d_trails.py; older runs fall back to each range's OSM paths) ----
 # Drawn by map_drainages.js / map3d.html with detail revealed by zoom: rank 1 hiking routes and named trails, 2 named
@@ -379,8 +378,8 @@ if os.path.exists(f"{SHARED}/pct.gpkg"):
 SAC = {"hiking": "easy (T1)", "mountain_hiking": "mountain hiking (T2)", "demanding_mountain_hiking": "demanding (T3)",
        "alpine_hiking": "alpine (T4)", "demanding_alpine_hiking": "demanding alpine (T5)",
        "difficult_alpine_hiking": "difficult alpine (T6)"}
-study = gpd.GeoSeries([shapely.box(*v["bbox"]) for v in REGIONS.values()], crs=26911).union_all().buffer(1000)
-study_ll = gpd.GeoSeries([study], crs=26911).to_crs(4326).iloc[0]
+study = gpd.GeoSeries([shapely.box(*v["bbox"]) for v in REGIONS.values()], crs=EPSG).union_all().buffer(1000)
+study_ll = gpd.GeoSeries([study], crs=EPSG).to_crs(4326).iloc[0]
 if os.path.exists(f"{SHARED}/trails.gpkg"):
     tr = gpd.read_file(f"{SHARED}/trails.gpkg")
     tr = tr[tr.intersects(study_ll)]
@@ -417,9 +416,9 @@ def beside_creeks(feat, step=10.0, max_d=80.0, min_run=40.0):
     feat = feat[~feat.geometry.is_empty]
     if not len(feat):
         return feat
-    cr = s_ll[s_ll.strahler >= 2].to_crs(26911)
+    cr = s_ll[s_ll.strahler >= 2].to_crs(EPSG)
     cg, co = cr.geometry.values, cr.strahler.values.astype(int)
-    ex = feat.to_crs(26911).explode(index_parts=False)
+    ex = feat.to_crs(EPSG).explode(index_parts=False)
     ex = ex[ex.geom_type == "LineString"]
     lines = ex.geometry.values
     L = shapely.length(lines)
@@ -484,18 +483,18 @@ def beside_creeks(feat, step=10.0, max_d=80.0, min_run=40.0):
                          int(round(np.nanmedian(dm[on]))) if val else None))
     out = props.iloc[[k[0] for k in keep]].reset_index(drop=True)
     out["sd"], out["so"], out["dm"] = [k[2] for k in keep], [k[3] for k in keep], [k[4] for k in keep]
-    out = gpd.GeoDataFrame(out, geometry=[k[1] for k in keep], crs=26911).to_crs(4326)
+    out = gpd.GeoDataFrame(out, geometry=[k[1] for k in keep], crs=EPSG).to_crs(4326)
     out["geometry"] = shapely.set_precision(out.geometry.values, 1e-5)
     out = out[~out.geometry.is_empty]
     on_ = out.sd.notna()
-    print(f"  beside a creek: {out[on_].to_crs(26911).length.sum() / out.to_crs(26911).length.sum():.0%} of the length, "
+    print(f"  beside a creek: {out[on_].to_crs(EPSG).length.sum() / out.to_crs(EPSG).length.sum():.0%} of the length, "
           f"{int(on_.sum())} of {len(out)} pieces")
     return out
 
 
 TRAIL_BANDS = [(13, 5, 1500, 3000, [16]), (14, 3, 800, 1500, [8, 4, 2])]
 trail_labels = []
-tu = t_feat[t_feat.n.notna() & ~t_feat.n.fillna("").str.contains("Pacific Crest", case=False)].to_crs(26911)
+tu = t_feat[t_feat.n.notna() & ~t_feat.n.fillna("").str.contains("Pacific Crest", case=False)].to_crs(EPSG)
 for nm, grp in tu.groupby("n"):
     for ln in merge_lines(grp.geometry.values):
         if ln.length >= 1600:
@@ -516,7 +515,7 @@ if os.path.exists(f"{SHARED}/access_roads.gpkg"):
     print("access roads:")
     roads_json = json.loads(beside_creeks(r_feat).to_json(na="drop", drop_id=True))
     # named unpaved roads get labels too (fire roads used to be labelled as trails)
-    named_r = r_feat[r_feat.n.notna() & r_feat.c.ne("paved") & ~r_feat.n.isin(set(t_feat.n.dropna()))].to_crs(26911)
+    named_r = r_feat[r_feat.n.notna() & r_feat.c.ne("paved") & ~r_feat.n.isin(set(t_feat.n.dropna()))].to_crs(EPSG)
     for nm, grp in named_r.groupby("n"):
         for ln in merge_lines(grp.geometry.values):
             if ln.length >= 1600:

@@ -15,7 +15,7 @@ for x0 in range(XMIN, XMAX, step):
         paths.append(p)
         if os.path.exists(p):
             continue
-        params = dict(bbox=f"{x0},{y0},{x1},{y1}", bboxSR=26911, imageSR=26911,
+        params = dict(bbox=f"{x0},{y0},{x1},{y1}", bboxSR=EPSG, imageSR=EPSG,
                       size=f"{w},{h}", format="tiff", pixelType="F32",
                       interpolation="RSP_BilinearInterpolation", noData=-9999, f="image")
         r = requests.get(URL, params=params, timeout=600)

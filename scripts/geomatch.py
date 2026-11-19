@@ -2,6 +2,7 @@
 queries, a relief test, and matching OSM lines to official lines."""
 import os, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from scipy.ndimage import maximum_filter, minimum_filter
+from config import EPSG, raw_dir
 
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
 
@@ -36,7 +37,9 @@ def esri(url, bbox, fields, where="1=1"):
             except (requests.RequestException, ValueError):
                 js = {}
             time.sleep(10 * (attempt + 1))
-        batch = js.get("features", [])
+        if "features" not in js:    # a server that is down is not a layer with nothing in the box: stop, don't return less
+            raise RuntimeError(f"{url}: no usable answer after 4 tries ({str(js)[:200]})")
+        batch = js["features"]
         feats += [f for f in batch if f.get("geometry")]
         if len(batch) < 1000 and not js.get("properties", {}).get("exceededTransferLimit"):
             break
@@ -44,12 +47,36 @@ def esri(url, bbox, fields, where="1=1"):
     return gpd.GeoDataFrame.from_features(feats, crs=4326) if feats else gpd.GeoDataFrame(geometry=[], crs=4326)
 
 
+def wilderness_path():
+    """The Forest Service's wilderness areas over all study areas (data/raw/<area>/_shared/wilderness.gpkg, the area's UTM CRS),
+    downloaded when missing or when the study areas have outgrown the box it was downloaded for. Shared by
+    02d_trails.py, 02e_access.py, 08_hike.py and 11_context.py, so whichever runs first fetches it."""
+    import json
+    from config import REGIONS, CRS, SHARED
+    path = f"{SHARED}/wilderness.gpkg"
+    b = np.array([v["bbox"] for v in REGIONS.values()])
+    env = gpd.GeoSeries([shapely.box(b[:, 0].min(), b[:, 1].min(), b[:, 2].max(), b[:, 3].max())],
+                        crs=CRS).to_crs(4326).total_bounds
+    ext_path = path + ".extent.json"   # the box it was downloaded for
+    ext = json.load(open(ext_path)) if os.path.exists(ext_path) else None
+    if not os.path.exists(path) or ext is None or not (ext[0] <= env[0] and ext[1] <= env[1] and ext[2] >= env[2]
+                                                      and ext[3] >= env[3]):
+        js = requests.get("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_Wilderness_01/MapServer/0/query",
+                          headers=UA, timeout=300, params=dict(
+                              where="1=1", geometry=",".join(map(str, env)), geometryType="esriGeometryEnvelope",
+                              inSR=4326, outSR=EPSG, outFields="WILDERNESSNAME", f="geojson")).json()
+        gpd.GeoDataFrame.from_features(js["features"], crs=CRS).to_file(path + ".tmp.gpkg", driver="GPKG")
+        os.replace(path + ".tmp.gpkg", path)
+        json.dump([float(v) for v in env], open(ext_path, "w"))
+    return path
+
+
 def relief_at(points_utm, regions, root, radius_cells=10, block=5):
     """Relief (max - min elevation) within ~1 km of each point, from 50 m blocks of every region's DEM; NaN outside."""
     out = np.full(len(points_utm), np.nan)
     x, y = points_utm.x.values, points_utm.y.values
     for key in regions:
-        p = f"{root}/data/raw/{key}/dem_10m.tif"
+        p = f"{raw_dir(key)}/dem_10m.tif"
         if not os.path.exists(p):
             continue
         with rasterio.open(p) as src:

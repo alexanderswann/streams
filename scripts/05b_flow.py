@@ -31,6 +31,14 @@ nf = pd.read_csv(f"{FLOW}/natural_flows.csv")
 nf = nf[(nf.variable == "estimated") & (nf.statistic == "mean")]
 low = nf.groupby(["comid", "year"]).value.min().unstack()          # comid x year: lowest dry-season monthly mean
 low = low.dropna(axis=1, thresh=int(0.9 * len(low)))                # drop a not-yet-complete current year
+# (that test only catches a year most segments lack altogether: one with some of its four months still counts, on the
+# months it has)
+_months = nf.groupby("year").month.nunique()
+_part = {int(y): int(_months[y]) for y in low.columns if _months[y] < 4}
+if _part:
+    print("NOTE: the flow model's dry season is incomplete for", ", ".join(f"{y} ({n} of 4 months)" for y, n in _part.items()),
+          "- that year's low flow is the lowest of the months it has. Run 02b_download_flow.py with REFRESH=1 once "
+          "October is published.")
 v2_area = v2.set_index("comid").totdasqkm
 dam = below_dam_comids(v2)
 div = below_diversion_comids(v2)

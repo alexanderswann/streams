@@ -13,8 +13,9 @@ serves, lowest zoom first]). Returns [{"z", "c": [lat, lon], "a": angle, "p": [[
 """
 import numpy as np, shapely, shapely.ops
 from pyproj import Transformer
+from config import EPSG
 
-TO_WGS = Transformer.from_crs(26911, 4326, always_xy=True)
+TO_WGS = Transformer.from_crs(EPSG, 4326, always_xy=True)
 # m/px at 34 degrees north for zooms 11..16
 MPP = {11: 65, 12: 32, 13: 16, 14: 8, 15: 4, 16: 2}
 
@@ -31,7 +32,7 @@ def smooth(seg, win, step=100):
 
 
 def label_paths(ln, bands, text_px, max_gap_px=5, step=100):
-    """ln: LineString in EPSG:26911."""
+    """ln: LineString in the area's UTM CRS."""
     out = []
     for zb, win, half_p, spacing, mpps in bands:
         mpp0 = mpps[0]

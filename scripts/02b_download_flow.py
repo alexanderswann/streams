@@ -7,7 +7,7 @@
                         daily values (ground truth for validation), from the USGS Water Data API
   gauge_sites.gpkg      gauge locations, drainage area, and the span and count of their daily values
 
-No REGION needed. Re-run to refresh; downloads are cached per COMID batch / site.
+No REGION needed. Re-run to refresh; downloads are cached per COMID batch / site for CACHE_DAYS (REFRESH=1 forces).
 """
 import os, time, json, requests, numpy as np, pandas as pd, geopandas as gpd
 from shapely.geometry import box
@@ -18,6 +18,15 @@ os.makedirs(f"{FLOW}/nf_batches", exist_ok=True)
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
 FIRST_YEAR = 2011          # recent climate incl. the 2012-16 and 2020-22 droughts
 DRY_MONTHS = (7, 10)       # July..October
+# Natural Flows gains a month at a time and the gauges a day at a time, so a cached download is used for CACHE_DAYS and
+# then fetched again (REFRESH=1 forces it now). Kept for good, the 2026 dry season stayed at July-September: October
+# wasn't out yet when the batches were first downloaded.
+CACHE_DAYS = 30
+
+
+def fresh(path):
+    return (os.path.exists(path) and os.environ.get("REFRESH") != "1"
+            and time.time() - os.path.getmtime(path) < CACHE_DAYS * 86400)
 
 area = gpd.GeoSeries([box(*v["bbox"]).buffer(2000) for v in REGIONS.values()], crs=CRS)
 boxes = area.to_crs(4326).bounds.values
@@ -75,7 +84,7 @@ for i in range(0, len(comids), B):
     chunk = comids[i:i + B]
     f = f"{FLOW}/nf_batches/{chunk[0]}_{chunk[-1]}_{len(chunk)}.csv"   # named by content, so a changed network
     files.append(f)                                                    # never reuses a batch of other COMIDs
-    if os.path.exists(f):
+    if fresh(f):
         continue
     r = get("https://flow-api.codefornature.org/v2/stream/", params=dict(
         comids=",".join(map(str, chunk)), statistics="mean,min", variables="estimated,p10,p90",
@@ -143,7 +152,7 @@ def record(t):
 est = ts.assign(days=(span.dt.days + 1).fillna(49000)).groupby("monitoring_location_id").days.sum()
 batches = []
 for s in gs.site_no:
-    if os.path.exists(f"{FLOW}/daily_{s}.csv"):
+    if fresh(f"{FLOW}/daily_{s}.csv"):
         continue
     d = est.get(f"USGS-{s}", 49000)
     if not batches or batches[-1][1] + d > 49000 or len(batches[-1][0]) == 40:

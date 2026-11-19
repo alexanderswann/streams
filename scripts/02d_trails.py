@@ -20,7 +20,8 @@ Map attribution: trails and fire roads (c) OpenStreetMap contributors (ODbL), US
 """
 import os, re, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from scipy.ndimage import maximum_filter, minimum_filter
-from config import REGIONS, CRS, ROOT, SHARED
+from config import REGIONS, CRS, ROOT, SHARED, raw_dir
+from geomatch import wilderness_path
 
 MIN_RELIEF_M = 100
 MATCH_M = 25            # an OSM way follows an official line if most of it lies within this distance
@@ -87,7 +88,9 @@ def esri_lines(url, bbox, fields):
             except (requests.RequestException, ValueError):
                 js = {}
             time.sleep(10 * (attempt + 1))
-        batch = js.get("features", [])
+        if "features" not in js:    # a server that is down is not a layer with nothing in the box: stop, don't return less
+            raise RuntimeError(f"{url}: no usable answer after 4 tries ({str(js)[:200]})")
+        batch = js["features"]
         feats += [f for f in batch if f.get("geometry")]
         if len(batch) < 1000 and not js.get("properties", {}).get("exceededTransferLimit"):
             break
@@ -219,7 +222,7 @@ if add:
 mid = gu.geometry.interpolate(0.5, normalized=True)
 relief = np.full(len(gu), np.nan)
 for key in REGIONS:
-    p = f"{ROOT}/data/raw/{key}/dem_10m.tif"
+    p = f"{raw_dir(key)}/dem_10m.tif"
     if not os.path.exists(p):
         continue
     with rasterio.open(p) as src:
@@ -300,8 +303,7 @@ if len(eaton_areas):   # for the road layer (02e_access.py) and the maps
 #   likely    a Forest Service system trail with no restriction recorded (forest trails are open to bikes unless an
 #             order closes them), or an OSM mountain-bike difficulty (mtb:scale) on it
 #   unknown   anything else (mostly unofficial paths)
-wpath = f"{SHARED}/wilderness.gpkg"
-wild = gpd.read_file(wpath).to_crs(CRS).union_all() if os.path.exists(wpath) else shapely.Polygon()
+wild = gpd.read_file(wilderness_path()).to_crs(CRS).union_all()   # downloaded here if 08_hike.py hasn't yet
 in_wild = gu.geometry.interpolate(0.5, normalized=True).within(wild)
 bik = gu.bicycle.fillna("") if "bicycle" in gu else pd.Series("", index=gu.index)
 offb = gu.off_bike.fillna("").astype(str).str.upper()

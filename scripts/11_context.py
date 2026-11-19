@@ -23,8 +23,9 @@ from rasterio.transform import from_origin
 from rasterio.windows import from_bounds
 from scipy.ndimage import uniform_filter
 from shapely.geometry import box
-from config import REGIONS, CRS, MAP_OUT, SHARED, ROOT
+from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir
 from scoring import HEAT_START
+from geomatch import wilderness_path
 
 FIRE_SINCE = 2016
 AQUATIC = ["Arroyo (=arroyo southwestern) toad", "Santa Ana sucker", "Mountain yellow-legged frog",
@@ -44,7 +45,7 @@ def esri(url, where="1=1", fields="*", page=1000):
             try:
                 r = requests.get(f"{url}/query", headers=UA, timeout=300, params=dict(
                     where=where, geometry=f"{W},{S},{E},{N}", geometryType="esriGeometryEnvelope", inSR=4326,
-                    spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=26911, f="geojson",
+                    spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=EPSG, f="geojson",
                     resultOffset=off, resultRecordCount=page))
                 if r.ok and "features" in r.json():
                     break
@@ -116,14 +117,14 @@ if len(dfh):
 print("debris-flow hazard segments", len(dfh))
 
 # ---- springs and seeps (NHD points, FType 458) from every range's NHD download ----
-sp_ = [gpd.read_file(p_).to_crs(CRS) for p_ in (f"{ROOT}/data/raw/{r}/nhd_points.gpkg" for r in REGIONS) if os.path.exists(p_)]
+sp_ = [gpd.read_file(p_).to_crs(CRS) for p_ in (f"{raw_dir(r)}/nhd_points.gpkg" for r in REGIONS) if os.path.exists(p_)]
 springs = gpd.GeoDataFrame(pd.concat([q[q.ftype == 458][["gnis_name", "geometry"]] for q in sp_], ignore_index=True), crs=CRS)
 springs = springs[~springs.geometry.to_wkb().duplicated()]
 springs.to_crs(4326).to_file(f"{CTX}/springs.gpkg")
 print("springs and seeps", len(springs))
 
 # ---- land status ----
-wild = gpd.read_file(f"{SHARED}/wilderness.gpkg")
+wild = gpd.read_file(wilderness_path())
 wild = wild.rename(columns={c: "wilderness" for c in wild.columns if c.lower() == "wildernessname"})
 wild.to_crs(4326).to_file(f"{CTX}/wilderness.gpkg")
 own = esri("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_BasicOwnership_02/MapServer/0",
@@ -171,13 +172,13 @@ PRISM = "ftp://prism.oregonstate.edu/normals/us/800m/tmean/monthly/prism_tmean_u
 def air_tif():
     """The normal clipped to the study areas. The national file (~58 MB) is downloaded only when the cached clip
     doesn't cover the areas (ranges added)."""
-    p_ = f"{SHARED}/prism_tmean_aug.tif"
+    p_ = f"{NATIONAL}/prism_tmean_aug.tif"
     if os.path.exists(p_):
         with rasterio.open(p_) as src:
             b = src.bounds
         if b.left <= W and b.bottom <= S and b.right >= E and b.top >= N:
             return p_
-    z = f"{SHARED}/prism_tmean_aug_us.zip"       # GDAL's /vsizip/ wants the .zip extension
+    z = f"{NATIONAL}/prism_tmean_aug_us.zip"       # GDAL's /vsizip/ wants the .zip extension
     if not os.path.exists(z):
         urllib.request.urlretrieve(PRISM + ".zip", z + ".part")
         os.replace(z + ".part", z)
@@ -275,7 +276,7 @@ trout_ev = gpd.GeoDataFrame(pd.concat(ev, ignore_index=True), crs=CRS) if ev els
 if trout_ev is not None:
     # trout at a lake or reservoir are stocked fish: sightings within 100 m of an NHD lake / reservoir of 2 ha or more,
     # or within 400 m of a stocked lake, don't count for the creeks
-    wb = [gpd.read_file(p_, layer="NHDWaterbody", bbox=(W, S, E, N)) for p_ in sorted(glob.glob(f"{SHARED}/NHD_H_*_HU4_GPKG.gpkg"))]
+    wb = [gpd.read_file(p_, layer="NHDWaterbody", bbox=(W, S, E, N)) for p_ in sorted([f"{NATIONAL}/NHD_H_{h}_HU4_GPKG.gpkg" for h in sorted({h for v in REGIONS.values() for h in v["hu4"]})])]
     wb = [w_[w_.ftype.isin([390, 436]) & (w_.areasqkm >= 0.02)].to_crs(CRS) for w_ in wb if len(w_)]
     lakes_ = pd.concat([w_.geometry for w_ in wb] + [trout_ev[(trout_ev.kind == "CDFW stocking") & trout_ev.lake]
                                                       .geometry.buffer(300)], ignore_index=True)
@@ -345,7 +346,7 @@ def trout_attrs(s):
 TCC = "https://imagery.geoplatform.gov/iipp/rest/services/Vegetation/USFS_EDW_NLCD_TCC_CONUS/ImageServer"
 def canopy_tif(r, tile=1500):
     """The region's canopy cover raster (% , 255 = no data), downloaded in tiles and cached for 90 days."""
-    p_ = f"{ROOT}/data/raw/{r}/canopy_tcc.tif"
+    p_ = f"{raw_dir(r)}/canopy_tcc.tif"
     if os.path.exists(p_) and time.time() - os.path.getmtime(p_) < 90 * 86400:
         return p_
     t1 = requests.get(TCC, params={"f": "json"}, headers=UA, timeout=120).json()["timeInfo"]["timeExtent"][1]
@@ -359,7 +360,7 @@ def canopy_tif(r, tile=1500):
             for attempt in range(4):
                 try:
                     rr = requests.get(f"{TCC}/exportImage", headers=UA, timeout=300, params=dict(
-                        bbox=",".join(map(str, bb)), bboxSR=26911, imageSR=26911, size=f"{w},{h}", format="tiff",
+                        bbox=",".join(map(str, bb)), bboxSR=EPSG, imageSR=EPSG, size=f"{w},{h}", format="tiff",
                         pixelType="U8", interpolation="RSP_NearestNeighbor", time=t1, f="image"))
                     with rasterio.MemoryFile(rr.content) as mf, mf.open() as src:
                         a = src.read(1)

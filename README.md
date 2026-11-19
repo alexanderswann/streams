@@ -2,7 +2,9 @@
 
 DEM-based stream analysis of the mountains around LA, used to find remote fishable water and in-stream drops
 (waterfalls / plunge pools). It covers eight ranges, defined in `scripts/config.py`. The boxes
-meet edge to edge without overlapping, so a creek that crosses an edge is split between two ranges there:
+meet edge to edge, so a creek that crosses an edge is split between two ranges there. (Only the San Gabriel and
+Santa Monica boxes overlap: a 1 × 4 km strip of the San Fernando Valley floor, where a few flat-land channels are
+drawn by both.)
 
 | Region key | Range | Extent |
 |---|---|---|
@@ -19,7 +21,22 @@ Warm, low ranges (Santa Anas, Sierra Pelona, much of Piru) score low for trout b
 swimming: the stream popups' NHD flow class (perennial or not) and the drop / plunge-pool and waterfall layers apply
 there regardless of fish score.
 
-## Outputs (`output/`)
+## Study areas and folders
+The pipeline handles several study **areas**, each its own map with its own UTM zone, home point for drive times,
+ranges and data sources (`AREAS` in `scripts/config.py`). Pick one with `AREA=<key>` (default `la`) and a range
+within it with `REGION=<key>` (default the area's first range). Everything described below is the `la` area. The
+others (`jackson`, `n_georgia`, `central_vt`, `ne_ct`, `lexington_va`) have draft boxes and aren't built yet; see
+`MULTI_AREA_PLAN.md` and `MULTI_AREA_LOG.md`.
+
+| Folder | What |
+|---|---|
+| `data/raw/<area>/<range>/`, `data/derived/<area>/<range>/` | Per-range downloads (DEM, NHD, OSM, canopy) and derived rasters (filled DEM, flow direction, area) |
+| `data/raw/<area>/_shared/` | Shared by an area's ranges: trails, access roads, wilderness, flow model, long-distance trails, download caches |
+| `data/derived/<area>/_shared/` | Cross-box inflow table (`inflows.json`) |
+| `data/raw/_national/` | Downloads every area reuses: NHD HU4 GeoPackages, the PRISM August air temperature grid |
+| `output/<area>/` | The combined map, CSVs and GPX below, plus one folder per range |
+
+## Outputs (`output/la/`)
 | File | What |
 |---|---|
 | `stream_map.html` | Combined interactive map. Keep it next to the region folders, which hold the hillshade PNGs |
@@ -29,15 +46,17 @@ there regardless of fish score.
 | `waterfall_candidates.gpx` | Waterfall-like steps, cascades and their pools. Import into Gaia, CalTopo or onX |
 | `road_closures.csv` / `.gpkg` | Current closures on mountain roads (Caltrans, LA County, SB County), routed along the roads |
 | `gated_roads.gpkg` | OSM roads tagged closed to public vehicles (locked fire roads, gated forest roads) |
-| `profiles.html` | Creek profile viewer: elevation vs. distance for 241 named creeks, with drops, falls, gauges and fish score / burn / trout-water strips. Keep it next to `profiles_data.js` and the map |
+| `profiles.html` | Creek profile viewer: elevation vs. distance for about 490 creeks (those with 2 km or more of channel named in NHD; a link from the map to any other creek says it has no profile), with drops, falls, gauges and fish score / burn / trout-water strips. Keep it next to `profiles_data.js` and the map |
 | `context/` | Fire perimeters, stream gauges (USGS + CDEC, live), wilderness, non-Forest-Service land, critical habitat, Wild Trout Waters, trout evidence, springs |
-| `<region>/` | The same per range, plus `streams_scored.gpkg` / `waterfall_candidates.gpkg` for QGIS |
+| `<region>/` | The same per range, plus `streams_scored.gpkg` / `waterfall_candidates.gpkg` for QGIS. The `fish_score` in a range's own `streams_scored.gpkg` and `stream_reaches_ranked.csv` is `05_score.py`'s first pass (NHD class, size, elevation, gradient, distance to a road); the final score is only in the combined `stream_reaches_ranked.csv` and the maps |
 
 ## Pipeline (`scripts/`, run from `scripts/` with `../.venv/bin/python`)
-Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`):
-1. `01_download_dem.py`: 10 m USGS 3DEP DEM, UTM 11N
-2. `02_download_vectors.py`: NHD flowlines/points from USGS bulk GeoPackages (cached in `data/raw/_shared`),
-   plus OSM roads/trails/waterfalls/dams
+Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; for another area add `AREA=<key>`):
+1. `01_download_dem.py`: 10 m USGS 3DEP DEM, in the area's UTM zone (11N for LA)
+2. `02_download_vectors.py`: NHD flowlines/points from USGS bulk GeoPackages (cached in `data/raw/_national`),
+   plus OSM roads/trails/waterfalls/dams. Both are read for the lon/lat box around all four corners of the range's
+   UTM box. When the public Overpass servers can't be reached, a range keeps the OSM files it already has
+   (`OSM=keep` skips that download outright); run the script again later to refresh them
 3. `03_hydrology.py`: fill pits/depressions → D8 flow direction → flow accumulation → streams (≥0.25 km²) → Strahler order
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
    with the channel 200 m above and below. Classes:
@@ -55,7 +74,7 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`):
    from the nearest NHD lines at three points along the link, each kept when two agree on the name (or the class;
    NHD splits a creek into many short segments). NHD has no name on many lines (e.g. San Antonio Creek below
    Mt. Baldy): those links take the name of OpenStreetMap's named rivers and streams the same way (cached a week in
-   `data/raw/<range>/osm_waterways.gpkg`). Links mostly on sea-level
+   `data/raw/<area>/<range>/osm_waterways.gpkg`). Links mostly on sea-level
    cells (fake channels across the ocean) are dropped. Known falls are OSM waterfalls, NHD falls and the CDFW
    Passage Assessment Database's natural barriers (falls, cascades and bedrock chutes noted in the field, often with a
    height and plunge-pool depth; records saying the barrier is gone are skipped).
@@ -72,7 +91,7 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`):
      heads away from the edge, and its area (plus whatever flowed into it from a third box) is added along the creek
      before trunks and forks are picked. Where the neighbour's grid ends the creek in a pit on the edge (a road fill
      just inside: Bouquet Canyon entering the Piru box), the trace restarts from the lowest nearby cell that drains
-     away from the edge. The inflow table is cached in `data/derived/_shared/inflows.json` until a `flowdir.tif`,
+     away from the edge. The inflow table is cached in `data/derived/<area>/_shared/inflows.json` until a `flowdir.tif`,
      the reservoir list or the NHDPlus network changes.
    - **Past dams**: pysheds can't route water across a big flat lake surface, so every large reservoir ends its D8
      paths in pits and the creek below the dam started again near nothing. `crossbox.py` links each reservoir's dead
@@ -103,13 +122,16 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`):
    the share of summers since 2011 it kept ≥0.1 cfs, and a class (year-round, usually flows, seasonal, mostly dry,
    reservoir, no data). `02b_download_flow.py` (no REGION needed) also fetches the daily records of every USGS stream
    gauge with 5+ years of data, for `data/validate_flow.py`, from the USGS Water Data API (`api.waterdata.usgs.gov`,
-   which replaces WaterServices); it re-downloads its NHDPlus V2 and reservoir caches when ranges are added.
+   which replaces WaterServices); it re-downloads its NHDPlus V2 and reservoir caches when ranges are added. The
+   Natural Flows batches and the gauge records are kept for 30 days, then fetched again (`REFRESH=1` forces it): the
+   model gains a month at a time. `05b_flow.py` prints a note when the latest year's July–October isn't complete yet;
+   that year then counts on the months it has.
 
 Then `06_map.py` (no REGION needed) merges every finished range into the combined map, CSVs and GPX.
 
 `02c_pct.py` (no REGION needed) downloads the **Pacific Crest Trail** from OpenStreetMap: the ways of the PCT section
 relations (tagged `ref=PCT`, named like "PCT - California Section D"), 60 km past the study areas on every side so
-the trail runs off the map edge. It writes `data/raw/_shared/pct.gpkg`; `06_map.py` draws it if the file exists.
+the trail runs off the map edge. It writes `data/raw/<area>/_shared/pct.gpkg`; `06_map.py` draws it if the file exists.
 Re-run it if the official route changes (OSM follows the PCTA route, including road walks).
 
 `02d_trails.py` (no REGION needed, after every range's DEM exists) builds the **trail layer**:
@@ -159,7 +181,7 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
 - Parking: public OSM parking in mountain terrain or within 300 m of a trail. Trailheads: OSM `highway=trailhead`,
   USFS trailhead recreation sites and USFS recreation pages marked "Trailhead" (with a link and the Forest Service's
   open / closed status: closed trailheads are greyed out); points within 150 m are merged, official names first.
-- The road and trail downloads are cached for a week in `data/raw/_shared/cache` (closures for a day); `REFRESH=1`
+- The road and trail downloads are cached for a week in `data/raw/<area>/_shared/cache` (closures for a day); `REFRESH=1`
   forces new downloads.
 
 **Map cartography** (`06_map.py` with `map_drainages.js` + `map_style.css`, inlined into the HTML):
@@ -172,7 +194,8 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
 - **3D map** (`stream_map_3d.html`, from `scripts/map3d.html`): MapLibre GL JS with AWS Terrain Tiles (free, no
   key), with the same colours, legend, focus and overlays. Streams and labels drape on the terrain, and creek names
   follow the channels from zoom 12. Right-drag or Ctrl-drag tilts and turns the view; the slider sets terrain height.
-  `#lat,lon,zoom,pitch,bearing` links work, and each map links to the other at the current view.
+  `#lat,lon,zoom,pitch,bearing` links work, and each map links to the other at the current view. The zoom in a link
+  is the 2D map's: MapLibre shows the same scale one zoom level lower, so the 3D page shifts it by one.
 - The **Pacific Crest Trail** is its own layer, on by default in both maps and drawn above the streams: a thin
   dark dashed line on a soft yellow band, with the PCT section (B–E) on hover. From zoom 11, small labels bend
   along the trail. Each zoom band (11, 12, 13+) has its own smoothed label paths, placed where the real trail
@@ -187,7 +210,8 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   distance. Both maps shift them only by what the two line widths need at the current zoom (none once they're apart
   on screen). The 2D map eases the shift in and out at each run's ends. Crossings stay where they are.
 - **Access roads**, one layer each (from zoom 10): Paved (off by default; the basemap has them), Graded dirt,
-  Rough dirt (high clearance), Very rough (4WD), Closed to cars / open to bikes, Dirt of unknown condition. Cased
+  Rough dirt (high clearance), Very rough (4WD), Closed to cars / open to bikes, Dirt of unknown condition (from
+  zoom 11), and Closed: fire closure. Cased
   lines (light centre, dark edge) so they read as roads, not streams; hover for USFS road number, maintenance level,
   surface, track grade, smoothness and seasonal restrictions.
 - **Trailheads** (green T, zoom 11+; a small P when there is parking) and **parking** (blue P, zoom 12+). Forest
@@ -211,7 +235,9 @@ want fresh closures on the map; the layer name shows when they were fetched. Sou
   2, 18, 23, 27, 33, 38, 39, 74, 126, 138, 142, 150, 173, 189, 243 and 330, plus full closures of I-5 over the
   Grapevine. Each closure is routed along OSM roads between its begin and end points, and repeat nights of the same
   job are merged. Shown: active now, or starting in the next 7 days.
-  "Full closure (one direction)" means every lane in that direction is closed.
+  "Full closure (one direction)" means every lane in that direction is closed. A closed ramp, connector or rest
+  area is listed as "ramp / rest area closed": it doesn't close the highway, so the routing leaves the road in (and
+  on I-5 it isn't listed at all).
 - **LA County Public Works**, **San Bernardino County Public Works** and **Riverside County TLMA** road-closure
   services (polylines), and **Ventura County PWA** closures (points with from / to cross streets, drawn along the
   named road between them, e.g. Lockwood Valley Road). The county lists sometimes keep closures after their estimated
@@ -224,6 +250,7 @@ Drop popups name any full closure within 3 km.
 
 **Access, conditions and context** (run after 05 and 07):
 - `08_hike.py` (per REGION): cost-distance approach time from the nearest road a car can reach, on the 10 m DEM.
+  Freeways and their ramps don't count as places to start from.
   - **Walking** uses Tobler's hiking function. Trails, tracks and closed roads use the trail grade, capped at 15%.
     Off-trail creek bottoms walk at 45% of that speed and chaparral at 30%; slopes over 45° are near-impassable.
   - **Biking** is used wherever it beats walking: 18 km/h on the flat, slowed by grade (about 10 km/h at 6%), ×0.7 on
@@ -246,7 +273,9 @@ Drop popups name any full closure within 3 km.
     time along the reach, and `bike_med_min`, the minutes of it ridden.
 - `09_drive.py`: free-flow drive time and distance from `HOME` in `config.py` (ZIP 90404) to each trailhead.
   It routes over regional OSM highways plus local roads, with today's full closures removed and winding mountain
-  roads at ×0.75 speed. There is no traffic model.
+  roads at ×0.75 speed. There is no traffic model. A road that reaches the network only through local streets
+  outside every box (Bautista Road) is joined to it across the gap (up to 3 km, at 25 km/h); those drive times are
+  flagged approximate.
 - `10_sun.py` (per REGION): hours of direct sun on the water on July 15, from horizons traced in 36 directions
   out to 3 km. Also `northness`, the aspect of the mountainside within 1 km (north-facing = cooler).
   Trees aren't modelled here; `11_context.py` adds the tree canopy.
@@ -255,23 +284,23 @@ Drop popups name any full closure within 3 km.
   outline of its Forest Service BAER burn-severity map), the BAER soil burn severity of each reach's latest fire
   (area-weighted within 30 m), the USGS post-fire debris-flow hazard on channels below burns of the last 4 years,
   USFS tree canopy cover along each reach (NLCD TCC, latest year, so the 2024–25 fires show; 30 m, cached 90 days in
-  `data/raw/<range>/canopy_tcc.tif`), USGS real-time gauges vs. daily percentiles for today's date (from the USGS
+  `data/raw/<area>/<range>/canopy_tcc.tif`), USGS real-time gauges vs. daily percentiles for today's date (from the USGS
   Water Data APIs at `api.waterdata.usgs.gov`, which replace WaterServices: latest discharge from the OGC API,
   percentiles from the Statistics API, still in beta) plus CDEC's Piru Creek gauges (above Pyramid Lake, and the
   dam's release to lower Piru Creek), USFS wilderness and ownership, USFWS/NMFS critical habitat for stream
   species, CDFW Heritage and Wild Trout Waters, trout evidence, springs and seeps (NHD), the August mean air
   temperature along each reach and at each trout record (PRISM 1991–2020 normal, 800 m; the national file is
-  downloaded once and clipped to `data/raw/_shared/prism_tmean_aug.tif`), and CPAD (California
+  downloaded once and clipped to `data/raw/_national/prism_tmean_aug.tif`), and CPAD (California
   Protected Areas Database) holdings with restricted or no public access, flagged on reaches and drops ("⚠ No
   Public Access: ...") and drawn as their own layer.
-- **Trout evidence** (`output/context/trout_evidence.gpkg`, its own map layer): CDFW Heritage & Wild Trout Program
+- **Trout evidence** (`output/la/context/trout_evidence.gpkg`, its own map layer): CDFW Heritage & Wild Trout Program
   surveys (electrofishing / snorkel, 2023–24 so far: trout found or not), CDFW trout stocking in the last 12 months,
   and iNaturalist research-grade rainbow and brown trout sightings with an exact location (obscured ones are skipped).
   A survey or stocking point counts for the creek of the same name within 5 km; a sighting for its reach (within
   150 m) and the same creek within 1.5 km. Lakes are left out of the score (their trout are stocked): stocked lakes,
   and sightings at a lake or within 400 m of a stocked one.
 - `scoring.py`: merges these onto reaches/drops and computes the final fish score (used by `06_map.py`).
-- `12_profiles.py` (after `06_map.py`): long profiles for every named creek, written to `output/profiles_data.js`
+- `12_profiles.py` (after `06_map.py`): long profiles for every named creek, written to `output/la/profiles_data.js`
   for `profiles.html`.
   - The creek line is the longest connected path through the creek's NHD named flowlines.
   - Elevation is the channel bottom: the lowest hydro-conditioned DEM cell within 20 m, forced to only go down
@@ -285,7 +314,7 @@ Drop popups name any full closure within 3 km.
 
 `02b_download_flow.py` and `11_context.py` use the USGS Water Data API. Without a key it allows 1,000 requests an
 hour, shared with anything else using it from the same internet connection. A fresh `02b` gauge download takes about
-115 requests (later runs fetch only gauges not yet cached), and `11_context.py` under 10. When the API says the hour's
+115 requests (runs in the next 30 days fetch only gauges not yet cached), and `11_context.py` under 10. When the API says the hour's
 limit is reached, the scripts wait until it resets (up to an hour). For a higher limit, put a free key from
 https://api.waterdata.usgs.gov/signup/ in `USGS_API_KEY` (e.g. `export USGS_API_KEY=...` in `~/.zshrc`); the scripts
 send it only to `api.waterdata.usgs.gov`.
@@ -294,18 +323,26 @@ send it only to `api.waterdata.usgs.gov`.
 for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 01_download_dem 02_download_vectors 03_hydrology 04_knickpoints 04b_bigcreek_steps 05_score; do REGION=$r ../.venv/bin/python $s.py; done; done; ../.venv/bin/python 07_road_closures.py
 ../.venv/bin/python 02b_download_flow.py
 for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 05c_drainages 05b_flow; do REGION=$r ../.venv/bin/python $s.py; done; done
+../.venv/bin/python 02c_pct.py; ../.venv/bin/python 02d_trails.py; ../.venv/bin/python 02e_access.py
 for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 08_hike 10_sun; do REGION=$r ../.venv/bin/python $s.py; done; done
-../.venv/bin/python 02c_pct.py; ../.venv/bin/python 02d_trails.py; ../.venv/bin/python 02e_access.py; ../.venv/bin/python 09_drive.py; ../.venv/bin/python 11_context.py; ../.venv/bin/python 06_map.py
+../.venv/bin/python 09_drive.py; ../.venv/bin/python 11_context.py; ../.venv/bin/python 06_map.py
 ../.venv/bin/python 12_profiles.py
 ```
 
 To refresh only the live data (closures, gauges) before a trip: `07_road_closures.py`, then `08_hike.py` per region,
 `09_drive.py`, `11_context.py` and `06_map.py` (about 5 minutes).
 
-To add a range, add an entry to `REGIONS` in `config.py` (UTM bbox + NHD HU4 codes; keep boxes from overlapping, or
-streams get drawn twice) and run the per-range loop for it, then the shared steps. `08_hike.py` (wilderness) and
-`09_drive.py` (major roads) re-download their shared caches when the ranges outgrow them. `08_hike.py` also
-downloads each range's OSM bike paths, kept for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
+The order matters. `08_hike.py` reads the trail and access-road layers that `02d_trails.py` and `02e_access.py`
+write. The reach and drop keys (`sid`, `did`) are row numbers `05_score.py` hands out, so after re-running it for a
+range, re-run that range's `05c`, `05b`, `08`, `10` and `11_context.py` before `06_map.py`. `06_map.py` stops if one
+of their tables doesn't list the same reaches or drops as the range's `streams_scored.gpkg` /
+`waterfall_candidates.gpkg`, and notes any table older than those files.
+
+To add a range, add an entry to the area's `ranges` in `AREAS` in `config.py` (UTM bbox + NHD HU4 codes; keep boxes from overlapping, or
+streams get drawn twice) and run the per-range loop for it, then the shared steps. The wilderness layer (fetched by
+whichever of `02d_trails.py`, `02e_access.py`, `08_hike.py` and `11_context.py` runs first) and `09_drive.py`'s
+major roads re-download when the ranges outgrow them. `08_hike.py` also downloads each range's OSM bike paths, kept
+for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
 
 ## Fish score (0–100, heuristic; `scripts/scoring.py`)
 `water × (30% size + 30% thermal + 15% gradient + 25% remoteness) × burn × trout × heat`
@@ -317,7 +354,7 @@ downloads each range's OSM bike paths, kept for a week. Run `09_drive.py` after 
   Today that is only the San Jacinto River near San Jacinto, which the gauge found flowing in 19% of summers. Trout
   were found below the Santa Ana, Mill, Lytle and Plunge diversions in 2019–2024, so those stay on the model. The
   model and NHD
-  often disagree: of NHD's 2,425 "perennial" reaches the model has 630 drying in some or most summers, and 837 NHD
+  often disagree: of NHD's 2,430 "perennial" reaches the model has 619 drying in some or most summers, and 850 NHD
   "ephemeral" reaches flowing through most summers. Popups show the model's typical and drought-year low flow.
   Desert-side canyons with year-round water score high on water alone. The heat gate below takes down only the low
   desert ones (Whitewater, Palm Canyon Wash, Tahquitz). Murray and upper Andreas canyons stay up because it isn't
@@ -378,11 +415,21 @@ Critical habitat, wilderness and non-Forest-Service land are shown as flags, not
 other species are set by forest orders, usually cover less ground, and have to be checked on the forest's site.
 
 ## Validation (mapped falls from OSM + NHD matched by a detected drop within 200 m)
+All eight ranges, from `data/validate.py` (run from `scripts/`):
+
 | | Pass 1 only | Pass 1 + big-creek pass |
 |---|---|---|
-| Falls on creeks ≥10 km² | 16 / 26 | 23 / 26 |
-| Falls on smaller drainages | 45 / 72 | 45 / 72 |
-| **All** | **61 / 98** | **68 / 98** |
+| Falls on creeks ≥10 km² | 39 / 55 | 47 / 55 |
+| Falls on smaller drainages | 85 / 154 | 85 / 154 |
+| **All** | **124 / 209** | **132 / 209** |
+
+- By range (both passes): San Jacinto 23 / 25, San Bernardino 14 / 17, Santa Monica 8 / 11, San Gabriel 49 / 75,
+  Sespe 22 / 34, Santa Ana 16 / 46, Piru 0 / 1. The Santa Anas are the weak spot: 25 of their 46 mapped falls sit on
+  drainages under 1 km², below pass 1's floor (of the other 21, 16 are found). The thresholds were tuned on the San Gabriel, Santa Monica and
+  San Bernardino ranges (now 71 of their 103).
+- The CDFW fish-passage barriers that `05_score.py` also lists as known falls are left out of the table: they are
+  mostly cascades, bedrock chutes and boulder jams with no drop a 10 m DEM can show (100 of 271 have a detected
+  drop within 200 m).
 
 - The big-creek pass recovers Aztec and Hesperia Falls (Deep Creek) and Royal Falls (Arroyo Seco). It also recovers 4
   unnamed mapped falls that weren't looked at while tuning the thresholds.

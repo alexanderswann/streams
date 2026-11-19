@@ -1,7 +1,7 @@
 """Shared helpers for the flow evidence (05b_flow.py, data/validate_flow.py)."""
 import os, json, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from shapely.geometry import box
-from config import REGIONS, CRS, SHARED
+from config import REGIONS, CRS, SHARED, NATIONAL
 
 FLOW = f"{SHARED}/flow"
 MIN_RESERVOIR_KM2 = 0.08     # waterbodies smaller than 8 ha (debris basins, ponds) don't control a creek's base flow
@@ -39,7 +39,7 @@ def reservoirs():
     W, S, E, N = area.to_crs(4269).total_bounds
     parts = []
     for hu in sorted({h for v in REGIONS.values() for h in v["hu4"]}):
-        g = f"{SHARED}/NHD_H_{hu}_HU4_GPKG.gpkg"
+        g = f"{NATIONAL}/NHD_H_{hu}_HU4_GPKG.gpkg"
         lyr = next(l for l in pyogrio.list_layers(g)[:, 0] if l.lower() == "nhdwaterbody")
         d = gpd.read_file(g, layer=lyr, bbox=(W, S, E, N))
         d.columns = [c.lower() if c != "geometry" else c for c in d.columns]
@@ -66,7 +66,10 @@ def below_dam_comids(v2, share=0.5):
     inside = inside[inter.length >= 0.5 * inside.length]
     out = {int(c): f"in:{n}" for c, n in zip(inside.comid, inside.gnis_name)}
     by_seq = v2.drop_duplicates("hydroseq").set_index("hydroseq")
-    for name, grp in inside.groupby("gnis_name"):
+    # One lake at a time, not one name at a time: the 60 lakes NHD doesn't name all carry "unnamed reservoir", and
+    # grouped by name only the biggest of them was followed downstream (the basins on Arroyo Seco, East Twin Creek
+    # and Eaton Wash weren't). Named lakes go first, in the order they always did, so their claims stay the same.
+    for (name, _), grp in inside.groupby(["gnis_name", "index_right"]):
         outlet = grp.sort_values("totdasqkm").iloc[-1]          # the flowline at the dam
         a_dam = max(outlet.totdasqkm, 0.01)
         if a_dam < 3:                                            # off-channel tanks / tiny headwater ponds
