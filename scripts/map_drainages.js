@@ -616,6 +616,13 @@ function initDrainageMap(map, ctrl) {
   const pinTip = L.tooltip({pane: "profpin", permanent: true, direction: "right", offset: [14, 0], className: "profpin-tip"});
   const areaBounds = L.geoJSON(window.DIVIDES).getBounds().pad(0.05);
   let lastSeq = -1;
+  // the label's × takes the ring off (it comes back with the next spot sent from the profile), and drops a ",pin"
+  // link's marker from the address so a reload doesn't bring it back
+  function hidePin() {
+    map.removeLayer(pin); map.removeLayer(pinTip);
+    const parts = location.hash.slice(1).split(",");
+    if (parts[3] === "pin") history.replaceState(null, "", "#" + parts.slice(0, 3).join(","));
+  }
   function showPin(m) {
     if (!m || m.seq === lastSeq || !isFinite(m.lat) || !isFinite(m.lon)) return;
     lastSeq = m.seq;
@@ -623,8 +630,17 @@ function initDrainageMap(map, ctrl) {
     if (!areaBounds.contains(ll)) return;
     pin.eachLayer(l => l.setLatLng(ll));
     if (!map.hasLayer(pin)) pin.addTo(map);
-    pinTip.setLatLng(ll).setContent(m.text || "Profile spot");
-    if (!map.hasLayer(pinTip)) pinTip.addTo(map);
+    pinTip.setLatLng(ll).setContent(`<span>${esc(m.text || "Profile spot")}</span>` +
+      `<button type="button" class="profpin-x" title="Remove this marker" aria-label="Remove this marker">×</button>`);
+    if (!map.hasLayer(pinTip)) {
+      pinTip.addTo(map);
+      const el = pinTip.getElement();
+      if (!el._pinWired) {          // the tooltip keeps its element between shows: wire it once
+        el._pinWired = true;
+        L.DomEvent.disableClickPropagation(el);
+        L.DomEvent.on(el, "click", e => { if (e.target.closest(".profpin-x")) { L.DomEvent.stop(e); hidePin(); } });
+      }
+    }
     if (m.kind === "pick") map.setView(ll, Math.max(map.getZoom(), 15), {animate: true});
     else map.panInside(ll, {padding: [80, 80], animate: false});
   }

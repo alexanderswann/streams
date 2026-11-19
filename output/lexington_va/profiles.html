@@ -75,6 +75,23 @@
   .tablewrap { overflow-x: auto; }
   .muted { color: var(--text-muted); }
   .note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  /* the clicked spot's details, pinned below the chart */
+  .spot { margin-top: 10px; padding: 10px 12px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-0); }
+  .spot-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .spot-head h3 { font-size: 15px; margin: 0; }
+  .spot dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px 18px; margin: 8px 0 0; }
+  .spot dt { font-size: 12px; color: var(--text-muted); }
+  .spot dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .spot .gps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+  .spot .gps .k { font-size: 12px; color: var(--text-muted); }
+  .spot .feats { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-secondary); }
+  .spot .feats li { margin: 3px 0; }
+  .spot .feats b { color: var(--text-primary); font-weight: 600; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .btn.sm { padding: 3px 9px; font-size: 12px; }
+  .iconbtn { border: 0; background: none; color: var(--text-secondary); font: 20px/1 system-ui, sans-serif; width: 28px; height: 28px;
+             border-radius: 6px; cursor: pointer; }
+  .iconbtn:hover { background: var(--surface-1); color: var(--text-primary); }
   @media (max-width: 640px) { #chart { height: 560px; } h1 { font-size: 18px; } }
 </style>
 </head>
@@ -105,10 +122,11 @@
     <div class="stats" id="stats"></div>
     <div class="legend" id="legend"></div>
     <div id="chart" role="img" aria-label="Long profile chart"></div>
+    <div class="spot" id="spot" role="region" aria-label="Clicked spot" hidden></div>
     <div class="note">Distance runs downstream from the channel head (left) to the mouth (right). Elevation is the
       hydro-conditioned 10 m DEM used by the drop detectors, so short falls look like steep steps rather than vertical
-      drops. Hover the profile and a ring follows along the creek on any open map of this area; click to send that
-      map to the spot (and to point “Show on map” at it).</div>
+      drops. Hover the profile and a ring follows along the creek on any open map of this area. Click a spot to keep
+      its details and GPS position below the chart and to send that map to it.</div>
   </section>
 
   <section class="card">
@@ -132,6 +150,11 @@ const DROP = {
 const ARTIFACT = "likely DEM artifact";
 const realDrops = p => p.drops.filter(d => d.status !== ARTIFACT);
 let current = null, pickedKm = null;
+const burnText = (p, i) => p.burn[i] >= 0 ? p.burn_vals[p.burn[i]] : "none since 2016";
+const habText = (p, i) => p.habitat[i] >= 0 ? p.habitat_vals[p.habitat[i]] : "none";
+// drainage to sensible places (older data files carry float32 noise: 12.449999809265137)
+const fmtArea = a => a == null ? "–" : a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 
 document.getElementById("gen").textContent =
   `${P.length} creek profiles · generated ${DATA.generated} · ${new Set(P.map(p => p.region)).size} ranges`;
@@ -184,9 +207,8 @@ function render(p) {
   const ink = css("--text-primary"), ink2 = css("--text-secondary"), muted = css("--text-muted");
   const grid = css("--grid"), surf = css("--surface-1"), line = css("--line");
   const n = p.km.length;
-  const burnAt = i => p.burn[i] >= 0 ? p.burn_vals[p.burn[i]] : "none since 2016";
-  const habAt = i => p.habitat[i] >= 0 ? p.habitat_vals[p.habitat[i]] : "none";
-  const custom = p.km.map((_, i) => [p.grad[i], p.area[i], p.score[i] ?? "–", burnAt(i), habAt(i),
+  const burnAt = i => burnText(p, i), habAt = i => habText(p, i);
+  const custom = p.km.map((_, i) => [p.grad[i], fmtArea(p.area[i]), p.score[i] ?? "–", burnAt(i), habAt(i),
                                      p.perennial[i] ? "perennial" : "not perennial (NHD)", p.trout[i] ? "Wild/Heritage Trout Water" : ""]);
   const traces = [{
     x: p.km, y: p.z, type: "scatter", mode: "lines", name: "Elevation", line: { color: line, width: 2 },
@@ -204,11 +226,12 @@ function render(p) {
       x: ds.map(x => x.km), y: ds.map(x => zAt(x.km)), type: "scatter", mode: "markers", name: d.label,
       marker: { symbol: d.sym, size: ds.map(x => Math.max(9, Math.min(18, 7 + x.drop / 6))), color: css(d.v),
                 line: { color: surf, width: 2 } },
-      customdata: ds.map(x => [x.drop, x.excess ?? "–", x.approach ?? "–", x.bike ?? 0, x.drive ?? "–", x.why ?? ""]),
+      // bike: the minutes of the approach ridden (08_hike.py bike_min), said only when there is a bike leg
+      customdata: ds.map(x => [x.drop, x.excess ?? "–", x.approach ?? "–", x.bike >= 1 ? ` (${x.bike} by bike)` : "", x.drive ?? "–", x.why ?? ""]),
       hovertemplate: `<b>${d.label}</b><br>%{x:.2f} km · drop %{customdata[0]} m` +
         (status.includes("big creek") ? " (excess %{customdata[1]} m)" : "") +
         (status === ARTIFACT ? "<br>%{customdata[5]}: probably not a real fall<extra></extra>" :
-         "<br>Approach %{customdata[2]} min (bike %{customdata[3]}) · drive %{customdata[4]} min<extra></extra>"),
+         "<br>Approach %{customdata[2]} min%{customdata[3]} · drive %{customdata[4]} min<extra></extra>"),
       xaxis: "x", yaxis: "y",
     });
   }
@@ -283,6 +306,7 @@ function show(p, opts = {}) {
   document.getElementById("legend").innerHTML = legendHTML(p);
   render(p);
   table(p);
+  spotPanel();
   setMapLink(pickedKm ?? p.km[Math.floor(p.km.length / 2)], pickedKm == null ? 13 : 16);
   history.replaceState(null, "", "#id=" + encodeURIComponent(p.id) + (pickedKm != null ? "&km=" + pickedKm.toFixed(3) : ""));
   document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.textContent === p.label));
@@ -316,6 +340,63 @@ function sendSpot(km, kind) {
   try { localStorage.setItem("streams-profile-spot", JSON.stringify(m)); } catch (_) {}
 }
 
+// The clicked spot's details, kept below the chart: what the hover box says, plus its GPS position and any drop,
+// mapped waterfall or gauge within 60 m (1.5 profile steps; at 100 m twice as many clicks on a drop also list a
+// different one). Stays until another spot or creek is picked, or ×.
+function spotPanel(scroll) {
+  const el = document.getElementById("spot"), p = current;
+  if (!p || pickedKm == null) { el.hidden = true; el.innerHTML = ""; return; }
+  const opening = el.hidden;
+  const i = nearest(p, pickedKm), lat = p.lat[i].toFixed(5), lon = p.lon[i].toFixed(5);
+  const near = xs => xs.filter(x => Math.abs(x.km - p.km[i]) <= 0.06);
+  const item = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+  const feats = [
+    ...near(p.drops).map(d => `<li><b>${DROP[d.status].label}</b> at ${d.km.toFixed(2)} km: drop ${d.drop} m` +
+      (d.excess != null ? ` (excess ${d.excess} m)` : "") +
+      (d.status === ARTIFACT ? ` · ${esc(d.why || "set aside")}: probably not a real fall`
+                             : ` · approach ${d.approach ?? "–"} min${d.bike >= 1 ? ` (${d.bike} by bike)` : ""} · drive ${d.drive ?? "–"} min`) +
+      ` · <span class="mono">${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</span></li>`),
+    ...near(p.falls).map(f => `<li><b>Mapped waterfall</b>: ${esc(f.name)} (${f.km.toFixed(2)} km)</li>`),
+    ...near(p.gauges).map(g => `<li><b>USGS gauge</b>: ${g.url ? `<a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.name)}</a>`
+                                                            : esc(g.name)} · ${g.cfs ?? "–"} cfs · ${esc(g.status)}</li>`),
+  ];
+  el.innerHTML = `<div class="spot-head"><h3>${esc(p.name)} at ${p.km[i].toFixed(2)} km</h3>
+      <button type="button" class="iconbtn" id="spotClose" title="Close" aria-label="Close the spot details">×</button></div>
+    <dl>${[
+      item("Elevation", `${Math.round(p.z[i])} m`),
+      item("Gradient", `${p.grad[i].toFixed(1)}%`),
+      item("Drainage", `${fmtArea(p.area[i])} km²`),
+      item("Fish score", p.score[i] ?? "–"),
+      item("Flow", p.perennial[i] ? "perennial" : "not perennial (NHD)"),
+      item("Wild trout water", p.trout[i] ? "yes" : "no"),
+      item("Burned", esc(burnText(p, i))),
+      item("Critical habitat", esc(habText(p, i))),
+    ].join("")}</dl>
+    <div class="gps"><span class="k">GPS</span><span class="mono">${lat}, ${lon}</span>
+      <button type="button" class="btn sm" id="spotCopy">Copy</button>
+      <a class="btn sm" href="stream_map.html${pinHash(lat, lon, 16, spotText(p, i))}" target="_blank">Show on map</a>
+      <a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" rel="noopener">Google Maps</a></div>` +
+    (feats.length ? `<ul class="feats">${feats.join("")}</ul>` : "");
+  el.hidden = false;
+  document.getElementById("spotClose").onclick = clearSpot;
+  document.getElementById("spotCopy").onclick = e => copyText(`${lat}, ${lon}`, e.currentTarget);
+  if (scroll && opening) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function clearSpot() {
+  pickedKm = null; render(current); spotPanel();
+  setMapLink(current.km[Math.floor(current.km.length / 2)], 13);
+  history.replaceState(null, "", "#id=" + encodeURIComponent(current.id));
+}
+function copyText(t, btn) {
+  const done = () => { btn.textContent = "Copied"; setTimeout(() => { btn.textContent = "Copy"; }, 1200); };
+  const fallback = () => {   // pages opened from disk in some browsers have no clipboard API
+    const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { if (document.execCommand("copy")) done(); } catch (_) {}
+    ta.remove();
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
+}
+
 function table(p) {
   const t = document.getElementById("dropTable");
   const nReal = realDrops(p).length, nArt = p.drops.length - nReal;
@@ -334,7 +415,7 @@ function wireClick() {
   const chart = document.getElementById("chart");
   chart.on("plotly_click", ev => {
     const pt = ev.points && ev.points[0]; if (!pt) return;
-    pickedKm = pt.x; render(current); setMapLink(pickedKm, 16);
+    pickedKm = pt.x; render(current); setMapLink(pickedKm, 16); spotPanel(true);
     lastSpot = null; sendSpot(pickedKm, "pick");
     history.replaceState(null, "", "#id=" + encodeURIComponent(current.id) + "&km=" + pickedKm.toFixed(3));
   });

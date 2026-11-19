@@ -89,8 +89,11 @@ df["pool_x"], df["pool_y"] = zip(*[xy(i) for i in df.base_idx])
 g = gpd.GeoDataFrame(df, crs=CRS)
 g["kind"] = "short fall / pool (big creek)"
 g["pass"] = 2
-# a fill-raised step *at* the drop (not in the pool below) is usually a dam, bridge deck or DEM seam
-g["artifact_risk"] = g.fill_max_m > 2
+# A fill-raised step *at* the drop (not in the pool below) may be a dam, bridge deck or DEM seam's. The fill is about
+# that barrier's height, so it only makes the drop an artifact when the drop or its excess, less the fill, misses this
+# pass's bar (as in 04_knickpoints.py: the Middlebury River's gorge fall, 12.1 m with 9.6 m excess, was set aside on
+# 2.2 m of fill)
+g["artifact_risk"] = (g.fill_max_m > 2) & ((g.drop_m - g.fill_max_m < MIN_DROP) | (g.excess_drop_m - g.fill_max_m < MIN_EXCESS))
 
 # drop anything pass 1 already found
 p1 = gpd.read_file(f"{DERIVED}/knickpoints.gpkg")

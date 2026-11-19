@@ -132,8 +132,12 @@ g["kind"] = np.select(
     [(g.max_slope >= 0.6) & (g.knick_ratio >= 2.5),
      g.knick_ratio >= 1.8],
     ["waterfall-like step", "cascade / knickpoint"], "steep reach")
-# drops inside a filled depression are usually DEM artifacts (dams, culverts, bad pixels)
-g["artifact_risk"] = g.fill_max_m > 2
+# A drop in a filled depression may be a barrier's: a dam, culvert embankment or bridge deck raises the channel at the
+# lip, and the DEM fill behind it is about as deep as the barrier is tall. So take the fill off the drop: when what is
+# left would still pass this detector's own bar, the step is the channel's, and only the barrier part is suspect. The
+# rim of a gorge narrower than a 10 m cell raises the lip the same way, and that is where falls are (Santa Paula
+# Creek's, 26 m from a mapped waterfall, was set aside on 2.1 m of fill under a 16 m drop).
+g["artifact_risk"] = (g.fill_max_m > 2) & (g.drop_m - g.fill_max_m < MIN_DROP)
 g.to_file(f"{DERIVED}/knickpoints.gpkg")
 print(len(g), "drops;", g.kind.value_counts().to_dict(), "| artifact risk", int(g.artifact_risk.sum()))
 print(g[g.kind != "steep reach"].sort_values("drop_m", ascending=False).head(15)[

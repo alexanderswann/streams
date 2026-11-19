@@ -110,7 +110,9 @@ for region, meta in REGIONS.items():
             z = np.minimum.accumulate(z)
             lo = np.searchsorted(dist, dist - GRAD_HALF_M); hi = np.clip(np.searchsorted(dist, dist + GRAD_HALF_M), 0, len(dist) - 1)
             grad = np.where(dist[hi] > dist[lo], (z[lo] - z[hi]) / (dist[hi] - dist[lo]) * 100, 0)
-            ar = np.maximum.accumulate(area[r, c])   # drainage only grows downstream (fixes off-DEM / off-channel cells)
+            # drainage only grows downstream (fixes off-DEM / off-channel cells); float64 first, as float32 rounded to
+            # 2 places still writes 12.449999809265137
+            ar = np.maximum.accumulate(area[r, c].astype("float64"))
             ll = to_ll(x, y)
             _, near = rtree.query(np.c_[x, y])
             att = s_attr.loc[sids[near]]

@@ -867,3 +867,37 @@ was cut off by a connection reset and not repeated.
 Three sessions wrote to this folder today; the project's uncommitted changes are a mix of theirs
 (`12_profiles.py`, `13_overview.py`, `15_preview.py`, `map_drainages.js`, `map_style.css`, `publish_site.sh`)
 and this session's (`03b_stitch.py`, `05b_flow.py`, `flowlib.py`, `run_drainage_refresh.sh`, this log).
+
+## 2026-11-19, afternoon: drop rules that hid real falls (another session)
+The user knows a waterfall on the Middlebury River at 43.97509, -73.06484. The big-creek pass found it (12.1 m
+over 68 m, 9.6 m above the creek's trend) and `05_score.py` called it a likely DEM artifact on 2.2 m of fill at
+the lip. Checked the artifact rules against all six areas (8,931 drops):
+- Fill rule (`04`/`04b`): flagged 61 drops. The fill is about a barrier's height, so it now flags a drop only when
+  the drop (or excess) less the fill misses the detector's own bar: 40 stay flagged (fill nearly the whole drop,
+  almost all at road culverts), 21 are released, among them this one and three within 26 m of a mapped fall.
+- Road rule (`05_score.py`): "a drivable road within 40 m of the top" flagged 741 drops; in 155 the road only runs
+  beside the channel (gorges). Now the road has to cross the DEM channel within 40 m of the top, where an embankment
+  or bridge deck would make the lip. A first version tested the whole step (top to pool) and newly flagged 19 drops
+  with a road bridge below the fall (a 101 m fall in the Santa Ana Mountains); fixed before publishing, so the rule
+  now only removes flags.
+- A mapped fall within 50 m of the step's top-to-pool line now outranks both artifact tests (14 artifacts had one
+  that close; the next was 88 m off). Up to 200 m it still names a drop, as before.
+- Result (all six rebuilt from `04`, then `05_score`, `06_map` and `12_profiles` again after the road fix; same
+  drops and ids): 165 artifacts released, none newly flagged. Central VT 168 -> 124, LA 268 -> 208, Lexington
+  50 -> 34, N Georgia 174 -> 133, NE Connecticut 14 -> 11, Jackson 40 -> 39; matches to mapped falls 14 -> 18,
+  217 -> 224, 10 -> 11, 118 -> 122, 0, 15 -> 16. Checked by hand: Texas Falls, Huntington Gorge, Sterling Falls
+  Gorge, Otter Creek Falls, Amicalola, Santa Paula Creek and Statons Creek now match their mapped falls; the
+  Middlebury fall is an unmapped short fall (28 min approach); the culverts on Muddy Brook and Weaver Creek stay
+  artifacts. No failed step in any area.
+- Viewer: a click on a profile keeps that spot's details below the chart (the hover values, GPS with a copy
+  button, map links, and any drop, mapped fall or gauge within 60 m); the map ring's label has a × to take it off.
+  `12_profiles.py` writes drainage as float64 (float32 rounded to 2 places came out as 12.449999809265137).
+- Jackson: `08_hike` for teton_snake ran at 15:14 while the lakes pilot's `lakes.gpkg` was briefly in place, so
+  it and `09_drive` were rerun without it before the map; the published Jackson has no lake-aware routes.
+**Published 15:27 (site commit `31efc26`)** at the owner's word, "don't wait for se_pa, publish the six now", while
+se_pa was building: a one-off copy of `publish_site.sh` that left se_pa out and let only se_pa's own build run
+(the script's running-build test otherwise stops everything). Checked: all 24 map and data files of the six areas
+as served have the build's sizes, Central VT's three match by SHA-256, `streams/se_pa/` is a 404. The six maps'
+Go-to menus were built after se_pa entered `config.py`, so they list Southeastern Pennsylvania: a dead link until
+se_pa is published. The drainages are the committed `05c` (the sea-level change to `05c` came at 15:21, after
+every `05c` run here).

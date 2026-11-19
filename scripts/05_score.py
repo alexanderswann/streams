@@ -140,12 +140,33 @@ kp["road_m"] = kp.distance(road_u).round(0)
 kp["trail_m"] = kp.distance(trail_u).round(0)
 kp["known_fall_m"] = kp.distance(known_falls.geometry.union_all()).round(0) if len(known_falls) else np.nan
 kp["dam_m"] = kp.distance(dams.union_all()).round(0) if len(dams) else np.inf
-kp["road_crossing"] = kp.distance(drivable.geometry.union_all()) < 40
+# A road fakes a drop where it crosses the channel: an embankment over a culvert, or a bridge deck the DEM kept, makes
+# the lip, so the step's top sits on it. One that only runs beside the creek does not, and gorges are often walled by
+# one: with a drivable road within 40 m of the top as the test, Texas Falls, Huntington Gorge and Sterling Falls Gorge
+# (VT) and Amicalola Falls (GA) were all set aside as artifacts (155 drops in all). So the test is a drivable road
+# crossing the DEM channel within 40 m of the top. Not along the whole step: a road bridge below a fall doesn't make
+# it (testing to the pool flagged 19 more, among them a 101 m fall in the Santa Ana Mountains over a highway bridge).
+step = shapely.linestrings(np.stack([np.c_[kp.geometry.x, kp.geometry.y], np.c_[kp.pool_x, kp.pool_y]], axis=1))
+zone = shapely.buffer(kp.geometry.values, 40)
+chan_g, road_g = streams.geometry.values, drivable.geometry.values
+chan_t, road_t = shapely.STRtree(chan_g), shapely.STRtree(road_g)
+def crosses(z):
+    rd = road_g[road_t.query(z)]
+    if not len(rd):
+        return False
+    ch = shapely.intersection(shapely.union_all(chan_g[chan_t.query(z)]), z)
+    return not ch.is_empty and bool(shapely.intersects(rd, ch).any())
+kp["road_crossing"] = [crosses(z) for z in zone]
+# A mapped waterfall on the step itself (within 50 m of its top-to-pool line: room for a hand-placed point and the DEM
+# channel's offset) is that drop, whatever a road or fill suggests; 14 such were labelled artifacts. The nearest
+# artifact beyond that was 88 m off. Up to 200 m from the top a mapped fall still names a drop, but no longer outranks
+# the artifact tests.
+kp["fall_on_step"] = (shapely.distance(step, known_falls.geometry.union_all()) <= 50) if len(known_falls) else False
 kp["status"] = np.select(
-    [kp.dam_m < 250, kp.road_crossing | kp.artifact_risk, kp.known_fall_m < 200,
+    [kp.dam_m < 250, kp.fall_on_step, kp.road_crossing | kp.artifact_risk, kp.known_fall_m < 200,
      kp.kind == "waterfall-like step", kp.kind == "cascade / knickpoint",
      kp.kind == "short fall / pool (big creek)"],
-    ["dam / weir", "likely DEM artifact", "matches mapped waterfall",
+    ["dam / weir", "matches mapped waterfall", "likely DEM artifact", "matches mapped waterfall",
      "unmapped waterfall-like step", "unmapped cascade", "unmapped short fall (big creek)"], "steep reach")
 # the big-creek pass is meant for fishable water: keep it to NHD perennial channels
 kp = kp[(kp["pass"] == 1) | (kp.flow == "perennial")]

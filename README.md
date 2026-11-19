@@ -155,6 +155,13 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    cells (fake channels across the ocean) are dropped. Known falls are OSM waterfalls, NHD falls and the CDFW
    Passage Assessment Database's natural barriers (falls, cascades and bedrock chutes noted in the field, often with a
    height and plunge-pool depth; records saying the barrier is gone are skipped).
+   Each drop gets a status, first match wins: **dam / weir** (a mapped dam within 250 m); **matches mapped
+   waterfall** when a known fall lies on the step itself (within 50 m of its top-to-pool line); **likely DEM
+   artifact** when a drivable road crosses the DEM channel within 40 m of the step's top, where an embankment or bridge
+   deck would make the lip (a road only running alongside, as in many gorges, or crossing below a fall doesn't
+   count), or when the detector's filled depression at the lip is so deep that the drop less
+   the fill would miss its bar (the fill is about a barrier's height: a dam, culvert embankment or bridge deck);
+   **matches mapped waterfall** for a known fall within 200 m of the top; otherwise the detector's class, unmapped.
 6. `05c_drainages.py`: drainage basins. Every DEM cell is traced down the D8 flow directions to where it leaves the
    study area or ends in a sink (dams). Basins ≥25 km² are named drainages, named after their natural trunk creek
    (canals and aqueducts are skipped; a few NHD gaps are fixed by hand in `NAME_FIX` / `FORK_FIX`). Drainages
@@ -573,7 +580,8 @@ All eight ranges, from `data/validate.py` (run from `scripts/`):
 - The NHD perennial/intermittent label is coarse, and flow changes a lot after drought and fire (Bobcat, Eaton, El Dorado, Line).
 - Check current closures (Angeles NF, San Bernardino NF), CDFW Wild Trout / catch-and-release regulations
   (Deep Creek, Bear Creek), and endangered-species closures (arroyo toad, Santa Ana sucker, steelhead) before going.
-- Some "dam / weir" flags come from OSM check dams. Some "DEM artifact" flags are real falls next to roads.
+- Some "dam / weir" flags come from OSM check dams. Some "DEM artifact" flags are still real falls: one under a road
+  bridge, or a slot gorge where the fill behind the lip is most of the drop.
 - The approach model assumes closed and gated roads may be walked and biked, and it rides every fire road, even in
   wilderness or where bikes are posted out. Those routes are flagged "double-check bike access". Many long-term
   closures allow walking and biking, but fire and storm closure orders can ban all entry. Hike times are model
