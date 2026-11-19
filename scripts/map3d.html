@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<!-- 3D stream map: MapLibre GL + AWS terrain tiles. Copied to output/stream_map_3d.html by 06_map.py, which also
+     writes the data it shows to output/map3d_data.js. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LA mountain streams · 3D</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script src="map3d_data.js"></script>
+<style>
+  html, body, #map { margin: 0; height: 100%; }
+  body { font: 12px/1.4 system-ui, -apple-system, sans-serif; color: #212529; }
+  .panel { position: absolute; z-index: 2; background: rgba(255,255,255,.95); border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.22); padding: 9px 11px; backdrop-filter: blur(6px); }
+  #legend { left: 10px; bottom: 30px; width: 260px; }
+  #layers { right: 10px; top: 10px; width: 250px; max-height: calc(100% - 140px); overflow-y: auto; }
+  .ph { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
+  .ph a { font-size: 11px; color: #1864ab; text-decoration: none; }
+  .tg { border: 0; background: #f1f3f5; border-radius: 4px; width: 22px; height: 20px; cursor: pointer; font-size: 14px; line-height: 1; }
+  .panel.min .pb { display: none; }
+  .rsym { display: inline-block; width: 16px; height: 4px; border: 2px solid; border-radius: 3px; vertical-align: 2px; }
+  .poi { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; color: #fff;
+    font: 700 9px/1 system-ui, sans-serif; vertical-align: -2px; }
+  .poi.th { background: #2b8a3e; border-radius: 50%; } .poi.pk { background: #1c7ed6; border-radius: 3px; }
+  .bksym { display: inline-block; width: 16px; height: 6px; border-radius: 3px; vertical-align: 1px;
+    background: linear-gradient(90deg, #37b24d 0 33%, #a9e34b 33% 66%, #f03e3e 66%); }
+  .seg { display: flex; margin: 7px 0 6px; border: 1px solid #ced4da; border-radius: 6px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: #fff; padding: 4px 2px; font: inherit; cursor: pointer; color: #495057; }
+  .seg button + button { border-left: 1px solid #ced4da; }
+  .seg button.on { background: #1864ab; color: #fff; }
+  .dm { color: #7a828c; }
+  .fbar { background: #e7f0fb; border-radius: 4px; padding: 3px 6px; margin-bottom: 6px; }
+  .fbar a, .hint a { color: #1864ab; }
+  .dl { max-height: 32vh; overflow-y: auto; margin-right: -6px; padding-right: 6px; }
+  .rg { font-weight: 600; color: #495057; margin: 6px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .di, .fk { display: flex; align-items: center; gap: 6px; padding: 1px 4px; border-radius: 4px; }
+  .di { cursor: pointer; } .di:hover { background: #f1f3f5; }
+  .di.on { background: #e7f0fb; font-weight: 600; } .di.off { opacity: .45; }
+  .di i, .fk i { width: 14px; height: 4px; border-radius: 2px; flex: none; }
+  .di em, .fk em { margin-left: auto; color: #868e96; font-style: normal; font-size: 11px; }
+  .fk { padding-left: 18px; color: #495057; }
+  .ramp { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 2px; } .ramp i { flex: 1; }
+  .rl { display: flex; justify-content: space-between; color: #7a828c; font-size: 11px; }
+  .sec { font-weight: 600; margin: 8px 0 3px; color: #495057; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .sec:first-child { margin-top: 2px; }
+  label.li { display: flex; align-items: center; gap: 6px; padding: 1px 0; cursor: pointer; }
+  label.li .sym { width: 14px; text-align: center; }
+  .row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .row input[type=range] { flex: 1; }
+  .btns { display: flex; gap: 6px; margin-top: 6px; }
+  .btns button { flex: 1; border: 1px solid #ced4da; background: #fff; border-radius: 6px; padding: 4px; font: inherit; cursor: pointer; }
+  .btns button:hover { background: #f1f3f5; }
+  .maplibregl-popup-content { border-radius: 8px; padding: 8px 10px; font: 12px/1.4 system-ui, sans-serif; max-width: 330px; }
+  .tip .maplibregl-popup-content { padding: 5px 8px; pointer-events: none; }
+  .tip .maplibregl-popup-tip { display: none; }
+  .dw { color: #444; margin: 1px 0 3px; }
+  .pp table { border-collapse: collapse; margin: 4px 0 6px; }
+  .pp td { padding: 1px 8px 1px 0; vertical-align: top; } .pp td:first-child { color: #7a828c; white-space: nowrap; }
+  .warn { color: #a61e4d; }
+  #err { display: none; position: absolute; inset: 0; z-index: 9; background: #fff; padding: 40px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="err"></div>
+<div id="legend" class="panel">
+  <div class="ph"><b>LA mountain streams · 3D</b><span><a id="to2d" href="stream_map.html">2D map ↗</a>
+    <button class="tg" title="Hide / show">–</button></span></div>
+  <div class="pb">
+    <div class="seg" id="modes"><button data-m="d">Drainage</button><button data-m="o">Stream order</button><button data-m="f">Fish score</button></div>
+    <div id="key"></div>
+  </div>
+</div>
+<div id="layers" class="panel min">
+  <div class="ph"><b>View &amp; layers</b><button class="tg" title="Hide / show">+</button></div>
+  <div class="pb">
+    <div class="sec">Terrain</div>
+    <div class="row"><span class="dm">Height ×</span><input id="exag" type="range" min="0" max="3" step="0.1" value="1.6"><span id="exv">1.6</span></div>
+    <div class="btns"><button id="tilt">Flat (2D)</button><button id="north">Face north</button></div>
+    <div class="dm" style="margin-top:4px">Right-drag or Ctrl-drag to tilt and turn. Two fingers on a trackpad or phone.</div>
+    <div class="sec">Basemap</div><div id="bases"></div>
+    <div class="sec">Overlays</div><div id="overlays"></div>
+  </div>
+</div>
+<script>
+(function () {
+  if (!window.maplibregl || !window.MAP3D) {
+    const e = document.getElementById("err");
+    e.style.display = "block";
+    e.innerHTML = !window.MAP3D
+      ? "map3d_data.js is missing. Re-run <code>06_map.py</code>; keep this page next to it."
+      : "Couldn't load MapLibre from unpkg.com. The 3D map needs an internet connection.";
+    return;
+  }
+  const D = window.MAP3D;
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (h, t) => "#" + rgb(h).map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0")).join("");
+  const dark = (h, t) => "#" + rgb(h).map(v => Math.round(v * (1 - t)).toString(16).padStart(2, "0")).join("");
+
+  // ---- same encodings as the 2D map (map_drainages.js) ----
+  const W = [0, 0.8, 1.15, 1.7, 2.4, 3.3, 4.4, 5.4];
+  const OP = [0, 0.75, 0.85, 0.95, 1, 1, 1, 1];
+  const BLUE = ["#000", "#6fa8d6", "#4a8fcb", "#2c74bb", "#1a5ca6", "#0d4590", "#08306b", "#08306b"];
+  const LOW = 15, LOWCOL = "#8d9aa8";
+  const RAMP = ["#3fb0a8", "#2a93c4", "#2a6fc0", "#3a4fb0", "#4b2f9c", "#3a1670"];
+  const ramp = fs => fs < LOW ? LOWCOL : RAMP[Math.min(RAMP.length - 1, Math.floor((fs - LOW) / (100 - LOW) * RAMP.length))];
+  D.streams.features.forEach(f => {
+    const p = f.properties, o = Math.max(1, Math.min(7, p.o));
+    p.o = o;
+    p.cd = o === 1 ? mix(p.c, 0.22) : o === 2 ? mix(p.c, 0.1) : p.c;
+    p.co = BLUE[o];
+    p.cf = ramp(p.fs);
+    p.wd = p.wo = W[o];
+    p.wf = p.fs < LOW ? W[o] : Math.max(W[o], 1.6 + 2.4 * (p.fs - LOW) / (100 - LOW));
+    p.od = p.oo = OP[o];
+    p.of = p.fs < LOW ? OP[o] * 0.6 : OP[o];
+    p.lc = dark(p.c, 0.25);                       // label colour
+  });
+  const labelPts = {type: "FeatureCollection", features: []};
+  D.drains.forEach(d => {
+    if (!d.lab) return;
+    labelPts.features.push({type: "Feature", geometry: {type: "Point", coordinates: [d.lab[1], d.lab[0]]},
+      properties: {name: d.name, d: d.name, kind: "drainage", c: d.dark, rank: -(d.km2 || 0)}});
+    (d.forks || []).forEach(f => {
+      if (f.name === d.name || d.forks.length < 2 || f.name.includes("unnamed fork")) return;
+      labelPts.features.push({type: "Feature", geometry: {type: "Point", coordinates: [f.lab[1], f.lab[0]]},
+        properties: {name: f.name, d: d.name, kind: "fork", c: d.dark, rank: -f.km2}});
+    });
+  });
+
+  // ---- map + terrain ----
+  const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+  const raster = (tiles, attribution, maxzoom = 19) => ({type: "raster", tiles: [tiles], tileSize: 256, attribution, maxzoom});
+  const DEM = {type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+               encoding: "terrarium", tileSize: 256, maxzoom: 15,
+               attribution: "Terrain: Mapzen / AWS Terrain Tiles (USGS 3DEP)"};
+  const BASES = [
+    ["gray", "Light gray + terrain (default)", raster(`${ESRI}/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`, "Esri, HERE, Garmin", 16)],
+    ["sat", "Satellite (Esri)", raster(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, "Esri, Maxar, Earthstar Geographics")],
+    ["topo", "USGS Topo (its own streams)", raster("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}", "USGS The National Map", 16)],
+  ];
+  const style = {
+    version: 8,
+    glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+    sources: Object.fromEntries([...BASES.map(([k, , s]) => [k, s]),
+      ["labels", raster(`${ESRI}/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, "Esri", 16)],
+      ["dem", DEM], ["hs", {...DEM}]]),
+    layers: [
+      {id: "bg", type: "background", paint: {"background-color": "#eef0f2"}},
+      ...BASES.map(([k], i) => ({id: "base-" + k, type: "raster", source: k, layout: {visibility: i ? "none" : "visible"}})),
+      {id: "hillshade", type: "hillshade", source: "hs", paint: {"hillshade-exaggeration": 0.45,
+        "hillshade-shadow-color": "#4a5563", "hillshade-highlight-color": "#ffffff", "hillshade-accent-color": "#6b7785"}},
+    ],
+    terrain: {source: "dem", exaggeration: 1.6},
+    sky: {"sky-color": "#a9c9e8", "horizon-color": "#e9eef3", "fog-color": "#eef2f5", "sky-horizon-blend": 0.6,
+          "horizon-fog-blend": 0.7, "fog-ground-blend": 0.85, "atmosphere-blend": 0.6},
+  };
+  const all = D.divides.features.flatMap(f => f.geometry.type === "MultiLineString" ? f.geometry.coordinates.flat() : f.geometry.coordinates);
+  const bb = all.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)], [180, 90, -180, -90]);
+  const map = new maplibregl.Map({container: "map", style, bounds: [[bb[0], bb[1]], [bb[2], bb[3]]],
+    fitBoundsOptions: {padding: 30}, pitch: 50, bearing: -12, maxPitch: 80, attributionControl: {compact: true}});
+  window.map3d = map;   // handy from the browser console
+  map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-left");
+  map.addControl(new maplibregl.FullscreenControl(), "top-left");
+  map.addControl(new maplibregl.ScaleControl({unit: "metric"}), "bottom-right");
+
+  let mode = "d", focus = null;
+  const focusMul = () => focus ? ["case", ["==", ["get", "d"], focus], 1, 0.1] : 1;
+  // line width by zoom; `add` widens every stop (casings), since zoom curves can't be nested inside "+"
+  const HOVER = (px) => ["case", ["boolean", ["feature-state", "hover"], false], px, 0];   // widen the hovered line
+  const ZW = [[8, 0.9], [11, 1.5], [13, 2.4], [16, 4.5]];
+  const zw = (k, add = 0) => ["interpolate", ["exponential", 1.5], ["zoom"],
+    ...ZW.flatMap(([z, f]) => [z, ["+", ["*", ["get", k], f], add]])];
+  // Trails and roads that run beside a creek are drawn shifted to its far side so they don't cover it. 06_map.py tags
+  // those runs (sd = side: +1 right of the line's direction, -1 left; so = the creek's order; dm = metres apart); the
+  // shift is only what the two line widths need at each zoom. half(z) = half the trail / road width with its edge.
+  const at = (stops, z, base = 1) => {
+    if (z <= stops[0][0]) return stops[0][1];
+    for (let i = 1; i < stops.length; i++) {
+      const [z0, v0] = stops[i - 1], [z1, v1] = stops[i];
+      if (z <= z1) return v0 + (v1 - v0) * (base === 1 ? (z - z0) / (z1 - z0) : (base ** (z - z0) - 1) / (base ** (z1 - z0) - 1));
+    }
+    return stops[stops.length - 1][1];
+  };
+  const besideOffset = half => ["interpolate", ["linear"], ["zoom"], ...[10, 11, 12, 13, 14, 15, 16, 17].flatMap(z => {
+    const so = ["to-number", ["coalesce", ["get", "so"], 2]];
+    const need = ["+", ["/", ["+", ["*", ["at", so, ["literal", W]], at(ZW, z, 1.5)], ["case", [">=", so, 3], 2.6, 0]], 2],
+                  half(z) + 1];
+    return [z, ["*", ["coalesce", ["get", "sd"], 0],
+                ["max", 0, ["-", need, ["/", ["coalesce", ["get", "dm"], 0], 129500 / 2 ** z]]]]];
+  })];
+
+  // layer ids filled in by the load handler; wireInteraction() (outside it) hovers and clicks them
+  const roadCoreIds = [], trailLineIds = [];
+  let ROAD = {};
+  map.on("load", () => {
+    map.addLayer({id: "labels-ref", type: "raster", source: "labels", paint: {"raster-opacity": 0.55}});
+    const src = (id, data) => map.addSource(id, {type: "geojson", data});
+    map.addSource("streams", {type: "geojson", data: D.streams, generateId: true,
+                              attribution: "USGS NHD · TNC Natural Flows · PRISM Group, Oregon State University"});
+    src("forks", D.forks); src("divides", D.divides); src("dlabels", labelPts);
+
+    // drainage tints and divides
+    map.addLayer({id: "fork-fill", type: "fill", source: "forks", paint: {"fill-color": ["get", "c"], "fill-opacity": 0.08}});
+    map.addLayer({id: "fork-line", type: "line", source: "forks",
+      paint: {"line-color": "#6b7785", "line-width": 0.8, "line-opacity": 0.5, "line-dasharray": [2, 3]}});
+    map.addLayer({id: "divide", type: "line", source: "divides",
+      paint: {"line-color": "#3d4651", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1, 13, 2], "line-opacity": 0.6}});
+
+    // overlays that sit under the streams
+    const ov = [];   // [id, label, symbol, layer ids, visible]
+    if (D.fires) {
+      src("fires", D.fires);
+      map.addLayer({id: "fires", type: "fill", source: "fires", layout: {visibility: "none"},
+        paint: {"fill-color": ["get", "c"], "fill-opacity": 0.28, "fill-outline-color": ["get", "c"]}});
+      ov.push(["fires", "Fire perimeters since 2016", "<span style='color:#e8590c'>▧</span>", ["fires"]]);
+    }
+    [["wild_trout_waters", "CDFW Wild / Heritage Trout Waters", "#2b8a3e", 0.15],
+     ["wilderness", "Wilderness (no bikes)", "#5c940d", 0.06],
+     ["critical_habitat", "Critical habitat (not closure boundaries)", "#c92a2a", 0.22],
+     ["non_fs_land", "Non-Forest-Service land", "#e67700", 0.2],
+     ["cpad_restricted", "Restricted or no public access (CPAD)", "#d9480f", 0.25]].forEach(([k, label, c, op]) => {
+      if (!D[k]) return;
+      src(k, D[k]);
+      map.addLayer({id: k, type: "fill", source: k, layout: {visibility: "none"}, paint: {"fill-color": c, "fill-opacity": op}});
+      map.addLayer({id: k + "-o", type: "line", source: k, layout: {visibility: "none"}, paint: {"line-color": c, "line-width": 1.5}});
+      ov.push([k, label, `<span style='color:${c}'>▢</span>`, [k, k + "-o"]]);
+    });
+
+    // streams: white casing on order 3+, then the coloured lines, big rivers drawn last
+    map.addLayer({id: "halo", type: "line", source: "streams", filter: [">=", ["get", "o"], 3],
+      layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
+      paint: {"line-color": "#ffffff", "line-width": zw("wd", 2.6), "line-opacity": 0.85}});
+    map.addLayer({id: "streams", type: "line", source: "streams",
+      layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
+      paint: {"line-color": ["get", "cd"], "line-width": zw("wd", HOVER(3)), "line-opacity": ["get", "od"]}});
+    ov.unshift(["streams", "Streams (≥1 km² drainage)", "<span style='color:#1864ab'>━</span>", ["halo", "streams"], true],
+               ["basins", "Drainage outlines &amp; names", "<span style='color:#3d4651'>▭</span>",
+                ["fork-fill", "fork-line", "divide", "dlab", "flab"], true]);
+
+    // Access roads (02e_access.py): one layer per what it takes to get up them, cased lines (light centre, dark edge)
+    // between the streams and the trails. class: [label, centre, edge, dash, min zoom, on by default]
+    ROAD = {
+      paved: ["Paved: any car", "#ffffff", "#7a828c", null, 10, false],
+      graded: ["Graded dirt: car OK when dry", "#f3d9a4", "#8a6d3b", null, 10, false],
+      high_clearance: ["Rough dirt: high clearance", "#ffc078", "#b35900", null, 10, false],
+      "4wd": ["Very rough: 4WD only", "#ffa8a8", "#a51d2d", [3, 2], 10, false],
+      bike: ["Closed to cars, open to bikes", "#b2f2bb", "#2b8a3e", [3, 2], 10, false],
+      dirt: ["Dirt road, condition unknown", "#e9ecef", "#7a828c", [1.5, 2], 11, false],
+      closed: ["Closed: fire closure", "#ffc9c9", "#c92a2a", [2, 2], 10, false],
+    };
+    if (D.roads) {
+      map.addSource("roads", {type: "geojson", data: D.roads, generateId: true,
+        attribution: "Roads, parking © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors · USFS"});
+      const rw3 = (add, hov = 0) => ["interpolate", ["linear"], ["zoom"], ...[[10, 1.2], [13, 2.8], [16, 5]].flatMap(([z, w]) =>
+        [z, ["+", w + add, hov ? ["case", ["boolean", ["feature-state", "hover"], false], hov, 0] : 0]])];
+      const roadOff = besideOffset(z => (at([[10, 1.2], [13, 2.8], [16, 5]], z) + 2.2) / 2);
+      Object.entries(ROAD).forEach(([c, [label, core, edge, dash, minz, on]]) => {
+        const vis = on ? "visible" : "none";
+        map.addLayer({id: "road-edge-" + c, type: "line", source: "roads", minzoom: minz, filter: ["==", ["get", "c"], c],
+          layout: {visibility: vis, "line-cap": "round", "line-join": "round"},
+          paint: {"line-color": edge, "line-width": rw3(2.2, 3), "line-opacity": 0.9, "line-offset": roadOff}});
+        map.addLayer({id: "road-core-" + c, type: "line", source: "roads", minzoom: minz, filter: ["==", ["get", "c"], c],
+          layout: {visibility: vis, "line-join": "round"},
+          paint: {"line-color": core, "line-width": rw3(0), "line-offset": roadOff, ...(dash ? {"line-dasharray": dash} : {})}});
+        roadCoreIds.push("road-core-" + c);
+        ov.splice(2, 0, ["road-" + c, "Roads: " + label, `<span class="rsym" style="background:${core};border-color:${edge}` +
+                         `${dash ? ";border-style:dashed" : ""}"></span>`, ["road-edge-" + c, "road-core-" + c], on]);
+      });
+    }
+    // fire closure areas (LA County's Eaton Fire closures), on by default
+    if (D.closure_areas) {
+      src("closure_areas", D.closure_areas);
+      map.addLayer({id: "closure-fill", type: "fill", source: "closure_areas", paint: {"fill-color": "#c92a2a", "fill-opacity": 0.1}});
+      map.addLayer({id: "closure-line", type: "line", source: "closure_areas",
+        paint: {"line-color": "#c92a2a", "line-width": 2, "line-dasharray": [3, 2]}});
+      ov.splice(2, 0, ["closures-fire", "Fire closure areas (Eaton Fire)", "<span style='color:#c92a2a'>▧</span>",
+                       ["closure-fill", "closure-line"], false]);
+    }
+    // Trails and fire roads (02d_trails.py): brown dashes on a white edge, above the streams; more detail with each
+    // zoom level: rank 1 hiking routes and named trails (z10+), 2 named fire roads (z11+), 3 unnamed trails (z12+),
+    // 4 unnamed fire roads (z13+). Fire roads: longer dashes, a little wider. Closed or private: faded.
+    const trailIds = [];
+    if (D.trails) {
+      map.addSource("trails", {type: "geojson", data: D.trails, generateId: true,
+        attribution: "Trails &amp; PCT © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors · USGS National Digital Trails · USFS"});
+      const MINZ = {1: 10, 2: 11, 3: 12, 4: 13};
+      const tw3 = (f, add = 0) => ["interpolate", ["linear"], ["zoom"], 10, f + add, 13, 2.2 * f + add, 16, 3.2 * f + add];
+      const trailOff = k => besideOffset(z => (at([[10, 1], [13, 2.2], [16, 3.2]], z) * (k === "trail" ? 1 : 1.25) + 3.6) / 2);
+      const combos = [[4, "fire road"], [3, "trail"], [2, "fire road"], [1, "fire road"], [1, "trail"]];
+      const flt = (rk, k) => ["all", ["==", ["get", "rk"], rk], ["==", ["get", "k"], k]];
+      const tid = (pre, rk, k) => `${pre}-${rk}-${k === "trail" ? "t" : "f"}`;
+      combos.forEach(([rk, k]) => {
+        map.addLayer({id: tid("trail-halo", rk, k), type: "line", source: "trails", minzoom: MINZ[rk], filter: flt(rk, k),
+          layout: {"line-cap": "round", "line-join": "round"},
+          paint: {"line-color": "#ffffff", "line-width": tw3(k === "trail" ? 1 : 1.25, 2.4), "line-offset": trailOff(k),
+                  "line-opacity": ["case", ["==", ["get", "cl"], 1], 0.35, 0.75]}});
+        trailIds.push(tid("trail-halo", rk, k));
+      });
+      // mountain bike access (02d_trails.py) as the colour of a wider edge under the trail line; unknown: none
+      const bikeIds = [];
+      combos.forEach(([rk, k]) => {
+        map.addLayer({id: tid("trail-bike", rk, k), type: "line", source: "trails", minzoom: MINZ[rk],
+          filter: ["all", flt(rk, k), ["!=", ["coalesce", ["get", "b"], "unknown"], "unknown"]],
+          layout: {"line-cap": "round", "line-join": "round"},
+          paint: {"line-color": ["match", ["get", "b"], "yes", "#37b24d", "likely", "#a9e34b", "unlikely", "#ffa94d", "no",
+                                 "#f03e3e", "#ffffff"],
+                  "line-width": tw3(k === "trail" ? 1 : 1.25, 3.6), "line-offset": trailOff(k),
+                  "line-opacity": ["case", ["==", ["get", "cl"], 1], 0.35, 0.85]}});
+        bikeIds.push(tid("trail-bike", rk, k));
+      });
+      combos.forEach(([rk, k]) => {
+        map.addLayer({id: tid("trail-line", rk, k), type: "line", source: "trails", minzoom: MINZ[rk], filter: flt(rk, k),
+          layout: {"line-join": "round"},
+          paint: {"line-color": k === "trail" ? "#5c3317" : "#7a5a3a",
+                  "line-width": ["interpolate", ["linear"], ["zoom"], ...[[10, 1], [13, 2.2], [16, 3.2]].flatMap(([z, m]) =>
+                    [z, ["+", m * (k === "trail" ? 1 : 1.25), HOVER(2)]])],
+                  "line-dasharray": k === "trail" ? [2.6, 1.8] : [5, 1.8], "line-offset": trailOff(k),
+                  "line-opacity": ["case", ["==", ["get", "cl"], 1], 0.4, ["==", ["get", "f"], 1], 0.75, 1]}});
+        trailIds.push(tid("trail-line", rk, k));
+        trailLineIds.push(tid("trail-line", rk, k));
+      });
+      ov.splice(2, 0, ["trails", "Trails &amp; fire roads", "<span style='color:#5c3317;font-weight:700'>┅</span>",
+                       trailIds, false],
+                ["bike", "Mountain bike access on trails", "<span class='bksym'></span>", bikeIds, false]);
+    }
+    // Pacific Crest Trail: thin dark dashed line on a soft yellow band, above the streams
+    if (D.pct) {
+      src("pct", D.pct);
+      const pw = (base) => ["interpolate", ["exponential", 1.4], ["zoom"], 8, base * 0.8, 11, base * 1.1, 14, base * 1.5, 16, base * 1.9];
+      map.addLayer({id: "pct-glow", type: "line", source: "pct", layout: {"line-cap": "round", "line-join": "round"},
+        paint: {"line-color": "#ffd43b", "line-width": pw(7), "line-opacity": 0.45, "line-blur": 1}});
+      map.addLayer({id: "pct-casing", type: "line", source: "pct", layout: {"line-cap": "round", "line-join": "round"},
+        paint: {"line-color": "#ffffff", "line-width": pw(3.4), "line-opacity": 0.9}});
+      map.addLayer({id: "pct-core", type: "line", source: "pct", layout: {"line-join": "round"},
+        paint: {"line-color": "#1d1d1f", "line-width": pw(1.8), "line-dasharray": [3.5, 2.5]}});
+      ov.splice(2, 0, ["pct", "Pacific Crest Trail",
+        "<span style='color:#1d1d1f;text-shadow:0 0 3px #ffd43b,0 0 3px #ffd43b;font-weight:700'>━</span>",
+        ["pct-glow", "pct-casing", "pct-core", "pct-label-11", "pct-label-12", "pct-label-13"], true]);
+    }
+
+    // overlays on top of the streams
+    if (D.closures) {
+      src("closures", D.closures);
+      map.addLayer({id: "closures", type: "line", source: "closures", layout: {visibility: "none", "line-cap": "round"},
+        paint: {"line-color": ["case", ["==", ["slice", ["get", "severity"], 0, 4], "full"], "#c92a2a", "#f76707"],
+                "line-width": 5, "line-opacity": 0.85}});
+      ov.push(["closures", `Road closures (fetched ${esc(D.closures_fetched)})`, "<span style='color:#c92a2a'>▬</span>", ["closures"]]);
+    }
+    const pools = {type: "FeatureCollection", features: D.drops.features.filter(f => f.properties.pool).map(f => ({
+      type: "Feature", geometry: {type: "Point", coordinates: f.properties.pool}, properties: {s: f.properties.s}}))};
+    src("drops", D.drops); src("pools", pools);
+    Object.entries(D.drop_colors).forEach(([k, c], i) => {
+      const id = "drop" + i;
+      map.addLayer({id: id + "-pool", type: "circle", source: "pools", filter: ["==", ["get", "s"], k], layout: {visibility: "none"},
+        paint: {"circle-radius": 3, "circle-color": "#0b7285", "circle-stroke-color": "#fff", "circle-stroke-width": 1}});
+      map.addLayer({id, type: "circle", source: "drops", filter: ["==", ["get", "s"], k], layout: {visibility: "none"},
+        paint: {"circle-radius": ["+", 3, ["/", ["min", ["get", "h"], 80], 8]], "circle-color": c, "circle-opacity": 0.75,
+                "circle-stroke-color": "#fff", "circle-stroke-width": 1.2}});
+      ov.push([id, "Drops: " + k, `<span style='color:${c}'>●</span>`, [id, id + "-pool"]]);
+    });
+    src("falls", D.falls);
+    map.addLayer({id: "falls", type: "circle", source: "falls", layout: {visibility: "none"},
+      paint: {"circle-radius": 5.5, "circle-color": "#74c0fc", "circle-stroke-color": "#0b3d91", "circle-stroke-width": 2}});
+    ov.push(["falls", "Known waterfalls (OSM + NHD + CDFW surveys)", "<span style='color:#0b3d91'>◆</span>", ["falls"]]);
+    if (D.gauges) {
+      src("gauges", D.gauges);
+      map.addLayer({id: "gauges", type: "circle", source: "gauges", layout: {visibility: "none"},
+        paint: {"circle-radius": 7, "circle-color": ["get", "c"], "circle-stroke-color": "#212529", "circle-stroke-width": 1.2}});
+      ov.push(["gauges", "Stream gauges, USGS + CDEC (live)", "<span style='color:#1c7ed6'>▲</span>", ["gauges"]]);
+    }
+    if (D.trout) {   // 11_context.py: CDFW surveys and stocking, iNaturalist sightings
+      map.addSource("trout", {type: "geojson", data: D.trout, attribution: "CDFW · iNaturalist"});
+      map.addLayer({id: "trout", type: "circle", source: "trout", layout: {visibility: "none"},
+        paint: {"circle-radius": ["get", "r"], "circle-color": ["get", "c"], "circle-stroke-color": "#fff", "circle-stroke-width": 1.2}});
+      ov.push(["trout", "Trout evidence: CDFW surveys (red = none found), stocking, iNaturalist", "<span style='color:#2b8a3e'>●</span>", ["trout"]]);
+    }
+    if (D.springs) {
+      src("springs", D.springs);
+      map.addLayer({id: "springs", type: "circle", source: "springs", layout: {visibility: "none"},
+        paint: {"circle-radius": 3.5, "circle-color": "#66d9e8", "circle-stroke-color": "#0b7285", "circle-stroke-width": 1}});
+      ov.push(["springs", "Springs and seeps (NHD)", "<span style='color:#1098ad'>●</span>", ["springs"]]);
+    }
+    // trailheads (z11+) and parking (z12+), 02e_access.py
+    if (D.parking) {
+      src("pois", D.parking);
+      map.addLayer({id: "poi-parking", type: "circle", source: "pois", minzoom: 12, filter: ["==", ["get", "k"], "parking"],
+        paint: {"circle-radius": 8, "circle-color": "#1c7ed6", "circle-stroke-color": "#fff", "circle-stroke-width": 1.5}});
+      map.addLayer({id: "poi-trailhead", type: "circle", source: "pois", minzoom: 11, filter: ["==", ["get", "k"], "trailhead"],
+        paint: {"circle-radius": 8.5, "circle-stroke-color": "#fff", "circle-stroke-width": 1.5,
+                "circle-color": ["case", ["in", "closed", ["downcase", ["coalesce", ["get", "st"], ""]]], "#868e96", "#2b8a3e"]}});
+      map.addLayer({id: "poi-text", type: "symbol", source: "pois", minzoom: 11,
+        filter: ["any", ["==", ["get", "k"], "trailhead"], [">=", ["zoom"], 12]],
+        layout: {"text-field": ["case", ["==", ["get", "k"], "trailhead"], "T", "P"], "text-font": ["Noto Sans Medium"],
+                 "text-size": 11, "text-allow-overlap": true, "text-ignore-placement": true},
+        paint: {"text-color": "#ffffff"}});
+      ov.push(["poi-th", "Trailheads", "<span class='poi th mini'>T</span>", ["poi-trailhead", "poi-text"], false]);
+      ov.push(["poi-pk", "Parking", "<span class='poi pk mini'>P</span>", ["poi-parking"], false]);
+    }
+    src("trailheads", D.trailheads);
+    map.addLayer({id: "trailheads", type: "circle", source: "trailheads", layout: {visibility: "none"},
+      paint: {"circle-radius": 4.5, "circle-color": "#ffd43b", "circle-stroke-color": "#212529", "circle-stroke-width": 1}});
+    ov.push(["trailheads", `Approach start points (computed)`, "<span style='color:#e0a800'>●</span>", ["trailheads"]]);
+
+    // labels: creek names along the bigger channels, then fork and drainage names (collisions handled by MapLibre)
+    // trail names bend along smoothed copies of named trails (06_map.py), from z13; lowest label priority
+    if (D.trail_labels) [[13, 13, 14], [14, 14, 24]].forEach(([zb, z0, z1]) => {
+      src("trail-labels-" + zb, {type: "FeatureCollection", features: D.trail_labels.filter(l => l.z === zb).map(l => ({
+        type: "Feature", geometry: {type: "LineString", coordinates: l.p}, properties: {t: l.t}}))});
+      map.addLayer({id: "trail-label-" + zb, type: "symbol", source: "trail-labels-" + zb, minzoom: z0, maxzoom: z1,
+        layout: {"symbol-placement": "line-center", "text-field": ["get", "t"], "text-font": ["Noto Sans Medium"],
+                 "text-size": ["interpolate", ["linear"], ["zoom"], 13, 9.5, 16, 11.5], "text-letter-spacing": 0.02,
+                 "text-pitch-alignment": "viewport", "text-max-angle": 40, "text-offset": [0, -0.7], "text-padding": 3},
+        paint: {"text-color": "#4a2a12", "text-halo-color": "#ffffff", "text-halo-width": 1.5}});
+      trailIds.push("trail-label-" + zb);
+    });
+    map.addLayer({id: "creek-names", type: "symbol", source: "streams", minzoom: 11.5,
+      filter: ["all", ["has", "n"], [">=", ["get", "o"], 3]],
+      layout: {"symbol-placement": "line", "text-field": ["get", "n"], "text-font": ["Noto Sans Italic"],
+               "text-size": ["interpolate", ["linear"], ["zoom"], 12, 11, 15, 13], "symbol-spacing": 400,
+               "text-max-angle": 30, "text-offset": [0, -0.7], "symbol-sort-key": ["-", 10, ["get", "o"]]},
+      paint: {"text-color": ["get", "lc"], "text-halo-color": "#fff", "text-halo-width": 1.6}});
+    map.addLayer({id: "flab", type: "symbol", source: "dlabels", minzoom: 10.5, filter: ["==", ["get", "kind"], "fork"],
+      layout: {"text-field": ["get", "name"], "text-font": ["Noto Sans Italic"], "text-size": 12.5, "text-max-width": 30,
+               "symbol-sort-key": ["get", "rank"], "text-padding": 6},
+      paint: {"text-color": ["get", "c"], "text-halo-color": "#fff", "text-halo-width": 1.8}});
+    map.addLayer({id: "dlab", type: "symbol", source: "dlabels", maxzoom: 13.5, filter: ["==", ["get", "kind"], "drainage"],
+      layout: {"text-field": ["upcase", ["get", "name"]], "text-font": ["Noto Sans Medium"], "text-size": 11.5,
+               "text-letter-spacing": 0.14, "text-max-width": 40, "symbol-sort-key": ["get", "rank"], "text-padding": 8},
+      paint: {"text-color": ["get", "c"], "text-halo-color": "#fff", "text-halo-width": 2}});
+    // labels bend along smoothed copies of the trail (06_map.py), one per copy, facing the viewer; each zoom band
+    // uses the copies smoothed for its scale
+    if (D.pct && D.pct_labels) {
+      [[11, 10.5, 12], [12, 12, 13], [13, 13, 24]].forEach(([zb, z0, z1]) => {
+        src("pct-labels-" + zb, {type: "FeatureCollection", features: D.pct_labels.filter(l => l.z === zb).map(l => ({
+          type: "Feature", geometry: {type: "LineString", coordinates: l.p}, properties: {}}))});
+        map.addLayer({id: "pct-label-" + zb, type: "symbol", source: "pct-labels-" + zb, minzoom: z0, maxzoom: z1,
+          layout: {"symbol-placement": "line-center", "text-field": "Pacific Crest Trail", "text-font": ["Noto Sans Medium"],
+                   "text-size": ["interpolate", ["linear"], ["zoom"], 11, 10, 15, 12], "text-letter-spacing": 0.03,
+                   "text-pitch-alignment": "viewport", "text-max-angle": 40, "text-offset": [0, -0.8], "text-padding": 4},
+          paint: {"text-color": "#2b2b2b", "text-halo-color": "#ffffff", "text-halo-width": 1.6}});
+      });
+    }
+
+    new maplibregl.Marker({color: "#1864ab"}).setLngLat([D.home.lon, D.home.lat])
+      .setPopup(new maplibregl.Popup({offset: 25}).setText("Start: " + D.home.label)).addTo(map);
+
+    buildLayerPanel(ov);
+    wireInteraction();
+    restyle();
+    go();
+  });
+
+  // ---- colour modes + focus ----
+  function restyle() {
+    const k = {d: "d", o: "o", f: "f"}[mode];
+    map.setPaintProperty("streams", "line-color", ["get", "c" + k]);
+    map.setPaintProperty("streams", "line-width", zw("w" + k, HOVER(3)));
+    map.setPaintProperty("streams", "line-opacity", ["*", ["get", "o" + k], focusMul()]);
+    map.setPaintProperty("halo", "line-width", zw("w" + k, 2.6));
+    map.setPaintProperty("halo", "line-opacity", focus ? ["case", ["==", ["get", "d"], focus], 0.85, 0] : 0.85);
+    map.setPaintProperty("fork-fill", "fill-opacity", mode !== "d" ? 0 : focus ? ["case", ["==", ["get", "drainage"], focus], 0.1, 0.02] : 0.08);
+    map.setPaintProperty("divide", "line-opacity", focus ? ["case", ["==", ["get", "drainage"], focus], 0.7, 0.2] : 0.6);
+    const lf = focus ? ["==", ["get", "d"], focus] : true;
+    map.setFilter("dlab", ["all", ["==", ["get", "kind"], "drainage"], lf]);
+    map.setFilter("flab", ["all", ["==", ["get", "kind"], "fork"], lf]);
+    renderKey();
+  }
+  const focusBar = () => focus ? `<div class="fbar">Showing <b>${esc(focus)}</b> · <a href="#" class="clr">show all</a></div>` : "";
+  function renderKey() {
+    document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
+    const key = document.getElementById("key");
+    if (mode === "f") {
+      key.innerHTML = focusBar() + `<div class="ramp"><i style="background:${LOWCOL};flex:.9"></i>${RAMP.map(c => `<i style="background:${c}"></i>`).join("")}</div>
+        <div class="rl"><span>0</span><span>${LOW}</span><span>fish score</span><span>100</span></div>
+        <div class="dm">Gray = under ${LOW} (dry, tiny or burned). Wider = better.</div>`;
+    } else if (mode === "o") {
+      key.innerHTML = focusBar() + `<div class="ramp">${BLUE.slice(1, 7).map(c => `<i style="background:${c}"></i>`).join("")}</div>
+        <div class="rl"><span>1</span><span>Strahler order (also line width)</span><span>6</span></div>`;
+    } else {
+      const byReg = {};
+      D.drains.forEach(d => (byReg[d.region || "Other"] ??= []).push(d));
+      key.innerHTML = `<div class="dm hint">Click a drainage to fly to it${focus ? ` · <a href="#" class="clr">show all</a>` : ""}</div><div class="dl">` +
+        Object.entries(byReg).map(([reg, ds]) => (reg !== "Other" ? `<div class="rg">${esc(reg)}</div>` : "") + ds.map(d =>
+          `<div class="di${focus === d.name ? " on" : ""}${focus && focus !== d.name ? " off" : ""}" data-d="${esc(d.name)}">` +
+          `<i style="background:${d.color}"></i><span>${esc(d.name)}</span>${d.km2 ? `<em>${d.km2} km²</em>` : ""}</div>` +
+          (focus === d.name && d.forks && d.forks.length > 1 ? d.forks.map(f =>
+            `<div class="fk"><i style="background:${f.color}"></i>${esc(f.name)}<em>${f.km2} km²</em></div>`).join("") : "")
+        ).join("")).join("") + "</div>";
+      key.querySelectorAll(".di").forEach(el => el.onclick = () => {
+        const d = D.drains.find(x => x.name === el.dataset.d);
+        if (!d.b) return;
+        focus = focus === d.name ? null : d.name;
+        restyle();
+        if (focus) map.fitBounds([[d.b[0][1], d.b[0][0]], [d.b[1][1], d.b[1][0]]],
+                                 {padding: 60, pitch: 55, bearing: map.getBearing(), duration: 2200});
+      });
+    }
+    const clr = key.querySelector(".clr");
+    if (clr) clr.onclick = e => { e.preventDefault(); focus = null; restyle(); };
+  }
+  document.querySelectorAll("#modes button").forEach(b => b.onclick = () => { mode = b.dataset.m; restyle(); });
+  document.querySelectorAll(".tg").forEach(b => b.onclick = () => {
+    const p = b.closest(".panel"); p.classList.toggle("min"); b.textContent = p.classList.contains("min") ? "+" : "–";
+  });
+
+  // ---- layer panel ----
+  function buildLayerPanel(ov) {
+    document.getElementById("bases").innerHTML = BASES.map(([k, label], i) =>
+      `<label class="li"><input type="radio" name="base" value="${k}"${i ? "" : " checked"}>${esc(label)}</label>`).join("") +
+      `<label class="li"><input type="checkbox" id="lbl" checked>Place &amp; road labels</label>`;
+    document.querySelectorAll("input[name=base]").forEach(r => r.onchange = () => {
+      BASES.forEach(([k]) => map.setLayoutProperty("base-" + k, "visibility", k === r.value ? "visible" : "none"));
+      map.setPaintProperty("hillshade", "hillshade-exaggeration", r.value === "gray" ? 0.45 : 0.15);
+    });
+    document.getElementById("lbl").onchange = e => map.setLayoutProperty("labels-ref", "visibility", e.target.checked ? "visible" : "none");
+    document.getElementById("overlays").innerHTML = ov.map(([id, label, sym, , on]) =>
+      `<label class="li"><input type="checkbox" data-o="${id}"${on ? " checked" : ""}><span class="sym">${sym}</span>${label}</label>`).join("");
+    // on by default: streams, drainage outlines and names, the PCT (each overlay's last entry); the rest start hidden
+    ov.forEach(([, , , ids, on]) => ids.forEach(l => { if (map.getLayer(l)) map.setLayoutProperty(l, "visibility", on ? "visible" : "none"); }));
+    document.querySelectorAll("input[data-o]").forEach(cb => cb.onchange = () => {
+      const o = ov.find(x => x[0] === cb.dataset.o);
+      o[3].forEach(l => map.setLayoutProperty(l, "visibility", cb.checked ? "visible" : "none"));
+      if (o[0] === "streams") map.setLayoutProperty("creek-names", "visibility", cb.checked ? "visible" : "none");
+    });
+    const ex = document.getElementById("exag");
+    ex.oninput = () => { document.getElementById("exv").textContent = (+ex.value).toFixed(1);
+                         map.setTerrain(+ex.value > 0 ? {source: "dem", exaggeration: +ex.value} : null); };
+    document.getElementById("tilt").onclick = () => {
+      const flat = map.getPitch() < 5;
+      map.easeTo({pitch: flat ? 55 : 0, duration: 1200});
+    };
+    map.on("pitchend", () => document.getElementById("tilt").textContent = map.getPitch() < 5 ? "Tilt (3D)" : "Flat (2D)");
+    document.getElementById("north").onclick = () => map.easeTo({bearing: 0, duration: 1000});
+  }
+
+  // ---- hover tooltips + popups ----
+  function where(p) { return p.d === p.k ? esc(p.d) : `${esc(p.k)} <span class="dm">· ${esc(p.d)}</span>`; }
+  function streamPop(p) {
+    const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
+                     : `<span class="dm">Unnamed reach (no profile)</span>`;
+    return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
+      `<tr><td>Fish score</td><td><b>${p.fs}</b></td></tr><tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
+      `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${p.el ?? "?"} m · ${p.gr}%</td></tr>` +
+      `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` + (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
+      (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
+      (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
+      (p.burn ? `<tr><td>Fire</td><td class="warn">${esc(p.burn)}</td></tr>` : "") +
+      (p.flags ? `<tr><td>Notes</td><td>${esc(p.flags)}</td></tr>` : "") + `</table>${prof}</div>`;
+  }
+  function wireInteraction() {
+    const tip = new maplibregl.Popup({closeButton: false, closeOnClick: false, className: "tip", offset: 12, maxWidth: "300px"});
+    const hoverIds = ["poi-trailhead", "poi-parking", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "wild_trout_waters", "wilderness",
+                      "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i)]
+      .filter(id => map.getLayer(id));
+    const tipHtml = (id, p) => {
+      if (id === "streams") return `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>Order ${p.o} · ${p.a} km² · ${esc(p.fl)} · fish ${p.fs}`;
+      if (id.startsWith("drop")) return `${p.h.toFixed(0)} m drop · ${esc(p.s)}`;
+      if (id === "falls") return `${esc(p.name)} (${esc(p.src)})` + (p.note ? `<br><span class="dm">${esc(p.note)}</span>` : "");
+      if (id === "trout" || id === "springs") return esc(p.tip);
+      if (id === "closures") return `<b>${esc(p.road)}</b> · ${esc(p.severity)}<br>${esc(p.when)} ${esc(p.reason)}`;
+      if (id === "fires") return `${esc(p.fire)} fire, ${p.year} · ${Math.round(p.acres).toLocaleString()} acres`;
+      if (id === "poi-trailhead" || id === "poi-parking") return `<b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b>` +
+        (/closed/i.test(p.st || "") ? `<div class="warn">${esc(p.st)} (Forest Service status)</div>` : "") +
+        `<div class="dw">${p.k === "trailhead" ? "Trailhead" + (p.p ? " with parking" : "") : "Parking"}${p.src === "USFS" ? " · Forest Service" : ""}</div>` +
+        [p.fee === "yes" ? "Fee or pass required" : p.fee === "no" ? "No fee" : "", p.cap ? "Spaces: " + esc(p.cap) : "",
+         p.no ? `<span class="dm">${esc(p.no)}</span>` : ""].filter(Boolean).join("<br>");
+      if (id.startsWith("road-core-")) {
+        const LV = {1: "closed / custodial", 2: "high-clearance vehicles", 3: "passenger cars", 4: "moderate comfort", 5: "high comfort"};
+        return `<b>${esc(p.n || "Unnamed road")}</b><div class="dw">${ROAD[p.c][0]}</div>` +
+          [p.fs ? `USFS road ${esc(p.fs)}${p.lv ? ` · maintenance level ${p.lv} (${LV[p.lv] || ""})` : ""}` : "",
+           p.sf ? "Surface: " + esc(p.sf) : "", p.tt ? `Track grade ${esc(String(p.tt).replace("grade", ""))} of 5` : "",
+           p.sm ? "Smoothness: " + esc(String(p.sm).replace(/_/g, " ")) : "",
+           p.se === "yes" ? "<span class='warn'>Seasonal road</span>" : "", p.ac ? "Restrictions: " + esc(p.ac) : "",
+           p.mv ? "Forest Service vehicle rules: " + esc(p.mv) : "", p.od ? "<span class='warn'>Open to " + esc(p.od) + "</span>" : "",
+           p.cw ? "<span class='warn'>" + esc(p.cw) + "</span>" : ""]
+            .filter(Boolean).join("<br>");
+      }
+      if (id.startsWith("trail-line")) return `<b>${esc(p.n || (p.k === "fire road" ? "Unnamed fire road" : "Unnamed trail"))}</b>` +
+        `<div class="dw">${p.k === "fire road" ? (p.g ? "Fire road, gated to cars" : "Fire road / dirt road") : "Trail"}` +
+        `${p.rt && p.rt !== p.n ? " · " + esc(p.rt) : ""}</div>` +
+        [p.of ? `Official trail · ${esc(p.of)}${p.no ? " #" + esc(p.no) : ""}` : "",
+         p.us ? "Open to: " + esc(p.us) : "",
+         p.g ? `USFS road ${esc(p.g)}: closed to public vehicles, open on foot` : "",
+         p.u ? "<span class='dm'>Possibly unofficial: not in agency trail data</span>" : "",
+         p.src ? "<span class='dm'>From agency records only; not in OpenStreetMap, may be faint or abandoned</span>" : "",
+         p.s ? "Difficulty: " + esc(p.s) : "", p.sf ? "Surface: " + esc(p.sf) : "",
+         p.cl ? `<span class='warn'>Closed${p.cw ? ": " + esc(p.cw) : " or private"}</span>` : "",
+         p.f && !p.u && !p.src ? "Informal or faint trail" : "", (() => {
+           if (!p.b) return "";
+           const BK = {yes: "Open to bikes", likely: "Likely OK for bikes", unlikely: "Probably no bikes", no: "No bikes",
+                       unknown: "Unknown"};
+           const why = String(p.bw || "").replace(/:\s*(no bikes|open to bikes)$/i, ""), lab = BK[p.b] || p.b;
+           return `<span style="color:${p.b === "no" ? "#c92a2a" : p.b === "yes" ? "#2b8a3e" : "inherit"}">Bikes: ${lab}</span>` +
+             (why && why.toLowerCase() !== lab.toLowerCase() && p.b !== "unknown" ? ` <span class="dm">(${esc(why)})</span>` : "") +
+             (p.mtb ? ` · MTB difficulty S${esc(p.mtb)}` : "");
+         })()].filter(Boolean).join("<br>");
+      if (id === "pct-core") return `<b>Pacific Crest Trail</b><div class="dw">${esc(p.label)}</div>`;
+      return esc(p.tip);
+    };
+    // Hover: at most one lookup per animation frame, and the highlight is a feature-state flag that widens the line
+    // (changing a layer filter made MapLibre rebuild the layer's tiles on every mouse move, so it lagged behind)
+    let pending = null, hovered = null;
+    const setHover = h => {
+      if (hovered && (!h || h.source !== hovered.source || h.id !== hovered.id)) map.setFeatureState(hovered, {hover: false});
+      if (h) map.setFeatureState(h, {hover: true});
+      hovered = h;
+    };
+    const onMove = () => {
+      const e = pending;
+      pending = null;
+      const f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
+      map.getCanvas().style.cursor = f ? "pointer" : "";
+      if (!f) { tip.remove(); setHover(null); return; }
+      tip.setLngLat(e.lngLat).setHTML(tipHtml(f.layer.id, f.properties)).addTo(map);
+      setHover(["streams", "trails", "roads"].includes(f.source) && f.id != null ? {source: f.source, id: f.id} : null);
+    };
+    map.on("mousemove", e => { if (!pending) requestAnimationFrame(onMove); pending = e; });
+    map.getCanvas().addEventListener("mouseleave", () => { tip.remove(); setHover(null); });
+    map.on("click", e => {
+      const f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
+      if (!f) return;
+      const p = f.properties, id = f.layer.id;
+      // drop and gauge popups are HTML built by 06_map.py from our own data
+      const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout") ? p.html
+        : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
+      tip.remove();
+      new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map);
+    });
+    // keep the 2D link pointed at the current view
+    const sync = () => { const c = map.getCenter();
+      document.getElementById("to2d").href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom())}`; };
+    map.on("moveend", sync); sync();
+  }
+
+  // open at #lat,lon,zoom[,pitch,bearing] (same links as the 2D map)
+  function go() {
+    const h = location.hash.slice(1).split(",").map(Number);
+    if (h.length >= 2 && h.every(v => !isNaN(v)))
+      map.jumpTo({center: [h[1], h[0]], zoom: h[2] || 13, pitch: h.length > 3 ? h[3] : 60, bearing: h.length > 4 ? h[4] : map.getBearing()});
+  }
+  window.addEventListener("hashchange", go);
+})();
+</script>
+</body>
+</html>
