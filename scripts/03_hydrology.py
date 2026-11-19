@@ -1,91 +1,87 @@
-"""Standard DEM hydrology: fill -> D8 flow direction -> flow accumulation -> streams -> Strahler order.
+"""DEM conditioning for one box: fill pits and depressions, resolve flats. The first half of the hydrology; the flow
+directions, drainage areas, streams and Strahler orders are worked out for the whole area at once by 03b_stitch.py,
+which needs every box of the area conditioned first.
 
-Two things that aren't standard:
+Why two steps. Until 2026-11-19 each box did its whole hydrology alone. A box's rim then acts as a wall: water that
+reaches it can't leave (it ran along the border to a low cell and ended there), and a river that crosses into the
+next box arrives with no drainage, so its line there started again 100 m to 1.8 km below the edge, as an order-1
+creek. No stream on the maps crossed an edge between two boxes (270 dead ends on shared edges over six areas), and
+a river running along an edge was cut to pieces. So:
+  - Here the box is conditioned together with a HALO of its neighbours' terrain, so that the filled and
+    flat-resolved surface near a shared edge is the one the neighbour gets too. Only the box itself is saved
+    (dem_cond.tif, in float64: the flat increments are far below float32's steps).
+  - 03b_stitch.py takes each cell's direction from the conditioned surfaces of all the boxes side by side, so a
+    cell on a shared edge drains straight into the next box.
+A box with no neighbour has no halo and comes out as before.
+
+Two things in the conditioning that aren't standard:
   - resolve_flats() runs with a much smaller increment than its default (FLAT_EPS). The default (1e-5 m a cell) piles
     up across a wide flat until the cells stand higher than the next step down, and the flat turns into a pit: 3DEP
     flattens the water surface of every river wide enough to map, in short level steps, so D8 paths died all along
     the big rivers (the White River at 519 km2, the Winooski at 464, the Hoback at 1,136) and each river's drainage
     started again from nothing below. LA's dry channels have no such steps, so it showed there only at reservoirs.
-  - Flow paths still end at every lake and reservoir that holds water (flowlib.still_water), at the cell where the
-    water leaves it. That is by design: drainages end at dams, and crossbox.py carries a reservoir's area on past
-    its dam for the reaches' own areas. Before, each lake ended paths at scattered pits; now at its outlet.
-    "Holds water" is read off the DEM: at least LEVEL_HA of the outline at one elevation (3DEP flattens standing
-    water). The reservoirs that were drawn down when the DEM was flown, the dry flood-control basins and the debris
-    basins have no such patch (San Gabriel Reservoir, Cogswell, Devil's Gate: under 1 ha, against 6 ha in Big
-    Tujunga and 440 in Pyramid Lake), and water runs through them, as it did before.
+  - Flow paths still end at every lake and reservoir that holds water: see 03b_stitch.py.
 """
-import numpy as np, rasterio, rasterio.features
-from scipy import ndimage
+import os
+import numpy as np, rasterio, rasterio.windows
 if not hasattr(np, "in1d"):  # pysheds still calls np.in1d, removed in NumPy 2.4
     np.in1d = np.isin
 from pysheds.grid import Grid
 from config import *
 
-grid = Grid.from_raster(f"{RAW}/dem_10m.tif")
-dem = grid.read_raster(f"{RAW}/dem_10m.tif")
+HALO = 5000          # m of each neighbouring box's terrain conditioned along with this box
+FLAT_EPS = 1e-9      # m of rise a cell across a flat; 4 km of flat is 0.4 mm, under any step in the DEM
 
-# 1. Condition the DEM: fill single-cell pits, fill depressions, then resolve flats
+# the box's DEM with the halo around it, from the DEMs of the area's other boxes where they reach
+hx0, hy0, hx1, hy1 = XMIN - HALO, YMIN - HALO, XMAX + HALO, YMAX + HALO
+W, H = int(round((hx1 - hx0) / RES)), int(round((hy1 - hy0) / RES))
+z = np.full((H, W), np.nan, np.float32)
+for r, cfg in REGIONS.items():
+    bx = cfg["bbox"]
+    ix0, iy0, ix1, iy1 = max(hx0, bx[0]), max(hy0, bx[1]), min(hx1, bx[2]), min(hy1, bx[3])
+    p = f"{raw_dir(r)}/dem_10m.tif"
+    if ix1 - ix0 < RES or iy1 - iy0 < RES or not os.path.exists(p):
+        continue
+    with rasterio.open(p) as src:
+        win = rasterio.windows.from_bounds(ix0, iy0, ix1, iy1, src.transform).round_offsets().round_lengths()
+        d = src.read(1, window=win, masked=True).astype(np.float32).filled(np.nan)
+    c0, r0 = int(round((ix0 - hx0) / RES)), int(round((hy1 - iy1) / RES))
+    h, w = min(d.shape[0], H - r0), min(d.shape[1], W - c0)
+    part = z[r0:r0 + h, c0:c0 + w]
+    if r == REGION:
+        z[r0:r0 + h, c0:c0 + w] = np.where(np.isnan(d[:h, :w]), part, d[:h, :w])       # the box's own cells win
+    else:
+        z[r0:r0 + h, c0:c0 + w] = np.where(np.isnan(part), d[:h, :w], part)
+# trim to the rows and columns that hold data (no neighbour on a side: no halo there)
+rows, cols = np.flatnonzero((~np.isnan(z)).any(axis=1)), np.flatnonzero((~np.isnan(z)).any(axis=0))
+z = z[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+T = rasterio.Affine(RES, 0, hx0 + cols[0] * RES, 0, -RES, hy1 - rows[0] * RES)
+halo_share = 1 - (XMAX - XMIN) * (YMAX - YMIN) / RES / RES / (~np.isnan(z)).sum()
+os.makedirs(DERIVED, exist_ok=True)
+tmp = f"{DERIVED}/_halo_dem.tif"
+with rasterio.open(tmp, "w", driver="GTiff", height=z.shape[0], width=z.shape[1], count=1, dtype="float32", crs=CRS,
+                   transform=T, nodata=-99999.0) as dst:
+    dst.write(np.where(np.isnan(z), -99999.0, z), 1)
+del z
+
+grid = Grid.from_raster(tmp)
+dem = grid.read_raster(tmp)
 pit_filled = grid.fill_pits(dem)
 flooded = grid.fill_depressions(pit_filled)
-FLAT_EPS = 1e-9      # m of rise a cell across a flat; 4 km of flat is 0.4 mm, under any step in the DEM
 inflated = grid.resolve_flats(flooded, eps=FLAT_EPS, max_iter=10000)
 
-# 2. D8 flow direction (ESRI encoding: E=1 SE=2 S=4 SW=8 W=16 NW=32 N=64 NE=128)
-dirmap = (64, 128, 1, 2, 4, 8, 16, 32)
-fdir = grid.flowdir(inflated, dirmap=dirmap)
-
-# 2b. End the paths at each lake's outlet: the cell inside it with the most water (accumulation routed straight
-#     through first, to find it)
-from flowlib import still_water
-acc = grid.accumulation(fdir, dirmap=dirmap)
-lakes = still_water(HU4, (XMIN, YMIN, XMAX, YMAX))
-if len(lakes):
-    lab = rasterio.features.rasterize(((g, i + 1) for i, g in enumerate(lakes.geometry)), out_shape=fdir.shape,
-                                      transform=grid.affine, fill=0, dtype="int32")
-    LEVEL_HA = 2
-    z = np.asarray(dem)
-    wet = []
-    for i, sl in enumerate(ndimage.find_objects(lab), 1):
-        if sl is not None:
-            v = np.round(z[sl][lab[sl] == i], 2)
-            if v.size and np.unique(v, return_counts=True)[1].max() * RES * RES / 1e4 >= LEVEL_HA:
-                wet.append(i)
-    lab[~np.isin(lab, wet)] = 0
-    ids = np.unique(lab[lab > 0])
-    outlets = ndimage.maximum_position(np.asarray(acc), lab, ids)
-    for r_, c_ in outlets:
-        if 0 < r_ < fdir.shape[0] - 1 and 0 < c_ < fdir.shape[1] - 1:     # one on the border leaves the box anyway
-            fdir[r_, c_] = -2                                              # pysheds' code for a pit
-    print(f"lakes and reservoirs ending flow paths at their outlet: {len(ids)} of {len(lakes)} mapped (the rest hold no "
-          f"level water in the DEM)")
-
-# 3. Flow accumulation (cells) -> drainage area km^2
-acc = grid.accumulation(fdir, dirmap=dirmap)
-area_km2 = acc * (RES * RES) / 1e6
-
-# 4. Stream network: channel initiation at 0.25 km^2 (2,500 cells @ 10 m)
-STREAM_KM2 = 0.25
-streams = area_km2 >= STREAM_KM2
-
-# 5. Strahler order
-order = grid.stream_order(fdir, streams, dirmap=dirmap)
-
-fill_depth = np.asarray(flooded) - np.asarray(dem)
-prof = rasterio.open(f"{RAW}/dem_10m.tif").profile
+# the box itself, cut back out of the halo
+c0, r0 = int(round((XMIN - T.c) / RES)), int(round((T.f - YMAX) / RES))
+bh, bw = int(round((YMAX - YMIN) / RES)), int(round((XMAX - XMIN) / RES))
+core = (slice(r0, r0 + bh), slice(c0, c0 + bw))
+with rasterio.open(f"{RAW}/dem_10m.tif") as src:
+    prof = src.profile
 prof.update(compress="deflate", tiled=True, nodata=None)
-def save(name, arr, dtype):
-    p = dict(prof, dtype=dtype)
-    with rasterio.open(f"{DERIVED}/{name}.tif", "w", **p) as dst:
+def save(name, arr, dtype, **kw):
+    with rasterio.open(f"{DERIVED}/{name}.tif", "w", **dict(prof, dtype=dtype, **kw)) as dst:
         dst.write(np.asarray(arr).astype(dtype), 1)
-save("dem_filled", flooded, "float32")
-save("fill_depth", fill_depth, "float32")
-save("flowdir", fdir, "uint8")
-save("area_km2", area_km2, "float32")
-save("strahler", np.where(streams, order, 0), "uint8")
-
-# Vector stream network (one line per link between confluences)
-branches = grid.extract_river_network(fdir, streams, dirmap=dirmap)
-import geopandas as gpd
-g = gpd.GeoDataFrame.from_features(branches["features"], crs=CRS)
-g.to_file(f"{DERIVED}/dem_streams.gpkg")
-print("stream cells", int(streams.sum()), "links", len(g), "max order", int(np.max(order)))
+save("dem_cond", np.asarray(inflated)[core], "float64", predictor=1)
+save("dem_filled", np.asarray(flooded)[core], "float32")
+save("fill_depth", (np.asarray(flooded) - np.asarray(dem))[core], "float32")
+os.remove(tmp)
+print(f"{REGION}: conditioned {grid.shape[1]} x {grid.shape[0]} cells ({halo_share:.0%} of them halo), kept {bw} x {bh}")

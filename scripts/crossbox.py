@@ -24,7 +24,7 @@ from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_di
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 11
+VERSION = 15
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 OUTSIDE_MIN_KM2 = 10   # a river entering from outside every box brings at least this much, or it isn't carried
 
@@ -127,11 +127,39 @@ def downhill(fd, T, x, y, away, steps=600):
         r, c = r + st[0], c + st[1]
 
 
+_STITCHED = None
+def stitched():
+    """The boxes whose flow directions 03b_stitch.py worked out together with their neighbours: a cell on an edge
+    they share drains straight into the next box, so a crossing there is exact."""
+    global _STITCHED
+    if _STITCHED is None:
+        p = f"{SHARED_DERIVED}/stitched.json"
+        _STITCHED = set(json.load(open(p))) if os.path.exists(p) else set()
+    return _STITCHED
+
+
 def crossing(region, fd, T, x, y, away, radius=10):
-    """Cells (row, col, x, y) along a creek entering `region`'s grid at (x, y): downhill() from there; or, where the
-    box's own border handling ends the creek in a pit on the edge (a road fill or a low bump just inside leaves the
+    """Cells (row, col, x, y) along a creek entering `region`'s grid at (x, y).
+    Across an edge shared by two boxes that 03b_stitch.py routed together: simply the D8 path from that cell (the
+    box it leaves points exactly at it).
+    Elsewhere (in from outside the map, or boxes still routed alone): downhill() from there; or, where the box's
+    own border handling ends the creek in a pit on the edge (a road fill or a low bump just inside leaves the
     border cell lowest: Bouquet Canyon entering the Piru box), from the lowest cell within `radius` cells inside the
     box whose path heads away from the edge."""
+    if region in stitched():
+        back = shapely.Point(x - away[0] * RES, y - away[1] * RES)
+        if any(r != region and shapely.box(*REGIONS[r]["bbox"]).contains(back) for r in stitched()):
+            c, r = ~T * (x, y)
+            r, c = int(np.floor(r)), int(np.floor(c))
+            for _ in range(600):
+                if not (0 <= r < fd.shape[0] and 0 <= c < fd.shape[1]):
+                    return
+                yield (r, c, *(T * (c + 0.5, r + 0.5)))
+                st = D8.get(int(fd[r, c]))
+                if st is None:
+                    return
+                r, c = r + st[0], c + st[1]
+            return
     path = downhill(fd, T, x, y, away)
     hit = next(path, None)
     if hit is None:
@@ -172,7 +200,8 @@ def walk(fd, r, c):
 
 def _key(regions):
     from flowlib import FLOW
-    files = [fdir_path(r) for r in regions] + [f"{FLOW}/reservoirs.gpkg", f"{FLOW}/nhdplus_v2.gpkg"]
+    files = [fdir_path(r) for r in regions] + [f"{FLOW}/reservoirs.gpkg", f"{FLOW}/nhdplus_v2.gpkg",
+                                               f"{SHARED_DERIVED}/stitched.json"]
     return {"version": VERSION, **{f: [os.path.getmtime(f), os.path.getsize(f)] for f in files if os.path.exists(f)}}
 
 
@@ -264,11 +293,19 @@ def _build(regions):
         km2 = n * RES * RES / 1e6
         ox, oy = exit_points(fd, T, uo)
         orow, ocol = np.divmod(uo, W)
+        if r in stitched():
+            # Routed together with its neighbours (03b_stitch.py): area_km2.tif already counts the cells upstream in
+            # the other boxes. So a basin that leaves over an edge hands on nothing of its own (the next box has it),
+            # only what came into it from outside the map or over a dam; and a lake's dead end holds everything the
+            # raster has there, wherever it fell.
+            with rasterio.open(f"{derived_dir(r)}/area_km2.tif") as src:
+                km2 = np.maximum(km2, src.read(1).ravel()[uo].astype(float))
         exit_ = ~np.isnan(ox) & (km2 >= MIN_KM2)
         sink = ((orow > 0) & (orow < H - 1) & (ocol > 0) & (ocol < W - 1) & ~np.isin(fd[orow, ocol], list(D8))
                 & (km2 >= MIN_KM2))
         exits[r] = {int(o): (float(x), float(y)) for o, x, y in zip(uo[exit_], ox[exit_], oy[exit_])}
-        own.update({(r, int(o)): float(a) for o, a in zip(uo[exit_ | sink], km2[exit_ | sink])})
+        own.update({(r, int(o)): float(a) for o, a in zip(uo[sink], km2[sink])})
+        own.update({(r, int(o)): (0.0 if r in stitched() else float(a)) for o, a in zip(uo[exit_ & ~sink], km2[exit_ & ~sink])})
         sinks = {int(o): T * (c + 0.5, rr + 0.5) for o, rr, c in zip(uo[sink], orow[sink], ocol[sink])}
         for o, (row, col) in _dam_links(fd, T, sinks, lakes, v2, by_seq).items():
             links.append(((r, o), r, row, col, "dam"))
@@ -445,9 +482,17 @@ def _build(regions):
         for src, b, row, col, kind in use:
             ent[b].append([int(row), int(col), round(tot(src), 3), src[0], kind])
         out[variant] = {r: ent.get(r, []) for r in regions}
+        if variant == "full":
+            # every place a creek's line breaks, for crossings(): where it leaves its box (edge links only), the
+            # cell it goes on from in the next one (or below the dam, or inside the outer boundary) and what it carries
+            out["cross"] = [[src[0], *(exits.get(src[0], {}).get(src[1], (None, None)) if kind == "edge" else (None, None)),
+                             b, int(row), int(col), round(tot(src), 3), kind] for src, b, row, col, kind in use]
     dams = [l for l in links if l[4] == "dam"]
     print(f"crossbox: {sum(l[4] == 'edge' for l in links)} edge links, {len(dams)} reservoir dead ends carried past "
           f"their dams")
+    # the dead ends themselves, for dam_links(): {region: [[dead-end cell, row, col of the cell below the dam]]}
+    out["dams"] = {r: [[int(src[1]), int(row), int(col)] for src, b, row, col, kind in dams
+                       if b == r and src[0] == r] for r in regions}
     return out
 
 
@@ -456,6 +501,25 @@ def inflows(region, through_dams=False):
     area it brings: from neighbouring boxes ("edge"), and with through_dams also from above a reservoir ("dam").
     The edge-only totals leave out any water that came over a dam. Built for every box at once and cached until a
     flowdir.tif, the reservoir list or the NHDPlus network changes."""
+    return [tuple(e) for e in _data()["full" if through_dams else "edge"].get(region, [])]
+
+
+def dam_links(region):
+    """{dead-end cell (flat index): (row, col)}: for every dead end in a lake or reservoir of `region` whose water
+    goes on, the cell below the dam where it does (in the same box). 05c_drainages.py uses it to give a pond's
+    basin the drainage its outflow joins. From the same cache as inflows()."""
+    return {int(o): (int(r), int(c)) for o, r, c in _data().get("dams", {}).get(region, [])}
+
+
+def crossings():
+    """[(from box, exit x, exit y, into box, row, col, km2, kind)]: every link where a creek's D8 path stops and goes
+    on elsewhere: across an edge two boxes share ("edge": the exit is the centre of the first cell outside the box
+    it leaves), below a dam ("dam") or in from outside every box ("outside"); the last two have no exit. km2 is
+    the drainage it carries, with everything upstream. 06_map.py draws the creek through with it."""
+    return [tuple(e) for e in _data().get("cross", [])]
+
+
+def _data():
     regions = [r for r in REGIONS if os.path.exists(fdir_path(r))]
     key = _key(regions)
     data = None
@@ -471,4 +535,4 @@ def inflows(region, through_dams=False):
         with open(tmp, "w") as f:
             json.dump(data, f)
         os.replace(tmp, CACHE)
-    return [tuple(e) for e in data["full" if through_dams else "edge"].get(region, [])]
+    return data

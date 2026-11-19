@@ -66,7 +66,155 @@ s_ll = s_ll.drop(columns=[c for c in ("drainage", "fork", "strahler") if c in s_
 s_ll["drainage"] = s_ll.drainage.fillna(MINOR)
 s_ll["fork"] = s_ll.fork.fillna(s_ll.drainage)
 s_ll["strahler"] = s_ll.strahler.fillna(s_ll["order"]).clip(1, 7).astype(int)
-basins = pd.concat([gpd.read_file(f"{MAP_OUT}/{r}/drainages.gpkg") for r in done
+# A river that comes in from the next box, from outside the map or over a dam starts again at order 1 in this
+# box's own count, so it drew as a thread until its side creeks built it back up, and dropped off the map of all
+# areas (order 4 and up): the Maury from Rockbridge Baths to Lexington. Where a reach carries over twice its own
+# box's drainage, its order is at least the usual one in this area for its full drainage: the orders' median
+# areas come from the reaches that carry no outside water, and the steps between orders sit halfway (in logs).
+# For drawing only: nothing in the scores reads the order.
+if "area_full_km2" in s_ll:
+    full_ = s_ll.area_full_km2.fillna(s_ll.area_km2).astype(float).values
+    carried = (full_ > 2 * s_ll.area_km2.values) & (full_ - s_ll.area_km2.values > 5)
+    med = s_ll[~carried].assign(f=full_[~carried]).groupby("strahler").f.agg(["median", "size"])
+    med = med[med["size"] >= 5]["median"]
+    if carried.any() and len(med) >= 3:
+        ks = np.arange(1, 8)
+        fit = np.polyfit(med.index.values, np.log(med.values.clip(0.01)), 1)       # about 4.5 times per order
+        logm = np.array([np.log(max(med[k_], 0.01)) if k_ in med.index else np.polyval(fit, k_) for k_ in ks])
+        logm = np.maximum.accumulate(logm)
+        steps = (logm[:-1] + logm[1:]) / 2
+        est = 1 + np.searchsorted(steps, np.log(full_.clip(0.01)))
+        new_o = np.where(carried, np.maximum(s_ll.strahler.values, est), s_ll.strahler.values).clip(1, 7)
+        print(f"stream order raised for {(new_o > s_ll.strahler.values).sum()} reaches that carry water from elsewhere "
+              f"(median km2 by order: {', '.join(f'{k_}: {np.exp(v_):.3g}' for k_, v_ in zip(ks, logm))})")
+        s_ll["strahler"] = new_o.astype(int)
+# ---- creeks drawn through below dams and at the outer boundary ----
+# Across the edges two boxes share, the streams run through by themselves since 2026-11-19 (03b_stitch.py routes
+# the boxes together). Two kinds of break are left, where the routing really does stop: below a dam (paths end
+# in the lake) and where a river comes in over the outer boundary of the map (its line starts only where 0.25 km2
+# has gathered inside). crossbox.crossings() knows each place: from the cell the water goes on from, the box's own
+# D8 path is followed to its first drawn reach, and that piece goes on the front of the reach, or, where it runs
+# into the middle of one, is drawn as a piece of its own with that reach's values. Drawn lines only: the reaches
+# keep their ids, scores and areas.
+def draw_through(s_ll):
+    from rasterio import features as rfeatures
+    cross = [c_ for c_ in crossbox.crossings() if c_[6] >= 0.25 and c_[3] in done and c_[7] != "edge"]
+    sm = s_ll.geometry.to_crs(EPSG).values
+    line = np.array([g is not None and g.geom_type == "LineString" for g in sm])
+    rk = s_ll.sid.str.split(":").str[0].values
+    pos = np.flatnonzero(line)
+    ends = shapely.STRtree(shapely.points([sm[i].coords[-1][:2] for i in pos]))
+    all_lines = shapely.STRtree(sm[pos])
+    ras, recs = {}, []
+    # 1. each break: the path below it, the reach it runs into (if any) and the reach that ends above it (if any)
+    for src, ex, ey, b, row, col, km2, kind in cross:
+        if b not in ras:
+            with rasterio.open(crossbox.fdir_path(b)) as f_:
+                fd_, T_ = f_.read(1), f_.transform
+            # the cells this box's drawn reaches run through (not every stream cell of 03 has a reach: short stubs
+            # are dropped), so the line is carried down to one that is drawn
+            ras[b] = (fd_, T_, rfeatures.rasterize([(g, 1) for g in sm[pos[rk[pos] == b]]], out_shape=fd_.shape,
+                                                   transform=T_, all_touched=True, dtype="uint8"))
+        fd_, T_, on_ = ras[b]
+        H_, W_ = fd_.shape
+        r_, c_, pts = int(row), int(col), []
+        for _ in range(800):                               # 8 km at most
+            pts.append(T_ * (c_ + 0.5, r_ + 0.5))
+            if on_[r_, c_]:
+                break
+            d_ = crossbox.D8.get(int(fd_[r_, c_]))
+            if d_ is None or not (0 <= r_ + d_[0] < H_ and 0 <= c_ + d_[1] < W_):
+                break
+            r_, c_ = r_ + d_[0], c_ + d_[1]
+        up = None
+        if kind == "edge" and ex is not None:
+            pt = shapely.Point(ex, ey)
+            cand = [pos[j] for j in ends.query(pt, predicate="dwithin", distance=45) if rk[pos[j]] == src]
+            up = min(cand, key=lambda i: shapely.Point(sm[i].coords[-1][:2]).distance(pt)) if cand else None
+        hit = None
+        if on_[r_, c_]:                                    # the reach it runs into, and the exact spot on it
+            pt = shapely.Point(pts[-1])
+            cand = [pos[j] for j in all_lines.query(pt, predicate="dwithin", distance=25) if rk[pos[j]] == b and pos[j] != up]
+            if cand:
+                hit = min(cand, key=lambda i: sm[i].distance(pt))
+                q = sm[hit].interpolate(sm[hit].project(pt))
+                pts[-1] = (q.x, q.y)
+        recs.append(dict(src=src, ex=ex, ey=ey, b=b, km2=km2, kind=kind, pts=pts, up=up, hit=hit, pred=None))
+    # 2. a path that leaves its box again without meeting a drawn reach (a river clipping a corner, or weaving along
+    # an edge) is carried on by the crossing that starts where it ends
+    loose = [k for k, r in enumerate(recs) if r["hit"] is None]
+    if loose:
+        tails = shapely.STRtree(shapely.points([recs[k]["pts"][-1] for k in loose]))
+        for k, r in enumerate(recs):
+            if r["up"] is None and r["kind"] == "edge" and r["ex"] is not None:
+                pt = shapely.Point(r["ex"], r["ey"])
+                cand = [loose[j] for j in tails.query(pt, predicate="dwithin", distance=30)
+                        if recs[loose[j]]["b"] == r["src"] and loose[j] != k]
+                if cand:
+                    r["pred"] = min(cand, key=lambda j: shapely.Point(recs[j]["pts"][-1]).distance(pt))
+    def chain(k):
+        """This break and the loose ones leading to it, first to last."""
+        out, seen = [k], {k}
+        while recs[out[0]]["pred"] is not None and recs[out[0]]["pred"] not in seen:
+            out.insert(0, recs[out[0]]["pred"])
+            seen.add(out[0])
+        return out
+    # 3. draw: on the end of the reach above where there is one; else on the front of the reach it leads into; else,
+    # where it runs into the middle of a reach, as a piece of its own with that reach's values
+    coords, extra, used, n_up, n_head, n_own, metres = {}, [], set(), 0, 0, 0, 0.0
+    def xy(i):
+        if i not in coords:
+            coords[i] = [c_[:2] for c_ in sm[i].coords]
+        return coords[i]
+    for k in sorted(range(len(recs)), key=lambda k: len(chain(k))):
+        r = recs[k]
+        ch = chain(k)
+        if ch[0] in used and len(ch) > 1 and recs[ch[0]]["up"] is None:
+            continue
+        carrier = recs[ch[0]]["up"]
+        if carrier is not None:                            # everything in the chain not yet drawn goes on that reach
+            new = [p_ for j in ch if j not in used for p_ in recs[j]["pts"]]
+            if not new:
+                continue
+            coords[carrier] = xy(carrier) + new
+            used.update(ch)
+            n_up += 1
+        elif r["hit"] is not None:
+            new = [p_ for j in ch for p_ in recs[j]["pts"]]
+            if len(new) < 2:
+                continue
+            used.update(ch)
+            if shapely.Point(sm[r["hit"]].coords[0][:2]).distance(shapely.Point(new[-1])) <= 15:
+                coords[r["hit"]] = new[:-1] + xy(r["hit"])
+                n_head += 1
+            else:
+                extra.append((r["hit"], shapely.LineString(new)))
+                n_own += 1
+        else:
+            continue                                        # loose: a later crossing may carry it on
+        metres += shapely.LineString(new).length if len(new) > 1 else 0
+    left = [r for k, r in enumerate(recs) if k not in used and len(r["pts"]) > 1]
+    if coords:
+        idx_ = list(coords)
+        new = gpd.GeoSeries([shapely.LineString(coords[i]) for i in idx_], crs=EPSG).to_crs(4326).values
+        geom = s_ll.geometry.values.copy()
+        geom[idx_] = new
+        s_ll = s_ll.set_geometry(gpd.GeoSeries(geom, index=s_ll.index, crs=s_ll.crs))
+    if extra:
+        add = s_ll.iloc[[h for h, _ in extra]].copy()
+        add["sid"] = [f"{sid}+{n_}" for n_, sid in enumerate(add.sid.values, 1)]
+        add = add.set_geometry(gpd.GeoSeries([g for _, g in extra], index=add.index, crs=EPSG).to_crs(4326))
+        s_ll = pd.concat([s_ll, add], ignore_index=True)
+    s_ll.attrs["drawn_extra"] = len(extra)
+    print(f"creeks drawn through {n_head + n_own + n_up} breaks below dams and at the outer boundary "
+          f"({metres / 1000:.1f} km of line; {len(left)} met no drawn reach)")
+    return s_ll
+s_ll = draw_through(s_ll)
+N_DRAWN_EXTRA = s_ll.attrs.get("drawn_extra", 0)      # pieces added for drawing: not reaches of their own
+s_ll[["sid", "geometry"]].to_file(f"{MAP_OUT}/streams_drawn.gpkg")      # the lines as drawn, for checking the breaks
+
+# in the area's own CRS, as 05c wrote them: two boxes' outlines then meet exactly on the edge they share
+basins = pd.concat([gpd.read_file(f"{MAP_OUT}/{r}/drainages.gpkg").to_crs(EPSG) for r in done
                     if os.path.exists(f"{MAP_OUT}/{r}/drainages.gpkg")], ignore_index=True)
 
 # Basins cut by a box edge join the drainage they continue into in the neighbouring range: Sierra Pelona's
@@ -93,6 +241,21 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
             with rasterio.open(crossbox.fdir_path(region)) as src_:
                 fdirs[region] = (src_.read(1), src_.transform)
         return fdirs[region]
+    # for a named basin whose crossing finds no mapped stream (Hightower Creek runs straight into Lake Chatuge on the
+    # edge): the biggest reach of the outline its exit lands in, across the edge. Only into a bigger basin: a lake
+    # lying across the edge sends each side's water to the other, and the smaller creek is the tributary.
+    b_tree = shapely.STRtree(basins.geometry.values)
+    rep = s_ll.reset_index(drop=True).groupby(["rkey", "drainage", "fork"]).area_km2.idxmax().to_dict()
+    size_of = basins.assign(a=basins.area).groupby(["rkey", "drainage"]).a.sum().to_dict()
+    def across_edge(g):
+        pt = shapely.Point(g[1], g[2])
+        mine = size_of.get((g[0], s_ll.drainage.iat[groups[g][0]]), 0)
+        cand = [j for j in b_tree.query(pt, predicate="dwithin", distance=30)
+                if basins.rkey.iat[j] != g[0] and basins.drainage.iat[j] != MINOR
+                and size_of[(basins.rkey.iat[j], basins.drainage.iat[j])] > mine]
+        if cand:
+            j = min(cand, key=lambda j: basins.geometry.iat[j].distance(pt))
+            return rep.get((basins.rkey.iat[j], basins.drainage.iat[j], basins.fork.iat[j]))
     target = {}
     for g in set(groups) | outlines:
         for b_, away in crossbox.neighbours(g[0], g[1], g[2], edges):
@@ -106,7 +269,32 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
                     break
             if g in target:
                 break
+        if g not in target and g in groups and s_ll.drainage.iat[groups[g][0]] != MINOR:
+            ti = across_edge(g)
+            if ti is not None:
+                target[g] = int(ti)
     d0, f0 = s_ll.drainage.to_numpy().copy(), s_ll.fork.to_numpy().copy()
+    # Two named basins that each lead into the other: Lake Chatuge lies across the edge, so the Hiwassee's side
+    # leaves into Hightower Creek's box and Hightower Creek back into the Hiwassee's (where it lands on the lake,
+    # with no stream to find). The smaller is the tributary: the bigger one's link goes, and the smaller one's
+    # exits that found nothing lead to the bigger one's main reach. Left in, the river took its tributary's name.
+    rep_d = s_ll.reset_index(drop=True).groupby(["rkey", "drainage"]).area_km2.idxmax().to_dict()
+    by_src = {}
+    for g in groups:
+        if d0[groups[g][0]] != MINOR:
+            by_src.setdefault((g[0], d0[groups[g][0]]), []).append(g)
+    pairs = {}
+    for g, ti in target.items():
+        if g in groups and MINOR not in (d0[groups[g][0]], d0[ti]) and d0[groups[g][0]] != d0[ti]:
+            pairs.setdefault(((g[0], d0[groups[g][0]]), (s_ll.rkey.iat[ti], d0[ti])), []).append(g)
+    for (a_, b_), gs in pairs.items():
+        back = [g for g in by_src.get(b_, []) if any(n_ == a_[0] for n_, _ in crossbox.neighbours(g[0], g[1], g[2], edges))]
+        if back and size_of.get(a_, 0) > size_of.get(b_, 0):
+            print(f"two-way link: {a_[1]} ({a_[0]}) and {b_[1]} ({b_[0]}); {b_[1]} joins {a_[1]}")
+            for g in gs:
+                target.pop(g, None)
+            for g in back:
+                target.setdefault(g, int(rep_d[a_]))
     dcur, fcur = d0.copy(), f0.copy()
     for _ in range(6):
         dnew, fnew = dcur.copy(), fcur.copy()
@@ -121,9 +309,13 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
         if (dnew == dcur).all() and (fnew == fcur).all():
             break
         dcur, fcur = dnew, fnew
-    moved = pd.DataFrame({"r": s_ll.region.values, "a": d0, "b": dcur})
-    moved = moved[moved.a != MINOR].groupby(["r", "a"]).b.agg(lambda x: x.iloc[0] if x.nunique() == 1 else None)
-    relabel = {k: v for k, v in moved.items() if pd.notna(v) and v != k[1]}   # only when the whole named basin moved
+    # only when the whole named basin moved. The parts of it that end at a dam or a pond inside the box (no exit of
+    # their own) go with the rest: left behind, they kept the old name while the outline took the new one.
+    moved = pd.DataFrame({"r": s_ll.region.values, "a": d0, "b": dcur, "exits": s_ll.out_x.notna().values})
+    moved = moved[(moved.a != MINOR) & moved.exits].groupby(["r", "a"]).b.agg(lambda x: x.iloc[0] if x.nunique() == 1 else None)
+    relabel = {k: v for k, v in moved.items() if pd.notna(v) and v != k[1]}
+    dcur = np.array([relabel.get((r_, a_), b_) if b_ == a_ else b_ for r_, a_, b_ in zip(s_ll.region.values, d0, dcur)],
+                    dtype=object)
     s_ll["drainage"], s_ll["fork"] = dcur, fcur
     basins["drainage"] = [relabel.get((r_, d_), d_) for r_, d_ in zip(basins.region, basins.drainage)]
     # an unnamed outline takes the drainage and fork of the reach its water continues into
@@ -134,6 +326,77 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
     basins["fork"] = [fcur[ti] if ti is not None else f_ for ti, f_ in zip(link, basins.fork)]
     print("cross-range links:", len(target), "| renamed basins:", sorted(set(relabel.items()))[:12],
           f"| unnamed outlines joined: {sum(ti is not None for ti in link)} of {len(outlines)}")
+# Unnamed outlines the streams couldn't place (too small to hold a mapped stream below the edge, or on a creek that
+# weaves along it): each takes the drainage and fork of the outline its exit lands in across the edge, a few passes
+# for chains; one of under 5 km2 still unnamed after that takes the named outline it shares the most boundary with.
+# Their reaches follow. Left unnamed, they were pockets and notches down the line where two boxes meet. Only for
+# outlines that leave over an edge two boxes share: one that drains off the outer boundary of the map stays unnamed.
+seams_ = shapely.union_all(list(crossbox.shared_edges(done).values()))
+un = np.flatnonzero((basins.drainage == MINOR).values & basins.out_x.notna().values)
+if len(un) and not seams_.is_empty:
+    un = un[shapely.distance(shapely.points(basins.out_x.values[un], basins.out_y.values[un]), seams_) <= 60]
+if len(un):
+    geoms, rk = basins.geometry.values, basins.rkey.values
+    tree_b = shapely.STRtree(geoms)
+    across = {}
+    for i in un:
+        pt = shapely.Point(basins.out_x.iat[i], basins.out_y.iat[i])
+        cand = [j for j in tree_b.query(pt, predicate="dwithin", distance=30) if rk[j] != rk[i]]
+        if cand:
+            across[i] = min(cand, key=lambda j: geoms[j].distance(pt))
+    dr, fk = basins.drainage.to_numpy().copy(), basins.fork.to_numpy().copy()
+    how = {}
+    for _ in range(20):
+        # across first, until nothing more moves (a bigger outline often leaves into a small one that only its
+        # neighbours can place: both kinds take turns)
+        new = {i: j for i, j in across.items() if dr[i] == MINOR and dr[j] != MINOR}
+        for i, j in new.items():
+            dr[i], fk[i], how[i] = dr[j], fk[j], "across"
+        if new:
+            continue
+        new = {}
+        for i in un:
+            if dr[i] != MINOR or geoms[i].area > 5e6:
+                continue
+            ring = geoms[i].buffer(15)
+            share = {j: ring.intersection(geoms[j]).area for j in tree_b.query(ring, predicate="intersects")
+                     if j != i and dr[j] != MINOR}
+            by_d = {}
+            for j, a_ in share.items():
+                by_d[dr[j]] = by_d.get(dr[j], 0) + a_
+            if by_d and max(by_d.values()) >= 15 * 50:                 # at least one 50 m cell side in common
+                d_ = max(by_d, key=by_d.get)
+                new[i] = max((j for j in share if dr[j] == d_), key=share.get)
+        if not new:
+            break
+        for i, j in new.items():
+            dr[i], fk[i], how[i] = dr[j], fk[j], "beside"
+    basins["drainage"], basins["fork"] = dr, fk
+    placed = {(rk[i], basins.out_x.iat[i], basins.out_y.iat[i]): i for i in how}
+    if placed and "out_x" in s_ll:
+        at = [placed.get(k_) if d_ == MINOR else None
+              for k_, d_ in zip(zip(s_ll.sid.str.split(":").str[0], s_ll.out_x, s_ll.out_y), s_ll.drainage)]
+        s_ll["drainage"] = [dr[i] if i is not None else d_ for i, d_ in zip(at, s_ll.drainage)]
+        s_ll["fork"] = [fk[i] if i is not None else f_ for i, f_ in zip(at, s_ll.fork)]
+    left = [i for i in un if dr[i] == MINOR]
+    print(f"unnamed outlines placed by what is across the edge: {sum(v == 'across' for v in how.values())}, by what is "
+          f"beside them: {sum(v == 'beside' for v in how.values())}; left unnamed: {len(left)} "
+          f"({sum(geoms[i].area for i in left) / 1e6:.0f} km2)")
+# A named drainage of under 2 km2 in all is a sliver of a creek that only clips the map (Pacific Creek at Moran:
+# 1 km2 inside the boxes). It joins the named drainage it shares the most boundary with, reaches and all, rather
+# than stand as a drainage of its own; with none beside it, it goes with the unnamed ones.
+tot_d = basins.assign(a_=basins.area).groupby("drainage").a_.sum()
+for d_ in [d_ for d_, a_ in tot_d.items() if d_ != MINOR and a_ < 2e6]:
+    mine = (basins.drainage == d_).values
+    ring = shapely.union_all(basins.geometry.values[mine]).buffer(15)
+    share = {}
+    for j in np.flatnonzero(~mine & (basins.drainage != MINOR).values & basins.intersects(ring).values):
+        if tot_d[basins.drainage.iat[j]] >= 2e6:
+            share[j] = ring.intersection(basins.geometry.iat[j]).area
+    to_d, to_f = (basins.drainage.iat[max(share, key=share.get)], basins.fork.iat[max(share, key=share.get)]) if share else (MINOR, MINOR)
+    print(f"sliver drainage {d_} ({tot_d[d_] / 1e6:.1f} km2) -> {to_d}")
+    basins.loc[mine, ["drainage", "fork"]] = [to_d, to_f]
+    s_ll.loc[s_ll.drainage == d_, ["drainage", "fork"]] = [to_d, to_f]
 basins = basins[basins.drainage != MINOR].drop(columns=["out_x", "out_y", "rkey"]).reset_index(drop=True)
 kp_ll = attach(kp_ll, "did", dirs, "drops")
 CTX = f"{MAP_OUT}/context"
@@ -820,9 +1083,21 @@ m.add_child(InitDrainages(lc.get_name()))
 m.save(f"{MAP_OUT}/stream_map.html")
 
 # ---- this area's part of the map of all areas (13_overview.py): drainage outlines and the main rivers ----
-ov_d = dpoly[["drainage", "km2", "geometry"]].to_crs(4326)
+def simplify_together(geoms, tol):
+    """Simplify polygons as one coverage, so neighbours keep exactly the same edge between them (each on its own,
+    they pull apart and overlap along the divides). Rebuilt first from their noded boundaries, as in 05c."""
+    geoms = shapely.make_valid(np.asarray(geoms))
+    faces = np.asarray(shapely.get_parts(shapely.polygonize(shapely.get_parts(
+        shapely.node(shapely.union_all(shapely.boundary(geoms)))))))
+    inp, owner = shapely.STRtree(geoms).query(shapely.point_on_surface(faces), predicate="within")
+    inp, first_ = np.unique(inp, return_index=True)                  # where two overlap, the face goes to one
+    simp = gpd.GeoDataFrame({"i": owner[first_]}, geometry=shapely.coverage_simplify(faces[inp], tol)).dissolve("i")
+    out = geoms.copy()
+    out[simp.index.values] = simp.geometry.values
+    return out
+ov_d = dpoly[["drainage", "km2", "geometry"]].assign(geometry=simplify_together(dpoly.geometry.values, 120)).to_crs(4326)
 ov_d = ov_d.assign(c=[dcol[d_] for d_ in ov_d.drainage], km2=ov_d.km2.round(0),
-                   geometry=shapely.set_precision(shapely.make_valid(ov_d.geometry.simplify(0.0012).values), 1e-4))
+                   geometry=shapely.set_precision(shapely.make_valid(ov_d.geometry.values), 1e-5))
 ov_s = s_ll[s_ll.strahler >= 4][["name", "drainage", "strahler", "fish_score", "geometry"]]
 ov_s = ov_s.assign(c=[dcol.get(d_, MINOR_COL) for d_ in ov_s.drainage],
                    geometry=shapely.set_precision(ov_s.geometry.simplify(0.0004).values, 1e-5))
@@ -836,7 +1111,7 @@ if pct_json:
     ov_t = json.loads(tl[~tl.geometry.is_empty][["label", "geometry"]].to_json(drop_id=True))
 with open(f"{MAP_OUT}/overview.json", "w") as f:
     json.dump(dict(key=AREA, label=AREA_LABEL, home=HOME, bounds=[[sb[1], sb[0]], [sb[3], sb[2]]],
-                   reaches=int(len(s_ll)), trail=ov_t, trail_name=LONG_TRAIL[0] if LONG_TRAIL else None, drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
+                   reaches=int(len(s_ll)) - N_DRAWN_EXTRA, trail=ov_t, trail_name=LONG_TRAIL[0] if LONG_TRAIL else None, drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
                                                     for e in drains if e["name"] != MINOR],
                    basins=json.loads(ov_d.to_json(drop_id=True)), streams=json.loads(ov_s.to_json(na="null", drop_id=True))), f)
 # 3D map: static page + data file (a <script>, so it also works opened straight from disk)

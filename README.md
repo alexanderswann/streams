@@ -34,10 +34,16 @@ carry the maps:
   with every area's detail packed inside it as gzip and unpacked when you zoom in there: every stream reach with the
   full popup, and switches for drops and waterfalls, trailheads and parking, trails and dirt roads, gauges and road
   closures, trout records. No 3D view, creek profiles, hillshade or land-status layers. Send this one.
+- **After a change to the drainages** (`05c_drainages.py`, `crossbox.py`, the outline part of `06_map.py`):
+  `scripts/run_drainage_refresh.sh <area> ...` redoes 05c per range, the map and the profiles; then
+  `13_overview.py`, `14_portable.py` and `phone_sync.sh`. The scores don't change.
 - **The website** (`scripts/publish_site.sh`): copies the map of all areas and every area's maps into
   `publish/alexanderswann.github.io/streams/` (a local copy of the GitHub Pages site, about 420 MB) and commits
-  there. It does not push; `git -C publish/alexanderswann.github.io push origin master` publishes it at
-  `https://alexanderswann.github.io/streams/`. The maps show the start ZIPs; that was the owner's choice.
+  there; `scripts/publish_site.sh push` also pushes, which puts it live at
+  `https://alexanderswann.github.io/streams/` (published 2026-11-19; the login is a token for that one repository
+  in the Mac's keychain). It adds the `streams/` folder and nothing else: the site already
+  there is not changed, and the script stops if its commit would touch anything outside `streams/`. The maps
+  show the start ZIPs; that was the owner's choice.
 
 ## Study areas and folders
 The pipeline handles several study **areas**, each its own map with its own UTM zone, home point for drive times,
@@ -89,8 +95,8 @@ only).
 To build another area, from `scripts/`: `./run_base.sh <area>` (DEM, NHD + OSM, hydrology, drops), then
 `./run_mid.sh <area>` (reach scoring, flow, drainages, trails, access roads, the long trail), then
 `./run_late.sh <area>` (road closures, approach times, sun, drive times, context, water-temperature fit, maps,
-profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes steps 03–05b and `run_late.sh`
-finishes. `./phone_sync.sh` copies every area's maps to `phone/` with an index page.
+profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes 03, 03b and the drops, then runs `run_mid.sh` and
+`run_late.sh`. `./phone_sync.sh` copies every area's maps to `phone/` with an index page.
 `data/validate_flow_areas.py` checks an area's flow table against its gauges. Logs go to `data/base_<area>.log`,
 `mid_<area>.log` and `late_<area>.log`. Run long builds under `caffeinate -i` (a sleeping Mac froze two downloads).
 OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass server second.
@@ -116,7 +122,12 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    plus OSM roads/trails/waterfalls/dams. Both are read for the lon/lat box around all four corners of the range's
    UTM box. When the public Overpass servers can't be reached, a range keeps the OSM files it already has
    (`OSM=keep` skips that download outright); run the script again later to refresh them
-3. `03_hydrology.py`: fill pits/depressions → D8 flow direction → flow accumulation → streams (≥0.25 km²) → Strahler order.
+3. `03_hydrology.py` (per box) + `03b_stitch.py` (per area): fill pits/depressions → D8 flow direction → flow accumulation → streams (≥0.25 km²) → Strahler order.
+   Boxes that share an edge are solved as one surface: 03 conditions each box's DEM together with a 5 km margin of its
+   neighbours, and 03b takes the flow directions, drainage areas, streams and stream orders across the boxes side by
+   side, so a creek crosses a box edge as one line with one size. (Until 2026-11-19 each box was solved alone and no
+   stream crossed an edge.) `area_km2.tif` counts every cell upstream in the joined boxes; `crossbox.py` adds only what
+   the terrain can't see: rivers entering from outside every box, and lakes' water past their dams.
    Flats are given their slope in steps of 1e-9 m a cell, not pysheds' default 1e-5: the default piles up across the
    flattened water surface of a mapped river until the flat becomes a pit, which ended flow paths all along the big
    rivers of the wetter areas (found 2026-11-18; LA's dry channels showed it only at reservoirs). Flow paths are
@@ -403,7 +414,7 @@ https://api.waterdata.usgs.gov/signup/ in `USGS_API_KEY` (e.g. `export USGS_API_
 send it only to `api.waterdata.usgs.gov`.
 
 ```bash
-for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 01_download_dem 02_download_vectors 03_hydrology 04_knickpoints 04b_bigcreek_steps 05_score; do REGION=$r ../.venv/bin/python $s.py; done; done; ../.venv/bin/python 07_road_closures.py
+for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 01_download_dem 02_download_vectors 03_hydrology; do REGION=$r ../.venv/bin/python $s.py; done; done; ../.venv/bin/python 03b_stitch.py; for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 04_knickpoints 04b_bigcreek_steps 05_score; do REGION=$r ../.venv/bin/python $s.py; done; done; ../.venv/bin/python 07_road_closures.py
 ../.venv/bin/python 02b_download_flow.py
 for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 05c_drainages 05b_flow; do REGION=$r ../.venv/bin/python $s.py; done; done
 ../.venv/bin/python 02c_pct.py; ../.venv/bin/python 02d_trails.py; ../.venv/bin/python 02e_access.py

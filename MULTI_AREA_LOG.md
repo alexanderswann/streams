@@ -617,3 +617,190 @@ labels only; no other trails, roads, parking or trailheads.**
 - Single file (`14_portable.py`): the same five things; drops and waterfalls, trailheads and parking, trails and
   dirt roads, gauges and road closures, trout records each have a switch, all off.
 - All six areas' maps rebuilt; `phone/` and the publish copy refreshed with them.
+
+## 2026-11-19
+
+**Push sign-in.** The push from the terminal failed: GitHub answered "Invalid username or token" (it takes an
+access token there, not the account password). GitHub Desktop is installed on this Mac and signs in through
+GitHub's own web page, so the publish copy was opened in it for the user to press "Push origin". Still the
+user's step.
+
+**User: "there is already something at https://alexanderswann.github.io/ dont interfere with that".** Checked
+the pending commit against the site as it is on GitHub: 53 files added under `streams/`, plus the empty
+`.nojekyll` at the top; nothing existing changed or removed, and the old site has nothing named `streams`.
+The `.nojekyll` was the only thing outside `streams/`, so it was taken out (commit now `e965e59`): the old
+site's 32 files have no Jekyll front matter, the map files don't either, and none has a name starting with `_`
+or `.`, so GitHub's Jekyll step copies everything as it is without that file. `publish_site.sh` no longer
+makes it and now stops if its commit would touch anything outside `streams/`. No link to the maps is added to
+the old pages: they are reached only at `/streams/`.
+
+**Published.** The user made a fine-grained token for the one repository (the first try was refused, error 403:
+the token had no write access to Contents) and pushed from a terminal. Checked afterwards: GitHub's `master` is
+at `e965e59`; nothing outside `streams/` differs from the old site and the home page is byte-for-byte the old
+`index.html`; all 53 files under `streams/` are served with the right sizes; in Chrome the live front page shows
+all six areas and the live Jackson map opens with Terrain shading, Place & road labels, Streams and Drainage
+outlines ticked, the Hoback as its own drainage, the "Go to" menu listing the other areas, no console errors.
+Live at https://alexanderswann.github.io/streams/.
+
+**User: "can you now push when you make an update?"** Standing OK to push map updates. The token is saved in
+the Mac's keychain (a dry-run push from the pipeline's shell goes through without a prompt), so
+`scripts/publish_site.sh push` now commits and pushes in one step; it still refuses if anything outside
+`streams/` would change. The token expires: when a push is refused the user makes a new one.
+
+**Mistake while testing the one-step publish, put right.** To try `publish_site.sh push` end to end I ran it for
+real, twice, expecting "nothing new". Another session was at that moment redoing the drainages
+(`run_drainage_refresh.sh`, with uncommitted changes to `05c_drainages.py`, `crossbox.py`, `06_map.py`), so
+`output/` no longer matched the published copy and both runs pushed that session's unfinished, unchecked maps
+(commits `d23a486` at 08:13 and `3409314` at 08:14; 19 files each, all inside `streams/`). Each was reverted
+and pushed within about two minutes (`2aefe20`, `31cab68`); the live files were then compared with the checked
+version `e965e59` by content: identical, and the home page is still the old `index.html`. Nothing outside
+`streams/` changed at any point. Cost: the site repository's history grew from about 108 MB to about 250 MB.
+- `publish_site.sh` now stops when a pipeline step or a `run_*.sh` driver is running, or when anything in
+  `output/` was written in the last 15 minutes.
+- Rule for me: never run the publish script with `push` as a test; publish only maps this session built or
+  checked, and look at `git status` and running jobs first. The drainage-refresh maps are NOT published: that is
+  for whoever finishes and checks that work.
+- Every publish of rebuilt maps adds roughly 100 MB to the site repository's history (GitHub recommends staying
+  under 1 GB, hard limit far higher), so publish finished batches, not every small change.
+
+**User: a line splits the Lexington map down the middle; "there are other ones too ... find them and fix them".**
+(Work of the main session; the fork that handled the publishing logged the two entries above.) The line was the
+edge between the area's two boxes. Measured on every area's outlines before touching anything
+(`overview.json`): 20 to 65 km2 uncovered within 600 m of the shared edges in each area, 13 to 58 holes inside
+single drainages, 1 to 5 km2 of overlap between neighbouring drainages. Four causes, four fixes:
+- **Pockets and notches along a shared edge.** Unnamed basins that leave over the edge were kept only from
+  0.5 km2, and one that found no mapped stream within 6 km across the edge was dropped. `05c` now keeps every
+  one on a shared edge; `06_map.py` places those the streams can't: by the outline the exit lands in across the
+  edge (passes for chains), then, under 5 km2, by the named outline it shares the most boundary with. Their
+  reaches follow. Basins that drain off the outer boundary of the map stay unnamed, as before.
+- **The two halves not joining.** `drainages.gpkg` was written in lat/lon and read back, so the two boxes'
+  straight edge no longer matched to the millimetre and the dissolve left the line. Now written in the area's
+  own CRS.
+- **White holes at ponds** (worst in NE Connecticut: 19 % of its reaches had no drainage). Flow paths end in
+  every lake with level water, so a pond's basin too small for a name was left unnamed. It now joins the
+  drainage and fork its outflow runs into: by crossbox's dam links (`crossbox.dam_links`, cache VERSION 12, the
+  `edge` and `full` area tables checked identical to before), and where NHDPlus has no flowline for the pond,
+  by the detailed NHD stream line that leaves the lake (`pond_links` in `05c`; lakes no stream leaves stay
+  closed). For the drainage names only: the areas, flows and scores are untouched.
+- **Neighbours pulled apart on the map of all areas.** Each drainage was simplified on its own (overlaps and
+  slivers along the divides). `06_map.py` now simplifies them together as one coverage (`simplify_together`).
+
+Found along the way and fixed:
+- **N Georgia: Hightower Creek's basin stopped on the box edge** for 10 km instead of joining the Hiwassee: Lake
+  Chatuge lies across the edge, so each side led into the other and no stream was found in the lake. A named
+  basin whose crossing finds no stream now takes the outline across the edge (only into a bigger basin), and of
+  two named basins that lead into each other the smaller is the tributary. Hightower Creek is now a fork of the
+  Hiwassee River (438 km2); N Georgia has 49 drainages, not 50. A named basin's dam- or pond-ended parts now go
+  with it when it is renamed across an edge (before, the outline took the new name and those reaches kept the old).
+- **Rivers broken where they cross between boxes** (the Maury from Rockbridge Baths to Lexington, in the user's
+  screenshot too). A river coming in from the next box, from outside or over a dam restarted at stream order 1
+  in the box's own count: thin on the full maps, missing from the map of all areas (order 4 and up). For
+  drawing only, a reach that carries over twice its own box's drainage gets at least the usual order in the area
+  for its full drainage (median full area per order, from reaches with no outside water).
+
+Result, all six areas rebuilt (`scripts/run_drainage_refresh.sh`: 05c per range, 06, 12; then 13, 14, phone):
+
+| area | lake basins joined (by detailed lines) | reaches given a drainage | holes inside drainages, km2 before -> after | overlap km2 before -> after |
+|---|---|---|---|---|
+| la | 18 (7) | 250 | 48.5 -> 2.3 | 5.4 -> 0 |
+| jackson | 11 (3) | 97 | 36.7 -> 0 | 3.2 -> 0 |
+| n_georgia | 63 (10) | 517 | 84.9 -> 0.5 | 4.9 -> 0 |
+| central_vt | 38 (13) | 132 | 18.0 -> 0.01 | 3.2 -> 0 |
+| ne_ct | 132 (35) | 460 | 41.3 -> 0.01 | 1.0 -> 0 |
+| lexington_va | 7 (1) | 67 | 9.1 -> 0 | 2.1 -> 0 |
+
+Checks: LA, reach by reach against the copy from before: 250 reaches changed drainage, every one unnamed before;
+no reach that had a drainage changed it, no fork-only changes. The drainage lists of LA, Jackson, Vermont,
+Connecticut and Lexington are the same names and sizes (within 5 %); only N Georgia's changed (above). Fish
+scores: nothing 05c writes feeds them. In the browser: the user's Lexington view on the map of all areas (no
+line, the Maury unbroken), Lexington's full map (no console errors), Connecticut and LA on the map of all areas.
+Copies of the old outlines and tables are in `data/backup_20261119-seams/`.
+
+Still there, known:
+- Short stretches (the longest 1.7 km; 0.4 to 4.8 km per area in all) where an outline still follows a box
+  edge: both boxes are sure of their own named basin there and the routing runs along the border.
+- **Not fixed, affects the scores a little:** below a pond NHDPlus has no flowline for (66 ponds over the six
+  areas, 35 of them in NE Connecticut), the brook's drainage area still starts again from nothing, so its size
+  and flow are low for a stretch. The detailed-line link could carry the area too; that changes scores, so it
+  is left for the user to decide.
+- Not pushed to the website by this session: the live site still has the 2026-11-18 maps.
+
+**User: nine more screenshots of box edges in every area; "no stream or river is able to cross any of these
+artifacts ... find the root cause and tackle the problem from there, dont just address the symptoms".**
+Measured first, on the reaches themselves: 270 reach ends stopped dead on an edge two boxes share (LA 65,
+Jackson 57, Vermont 58, N Georgia 45, Lexington 23, NE Connecticut 22; 43 of them rivers of 50 km2 and up), and
+at none of 585 crossings did the two boxes' lines meet (median gap 280 to 490 m, up to 2.1 km).
+
+*Root cause.* Each box did its whole hydrology alone (`03_hydrology.py`). The box's rim is then a wall: water
+that reaches it runs along the border to a low cell and ends; a river that crosses into the next box arrives
+with no drainage, so its line there starts only where 0.25 km2 has gathered again, as an order-1 creek. Two
+more layers of the same thing: `05_score.py` drops reaches under 1 km2 of in-box drainage, so a river's first
+stretch inside a box was thrown away; and `crossbox.py` had to guess where a creek went on across an edge
+(25 m / 10-cell searches), which lost creeks that run along an edge (Hays Creek's 200 km2 never reached the
+Maury: 910 km2 at Rockbridge Baths where it is 1,111).
+
+*Tried and dropped the same morning (symptom repairs, not kept):* raising the drawn stream order by drainage
+area (kept, but only matters now below dams and outer-boundary entries), drawing each line through along
+crossbox's path, and re-solving a 6 km strip along each edge to draw lines through (`seamstrips.py`, deleted).
+They closed most gaps on the drawing but left the network and the areas wrong.
+
+*The fix, in the hydrology.*
+- `03_hydrology.py` now only conditions the DEM (fill pits, fill depressions, resolve flats), with a 5 km halo
+  of the neighbouring boxes' terrain, and saves the box's part (`dem_cond.tif`, float64).
+- New `03b_stitch.py` (per area) puts boxes that share an edge side by side and works out, across them: D8
+  directions (each box with a one-cell ring of its neighbours' conditioned surface; same rule as pysheds), the
+  lake-outlet rule (a lake across an edge now has one outlet), accumulation, streams from 0.25 km2 counted
+  across the boxes, stream order (pysheds' rule, reimplemented), and each box's stream lines (with a one-cell
+  ring, so a line that leaves a box ends on the first cell of the next, where that box's line begins).
+  `area_km2.tif` counts every cell upstream in the joined boxes.
+- `crossbox.py` (VERSION 15): crossings between boxes routed together are exact (the cell the box points at);
+  a basin that leaves over such an edge hands on only what came into it from outside the map or over a dam,
+  because the raster already has the rest. `05c`: basin sizes take the raster's value at the outlet.
+- `06_map.py`: the strip repair is gone; lines are still drawn through below dams and at outer-boundary
+  entries (`draw_through`), where the routing really does stop. A named drainage under 2 km2 in all joins its
+  neighbour (Pacific Creek at Moran). `05c`: a thin basin whose outlet leaves over a shared edge is kept
+  whatever its outline's distance from the edge (thin fingers were being dropped, leaving white slivers).
+- Names: `("cohutta", "Ocoee River") -> "Toccoa River"`, `("piru", "Cuddy Creek") -> "Grapevine Creek"`.
+- Drivers: `run_base.sh` and `run_rebuild_a.sh` run 03 per box, then 03b, then the rest.
+
+*Checks.*
+- A box with no neighbour (N Georgia's Chattahoochee tailwater) through the new code: flow directions, areas,
+  filled DEM and all 4,474 stream lines identical to the old method; stream order differs only on the
+  one-cell rim (46 cells, where pysheds left 0).
+- Lexington, new against old: flow direction identical in 100.0000 % of cells further than 6 km from an edge,
+  99.98 % overall. No flow loops in any area's joined surface; no path ends within 30 m of a shared edge
+  except two cells at the outer corners of the map.
+- Reach ends dead on a shared edge: 270 -> 0 (every area 0). Redrawn from the rebuilt data and looked at: all
+  nine of the user's views (Georgia's two edges, Vermont's two, Jackson's two, LA's Sespe-Piru, Santa Clara
+  and Lytle Creek edges), plus Rockbridge Baths (Hays / Walker Creek now reaches the Maury) and the James at
+  the Appalachian Trail footbridge (one line, one width). In the browser: the James view and Rockbridge Baths
+  on Lexington's full map (no console errors), Georgia and Jackson on the map of all areas.
+- Scores against the build before: reaches in the same spot 93 to 98 % per area; of those, the same score in
+  97 to 99 % and within 5 points in 99 to 100 %; every area's median unchanged (LA 6, Jackson 72, N Georgia
+  58, Vermont 64, NE Connecticut 58, Lexington 57). 12 to 31 reaches per area moved 15 points or more (rivers
+  just inside an edge that now carry their real size). Reaches: LA 17,681 -> 17,887, Jackson 6,257 -> 6,365,
+  N Georgia 14,897 -> 15,105, Vermont 6,497 -> 6,681, NE Connecticut 3,351 -> 3,511, Lexington 4,201 -> 4,296
+  (the stretches just inside box edges that used to be dropped). Reach ids changed everywhere.
+- Drainage lists: LA and Jackson the same; N Georgia: Fightingtown Creek is now a fork of the Toccoa (it joins
+  it at McCaysville; the box edge had kept it apart), Cherry Log Creek (37 km2) stands apart from the Ellijay
+  (a pond on the edge now ends its paths); Vermont: Muddy Branch into the New Haven, Pekin Brook into
+  Kingsbury Branch; Lexington: Buffalo Creek (321 km2) is its own drainage (the Maury's full size is now seen,
+  so the 100-into-2,000 km2 rule applies); NE Connecticut: Shetucket, Pachaug and Little River shifted 10-50 %.
+- Run times: 5 to 20 minutes an area, no failed steps. The Mac slept 09:54-11:49 with the lid closed, in the
+  middle of N Georgia's approach-time step; it carried on by itself afterwards and finished clean.
+
+*Still open.* The 66 small ponds NHDPlus has no flowline for still restart the brook's area below them (as
+before). Drops (04) near an outer-boundary entry still see only the in-map area there. Not pushed to the
+website: the live site has the 2026-11-18 maps. Backups: `data/backup_20261119-seams/` (scripts and outputs
+from before each stage).
+
+**Published (12:09).** The user said "Yes, push", then "push it now". Found first that `publish_site.sh` had
+lost its `DEST=$SITE/streams` line (dropped in the fork session's last edit, after its own runs), so as it
+stood it would have copied nothing into the site: restored. The script's 15-minute wait after the last map
+write was skipped on the user's word with a new second argument (`publish_site.sh push now`; the
+running-build test still applies). Commit `4d76f17`, 19 files, all inside `streams/`; nothing outside
+`streams/` differs from the original site (`cbbb0b8`). Checked afterwards: all 19 files as served at
+https://alexanderswann.github.io/streams/ have the same SHA-256 as the pushed ones, the pushed maps are the
+built and checked ones for all six areas, and the home page still serves the old `index.html` byte for byte.
+Not opened in a browser on the live address (the same files were looked at locally). The site repository's
+history is now 338 MB.

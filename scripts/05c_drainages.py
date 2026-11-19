@@ -4,13 +4,16 @@ name and are split into their major forks; the rest are grouped as minor front-r
 from a neighbouring box bring their drainage area with them (crossbox.py), so the trunk and forks are picked as if
 the boxes were one map; 06_map.py then joins the basins an edge cuts to the drainage they continue into.
 
+A pond's or small reservoir's basin too small for a name of its own joins the drainage its outflow runs into
+(crossbox.dam_links), so ponds don't leave holes in the drainages around them.
+
 Writes output/<region>/drainages.gpkg (fork polygons with drainage + fork names, plus the unnamed basins that drain
-off an edge, for 06_map.py to join) and output/<region>/stream_drainage.csv (sid -> drainage, fork). Run after
-05_score.py, with REGION set."""
+off an edge, for 06_map.py to join; in the area's own CRS, so two boxes' outlines meet exactly on the edge they
+share) and output/<region>/stream_drainage.csv (sid -> drainage, fork). Run after 05_score.py, with REGION set."""
 import re, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from rasterio import features
 from config import *
-from crossbox import graph, jump, exit_points, inflows
+from crossbox import graph, jump, exit_points, inflows, dam_links, shared_edges, D8
 
 MAJOR_KM2 = 25   # outlet basins at least this big are named drainages
 FORK_KM2 = 35    # a tributary this big joining a drainage's trunk becomes its own fork...
@@ -32,6 +35,12 @@ NAME_FIX = {("santa_monica", "Garapito Creek"): "Topanga Creek",
             ("piru", "Gorman Creek"): "Piru Creek",
             # the Santa Clara River valley stretch of the Piru box; a short wash near the outlet won the name vote
             ("piru", "Real Wash"): "Santa Clara River",
+            # Cuddy Creek runs into Castac Lake at Lebec, which spills to Grapevine Creek: one drainage, as before
+            # the boxes were routed together (then the box edge cut Cuddy Creek off above the lake)
+            ("piru", "Cuddy Creek"): "Grapevine Creek",
+            # the Toccoa is the Ocoee once it is over the Tennessee line, where NHD's name won the vote in the box
+            # that holds its last few kilometres; it is the Toccoa to anyone fishing it in Georgia
+            ("cohutta", "Ocoee River"): "Toccoa River",
             # the box reaches the desert floor, where the creek is mapped as a wash
             ("san_gabriel", "Big Rock Wash"): "Big Rock Creek",
             # Bouquet Canyon's stretch through the box's north-west corner, on its way from the Sierra Pelona to the
@@ -56,7 +65,10 @@ H, W = fdir.shape
 N = H * W
 idx = np.arange(N, dtype=np.int32)
 nxt, outlet = graph(fdir)   # downstream neighbour and outlet of every cell (flat index)
+# each basin's size: its cells in this box, or what the area raster has at its outlet where that is more (boxes
+# routed together by 03b_stitch.py: the raster counts the cells upstream in the other boxes too)
 basin_km2 = pd.Series(np.bincount(outlet, minlength=N)[np.unique(outlet)] * RES * RES / 1e6, index=np.unique(outlet))
+basin_km2 = np.maximum(basin_km2, a[basin_km2.index.values].astype(float))
 
 def along(entries):
     """Drainage area that reaches each cell from elsewhere: every entry's area, added all the way down its D8 path."""
@@ -231,16 +243,115 @@ for o, sub in streams[streams.drainage != MINOR].groupby("root"):
         used.add(nm)
         uname[int(u)] = nm
 uname = {u: FORK_FIX.get((REGION, dname[int(root[u])], n), n) for u, n in uname.items()}
+# ---- ponds and small reservoirs ----
+# Flow paths end in every lake that holds level water (03_hydrology.py), so the basin above a pond is cut off from
+# the creek below its dam. One big enough keeps a name of its own (above); the rest were left unnamed, which drew
+# as white holes in the drainage around them and left their creeks grey: 19 % of north-east Connecticut's reaches.
+# Such a basin joins the drainage and fork its outflow runs into, at the cell below the dam (crossbox.dam_links,
+# from the NHDPlus flowline leaving the lake); pond below pond is followed down. Where the outflow runs into an
+# unnamed basin that leaves the box, it joins that one, for 06_map.py to carry into the next box. Lakes with no
+# outflow stay as they were. Done after the forks are named, so no fork's name changes.
+links = {o_: r_ * W + c_ for o_, (r_, c_) in dam_links(REGION).items()}
+named_root = {o_ for o_, n in dname.items() if n}
+
+def pond_links(have):
+    """{dead end: cell below the dam} for the nameless lake basins crossbox has no link for: NHDPlus (1:100,000)
+    doesn't have the brooks most small ponds sit on. The detailed NHD flowlines of this box do: a stream line that
+    starts in the lake and ends outside it is its outflow (they are drawn downstream), followed up to 3 km to the
+    first cell whose D8 path doesn't lead back into the lake, as crossbox does. A lake no stream leaves stays
+    closed. Pipelines, tunnels, canals and ditches don't count. For the drainage names only: the areas and flows
+    still take crossbox's links."""
+    from flowlib import still_water
+    uo_ = basin_km2.index.values.astype(np.int64)
+    orow, ocol = np.divmod(uo_, W)
+    sink = ((orow > 0) & (orow < H - 1) & (ocol > 0) & (ocol < W - 1) & ~np.isin(fdir[orow, ocol], list(D8))
+            & ~np.isin(uo_, list(have)) & ~np.isin(uo_, list(named_root)))
+    lakes = still_water(HU4, (XMIN, YMIN, XMAX, YMAX))
+    if not sink.any() or not len(lakes):
+        return {}
+    xs, ys = T * (ocol[sink] + 0.5, orow[sink] + 0.5)
+    hit = gpd.sjoin_nearest(gpd.GeoDataFrame({"o": uo_[sink]}, geometry=gpd.points_from_xy(xs, ys), crs=CRS),
+                            gpd.GeoDataFrame({"km2": lakes.area}, geometry=lakes.geometry, crs=CRS),
+                            max_distance=400, distance_col="dist")
+    hit = hit.sort_values(["dist", "km2"], ascending=[True, False]).drop_duplicates("o")
+    fl = gpd.read_file(f"{RAW}/nhd_flowlines.gpkg").to_crs(CRS)
+    fl = fl[fl.ftype.isin([460, 558, 334]) & fl.geometry.notna()]
+    lines = []
+    for g in shapely.line_merge(fl.geometry.force_2d().values):
+        lines += [q for q in getattr(g, "geoms", [g]) if q.geom_type == "LineString" and q.length > 1]
+    tree_l = shapely.STRtree(lines)
+    begins = {}
+    for i, g in enumerate(lines):
+        begins.setdefault((round(g.coords[0][0]), round(g.coords[0][1])), []).append(i)
+    out = {}
+    for li, grp in hit.groupby("index_right"):
+        lake = lakes.geometry.iloc[li].buffer(30)
+        dead = {int(v) for v in grp.o}
+        entry = None
+        for i in tree_l.query(lake, predicate="intersects"):
+            g = lines[i]
+            if not lake.contains(shapely.Point(g.coords[0])) or lake.contains(shapely.Point(g.coords[-1])):
+                continue
+            length, seen = 0.0, set()
+            while g is not None and length < 3000 and entry is None:
+                for d in np.arange(0, g.length, 25.0):
+                    pt = g.interpolate(d)
+                    if lake.contains(pt):
+                        continue
+                    c_, r_ = ~T * (pt.x, pt.y)
+                    r_, c_ = int(np.floor(r_)), int(np.floor(c_))
+                    if not (0 <= r_ < H and 0 <= c_ < W):
+                        length = 1e9                                # the brook leaves the box first: leave it closed
+                        break
+                    if int(outlet[r_ * W + c_]) not in dead:
+                        entry = r_ * W + c_
+                        break
+                length += g.length
+                nx = [j for j in begins.get((round(g.coords[-1][0]), round(g.coords[-1][1])), []) if j not in seen]
+                g = lines[nx[0]] if nx else None
+                seen.update(nx[:1])
+            if entry is not None:
+                break
+        if entry is not None:
+            out.update({o_: entry for o_ in dead})
+    return out
+
+more = pond_links(set(links))
+links.update(more)
+def joined(o_, seen=()):
+    """(root, unit, outlet) of where the water of the nameless lake basin with dead end o_ goes on, or None."""
+    e = links.get(o_)
+    if e is None or o_ in seen:
+        return None
+    r_, o2 = int(root[e]), int(outlet[e])
+    if r_ in named_root:
+        return r_, int(unit[e]), o2
+    return joined(o2, (*seen, o_)) or ((o2, o2, o2) if o2 not in seen and o2 != o_ else None)
+join = {o_: j for o_ in links if o_ not in named_root for j in [joined(o_)] if j}
+eff = outlet                                    # the outlet each cell's water finally leaves the box by
+if join:
+    src = np.array(sorted(join), dtype=outlet.dtype)
+    jr, ju, jo = (np.array([join[int(o_)][k_] for o_ in src], dtype=outlet.dtype) for k_ in range(3))
+    pos = np.minimum(np.searchsorted(src, outlet), len(src) - 1)
+    hit = src[pos] == outlet
+    root, unit, eff = np.where(hit, jr[pos], root), np.where(hit, ju[pos], unit), np.where(hit, jo[pos], outlet)
+    del pos, hit
+    was_minor = (streams.drainage == MINOR).sum()
+    streams["unit"], streams["root"] = unit[cells], root[cells]
+    streams["drainage"] = [dname.get(int(o_)) or MINOR for o_ in streams.root]
+    print(f"lake basins joined to the drainage below their dam: {len(join)}, {sum(o_ in more for o_ in join)} of them "
+          f"by the detailed stream lines ({was_minor - (streams.drainage == MINOR).sum()} reaches named by it)")
 streams["fork"] = [uname.get(int(u), d) for u, d in zip(streams.unit, streams.drainage)]
 streams.loc[streams.drainage == MINOR, "fork"] = MINOR
 # Where each reach's basin leaves the study area: the centre of the first cell outside the box, if it drains off an
 # edge (sinks such as dams and lakes have none). 06_map.py uses it to join basins cut by a box edge to the
 # drainage they continue into in the neighbouring range.
 o = streams.outlet.values.astype(np.int64)
-streams["out_x"], streams["out_y"] = exit_points(fdir, T, o)
+o_eff = eff[cells].astype(np.int64)
+streams["out_x"], streams["out_y"] = exit_points(fdir, T, o_eff)
 # a promoted tributary joins its river inside the box: it doesn't leave the box as a basin of its own, so 06_map.py
 # must not rename it with the river's basin when that is joined to the next range
-inside = streams.root.values != streams.outlet.values
+inside = streams.root.values != o_eff
 streams.loc[inside, ["out_x", "out_y"]] = np.nan
 streams["basin_km2"] = basin_km2.reindex(o).values.round(2)
 streams[["sid", "drainage", "fork", "strahler", "out_x", "out_y", "basin_km2"]].to_csv(f"{OUT}/stream_drainage.csv",
@@ -264,13 +375,18 @@ print(f"reach areas: {same:.1%} sampled on 05_score's cell; {(streams.area_edge_
 # Canyon -> Santa Clara River) and drops the rest ----
 k = 5
 small = unit.reshape(H, W)[::k, ::k].astype(np.int32)
-named_outlets = {o for o, n in dname.items() if n}
 uo = basin_km2.index.values
 ex_x, ex_y = exit_points(fdir, T, uo)
 exit_of = {int(o): (x, y) for o, x, y in zip(uo, ex_x, ex_y)}
-edge_minor = uo[~np.isnan(ex_x) & (basin_km2.values >= 0.5) & ~np.isin(uo, list(named_outlets))]
-keep = np.isin(outlet.reshape(H, W)[::k, ::k], [o for o in named_outlets if o not in promoted] + edge_minor.tolist()) \
-    | np.isin(root.reshape(H, W)[::k, ::k], [o for o in named_outlets if o in promoted])
+# Unnamed basins that leave the box: off an edge shared with another box, every one, however small (below 0.5 km2
+# they used to be dropped, and each left a notch or a pocket along the line where two boxes meet); off the outer
+# boundary only those of 0.5 km2, as before.
+seam = shapely.union_all([g for (a_, b_), g in shared_edges(list(REGIONS)).items() if a_ == REGION])
+with np.errstate(invalid="ignore"):
+    on_seam = np.zeros(len(uo), bool) if seam.is_empty else \
+        shapely.distance(shapely.points(np.nan_to_num(ex_x, nan=-1e9), np.nan_to_num(ex_y, nan=-1e9)), seam) <= 60
+edge_minor = uo[~np.isnan(ex_x) & ((basin_km2.values >= 0.5) | on_seam) & ~np.isin(uo, list(named_root))]
+keep = np.isin(root.reshape(H, W)[::k, ::k], list(named_root) + edge_minor.tolist())
 rows = []
 for g, v in features.shapes(small, mask=keep, transform=T * rasterio.Affine.scale(k)):
     rows.append(dict(unit=int(v), geometry=shapely.geometry.shape(g)))
@@ -283,10 +399,17 @@ poly["fork"] = [uname.get(int(u), d) for u, d in zip(poly.unit, poly.drainage)]
 poly["out_x"] = [exit_of[int(o)][0] if d == MINOR else np.nan for o, d in zip(poly.outlet, poly.drainage)]
 poly["out_y"] = [exit_of[int(o)][1] if d == MINOR else np.nan for o, d in zip(poly.outlet, poly.drainage)]
 poly["exit"] = ["" if np.isnan(x) else f"{x:.0f},{y:.0f}" for x, y in zip(poly.out_x, poly.out_y)]
-poly = poly.dissolve(["drainage", "fork", "exit"]).reset_index()
+# does it leave over an edge shared with another box? By where its outlet leaves, not by how near the outline comes:
+# a creek that only clips this box drains a thin finger of it, and at 50 m cells the finger's outline can stop short
+# of the edge it leaves by
+seam_out = set(uo[on_seam].tolist())
+poly["over_seam"] = [int(o) in seam_out for o in poly.outlet]
+poly = poly.dissolve(["drainage", "fork", "exit"], aggfunc={"over_seam": "max", "out_x": "first", "out_y": "first"}).reset_index()
 poly["region"] = LABEL
 poly["area_km2"] = (poly.area / 1e6).round(1)
-poly = poly[poly.area_km2 >= np.where(poly.drainage == MINOR, 0.5, 2)].reset_index(drop=True)   # edge slivers
+# slivers go, except along an edge shared with another box, where 06_map.py joins them to what is across it
+at_seam = np.zeros(len(poly), bool) if seam.is_empty else shapely.distance(poly.geometry.values, seam) <= 60
+poly = poly[(poly.area_km2 >= np.where(poly.drainage == MINOR, 0.5, 2)) | at_seam | poly.over_seam.astype(bool)].reset_index(drop=True)
 # Simplify the fork polygons together as one coverage, so neighbours keep exactly shared edges (simplifying each on
 # its own left gaps and overlaps between forks, which the maps drew as little triangles along the divides). The
 # polygons are first rebuilt from their noded boundaries: built cell by cell, one polygon's edge can run straight
@@ -299,7 +422,7 @@ inp, owner = shapely.STRtree(geoms).query(shapely.point_on_surface(faces), predi
 faces, owner = faces[inp], owner
 simp = gpd.GeoDataFrame({"i": owner}, geometry=shapely.coverage_simplify(faces, 60), crs=CRS).dissolve("i")
 poly.loc[simp.index, "geometry"] = simp.geometry.values
-poly[["region", "drainage", "fork", "area_km2", "out_x", "out_y", "geometry"]].to_crs(4326).to_file(f"{OUT}/drainages.gpkg")
+poly[["region", "drainage", "fork", "area_km2", "out_x", "out_y", "geometry"]].to_file(f"{OUT}/drainages.gpkg")
 
 print(f"{len(basin_km2)} outlets, {len(major)} >= {MAJOR_KM2} km2; {(poly.drainage == MINOR).sum()} unnamed basins "
       f"drain off an edge ({poly[poly.drainage == MINOR].area_km2.sum():.0f} km2)")
