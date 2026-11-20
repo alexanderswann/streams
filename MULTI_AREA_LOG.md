@@ -2377,6 +2377,19 @@ score), installed by a script that applies the measured code, and checked afterw
   lexington_va, se_pa, adk_northwest, adk_southwest, adk_southeast; no fish score moved; Lakes ticked on opening in 2D
   and 3D (Smokies checked in the browser). la, jackson, adk_high_peaks were mapped after it by the dry-creek rebuild,
   central_vt waits for the Vermont session's rebuild. The next publish carries all of it.
+- **Both Palisades changes installed (the user: "Yes, both", ~16:00).** `05b_flow.py`: a reach's share inside an NHD
+  lake counts the lake's touching pieces together; whether it holds water stays per piece (counted per lake, 7 more
+  reaches in the Adirondacks, in pieces with no level water of their own, would have changed: left as they are).
+  `06_map.py`: reaches lying in a lake (below_dam "in:", at least half inside a lake the Lakes layer draws) are left
+  off the stream lines (2D, 3D, the overview's main rivers) and off the creeks trails are shifted beside. Rebuilt
+  16:01-16:08: 05b for jackson/palisades, 06_map for the 11 areas other than central_vt (which the Vermont session's
+  rebuild maps), 12_profiles for jackson (`item9/rebuild5.sh`). **Checked** (`item9/verify5.py`): the palisades flow
+  table differs only in s632 (now "in:Palisades Reservoir", reservoir); no other fish score moved in any area; lines
+  drawn + reaches drawn as lake = all reaches in every area; drawn as lake: jackson 431, smokies 565, la 417, n_georgia
+  818, ne_ct 367, lexington_va 41, se_pa 66, adk_high_peaks 1,558, adk_northwest 1,504, adk_southwest 761, adk_southeast
+  1,442 (7,970). Rendered: Palisades Reservoir and Long Lake draw as water with no lines across them; Lakes on; no
+  console errors. The live site (2db6522, the dry-creek session's publish, 15:59) has the lakes-layer rule: Cheoah's 32
+  reaches read "reservoir (Cheoah Reservoir)" there. These two changes go out with the Vermont session's publish.
 
 ## 2026-11-20, midday: website size and phone copies (this session)
 Task from the "Today's task overview" session. Full numbers:
@@ -2755,3 +2768,81 @@ phone/ refreshed (681 MB). Nothing committed in this repository (the overview se
 **Follow-ups:** the imagery is 2022-24 (refresh to newer summers only after re-measuring); Indian Creek above Palisades
 (Jackson, model 22 cfs, dry in 1954-60) and the Adirondack research tribs below the map floor are left as they are; no
 greenness for the humid areas (the rule finds nothing there).
+
+## 2026-11-20, late afternoon: Vermont reaches the New York line in Lake Champlain; the Adirondack maps hidden (Vermont session)
+**User: "expand vermont all the way to the its eastern border in the middle of lake champlain, dont expand north or
+south. and hide the adks on the map for now dont get rid of the code or delete anyting just hide anywhere it is
+displayed on the website".** Read as Vermont's border in the lake (its west edge: the New York line runs down the
+lake's middle).
+
+**The edge.** Census TIGER/Line 2024 puts the line, between the boxes' south and north edges, at x 625,145 (off Crown
+Point) to 635,795 (off Burlington). All three boxes' west edge moved from 640,000 to 625,000 (one 15 km DEM tile, so
+the tiles on disk kept their names); north and south edges unchanged.
+- A rectangle there takes in about 307 km2 of New York shore (Crown Point and Ticonderoga 115 km2, Port Henry to
+  Willsboro 187). Following the line with boxes would take 14 strips, some with under 30 m between New York land and
+  Vermont land.
+- So the boxes stay rectangles for the hydrology (nothing on the New York shore drains into a Vermont creek) and the map
+  is cut at the line: config key `clip_state` ("VT") and new `scripts/areaclip.py`.
+  - 05_score drops reaches and drops whose middle lies past the line, cuts the trails and known falls it copies, and
+    makes the hillshade transparent past it.
+  - 05c cuts drainages; 05d cuts lakes (Lake Champlain is stored to the line; 15 New York ponds dropped);
+    lake_bathymetry cuts depth lines; 06_map cuts trails, access roads, parking, closures and the context layers.
+  - Areas without `clip_state` are unchanged.
+
+**Lakes whose water leaves the map (03b_stitch.py, 05c_drainages.py; applies to every area at its next 03b run).**
+- The problem: a map edge across a lake whose outlet lies outside the map left its flat water draining to the edge
+  along dozens of parallel paths. They were drawn as made-up creeks (1,113 km of DEM lines on Lake Champlain in
+  adk_high_peaks' champlain box) and the drainages painted the water in strips (the Adirondack map had "Little Trout
+  Brook" in mid-lake).
+- Measured over all 12 areas (scratch `edge_lakes.py`): 33 such lakes. The big ones: Lake Champlain (adk_high_peaks
+  593 reaches, adk_southeast 159, central_vt 57 before this change), Hartwell Lake 152, Tellico Lake 100, Lake Elsinore
+  40, Lake Sidney Lanier 27, Lake Casitas 26, Lake Chaubunagungamaug 17.
+- Fix: in 03b, a lake that holds water whose most-water cell lies on the map's rim carries no stream cells (the creeks
+  end at its shore), and each box lists such lakes in `lakes_off_map.gpkg`. 05c reads that list and treats the water as
+  it treats the sea: paths end at the mouth, the water belongs to no drainage, and a creek reaching it is named from
+  5 km2.
+- Also in 03b: a dead end where an edge between boxes meets the map's own edge no longer counts as stranded water. The
+  corner of Vermont's new west edge and the white_river / mad_winooski line (4 km2 of New York lake water) failed the
+  check; the mend attempt there changed nothing, so the run's data stood.
+- Only central_vt has been rebuilt with it. The other areas pick it up at their next 03b run (and the steps after it).
+
+**Caches moved** before the run to `data/backup_20261120-vtwest/caches/` (as on 2026-11-19). Per box: OSM roads,
+trails, waterways, waterfalls and dams, NHD flowlines and points, canopy. Shared: every download cache in cache/ except
+lake_dem1m (tiles), the PRISM clip, and the tables keyed by range names (nhdplus_v2, nhdplus_v2_paths, reservoirs).
+- Mistake: 02f's OSM and Wikidata falls caches record their box and fall back to the old copy when a fetch fails. I
+  moved them, and Wikidata answered 502 during the run, so this build's known falls lack Wikidata as a source. In
+  Vermont that only drops its name from Moss Glen Falls' and Huntington Gorge's source lines (no fall comes from it
+  alone). The old copy is back as the fallback; the next 02f run fetches Wikidata again. Don't move 02f's caches.
+
+**Run** 16:00-16:21: 01 and 02 for the three boxes, then `run_rebuild_a.sh central_vt`. It carried the other sessions'
+approved changes (in-lake rule, dry creeks, lakes on by default, lake reaches drawn as lake).
+
+**Checks** (scratch `checks_vtwest.py`):
+- 03b: 7 lakes drain off the map (Lake Champlain; Lake George, New York, cut off; Chittenden Reservoir, Lake Hortonia,
+  Greenwood Lake, Wolcott Pond, Echo Lake). No stream cells and no drainage on Lake Champlain.
+- No negative drainage (largest 2,379 km2). Order-3+ cells in Vermont with no reach within 25 m: 0.0 km per box. Reach
+  ends on shared edges: 76, dead 0. Sudden flow drops: 0.
+- Nothing past the line: 8,298 reaches, 681 drops, 116 known falls, the drainages, 466 lakes (481 in the boxes): 0;
+  trails 0 m.
+- Rivers at the lake against NHDPlus: Lamoille 1,807 / 1,869 km2 (as in the build before; it now reaches the lake),
+  Winooski 2,716 / 2,754, Otter Creek 2,468 / 2,444, La Platte 136 / ~138, Lewis 205 / 207, Little Otter 188 / 189,
+  Malletts 49 / 49, Potash 16.9 / 18.9.
+- The rest of Vermont against the build before: 98.4 % of reaches at the same spot; of those 96.5 % have the same
+  score, 99.9 % are within 5, 0.4 % changed flow class. The 7 that moved 10+ points are at the old edge (x 640-642 km):
+  "no data" before, now matched to flows.
+- The strip: 691 reaches (513 year-round, 77 no data, 61 usually flows, 22 seasonal, 18 reservoir), median score 50.
+- On the rendered map (localhost): the lake cut at the line off Burlington, Crown Point, Ticonderoga and west of the
+  islands; no lines on the lake; drainages end at the shore; the hillshade stops at the line; no console errors.
+
+**The Adirondack maps hidden.** `hidden=True` on the four adk_ areas in config.py. 13_overview.py and 14_portable.py skip
+them; 06_map.py leaves them out of the Go-to menus (a hidden map still lists itself). publish_site.sh still copies
+their folders, so their pages stay at their addresses on the site, linked from nowhere; nothing was deleted. The
+open-items session's 06_map pass (16:02-16:08) rebuilt the other 11 maps' menus with the flag. To show them again: take
+the four flags out, run 06_map for every area and 13_overview, and publish.
+
+**Published** 16:28, site commit `21266ec` (`publish_site.sh commit now`, message reworded, `push now`): all 12 areas
+and the overview, 32 files, all under streams/ (607 MB). Live by 16:30; the overview, Vermont's map, data and
+hillshade, LA's data and an Adirondack page match the push by SHA-256. Phone copies refreshed (one-file map: 8 areas).
+
+**Open:** the edge-lake fix for the other 11 areas (needs their hydrology rebuilt); Lake Champlain's depth (NOAA's
+2018 multibeam isn't read); Wikidata falls at the next 02f run.

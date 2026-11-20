@@ -619,7 +619,47 @@ def heat_line(air, f):
     rec = f" (at most {degf(HOT, 1)})" if pd.notna(HOT) else ""
     return (f"August air averages {degf(air, 1)} here (PRISM 1991–2020 normal), hotter than any creek in these ranges "
             f"where trout have been recorded{rec} · fish score × {f:.2f}")
-s_show = s_ll.assign(geometry=shapely.set_precision(s_ll.geometry.simplify(0.00008).values, 1e-5))
+# Reaches lying in a lake are drawn as the lake while the Lakes layer is on (it starts on, since 2026-11-20), and as
+# streams again when it is switched off (the user: the rivers run on through the lakes then). The routing runs its paths
+# straight across flat water (65 of the 143 reaches in Palisades Reservoir), and their names and colours came out of
+# the lake's own drainage vote ("Trout Creek" across Palisades). A reach 05b_flow.py reads as lying in a lake
+# (below_dam "in:") that lies at least half inside a lake the Lakes layer draws (about 8,200 of the 12 maps' 105,700
+# reaches; some 170 at lake edges, where the two outlines differ, stay with the other streams) goes whole into a layer
+# of its own (STREAMS_LAKE, which map_drainages.js, map3d.html and 14_portable.py show only while Lakes is off). The map
+# of all areas keeps the whole reaches in its main rivers: it draws no lakes. Its data stays: ranks, profiles, the CSV.
+s_ll["in_lake_drawn"] = False
+from config import SHARED_DERIVED as SD_
+if os.path.exists(f"{SD_}/lakes.gpkg") and "below_dam" in s_ll:
+    cand_ = s_ll.below_dam.fillna("").astype(str).str.startswith("in:").values
+    if cand_.any():
+        lw_ = gpd.read_file(f"{SD_}/lakes.gpkg").to_crs(EPSG)
+        lw_ = gpd.GeoDataFrame(geometry=list(shapely.get_parts(shapely.union_all(shapely.make_valid(lw_.geometry.values)))),
+                               crs=EPSG)
+        sc_ = s_ll[cand_][["geometry"]].to_crs(EPSG)
+        j_ = gpd.sjoin(sc_, lw_, predicate="intersects")
+        if len(j_):
+            sh_ = (shapely.length(shapely.intersection(j_.geometry.values, lw_.geometry.reindex(j_.index_right).values))
+                   / j_.geometry.length.values)
+            sh_ = pd.Series(sh_, index=j_.index).groupby(level=0).sum()
+            s_ll.loc[sh_.index[sh_ >= 0.5], "in_lake_drawn"] = True
+    print(f"reaches lying in a lake, drawn whole only while Lakes is off: {int(s_ll.in_lake_drawn.sum())}")
+# ... but their stretch outside the lake is drawn, so a river runs on to the shore and into the lake. Left off whole, a
+# reach mostly in the lake took its approach with it and the line stopped short (around Jackson Lake 18.9 km of river,
+# a 2.5 km gap above one inlet). Stubs under 20 m are left off.
+s_show = s_ll.assign(lk_=False)
+if s_ll.in_lake_drawn.any():
+    il_ = s_ll.in_lake_drawn.values
+    out_ = s_ll[il_].to_crs(EPSG)
+    out_ = out_.assign(geometry=shapely.difference(out_.geometry.values, shapely.union_all(lw_.geometry.values)))
+    out_ = out_[~out_.geometry.is_empty].explode(index_parts=False)          # one line per stretch, as every reach is
+    out_ = out_[(out_.geom_type == "LineString") & (out_.length >= 20)].to_crs(s_ll.crs)
+    # ... and the whole reaches once more, marked lk_, for the layer shown while Lakes is off (STREAMS_LAKE below)
+    s_show = gpd.GeoDataFrame(pd.concat([s_ll[~il_].assign(lk_=False), out_.assign(lk_=False),
+                                         s_ll[il_].assign(lk_=True)]), crs=s_ll.crs).reset_index(drop=True)
+    print(f"  of them drawn up to the shore: {out_.index.nunique()} ({out_.to_crs(EPSG).length.sum() / 1000:,.1f} km "
+          f"of line outside the lakes, in {len(out_)} pieces)")
+s_show = s_show.assign(geometry=shapely.set_precision(s_show.geometry.simplify(0.00008).values, 1e-5))
+s_show = s_show[~s_show.geometry.is_empty & (s_show.geom_type == "LineString")]
 mid_ll = s_show.geometry.interpolate(0.5, normalized=True)
 nz = lambda v, nd=0: None if pd.isna(v) else round(float(v), nd) if nd else int(round(float(v)))
 props = pd.DataFrame({
@@ -662,7 +702,10 @@ props = pd.DataFrame({
     # where the reach stands among this area's reaches (scores aren't comparable between areas)
     "rk": s_show.area_rank_pct.astype(int),
     "y": mid_ll.y.round(5), "x": mid_ll.x.round(5)})
+props["_lk"] = s_show.lk_.values
 s_feat = gpd.GeoDataFrame(props, geometry=s_show.geometry.values, crs=4326).sort_values(["o", "fs"])
+s_feat_lake = s_feat[s_feat._lk.values].drop(columns="_lk")      # the whole reaches lying in a lake (above)
+s_feat = s_feat[~s_feat._lk.values].drop(columns="_lk")
 
 # drainage / fork polygons, label points (inside the largest part) and legend entries
 def label_pt(g):
@@ -767,7 +810,7 @@ def beside_creeks(feat, step=10.0, max_d=80.0, min_run=40.0):
     feat = feat[~feat.geometry.is_empty]
     if not len(feat):
         return feat
-    cr = s_ll[s_ll.strahler >= 2].to_crs(EPSG)
+    cr = s_ll[(s_ll.strahler >= 2) & ~s_ll.in_lake_drawn].to_crs(EPSG)      # the creeks drawn (not those in lakes)
     cg, co = cr.geometry.values, cr.strahler.values.astype(int)
     ex = feat.to_crs(EPSG).explode(index_parts=False)
     ex = ex[ex.geom_type == "LineString"]
@@ -887,7 +930,7 @@ print("trails", len(t_feat), "ways |", t_feat.groupby("rk").size().to_dict(), "|
 # are written once, to map3d_data.js at the end of this script: this page loads that file and points the globals
 # map_drainages.js reads at its entries. They used to be inlined here as well, a second copy of the same data (231 MB
 # over the 12 areas, 2026-11-20); the published site has a 1 GB limit.
-SHARED_3D = {"STREAMS": "streams", "FORKS": "forks", "DIVIDES": "divides", "DRAINS": "drains", "LBL": "lbl",
+SHARED_3D = {"STREAMS": "streams", "STREAMS_LAKE": "streams_lake", "FORKS": "forks", "DIVIDES": "divides", "DRAINS": "drains", "LBL": "lbl",
              "PCT": "pct", "PCT_LABEL_LINES": "pct_labels", "TRAILS": "trails", "TRAIL_LABEL_LINES": "trail_labels",
              "ROADS": "roads", "PARKING": "parking"}
 m.get_root().header.add_child(folium.Element(
@@ -898,7 +941,8 @@ m.get_root().header.add_child(folium.Element(
     + open(os.path.join(os.path.dirname(__file__), "map_drainages.js")).read() + "</script>"))
 
 # every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
-X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
+X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
+       "streams_lake": json.loads(s_feat_lake.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
        "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))
 
@@ -1174,7 +1218,7 @@ def simplify_together(geoms, tol):
 ov_d = dpoly[["drainage", "km2", "geometry"]].assign(geometry=simplify_together(dpoly.geometry.values, 120)).to_crs(4326)
 ov_d = ov_d.assign(c=[dcol[d_] for d_ in ov_d.drainage], km2=ov_d.km2.round(1),
                    geometry=shapely.set_precision(shapely.make_valid(ov_d.geometry.values), 1e-5))
-ov_s = s_ll[s_ll.strahler >= 4][["name", "drainage", "strahler", "fish_score", "geometry"]]
+ov_s = s_ll[s_ll.strahler >= 4][["name", "drainage", "strahler", "fish_score", "geometry"]]   # whole: no lakes drawn there
 ov_s = ov_s.assign(c=[dcol.get(d_, MINOR_COL) for d_ in ov_s.drainage],
                    geometry=shapely.set_precision(ov_s.geometry.simplify(0.0004).values, 1e-5))
 ov_s = ov_s[~ov_s.geometry.is_empty]

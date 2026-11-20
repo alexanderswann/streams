@@ -62,7 +62,7 @@ it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other area
 | `la` | LA mountains | the eight above | 90404 Santa Monica |
 | `jackson` | Jackson Hole, Grand Teton & Teton Valley, WY and ID (all of Grand Teton NP, Teton Valley around Driggs, Palisades Reservoir and Alpine; grown from three boxes to seven on 2026-11-19, laid out so no lake, and no reservoir's filled basin, crosses an edge between two boxes: see `MULTI_AREA_LOG.md`) | `teton_snake`, `gros_ventre`, `hoback`, `jackson_lake`, `buffalo_fork`, `teton_valley`, `palisades` | 83001 Jackson |
 | `n_georgia` | North Georgia mountains | `cohutta`, `blue_ridge`, `rabun`, `hooch_tailwater` | 30305 Atlanta |
-| `central_vt` | Central Vermont | `stowe_lamoille`, `mad_winooski`, `white_river` | 05753 Middlebury |
+| `central_vt` | Central Vermont (the Green Mountains from the White River to the Lamoille, and since 2026-11-20 the Champlain Valley west to the New York line in the middle of Lake Champlain: the boxes reach past the line, and the map is cut at it, `clip_state` in `AREAS` and `areaclip.py`) | `stowe_lamoille`, `mad_winooski`, `white_river` | 05753 Middlebury |
 | `ne_ct` | Northeastern Connecticut | `natchaug`, `quinebaug` | 06281 Woodstock |
 | `lexington_va` | Lexington, Virginia | `maury_goshen`, `blue_ridge_va` | 24450 Lexington |
 | `se_pa` | Southeastern Pennsylvania (and northern Delaware) | `brandywine`, `ridley_valley` | 19063 Media |
@@ -75,13 +75,15 @@ it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other area
 The four `adk_` areas are the whole Adirondack Park (its Blue Line, 23,560 km²) in four maps: one map of the park
 would be about 150 MB, over GitHub's 100 MB file limit and too heavy for a phone. The lines between them avoid
 cutting lakes and keep each river on one side (see `config.py` and `MULTI_AREA_LOG.md`, 2026-11-19 evening).
+Since 2026-11-20 they are hidden (`hidden=True` in `AREAS`): still built, kept and published at their addresses, but
+not on the map of all areas, in the other maps' "Go to" menus or in the one-file map. Take the flag out to show them.
 
 | Folder | What |
 |---|---|
 | `data/raw/<area>/<range>/`, `data/derived/<area>/<range>/` | Per-range downloads (DEM, NHD, OSM, canopy) and derived rasters (filled DEM, flow direction, area) |
 | `data/raw/<area>/_shared/` | Shared by an area's ranges: trails, access roads, wilderness, flow model, long-distance trails, download caches |
 | `data/derived/<area>/_shared/` | Cross-box inflow table (`inflows.json`) |
-| `data/raw/_national/` | Downloads every area reuses: NHD HU4 GeoPackages, the PRISM August air temperature grid |
+| `data/raw/_national/` | Downloads every area reuses: NHD HU4 GeoPackages, the PRISM August air temperature grid, the Census TIGER/Line state outlines (`areaclip.py`) |
 | `output/<area>/` | The combined map, CSVs and GPX below, plus one folder per range |
 
 **What differs outside California.** Each area lists the sources that exist only for it (`sources` in `AREAS`;
@@ -167,7 +169,10 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    still ended on purpose at every lake and reservoir of 8+ ha that holds water, at the cell where the water leaves
    it: drainages end at dams, and `crossbox.py` carries the area on. "Holds water" means 2+ ha of the outline at
    one elevation in the DEM; water runs through dry flood-control basins and reservoirs that were drawn down when
-   the DEM was flown (San Gabriel Reservoir, Cogswell, Devil's Gate)
+   the DEM was flown (San Gabriel Reservoir, Cogswell, Devil's Gate). A lake whose water leaves the map through its
+   own surface (where most of its water gathers is on the map's edge: Lake Champlain, Tellico, Hartwell) carries no
+   stream lines since 2026-11-20: its flat water had drained to the edge along dozens of parallel made-up creeks.
+   The creeks end at its shore, and `03b` lists such lakes per box (`lakes_off_map.gpkg`) for `05c`
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
    with the channel 200 m above and below. Classes:
    - **waterfall-like step**: max slope ≥ 0.6 and ≥ 2.5× steeper than the neighbouring channel
@@ -237,7 +242,8 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    itself that big sheds its own the same way; smaller ones keep their forks (Granite Creek stays in the Hoback).
    Sea-level water (DEM ≤ 0.5 m: the sea, tidal rivers) ends a path at the creek's mouth and belongs to no
    drainage; the DEM stores it as flat 0 m, and paths running on across it joined every creek on the tidal Delaware
-   into one drainage. A creek that reaches the sea is named from 5 km². Writes `drainages.gpkg` (fork polygons) and `stream_drainage.csv`
+   into one drainage. A creek that reaches the sea is named from 5 km². A lake whose water leaves the map (`03b`'s
+   `lakes_off_map.gpkg`) counts as the sea here. Writes `drainages.gpkg` (fork polygons) and `stream_drainage.csv`
    (sid → drainage, fork, and Strahler order taken on the channel cell itself).
    - **Across box edges** (`crossbox.py`): each range's hydrology sees only its own box, so a creek crossing in from
      the next box would start again with no drainage area (the Santa Clara River entered the Piru & Castaic box with
@@ -307,7 +313,7 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    the dam, and were scored as streams: Fontana Lake's arms at fish 83), and since 2026-11-20 so is one with a segment
    of its own, where the lake holds water (`03b`'s level test puts a pit at its outlet): a reach matched to the creek's
    line above the lake had read as that creek (a reach all inside String Lake scored 100; 397 such reaches over the 12
-   areas). One in a lake with no level water (a marsh or meadow NHD maps as a pond) keeps its own evidence. Where NHD maps a lake as river area, leaves it out or draws it smaller than the water, the lakes layer's outline counts too (`05d_lakes.py`, which `run_mid.sh` runs between `05c` and `05b`): a lake of 8+ ha, level in the lidar, not intermittent and not a lagoon (since 2026-11-20: the Little Tennessee inside Cheoah Reservoir, NHD river area, had scored 73 as a river; 196 reaches over the 12 areas, 125 of them at fish 60+). So are reaches below the seven diversions where a USGS gauge on the creek below shows
+   areas). One in a lake with no level water (a marsh or meadow NHD maps as a pond) keeps its own evidence. Where NHD maps a lake as river area, leaves it out or draws it smaller than the water, the lakes layer's outline counts too (`05d_lakes.py`, which `run_mid.sh` runs between `05c` and `05b`): a lake of 8+ ha, level in the lidar, not intermittent and not a lagoon (since 2026-11-20: the Little Tennessee inside Cheoah Reservoir, NHD river area, had scored 73 as a river; 196 reaches over the 12 areas, 125 of them at fish 60+). A lake NHD stores as several touching pieces counts as one for the share inside it (Palisades Reservoir is four: the Salt River's crossing, 72% in the four and under half in any one, had scored 80 as a river); whether it holds water is still read from the piece holding most of the reach. So are reaches below the seven diversions where a USGS gauge on the creek below shows
    it often dry (`DIVERSIONS` in `flowlib.py`): the Santa Ana River No. 1 dam, two Mill Creek intakes, and the Lytle,
    Plunge, City Creek and San Jacinto River diversions. The model can't see water leave in a canal. Their popups
    quote the gauge's share of summers flowing. Writes `flow_streams.csv` / `flow_drops.csv`: typical and drought-year low flow,
@@ -433,6 +439,12 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   bike colouring and the trail key come on with the trail layer. In 3D, each overlay's starting
   state is the last entry of its `ov` row in `map3d.html`. Drops, waterfalls, gauges, closures,
   trout waters, trout evidence, springs, trails and trailheads are in the (collapsed) layer list, each named with its map symbol.
+- Reaches lying in a lake are drawn as the lake, not as stream lines, in the 2D and 3D maps and the main rivers of the
+  map of all areas and the single-file map (since 2026-11-20; the Lakes layer starts on): a reach `05b` reads as lying
+  in a lake (below_dam "in:") that lies at least half inside a lake the Lakes layer draws. The routing ran its paths
+  dead straight across flat water, and their names and colours came from the lake's own drainage vote ("Trout Creek"
+  across Palisades Reservoir). 7,970 reaches on 11 maps (central_vt follows with its rebuild); about 170 at lake edges,
+  where the two outlines differ, stay drawn. Their data stays: scores, ranks, profiles, `stream_reaches_ranked.csv`.
 
 `07_road_closures.py` (no REGION needed) fetches **current road closures**. Run it, then `06_map.py`, whenever you
 want fresh closures on the map; the layer name shows when they were fetched. Sources:

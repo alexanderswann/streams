@@ -168,13 +168,27 @@ function initDrainageMap(map, ctrl) {
   const hideHover = () => { if (map.hasLayer(hoverLine)) hoverLine.remove(); };
   const halo = L.geoJSON(S, {filter: f => f.properties.o >= 3, style: hstyle, interactive: false,
                              renderer: L.canvas({pane: "halo", padding: 0.4})});
-  const lines = L.geoJSON(S, {style, renderer: r, onEachFeature: (f, l) => {
+  const bindStream = (f, l) => {
     l.bindTooltip(() => tip(f.properties), {sticky: true, className: "stip", direction: "top", offset: [0, -6]});
     l.bindPopup(() => pop(f.properties), {maxWidth: 340});
     l.on("mouseover", () => showHover(l, col(f.properties), W[f.properties.o] * zf() + 3));
     l.on("mouseout", hideHover);
-  }});
+  };
+  const lines = L.geoJSON(S, {style, renderer: r, onEachFeature: bindStream});
   const streams = L.layerGroup([halo, lines]).addTo(map);
+  // Reaches lying in a lake (STREAMS_LAKE, 06_map.py): the Lakes layer draws that water, so they show only while Lakes
+  // is off, and then like any other stream (the user, 2026-11-20: the rivers run on through the lakes when it's off)
+  const SL = {type: "FeatureCollection", features: (window.STREAMS_LAKE || {}).features || []};
+  const lakeHalo = L.geoJSON(SL, {filter: f => f.properties.o >= 3, style: hstyle, interactive: false,
+                                  renderer: halo.options.renderer});
+  const lakeLines = L.geoJSON(SL, {style, renderer: r, onEachFeature: bindStream});
+  const lakeStreams = L.layerGroup([lakeHalo, lakeLines]);
+  function syncLakeStreams() {
+    const li = (ctrl._layers || []).find(x => x.overlay && /Lakes:/.test(x.name));
+    const want = SL.features.length > 0 && map.hasLayer(streams) && !(li && map.hasLayer(li.layer));
+    if (want && !map.hasLayer(lakeStreams)) { lakeStreams.addTo(map); restack(); }
+    else if (!want && map.hasLayer(lakeStreams)) map.removeLayer(lakeStreams);
+  }
   const basinLayer = L.layerGroup([fills, divides]).addTo(map);
 
   // ---- Pacific Crest Trail (02c_pct.py): thin dark dashed line on a soft yellow band, above the streams ----
@@ -483,7 +497,7 @@ function initDrainageMap(map, ctrl) {
   }
 
   function restyle() {
-    lines.setStyle(style); halo.setStyle(hstyle);
+    lines.setStyle(style); halo.setStyle(hstyle); lakeLines.setStyle(style); lakeHalo.setStyle(hstyle);
     fills.setStyle(f => ({fillOpacity: fillOp(f)}));
     divides.setStyle(f => ({opacity: dim({d: f.properties.drainage}) ? 0.25 : 0.55}));
     restylePct(); updateRoads(); updateTrails(); updateLabels(); updatePois(); renderKey();
@@ -491,6 +505,8 @@ function initDrainageMap(map, ctrl) {
   map.on("zoomend", restyle);
   map.on("overlayadd overlayremove moveend", updateLabels);
   map.on("overlayadd", restack);
+  map.on("overlayadd overlayremove", syncLakeStreams);
+  syncLakeStreams();
   map.attributionControl.addAttribution("Trails &amp; PCT © <a href='https://www.openstreetmap.org/copyright'>" +
     "OpenStreetMap</a> contributors · " + ((window.LBL || {}).credits ||
     "USGS National Digital Trails · USFS · CDFW · iNaturalist · CAL FIRE · NIFC WFIGS · " +

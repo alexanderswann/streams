@@ -391,8 +391,21 @@ def run(group):
             print(f"  dead end on an edge between boxes at ({x_:.0f}, {y_:.0f}), {km2:,.1f} km2: "
                   + (f"mended, {n:,} cells re-routed (DEM conditioned again {side:.0f} km across)" if ok
                      else f"NOT mended (DEM conditioned again up to {side:.0f} km across)"))
-    left = [(*(T * (c_ + 0.5, r_ + 0.5)), float(acc[r_, c_]) * RES * RES / 1e6)
-            for r_, c_ in (seam_dead_ends(fd, acc, group, where) if len(group) > 1 else [])]
+    # A dead end where an edge between boxes meets the map's own edge is water leaving the map (crossbox.py reads a
+    # dead end on the rim so), not water stranded short of an outlet: central Vermont's west edge meets the line
+    # between two of its boxes in Lake Champlain, where the lake's flat water stops in the corner cell (2026-11-20).
+    def on_map_edge(r_, c_):
+        ring = fd[max(r_ - 1, 0):r_ + 2, max(c_ - 1, 0):c_ + 2]
+        return not (0 < r_ < H - 1 and 0 < c_ < W - 1 and (ring > 0).all())
+    left = []
+    for r_, c_ in (seam_dead_ends(fd, acc, group, where) if len(group) > 1 else []):
+        x_, y_ = T * (c_ + 0.5, r_ + 0.5)
+        km2 = float(acc[r_, c_]) * RES * RES / 1e6
+        if on_map_edge(r_, c_):
+            print(f"  dead end at ({x_:.0f}, {y_:.0f}), {km2:,.1f} km2, where an edge between boxes meets the map's "
+                  "edge: the water leaves the map there")
+        else:
+            left.append((x_, y_, km2))
     # 3. lakes that hold water end the paths at their outlet: the cell inside with the most water
     lakes = still_water(tuple(sorted({h for r in group for h in REGIONS[r]["hu4"]})), (x0, y0, x1, y1))
     # A lake lying across an edge between two boxes used to lose its outlet when the two boxes conditioned it

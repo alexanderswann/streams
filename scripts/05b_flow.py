@@ -71,18 +71,29 @@ mid = s.geometry.interpolate(0.5, normalized=True)
 
 # ---- the lakes and reservoirs the model's lines are flagged against (flowlib.below_dam_comids), and for each reach
 # the one holding the largest share of its length: a reach at least half inside it lies in it, as for those lines ----
+# NHD stores some lakes as several pieces that touch (Palisades Reservoir as four: 5,626, 396, 376 and 49 ha), so the
+# share is counted over a lake's pieces together: the Salt River's way across Palisades lies 72% in the four and under
+# half in any one, and scored 80 as a river (the only such reach over the 12 areas, 2026-11-20). Whether the lake
+# holds water is still read from the piece holding most of the reach (lake_of): counted over the whole lake, 7 reaches
+# in the Adirondacks lying in a piece with no level water of its own would also have changed.
 wb_ = reservoirs()
 wb_ = wb_.assign(geometry=shapely.make_valid(wb_.geometry.values))
 lake_name, lake_share = pd.Series(None, index=s.index, dtype=object), pd.Series(0.0, index=s.index)
 lake_of = pd.Series(-1, index=s.index)
 if len(wb_):
-    j_ = gpd.sjoin(s[["geometry"]], wb_[["gnis_name", "geometry"]], predicate="intersects")
+    whole_ = gpd.GeoDataFrame(geometry=list(shapely.get_parts(shapely.union_all(wb_.geometry.buffer(1).values))),
+                              crs=CRS)
+    g_ = gpd.sjoin(wb_[["geometry"]], whole_, predicate="intersects")
+    wb_["lake"] = g_[~g_.index.duplicated()].index_right.reindex(wb_.index).values
+    j_ = gpd.sjoin(s[["geometry"]], wb_[["gnis_name", "lake", "geometry"]], predicate="intersects")
     if len(j_):
         share = (shapely.length(shapely.intersection(j_.geometry.values, wb_.geometry.reindex(j_.index_right).values))
                  / j_.geometry.length.values)
-        j_ = j_.assign(share=share).sort_values("share", ascending=False)
+        j_ = j_.assign(share=share)
+        j_["whole"] = j_.groupby([j_.index, "lake"]).share.transform("sum")
+        j_ = j_.sort_values(["whole", "share"], ascending=False)
         j_ = j_[~j_.index.duplicated()]
-        lake_name[j_.index], lake_share[j_.index] = j_.gnis_name.fillna("unnamed reservoir").values, j_.share.values
+        lake_name[j_.index], lake_share[j_.index] = j_.gnis_name.fillna("unnamed reservoir").values, j_.whole.values
         lake_of[j_.index] = j_.index_right.values
 in_lake = (lake_share >= 0.5).values
 # Which of those lakes hold water: 03b_stitch.py ends paths at the outlet of every lake with 2+ ha of its outline at

@@ -113,6 +113,8 @@
   const LOW = 15, LOWCOL = "#8d9aa8";
   const RAMP = ["#3fb0a8", "#2a93c4", "#2a6fc0", "#3a4fb0", "#4b2f9c", "#3a1670"];
   const ramp = fs => fs < LOW ? LOWCOL : RAMP[Math.min(RAMP.length - 1, Math.floor((fs - LOW) / (100 - LOW) * RAMP.length))];
+  // reaches lying in a lake (06_map.py: streams_lake): marked lk, drawn only while the Lakes layer is off (lakeFilter)
+  ((D.streams_lake || {}).features || []).forEach(f => { f.properties.lk = 1; D.streams.features.push(f); });
   D.streams.features.forEach(f => {
     const p = f.properties, o = Math.max(1, Math.min(7, p.o));
     p.o = o;
@@ -549,10 +551,21 @@
       `<label class="li"><input type="checkbox" data-o="${id}"${on ? " checked" : ""}><span class="sym">${sym}</span>${label}</label>`).join("");
     // on by default: streams, drainage outlines and names, the PCT (each overlay's last entry); the rest start hidden
     ov.forEach(([, , , ids, on]) => ids.forEach(l => { if (map.getLayer(l)) map.setLayoutProperty(l, "visibility", on ? "visible" : "none"); }));
+    // the reaches lying in a lake (lk) show only while the Lakes layer is off: the lake draws that water
+    const lakeFilter = lakesOn => {
+      const k = lakesOn ? ["!", ["has", "lk"]] : ["all"];
+      const set = (id, f) => { if (map.getLayer(id)) map.setFilter(id, f); };
+      set("streams", k);
+      set("halo", ["all", [">=", ["get", "o"], 3], k]);
+      set("creek-names", ["all", ["has", "n"], [">=", ["get", "o"], 3], k]);
+    };
+    const lakeOv = ov.find(x => x[0] === "lakes");
+    lakeFilter(!!(lakeOv && lakeOv[4]));
     document.querySelectorAll("input[data-o]").forEach(cb => cb.onchange = () => {
       const o = ov.find(x => x[0] === cb.dataset.o);
       o[3].forEach(l => map.setLayoutProperty(l, "visibility", cb.checked ? "visible" : "none"));
       if (o[0] === "streams") map.setLayoutProperty("creek-names", "visibility", cb.checked ? "visible" : "none");
+      if (o[0] === "lakes") lakeFilter(cb.checked);
     });
     const ex = document.getElementById("exag");
     ex.oninput = () => { document.getElementById("exv").textContent = (+ex.value).toFixed(1);

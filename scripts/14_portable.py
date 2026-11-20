@@ -19,7 +19,7 @@ import base64, gzip, json, os, datetime as dt
 from config import AREAS, ROOT
 
 OUT = f"{ROOT}/output"
-CORE = ["streams", "drops", "falls", "parking", "gauges", "closures", "trout", "lakes", "lake_depth"]
+CORE = ["streams", "streams_lake", "drops", "falls", "parking", "gauges", "closures", "trout", "lakes", "lake_depth"]
 EXTRA = ["trails", "roads"]
 
 
@@ -204,6 +204,10 @@ async function load(a) {
     const d = await unpack("core-" + a.key), g = a.groups;
     a.net = L.geoJSON(d.streams, {style: sstyle, onEachFeature: (f, l) => l.bindPopup(() => pop(f.properties, a), {maxWidth: 320})});
     g.net = [L.layerGroup([a.net]), 10, null];      // [layers, the zoom they appear at, their switch]
+    // the reaches lying in a lake (06_map.py): only while Lakes is off ("!lakes"), then like the other streams
+    a.netl = d.streams_lake && d.streams_lake.features.length ? L.geoJSON(d.streams_lake, {style: sstyle,
+      onEachFeature: (f, l) => l.bindPopup(() => pop(f.properties, a), {maxWidth: 320})}) : null;
+    if (a.netl) g.netl = [L.layerGroup([a.netl]), 10, "!lakes"];
     const lines = [];
     if (d.closures) lines.push(L.geoJSON(d.closures, {style: f => ({color: /^full/.test(f.properties.severity) ? "#e03131" : "#f08c00", weight: 5, opacity: .85}),
       onEachFeature: (f, l) => { const p = f.properties; l.bindPopup(`<div class="pp"><b>${esc(p.road)}</b> · <span class="warn">${esc(p.severity)}</span><br>` +
@@ -261,7 +265,7 @@ async function loadExtra(a) {
 function unload(a) {
   Object.values(a.groups).forEach(g => map.removeLayer(g[0]));
   if (a.trout) map.removeLayer(a.trout);
-  a.groups = {}; a.net = a.trout = null; a.extra = ""; a.state = "";
+  a.groups = {}; a.net = a.netl = a.trout = null; a.extra = ""; a.state = "";
   a.main.addTo(map); a.basins.setStyle({fillOpacity: .12});
 }
 // what shows at this zoom, and which areas to unpack
@@ -274,12 +278,12 @@ function place() {
     if (here && z >= 10 && !a.state) load(a);
     if (a.state === "on") {
       if (here) a.used = Date.now();
-      Object.values(a.groups).forEach(([g, zmin, sw]) => show(g, z >= zmin && (!sw || opt[sw])));
+      Object.values(a.groups).forEach(([g, zmin, sw]) => show(g, z >= zmin && (!sw || (sw[0] === "!" ? !opt[sw.slice(1)] : opt[sw]))));
       if (a.trout) show(a.trout, opt.trout && z >= 11);
     }
   });
 }
-map.on("zoomend", () => AREAS.forEach(a => a.net && a.net.setStyle(sstyle)));
+map.on("zoomend", () => AREAS.forEach(a => { if (a.net) a.net.setStyle(sstyle); if (a.netl) a.netl.setStyle(sstyle); }));
 
 // ---- the panel ----
 const panel = L.control({position: "topleft"});
@@ -306,7 +310,7 @@ panel.onAdd = () => {
     : `<small style="color:#6b7280">one colour per drainage; line width = stream order</small>`;
   d.querySelectorAll(".seg button").forEach(bn => bn.onclick = () => { mode = bn.dataset.m;
     d.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x === bn)); setKey();
-    AREAS.forEach(a => a.net && a.net.setStyle(sstyle)); });
+    AREAS.forEach(a => { if (a.net) a.net.setStyle(sstyle); if (a.netl) a.netl.setStyle(sstyle); }); });
   setKey();
   d.querySelector("#xt").onchange = async e => { extras = e.target.checked;
     for (const a of AREAS) { if (extras) await loadExtra(a); else if (a.groups.trails) { map.removeLayer(a.groups.trails[0]); delete a.groups.trails; a.extra = ""; } }
