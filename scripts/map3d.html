@@ -232,6 +232,25 @@
       map.addLayer({id: k + "-o", type: "line", source: k, layout: {visibility: "none"}, paint: {"line-color": c, "line-width": 1.5}});
       ov.push([k, label, `<span style='color:${c}'>▢</span>`, [k, k + "-o"]]);
     });
+    // lakes (05d_lakes.py via maplakes.py): fill by fish record, a dashed edge where the lidar showed no level water
+    if (D.lakes) {
+      src("lakes", D.lakes);
+      map.addLayer({id: "lakes", type: "fill", source: "lakes", layout: {visibility: "none"},
+        paint: {"fill-color": ["get", "c"], "fill-opacity": 0.55}});
+      map.addLayer({id: "lakes-o", type: "line", source: "lakes", filter: ["!", ["get", "dry"]], layout: {visibility: "none"},
+        paint: {"line-color": ["get", "e"], "line-width": 1.2}});
+      map.addLayer({id: "lakes-dry", type: "line", source: "lakes", filter: ["get", "dry"], layout: {visibility: "none"},
+        paint: {"line-color": ["get", "e"], "line-width": 1.4, "line-dasharray": [3, 2]}});
+      ov.push(["lakes", "Lakes: <span style='color:#1c7ed6'>■</span> game fish <span style='color:#adb5bd'>■</span> none listed " +
+               "<span style='color:#a5d8ff'>■</span> no record", "<span style='color:#1c7ed6'>■</span>", ["lakes", "lakes-o", "lakes-dry"]]);
+    }
+    if (D.lake_depth) {
+      src("lake_depth", D.lake_depth);
+      map.addLayer({id: "lake-depth", type: "line", source: "lake_depth", layout: {visibility: "none"},
+        paint: {"line-color": "#1864ab", "line-opacity": 0.85,
+                "line-width": ["case", ["==", ["%", ["get", "depth_m"], 10], 0], 1.6, 0.8]}});
+      ov.push(["lake_depth", "Lake depth contours (measured surveys)", "<span style='color:#1864ab'>〰</span>", ["lake-depth"]]);
+    }
 
     // streams: white casing on order 3+, then the coloured lines, big rivers drawn last
     map.addLayer({id: "halo", type: "line", source: "streams", filter: [">=", ["get", "o"], 3],
@@ -557,7 +576,7 @@
   }
   function wireInteraction() {
     const tip = new maplibregl.Popup({closeButton: false, closeOnClick: false, className: "tip", offset: 12, maxWidth: "300px"});
-    const hoverIds = ["poi-trailhead", "poi-parking", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "wild_trout_waters", "wilderness",
+    const hoverIds = ["poi-trailhead", "poi-parking", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "lakes", "lake-depth", "wild_trout_waters", "wilderness",
                       "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i)]
       .filter(id => map.getLayer(id));
     const tipHtml = (id, p) => {
@@ -629,7 +648,7 @@
       if (!f) return;
       const p = f.properties, id = f.layer.id;
       // drop and gauge popups are HTML built by 06_map.py from our own data
-      const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout") ? p.html
+      const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
       new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map);

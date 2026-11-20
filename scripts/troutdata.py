@@ -16,6 +16,12 @@ Which sources an area has is in config.py (`sources`); all were checked against 
   wy_trout   Wyoming Game & Fish: fishing-guide streams with trout (blue / red / yellow / green ribbon classes and
              the game fish present), native cutthroat waters. Its "Clear (no trout present)" class is a
              classification, not a dated survey, so it is not used as a no-trout record
+  pa_trout   Pennsylvania Fish & Boat Commission (checked 2026-11-19): Class A wild trout streams (as DCNR's Conservation
+             Explorer serves PFBC's layer), streams with natural trout reproduction, trout special-regulation areas
+             (delayed harvest, catch-and-release, fly-fishing only), the newest year's stocked sections (fish per
+             species) and stocked lakes. PFBC publishes no survey layer with species per site
+  de_trout   Delaware DNREC (checked 2026-11-19): the designated trout streams of New Castle County, stocked each spring,
+             and their fly-fishing-only sections
   tu_brook_trout  Trout Unlimited's latest brook trout portfolio (the EBTJV wild brook trout patches), CT to GA
 A "no trout" record is only made from an electrofishing sample that lists other species and no trout (CT). Nothing
 else here lowers a score: when unsure, a possible trout stream stays in.
@@ -242,6 +248,70 @@ def _wy():
     return [], wa
 
 
+# ---- Pennsylvania ----
+PFBC = "https://fbweb.pa.gov/arcgis/rest/services/PFBC_Map_Services"
+# PFBC's Class A wild trout layer: its own map services leave it out, DCNR's Conservation Explorer serves it
+PA_CLASS_A = "https://conservationexplorer.dcnr.pa.gov/arcgis/rest/services/PA_Public/ClassAStreams/MapServer/0"
+
+
+def _pfbc_stocked():
+    """(year, service) of the newest of PFBC's yearly stocked-sections services (TroutStocked2025,
+    TroutStockedSections_2026, ...): a new one is published each season."""
+    try:
+        names = [s["name"].split("/")[-1] for s in requests.get(f"{PFBC}?f=json", headers=UA, timeout=60).json()["services"]]
+    except (requests.RequestException, ValueError, KeyError):
+        return None, None
+    yrs = {int(m.group(1)): n for n in names if (m := re.fullmatch(r"TroutStocked(?:Sections)?_?(\d{4})", n))}
+    return (max(yrs), yrs[max(yrs)]) if yrs else (None, None)
+
+
+def _pa():
+    ev, wa = [], []
+    a = fetch("pa_class_a", PA_CLASS_A, fields="WtrName,Fishery")
+    if len(a):
+        # Fishery: "Brown", "Brook", "Mixed Brook/Brown", "Wild Brown Trout Fishery"
+        fish = a.Fishery.fillna("").str.replace(r"(?i)^wild\s+|\s*trout fishery$", "", regex=True).str.strip().str.lower()
+        wa.append(_waters(a, a.WtrName, ["Class A wild trout stream" + (f" ({f_} trout)" if f_ else "") + " (PFBC)"
+                                         for f_ in fish]))
+    n = fetch("pa_natural_repro", f"{PFBC}/Trout_NaturalReproduction/MapServer/0", fields="WtrName,Limits")
+    if len(n):
+        wa.append(_waters(n, n.WtrName, "Wild trout stream: natural reproduction (PFBC)"))
+    r = fetch("pa_special_regs", f"{PFBC}/Special_Regulations/MapServer/2", where="Reg_Type = 'Trout'",
+              fields="WtrName,Spec_Reg_1")
+    if len(r):
+        wa.append(_waters(r, r.WtrName, r.Spec_Reg_1.fillna("Special trout regulations").str.strip() + " (PFBC)"))
+    yr, svc = _pfbc_stocked()
+    s = fetch(f"pa_stocked_{yr}", f"{PFBC}/{svc}/MapServer/0") if svc else _EMPTY
+    if len(s) and "WtrName" in s:
+        num = lambda c: pd.to_numeric(s[c], errors="coerce").fillna(0) if c in s else pd.Series(0, index=s.index)
+        spp = (("brook", num("TotalBrookStocked")), ("brown", num("TotalBrownStocked")),
+               ("rainbow", num("TotalRainbowStocked")), ("golden", num("TotalGoldenStocked")))
+        what = [", ".join(f"{int(v[i]):,} {sp}" for sp, v in spp if v[i] > 0) for i in s.index]
+        y = pd.to_numeric(s["StockingYear"], errors="coerce").fillna(yr) if "StockingYear" in s else pd.Series(yr, index=s.index)
+        ev.append(_ev(s, "PFBC stocking", s.WtrName, y.values, True,
+                      [f"stocked with trout in {int(y_)}" + (f" ({w_})" if w_ else "") for y_, w_ in zip(y, what)], lake=False))
+    k = fetch("pa_stocked_lakes", f"{PFBC}/PFBC_Stocked_Trout_Waters/MapServer/5", fields="WtrName,GNIS_NAME")
+    if len(k):
+        ev.append(_ev(k, "PFBC stocking", k.WtrName.fillna(k.GNIS_NAME), THIS_YEAR, True,
+                      "on PFBC's list of trout-stocked lakes (approved trout waters)", lake=True))
+    return ev, wa
+
+
+# ---- Delaware ----
+DE = "https://enterprise.firstmap.delaware.gov/arcgis/rest/services/Society/DE_Fishing_Access/FeatureServer/1"
+def _de():
+    t = fetch("de_trout", DE, fields="WATERBODYNAME,RESTRICTION")
+    if not len(t):
+        return [], []
+    ffo = t.RESTRICTION.fillna("").str.contains("Fly Fishing Only", case=False)
+    ev = [_ev(t, "DE DNREC stocking", t.WATERBODYNAME, THIS_YEAR, True,
+              ["a Delaware designated trout stream, stocked each spring" + (" (fly fishing only)" if f_ else "") for f_ in ffo],
+              lake=False)]
+    wa = [_waters(t, t.WATERBODYNAME, ["Delaware designated trout stream" + (", fly fishing only" if f_ else "") + " (DNREC)"
+                                       for f_ in ffo])]
+    return ev, wa
+
+
 # ---- eastern brook trout patches ----
 TU = ("https://services1.arcgis.com/754BERmVIq3RqSf8/arcgis/rest/services/"
       "Most_Recent_Brook_Trout_Portolio_Assessment_Results/FeatureServer/0")
@@ -249,13 +319,17 @@ def _tu():
     p = fetch("tu_brook", TU, fields="Trout_community,Portfolio_category")
     if not len(p):
         return [], []
+    # (Pennsylvania's patches say only "Allopatric" / "Sympatric": alone, or with other trout species not named)
     com = p.Trout_community.fillna("").replace({"Allopatric EBT": "brook trout only", "Sympatric EBT & BNT": "brook and brown trout",
-                                                "Sympatric EBT, BNT, & RBT": "brook, brown and rainbow trout"})
+                                                "Sympatric EBT, BNT, & RBT": "brook, brown and rainbow trout",
+                                                "Sympatric EBT & RBT": "brook and rainbow trout", "Allopatric": "brook trout only",
+                                                "Sympatric": "brook trout with other trout",
+                                                "Sympatric brook trout": "brook trout with other trout"})
     return [], [_waters(p, com, "Wild brook trout patch (EBTJV / Trout Unlimited)")]
 
 
 _BY_SOURCE = (("ct_trout", _ct), ("vt_trout", _vt), ("va_trout", _va), ("ga_trout", _ga), ("wy_trout", _wy),
-              ("tu_brook_trout", _tu))       # state designations first: a reach's label is the first that covers it
+              ("pa_trout", _pa), ("de_trout", _de), ("tu_brook_trout", _tu))       # state designations first: a reach's label is the first that covers it
 _done = None
 def _load():
     global _done

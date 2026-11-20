@@ -219,6 +219,15 @@ bike_kmh = BIKE_FLAT_KMH / (1 + BIKE_GRADE_K * grade) * surf_factor
 speed = np.where(bike, np.maximum(speed, bike_kmh), speed)
 del bike_kmh, grade, surf_factor
 speed = np.where(nodata, 1e-3, speed)
+# Lakes (05d_lakes.py, where built) can't be walked across: open water off any trail or road is as slow as a cliff.
+# Before them, flat lake surfaces read as easy off-trail ground and routes crossed lakes on foot.
+LAKES = gpd.read_file(f"{SHARED_DERIVED}/lakes.gpkg").to_crs(CRS) if os.path.exists(f"{SHARED_DERIVED}/lakes.gpkg") else None
+if LAKES is not None:
+    LAKES = LAKES[LAKES.intersects(box(XMIN, YMIN, XMAX, YMAX))].reset_index(drop=True)
+    lake_cells = features.rasterize(((g, 1) for g in LAKES.geometry), out_shape=shape, transform=T, all_touched=False,
+                                    dtype="uint8").astype(bool) & ~on_path
+    speed = np.where(lake_cells, CLIFF_KMH, speed)
+    print(f"{LABEL}: {len(LAKES)} lakes, {int(lake_cells.sum()):,} water cells off trails made impassable")
 cost = 60.0 / (speed * 1000.0) * RES      # minutes to cross one cell edge-to-edge
 
 mcp = MCP_Geometric(cost, fully_connected=True)
@@ -235,6 +244,23 @@ pc = np.where(tbf >= 0, cc.ravel() - offs[np.clip(tbf, 0, None), 1], cc.ravel())
 parent = (np.clip(pr, 0, H - 1) * W + np.clip(pc, 0, W - 1)).astype(np.int64)
 del rr, cc, pr, pc
 cumf = cum.ravel()
+# A point in a lake is reached at the lake's shore: every water cell takes the approach of its lake's quickest shore
+# cell and leads there, with no time or distance added. Without this, a reach mapped through a lake (an artificial
+# path) cost the crossing of the impassable water: up to 37 hours.
+if LAKES is not None and lake_cells.any():
+    from scipy import ndimage
+    lab, nl = ndimage.label(lake_cells, structure=np.ones((3, 3), bool))
+    ring = (ndimage.maximum_filter(lab, size=3) * (lab == 0)).ravel()   # a shore cell takes its neighbouring lake's label
+    ri = np.flatnonzero((ring > 0) & np.isfinite(cumf))
+    if len(ri):
+        sh = pd.DataFrame({"lab": ring[ri], "c": cumf[ri], "i": ri}).sort_values("c").drop_duplicates("lab")
+        best_i = np.full(nl + 1, -1, np.int64)
+        best_i[sh.lab.values] = sh.i.values
+        li = np.flatnonzero(lab.ravel() > 0)
+        tgt = best_i[lab.ravel()[li]]
+        li, tgt = li[tgt >= 0], tgt[tgt >= 0]
+        parent[li], cumf[li], tbf[li] = tgt, cumf[tgt], -1
+    del lab, ring
 # minutes spent on bike cells, and on each kind of doubtful fire road (the last row: any of them), along each route:
 # path sums by the same pointer doubling
 step_min = np.where(np.isfinite(cumf), cumf - cumf[parent], 0.0)
@@ -245,9 +271,12 @@ for k, lab in enumerate(LABELS):
     dsum[k] = np.where(CHECK[lab].ravel(), step_min, 0.0)
 dsum[-1] = np.where(np.logical_or.reduce(list(CHECK.values())).ravel(), step_min, 0.0)
 del CHECK, step_min
+# metres along each route (a cell's step to its predecessor is 1 or 1.41 cells), summed the same way
+msum = np.where(np.isfinite(cumf) & (tbf >= 0), RES * np.hypot(*offs[np.clip(tbf, 0, None)].T), 0.0).astype(np.float32)
 for _ in range(40):
     nxt = parent[parent]
     bsum = bsum + bsum[parent]
+    msum = msum + msum[parent]
     dsum += dsum[:, parent]
     if np.array_equal(nxt, parent):
         break
@@ -285,6 +314,7 @@ def table(gdf, key):
                          bike_check_min=round(float(dsum[-1, i]), 0) if why else None,
                          approach_med_min=round(float(med), 0) if np.isfinite(med) else None,
                          bike_med_min=round(float(bmed), 0) if np.isfinite(med) else None,
+                         route_km=round(float(msum[i]) / 1000, 2) if fin else None,
                          th_x=xy(o)[0], th_y=xy(o)[1]))
     return pd.DataFrame(rows)
 
@@ -294,9 +324,16 @@ drops = gpd.read_file(f"{OUT}/waterfall_candidates.gpkg").to_crs(CRS)
 pool = gpd.GeoSeries(gpd.points_from_xy(drops.pool_lon, drops.pool_lat), crs=4326).to_crs(CRS)
 drops["geometry"] = [MultiPoint([a, b]) for a, b in zip(drops.geometry, pool)]
 ts, td = table(streams, "sid"), table(drops, "did")
+# lakes: reached at the nearest point of the shore in this box, on the land side (a line 7 m out from the water)
+tl = None
+if LAKES is not None and len(LAKES):
+    inner = box(XMIN + 5, YMIN + 5, XMAX - 5, YMAX - 5)
+    ring = [g.buffer(7).boundary.intersection(inner) for g in LAKES.geometry]
+    ok = [not r_.is_empty and r_.length > 0 for r_ in ring]
+    tl = table(gpd.GeoDataFrame({"lid": LAKES.lid[ok].values}, geometry=[r_ for r_, k in zip(ring, ok) if k], crs=CRS), "lid")
 
 # trailheads: snap origins to a 250 m grid so neighbouring road cells collapse into one access point
-both = pd.concat([ts, td], ignore_index=True)
+both = pd.concat([ts, td] + ([tl] if tl is not None else []), ignore_index=True)
 both["th_id"] = REGION + ":t" + ((both.th_x // 250).astype(int).astype(str) + "_" + (both.th_y // 250).astype(int).astype(str))
 th = both.groupby("th_id").agg(x=("th_x", "median"), y=("th_y", "median"), n=("th_x", "size")).reset_index()
 th = gpd.GeoDataFrame(th, geometry=gpd.points_from_xy(th.x, th.y), crs=CRS)
@@ -308,6 +345,10 @@ ts = ts.merge(both[["th_x", "th_y", "th_id"]].drop_duplicates(["th_x", "th_y"]),
 td = td.merge(both[["th_x", "th_y", "th_id"]].drop_duplicates(["th_x", "th_y"]), on=["th_x", "th_y"])
 ts.drop(columns=["th_x", "th_y"]).to_csv(f"{OUT}/hike_streams.csv", index=False)
 td.drop(columns=["th_x", "th_y"]).to_csv(f"{OUT}/hike_drops.csv", index=False)
+if tl is not None:
+    tl = tl.merge(both[["th_x", "th_y", "th_id"]].drop_duplicates(["th_x", "th_y"]), on=["th_x", "th_y"])
+    tl.drop(columns=["th_x", "th_y"]).to_csv(f"{OUT}/hike_lakes.csv", index=False)
+    print(f"{LABEL}: lakes {len(tl)}, median approach {tl.approach_min.median():.0f} min")
 th.drop(columns=["x", "y"]).to_file(f"{OUT}/trailheads.gpkg")
 
 with rasterio.open(f"{DERIVED}/hike_minutes.tif", "w", **dict(src.profile, dtype="float32", nodata=-1,

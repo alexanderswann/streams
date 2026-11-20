@@ -23,7 +23,8 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 #   ca_closures  Caltrans + county road closures (07_road_closures.py)
 #   pct        the Pacific Crest Trail layer (02c_pct.py)
 #   la_trail_layers  NPS Santa Monica Mountains, State Parks and LA County Eaton Fire trail layers (02d, 02e)
-#   ct_trout, vt_trout, va_trout, ga_trout, wy_trout   each state's surveys, stocking and trout waters (troutdata.py)
+#   ct_trout, vt_trout, va_trout, ga_trout, wy_trout, pa_trout, de_trout   each state's surveys, stocking and trout
+#              waters (troutdata.py)
 #   tu_brook_trout   Trout Unlimited / EBTJV wild brook trout patches, Connecticut to Georgia (troutdata.py)
 #   grte_roads, teton_county, gdot_511, ne_compass, vdot_511, blri_roads   current road closures (07_road_closures.py)
 # long_trail = (name, OSM ref, regex on the OSM relation or way name) of the area's long-distance trail, drawn as its
@@ -107,7 +108,10 @@ AREAS = {
         long_trail=("Long Trail", "LT", r"^Long Trail\b"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
         ranges={
-            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(640000, 4913000, 705000, 4937000)),
+            # North edge moved from 4937000 to 4947000 on 2026-11-19 (user: "Jeffersonville, where the Brewster River
+            # meets the Lamoille"): the north side of Smugglers Notch, the whole Brewster River to its mouth (y 4946327),
+            # Morrisville, Hyde Park, Johnson and Cambridge. The Lamoille's meanders cross the new edge here and there.
+            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(640000, 4913000, 705000, 4947000)),
             "mad_winooski": dict(label="Mad River, Winooski & New Haven River", hu4=("0430", "0108"), bbox=(640000, 4880000, 705000, 4913000)),
             "white_river": dict(label="Middlebury River, Breadloaf & White River", hu4=("0108", "0430"),
                                 bbox=(640000, 4845000, 705000, 4880000)),
@@ -132,6 +136,26 @@ AREAS = {
                                  bbox=(609000, 4156000, 641000, 4214000)),
             "blue_ridge_va": dict(label="Blue Ridge: St. Mary's, Irish Creek & South River", hu4=("0208", "0207"),
                                   bbox=(641000, 4156000, 673000, 4214000)),
+        }),
+    # Added 2026-11-19 for ZIP 19063 (Media, PA). Piedmont hills, suburbs and stocked creeks around Philadelphia, with a few
+    # Class A wild brown trout streams (Valley Creek, Hay Creek, Sixpenny Creek). The boxes leave out the New Jersey
+    # side of the Delaware estuary; the west box reaches the Octoraro / Conestoga headwaters (HU4 0205) and Big Elk Creek
+    # (0206), and south into northern Delaware (White Clay, Red Clay and Pike creeks, Delaware's stocked trout streams).
+    "se_pa": dict(
+        label="Southeastern Pennsylvania", crs=26918,
+        min_relief=30,                                  # valleys 40-120 m deep: the 100 m test would drop most paths
+        sources=("pa_trout", "de_trout", "tu_brook_trout"),
+        long_trail=("Horse-Shoe Trail", "HST", r"^Horse-?Shoe Trail"),
+        home=dict(label="19063 Media", lon=-75.3880, lat=39.9172),
+        ranges={
+            "brandywine": dict(label="Brandywine, French Creek & White Clay", hu4=("0204", "0205", "0206"),
+                               # Hay Creek and French Creek south through both Brandywine branches to White Clay Creek
+                               # and northern Delaware; Honey Brook / Morgantown east to West Chester
+                               bbox=(418000, 4394000, 453000, 4461000)),
+            "ridley_valley": dict(label="Ridley, Crum & Darby, Valley Creek & the Wissahickon", hu4=("0204",),
+                                  # Media's creeks, Valley Forge, the lower Perkiomen and the Wissahickon; Chester and
+                                  # the airport north to Schwenksville and Lansdale
+                                  bbox=(453000, 4408000, 487000, 4461000)),
         }),
 }
 

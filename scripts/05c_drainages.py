@@ -27,6 +27,18 @@ SPLIT_KM2 = 120  # ...in drainages at least this big
 # the Hoback, 1,450 km2). Areas count what comes in from other boxes, from outside them and over dams.
 PROMOTE_KM2 = 100
 PROMOTE_INTO_KM2 = 2000
+# Sea-level water ends a creek's drainage: ground at or below SEA_M is the sea or a tidal river (05_score.py drops
+# links on it by the same test). The DEM stores that water as flat 0 m, and the D8 directions run on across it, so a
+# path that reached it went on to wherever the flat drains. On a coast that is the box edge just offshore, one place
+# per creek. On the tidal Delaware it was one cell on the box edge for every creek between Philadelphia and Chester,
+# and Ridley Creek and the lower Crum came out as forks of Darby Creek. A path now ends at the creek's mouth, the
+# last cell above the tide; the sea cells belong to no drainage. Inland boxes have none.
+# On the Malibu coast the same flats had joined neighbouring canyons ("Topanga Creek" was 186 km2 with Santa Monica
+# Creek as its fork; Topanga's own basin is 51). A creek that reaches the sea is a whole basin, not the cut-off end of
+# a bigger one, so it is a named drainage from SEA_MAJOR_KM2 (Zuma, Solstice, Latigo canyons; Stoney Creek on the
+# Delaware) instead of MAJOR_KM2.
+SEA_M = 0.5
+SEA_MAJOR_KM2 = 5
 # canals and flood-control channels catch DEM flow on the valley floor; never name a drainage after them
 ARTIFICIAL = re.compile(r"aqueduct|canal|ditch|diversion|drain\b|conduit|spreading|feeder", re.I)
 # drainages whose lower reaches have no NHD name, so the trunk rule lands on a tributary
@@ -65,6 +77,16 @@ H, W = fdir.shape
 N = H * W
 idx = np.arange(N, dtype=np.int32)
 nxt, outlet = graph(fdir)   # downstream neighbour and outlet of every cell (flat index)
+with rasterio.open(f"{RAW}/dem_10m.tif") as src:
+    z_ = src.read(1)
+    sea = ((z_ <= SEA_M) & (z_ > -1000)).ravel()          # (-9999 is nodata)
+del z_
+mouth = np.zeros(N, bool)
+if sea.any():                                             # SEA_M above: paths end at the creek's mouth
+    mouth = ~sea & sea[nxt]
+    nxt = np.where(sea | mouth, idx, nxt).astype(np.int32)
+    outlet = jump(nxt)
+    print(f"sea-level water: {sea.sum() * RES * RES / 1e6:.1f} km2; {int(mouth.sum())} cells run into it, where their paths now end")
 # each basin's size: its cells in this box, or what the area raster has at its outlet where that is more (boxes
 # routed together by 03b_stitch.py: the raster counts the cells upstream in the other boxes too)
 basin_km2 = pd.Series(np.bincount(outlet, minlength=N)[np.unique(outlet)] * RES * RES / 1e6, index=np.unique(outlet))
@@ -96,7 +118,8 @@ a += extra_edge
 extra_full = along(inflows(REGION, through_dams=True))
 if inflow:
     print(f"inflow from neighbouring boxes: {len(inflow)} creeks, {sum(e[2] for e in inflow):.0f} km2")
-major = basin_km2[basin_km2 >= MAJOR_KM2]
+basin_km2 = basin_km2[~sea[basin_km2.index.values]]       # a sea cell is no basin (the area raster runs on across it)
+major = basin_km2[(basin_km2 >= MAJOR_KM2) | (mouth[basin_km2.index.values] & (basin_km2 >= SEA_MAJOR_KM2))]
 
 # ---- forks ----
 # A branch ends where it is the smaller arm at a confluence (the downstream cell gets more area from elsewhere).

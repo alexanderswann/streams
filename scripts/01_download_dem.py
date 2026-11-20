@@ -14,7 +14,12 @@ for x0 in range(XMIN, XMAX, step):
         p = f"{RAW}/dem_tiles/dem_{x0}_{y0}.tif"
         paths.append(p)
         if os.path.exists(p):
-            continue
+            # A tile on the box's top or right edge was cut there, and keeps its full-size name. When the box grows,
+            # that short tile would be reused and leave a strip with no terrain, so it is fetched again.
+            with rasterio.open(p) as t:
+                if (round(t.bounds.right), round(t.bounds.top)) == (x1, y1):
+                    continue
+            print("again:", p, "was cut at an earlier box edge")
         params = dict(bbox=f"{x0},{y0},{x1},{y1}", bboxSR=EPSG, imageSR=EPSG,
                       size=f"{w},{h}", format="tiff", pixelType="F32",
                       interpolation="RSP_BilinearInterpolation", noData=-9999, f="image")

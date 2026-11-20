@@ -1,0 +1,204 @@
+"""The lake layer of the maps, called by 06_map.py: 05d_lakes.py's lakes with their approach and drive times
+(08_hike.py writes hike_lakes.csv per range, 09_drive.py the trailheads' drive times), wilderness, the 2D layer with
+popups and tooltips, the same features for the 3D map (X3D["lakes"], X3D["lake_depth"]), and lakes.csv / lakes.gpx.
+Measured depth contours (lake_bathymetry.py's lake_depth.gpkg) are their own layer. Areas without lakes.gpkg get
+nothing.
+
+Fill: blue where the fisheries agency lists game fish or a dated survey or sighting records fish there, grey where
+the agency lists none, pale blue where there's no record either way. A dashed edge marks a lake whose lidar showed no
+level water (it may be dry or marsh part of the year).
+"""
+import os, json, numpy as np, pandas as pd, geopandas as gpd, shapely, folium
+from html import escape as hesc
+from urllib.parse import quote
+from config import REGIONS, MAP_OUT, SHARED_DERIVED, HOME
+
+FILL = {"fish": "#1c7ed6", "none": "#adb5bd", "unknown": "#a5d8ff"}
+EDGE = {"fish": "#0b4f8a", "none": "#5c636a", "unknown": "#4a90c2"}
+FT = 3.28084
+# Wyoming Game & Fish's lake classes, as the popups say them
+KIND = {"Alpine Lakes": "alpine lake (Game & Fish class)", "Lowland Lakes": "lowland lake (Game & Fish class)",
+        "Lowland Reservoirs": "lowland reservoir (Game & Fish class)", "Trout Farm Ponds": "trout farm pond",
+        "Unsuitable Standing Waters": "standing water Game & Fish rates unsuitable for fish"}
+SCI = {"Oncorhynchus clarkii": "cutthroat trout", "Oncorhynchus clarkii bouvieri": "Yellowstone cutthroat trout",
+       "Oncorhynchus clarkii behnkei": "Snake River cutthroat trout", "Oncorhynchus clarkii utah": "Bonneville cutthroat trout",
+       "Salvelinus fontinalis": "brook trout", "Salvelinus namaycush": "lake trout", "Salmo trutta": "brown trout",
+       "Oncorhynchus mykiss": "rainbow trout", "Thymallus arcticus": "Arctic grayling",
+       "Prosopium williamsoni": "mountain whitefish", "Oncorhynchus nerka": "kokanee salmon",
+       "Oncorhynchus aguabonita": "golden trout", "Salvelinus confluentus": "bull trout"}
+
+
+def load(done):
+    """lakes.gpkg (the area's CRS) with access, drive and wilderness columns and lat / lon of a point inside, or None."""
+    p = f"{SHARED_DERIVED}/lakes.gpkg"
+    if not os.path.exists(p):
+        return None
+    lk = gpd.read_file(p)
+    parts = [pd.read_csv(f"{MAP_OUT}/{r}/hike_lakes.csv") for r in done if os.path.exists(f"{MAP_OUT}/{r}/hike_lakes.csv")]
+    if parts:   # a lake on a box edge is reached from the box with the quicker approach
+        h = pd.concat(parts, ignore_index=True).sort_values("approach_min", na_position="last").drop_duplicates("lid")
+        lk = lk.merge(h, on="lid", how="left")
+        ths = [gpd.read_file(f"{MAP_OUT}/{r}/trailheads.gpkg") for r in done if os.path.exists(f"{MAP_OUT}/{r}/trailheads.gpkg")]
+        if ths:
+            th = gpd.GeoDataFrame(pd.concat(ths, ignore_index=True), crs=ths[0].crs).to_crs(4326)
+            lk = lk.merge(pd.DataFrame({"th_id": th.th_id, "th_road": th.road, "drive_min": th.get("drive_min"),
+                                        "drive_km": th.get("drive_km"), "th_lat": th.geometry.y.round(6),
+                                        "th_lon": th.geometry.x.round(6)}), on="th_id", how="left")
+    for c in ("approach_min", "bike_min", "walk_min", "bike_check", "bike_check_min", "route_km", "th_road", "drive_min",
+              "drive_km", "th_lat", "th_lon", "th_id"):
+        if c not in lk:
+            lk[c] = np.nan if c not in ("bike_check", "th_road", "th_id") else None
+    # wilderness, from 11_context.py
+    lk["wilderness"] = None
+    wp = f"{MAP_OUT}/context/wilderness.gpkg"
+    if os.path.exists(wp):
+        wd = gpd.read_file(wp).to_crs(lk.crs)
+        for i, g in zip(lk.index, lk.geometry):
+            hit = wd[wd.intersects(g)]
+            if len(hit):
+                lk.loc[i, "wilderness"] = hit.loc[hit.geometry.intersection(g).area.idxmax(), "wilderness"]
+    pt = lk.geometry.representative_point().to_crs(4326)
+    lk["lat"], lk["lon"] = pt.y.round(6).values, pt.x.round(6).values
+    return lk
+
+
+def _fish(r):
+    """(class, one-line summary, list of record lines) for a lake row."""
+    rec = json.loads(r.records) if isinstance(r.records, str) else []
+    seen, lines = set(), []
+    for x in rec:                                   # newest first; one line per species and source
+        k = (x["species"], x["source"])
+        if k in seen:
+            continue
+        seen.add(k)
+        lines.append(f"{SCI.get(x['species'], x['species'])}: {x['source']}" + (f" {x['year']}" if x.get("year") else ""))
+    if isinstance(r.game_fish, str) and r.game_fish != "None":
+        return "fish", f"{r.game_fish} ({r.agency})", lines
+    if r.game_fish == "None":
+        return ("fish" if rec else "none"), f"No game fish ({r.agency})", lines
+    return ("fish" if rec else "unknown"), ("No fisheries agency record" + ("; fish recorded there" if rec else "")), lines
+
+
+def _size(ha):
+    return f"{ha:,.1f} ha ({ha * 2.47105:,.0f} acres)" if ha >= 1 else f"{ha:.2f} ha ({ha * 2.47105:.1f} acres)"
+
+
+def _depth(r):
+    if pd.notna(r.depth_max_m):
+        s = f"max {r.depth_max_m:.0f} m ({r.depth_max_m * FT:.0f} ft)"
+        if pd.notna(r.depth_mean_m):
+            s += f", mean {r.depth_mean_m:.0f} m ({r.depth_mean_m * FT:.0f} ft)"
+        return s + f" · {r.depth_src}" + (f" · {r.depth_note}" if isinstance(r.depth_note, str) and r.depth_note else "")
+    if isinstance(r.depth_note, str) and r.depth_note:
+        return r.depth_note
+    return "no measured depth found"
+
+
+def popup(r, approach):
+    cls, fish, recs = _fish(r)
+    nm = r.name if isinstance(r.name, str) else "Unnamed lake"
+    alt = r.agency_name if isinstance(r.agency_name, str) and r.agency_name != nm else None
+    kind = " / ".join(KIND.get(t, t) for t in r.lake_type.split(" / ")) if isinstance(r.lake_type, str) and r.lake_type else r.ftype
+    el = (f"{r.elev_m:,.0f} m ({r.elev_m * FT:,.0f} ft)" if pd.notna(r.elev_m) else "?") + (
+        f" · water level by lidar, {r.lidar_dates[:7]}" if r.elev_src == "lidar water level" and isinstance(r.lidar_dates, str) else
+        f" · lidar water surface (not flattened), {r.lidar_dates[:7]}" if str(r.elev_src).startswith("lidar water surface")
+        and isinstance(r.lidar_dates, str) else "")
+    conn = []
+    if isinstance(r.outlet_name, str):
+        conn.append(f"outlet {r.outlet_name}")
+    elif r.outlets:
+        conn.append("outlet (unnamed)")
+    if isinstance(r.inlet_names, str):
+        conn.append(f"inlets {r.inlet_names}")
+    elif r.inlets:
+        conn.append(f"{r.inlets} unnamed inlet{'s' if r.inlets > 1 else ''}")
+    gm = f"https://www.google.com/maps/@?api=1&map_action=map&center={r.lat:.5f},{r.lon:.5f}&zoom=16&basemap=satellite"
+    acc = approach(r) + (f" · route about {r.route_km:.1f} km" if pd.notna(r.route_km) else "")
+    rows = [("Type", hesc(f"{kind} · {_size(r.ha)}")), ("Elevation", hesc(el)),
+            ("Fish", f"<b>{hesc(fish)}</b>" + ("<br>" + "<br>".join(hesc(x) for x in recs[:5]) if recs else "")
+             + (f"<br>{hesc(r.survey)}" if isinstance(getattr(r, "survey", None), str) else "")
+             + (f"<br><span class='warn'>Also recorded, not on the agency's list: {hesc(r.also_recorded)}</span>"
+                if isinstance(getattr(r, "also_recorded", None), str) else "")),
+            ("Depth", hesc(_depth(r))),
+            ("Water", hesc("; ".join(conn) if conn else r.connection)),
+            ("Access", hesc(acc)),
+            ("Land", hesc(getattr(r, "land", None) if isinstance(getattr(r, "land", None), str) else "private or unlisted (not in PAD-US)")
+             + (f" <span class='warn'>· public access {hesc(r.land_access)}</span>"
+                if getattr(r, "land_access", None) in ("restricted", "closed") else ""))]
+    note = [x for x in (r.conflict, r.water_note, r.private_shore,
+                        f"{r.wilderness} (no bikes)" if isinstance(r.wilderness, str) else None,
+                        f"{r.drainage} · {r.fork}" if isinstance(r.drainage, str) and r.fork != r.drainage else r.drainage)
+            if isinstance(x, str) and x]
+    html = (f"<div class='pp'><b>{hesc(nm)}</b>" + (f" <span class='dm'>(Game &amp; Fish: {hesc(alt)})</span>" if alt else "")
+            + "<table>" + "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in rows) + "</table>"
+            + ("".join(f"<div class='warn'>{hesc(x)}</div>" if x in (r.conflict, r.water_note, r.private_shore) else
+                       f"<div class='dw'>{hesc(x)}</div>" for x in note))
+            + f"<div class='dm'>Outline: {hesc(str(r.src_outline))}"
+            + (f" (NHD {r.nhd_ha:.1f} ha)" if pd.notna(r.nhd_ha) and str(r.src_outline).startswith("lidar") else "")
+            + (f"; {hesc(r.outline_note)}" if isinstance(r.outline_note, str) else "") + "</div>"
+            + f"<a href='{gm}' target='_blank'>Satellite view</a>"
+            + (f" · <a href='profiles.html#q={quote(r.outlet_name.split(', ')[0])}' target='_blank'>Outlet creek profile ↗</a>"
+               if isinstance(r.outlet_name, str) else "")
+            + (" · <a href='https://wgfd.wyo.gov/current-fishing-regulations' target='_blank'>Fishing regulations ↗</a>"
+               if r.agency == "Wyoming Game & Fish" else "") + "</div>")
+    short = fish.split(" (")[0] if cls == "fish" and isinstance(r.game_fish, str) and r.game_fish != "None" else \
+        {"fish": "fish recorded", "none": "no game fish listed", "unknown": "no fish record"}[cls]
+    tip = f"{nm} · {_size(r.ha).split(' (')[0]} · {short}" + (
+        f" · {r.approach_min:.0f} min in" if pd.notna(r.approach_min) else "")
+    return cls, html, tip, short
+
+
+def add(m, X3D, done, approach):
+    """Add the lake layers to the folium map and X3D; write lakes.csv and lakes.gpx. Returns the lakes or None."""
+    lk = load(done)
+    if lk is None or not len(lk):
+        return None
+    out = [popup(r, approach) for r in lk.itertuples()]
+    lk["cls"], lk["html"], lk["tip"], lk["fish"] = ([o[k] for o in out] for k in range(4))
+    lk["c"], lk["e"] = lk.cls.map(FILL), lk.cls.map(EDGE)
+    lk["dry"] = lk.water_note.fillna("").str.startswith("no level water")
+    g2 = lk[["lid", "c", "e", "dry", "tip", "html", "geometry"]].copy()
+    g2["geometry"] = shapely.set_precision(g2.geometry.simplify(2.0).to_crs(4326).values, 1e-6)   # area CRS: metres
+    js = json.loads(g2.to_json(drop_id=True))
+    name = ("<span style='color:#1c7ed6'>■</span> Lakes: <span style='color:#1c7ed6'>■</span> game fish "
+            "<span style='color:#adb5bd'>■</span> none listed <span style='color:#a5d8ff'>■</span> no record")
+    folium.GeoJson(js, name=name, show=False,
+                   style_function=lambda f: {"color": f["properties"]["e"], "weight": 1.2, "fillColor": f["properties"]["c"],
+                                             "fillOpacity": 0.55, "dashArray": "4 3" if f["properties"]["dry"] else None},
+                   highlight_function=lambda f: {"weight": 2.5, "fillOpacity": 0.7},
+                   tooltip=folium.GeoJsonTooltip(["tip"], labels=False),
+                   popup=folium.GeoJsonPopup(["html"], labels=False, max_width=360)).add_to(m)
+    X3D["lakes"] = js
+    # measured depth contours (lake_bathymetry.py), if any
+    dp = f"{SHARED_DERIVED}/lake_depth.gpkg"
+    if os.path.exists(dp):
+        dc = gpd.read_file(dp)
+        if len(dc):
+            dc = dc.to_crs(4326)
+            dc["tip"] = [f"{d:g} m ({d * FT:.0f} ft) deep · {s}" for d, s in zip(dc.depth_m, dc.src)]
+            dj = json.loads(dc[["depth_m", "tip", "geometry"]].assign(
+                geometry=shapely.set_precision(dc.geometry.values, 1e-6)).to_json(drop_id=True))
+            folium.GeoJson(dj, name="<span style='color:#1864ab'>〰</span> Lake depth contours (measured surveys)", show=False,
+                           style_function=lambda f: {"color": "#1864ab", "weight": 0.8 if f["properties"]["depth_m"] % 10 else 1.6,
+                                                     "opacity": 0.85},
+                           tooltip=folium.GeoJsonTooltip(["tip"], labels=False)).add_to(m)
+            X3D["lake_depth"] = dj
+    # table and GPX
+    tab = lk.assign(acres=(lk.ha * 2.47105).round(1))
+    keep = ["lid", "name", "agency_name", "lake_type", "ftype", "ha", "acres", "elev_m", "elev_src", "depth_max_m",
+            "depth_mean_m", "depth_src", "depth_note", "survey", "game_fish", "common_fish", "fish", "n_records", "conflict", "outlet_name",
+            "inlet_names", "connection", "drainage", "fork", "approach_min", "bike_min", "walk_min", "route_km",
+            "bike_check", "th_road", "th_lat", "th_lon", "drive_min", "drive_km", "land", "land_access", "wilderness", "private_shore",
+            "water_note", "src_outline", "nhd_ha", "lidar_dates", "lat", "lon"]
+    tab[[c for c in keep if c in tab]].sort_values(["ha"], ascending=False).to_csv(f"{MAP_OUT}/lakes.csv", index=False)
+    with open(f"{MAP_OUT}/lakes.gpx", "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<gpx version="1.1" creator="stream-analysis" xmlns="http://www.topografix.com/GPX/1/1">\n')
+        for r in lk.itertuples():
+            nm = r.name if isinstance(r.name, str) else f"Lake {r.lid}"
+            desc = hesc(r.tip + (f"; {approach(r)}" if pd.notna(r.approach_min) else ""), quote=False)
+            f.write(f'<wpt lat="{r.lat:.6f}" lon="{r.lon:.6f}"><name>{hesc(nm, quote=False)}</name><desc>{desc}</desc></wpt>\n')
+        f.write("</gpx>\n")
+    print(f"lakes: {len(lk)} drawn ({lk.cls.value_counts().to_dict()}), with an approach time {lk.approach_min.notna().sum()}"
+          + (f", depth contours {len(X3D['lake_depth']['features'])}" if "lake_depth" in X3D else ""))
+    return lk

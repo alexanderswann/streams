@@ -1,7 +1,7 @@
 """Shared helpers for the flow evidence (05b_flow.py, data/validate_flow.py)."""
 import os, json, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from shapely.geometry import box
-from config import REGIONS, CRS, SHARED, NATIONAL, AREA
+from config import REGIONS, CRS, SHARED, NATIONAL, AREA, has
 
 FLOW = f"{SHARED}/flow"
 MIN_RESERVOIR_KM2 = 0.08     # waterbodies smaller than 8 ha (debris basins, ponds) don't control a creek's base flow
@@ -14,9 +14,11 @@ def minor_arms(v2):
     13 cfs runs an unnamed arm with 18.51 km2 and 0.14 cfs. Matched by drainage area and distance alone, a reach
     7 m from the side arm took its trickle and was rated mostly dry between two reaches rated year-round (the same
     on five reaches of the Maury itself, 0.0 to 0.08 cfs where it carries 90 to 150).
-    A side arm: one of two lines into the same downstream line whose drainage areas agree within 3 %, carrying under
-    half the other's flow; and the lines above it on the same arm (running into a side arm with at least 90 % of
-    its drainage, and under a quarter of the main arm's flow per km2). Flow: NHDPlus's mean annual (qe_ma), or the Natural Flows mean where the table
+    A side arm: where the table has NHDPlus's own flags, every line of a split's minor path and the lines it runs
+    into that carry its drainage but not its flow (below); and, from the table alone, one of two lines into the
+    same downstream line whose drainage areas agree within 3 %, carrying under half the other's flow; and the lines
+    above it on the same arm (running into a side arm with at least 90 % of its drainage, and under a quarter of
+    the main arm's flow per km2). Flow: NHDPlus's mean annual (qe_ma), or the Natural Flows mean where the table
     has no qe_ma (California). Pairs with no flow figure for both are left alone."""
     key = (id(v2), len(v2))
     if key in _MINOR:
@@ -34,6 +36,47 @@ def minor_arms(v2):
             q = pd.Series(dtype=float)
     d = d[d.dnhydroseq.notna() & (d.dnhydroseq != 0) & (d.totdasqkm > 0.5)].assign(q=lambda t: t.comid.map(q))
     minor, unit = set(), {}                              # side arm -> the main arm's flow per km2
+    if "divergence" in d and d.divergence.notna().any() and not has("tnc_flows"):
+        # NHDPlus marks split channels itself (02b downloads the flags since 2026-11-19; an older cached table has
+        # none, and then only the rules below apply). Only where the flow is NHDPlus's own (EROM), which splits the
+        # water at a divergence: California's Natural Flows model gives a minor path the natural flow of its whole
+        # drainage (Day Creek's line: 0.63 cfs there, 0.02 in EROM), so in LA these lines are no trap and leaving
+        # them out only moved reaches onto other lines (tried 2026-11-19: 68 LA scores moved, Bear Creek's 100 -> 38).
+        # Divergence 2 is the first line of a split's minor path and
+        # streamcalc 0 the rest of it, until another creek joins. On the Wissahickon at Fort Washington the minor
+        # path carries 0.01 cfs on 54 km2; beside the Brandywine at Chadds Ford one carries 0.16 cfs on 3.6 km2,
+        # and two reaches matched to them read as near-dry between reaches that flow. The line such a path runs
+        # into, where another creek joins it, has the path's whole drainage in its own (Prophecy Creek's last
+        # 0.3 km: 60 km2 and 3.9 cfs, while the Wissahickon beside it has 56 km2 and 34 cfs): it counts as a side
+        # arm too, and the lines below it, while their flow per km2 stays under a quarter of the split's.
+        path = d[(d.divergence == 2) | (d.streamcalc == 0)]
+        minor.update(path.comid.astype(int))
+        split = d[d.dnminorhyd.fillna(0) > 0]
+        split_unit = dict(zip(split.dnminorhyd.astype(float), split.q / split.totdasqkm))
+        on_path = set(path.hydroseq.astype(float))
+        u_ = {h: split_unit.get(h) for h in on_path}
+        for _ in range(50):                              # down the path: the split's flow per km2 goes with it
+            more = {float(r.dnhydroseq): u_[float(r.hydroseq)] for r in path.itertuples()
+                    if u_.get(float(r.hydroseq)) is not None and float(r.dnhydroseq) in on_path
+                    and u_.get(float(r.dnhydroseq)) is None}
+            if not more:
+                break
+            u_.update(more)
+        by_hs = d.drop_duplicates("hydroseq").set_index("hydroseq")
+        front = [(float(r.dnhydroseq), u_.get(float(r.hydroseq))) for r in path.itertuples()
+                 if float(r.dnhydroseq) not in on_path]
+        for _ in range(50):
+            nxt_ = []
+            for h, u in front:
+                if u is None or h not in by_hs.index:
+                    continue
+                r = by_hs.loc[h]
+                if int(r.comid) not in minor and pd.notna(r.q) and r.q / r.totdasqkm < 0.25 * u:
+                    minor.add(int(r.comid))
+                    nxt_.append((float(r.dnhydroseq), u))
+            if not nxt_:
+                break
+            front = nxt_
     for _, g in d.groupby("dnhydroseq"):
         if len(g) < 2:
             continue

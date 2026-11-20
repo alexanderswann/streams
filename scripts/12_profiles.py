@@ -3,12 +3,13 @@
 Creeks come from the NHD named flowlines: each name's segments are merged, split into connected pieces, and the
 longest path through each piece is the creek's main stem. Elevation along it is the channel bottom: the lowest
 hydro-conditioned DEM cell within BOTTOM_M (absorbs the small offsets between NHD lines and the 10 m DEM),
-forced non-increasing downstream. Drops, mapped falls, gauges and per-reach attributes (fish score, burn, trout
-water, critical habitat) are snapped onto the profile. Run after 06_map.py (it reads the merged CSV exports).
+forced non-increasing downstream. Drainage area and the per-reach attributes (fish score, burn, trout water, critical
+habitat, flow) come from the creek's own DEM channel only (see OWN_CAP). Drops, mapped falls and gauges are snapped
+onto the profile. Run after 06_map.py (it reads the merged CSV exports).
 Writes output/profiles_data.js (window.PROFILE_DATA, loads from file:// without a server).
 """
 import json, re, numpy as np, pandas as pd, geopandas as gpd, rasterio, networkx as nx
-from scipy.ndimage import minimum_filter, maximum_filter
+from scipy.ndimage import minimum_filter
 from scipy.spatial import cKDTree
 from shapely.geometry import LineString
 from shapely.ops import linemerge, unary_union
@@ -17,7 +18,11 @@ from config import REGIONS, CRS, ROOT, MAP_OUT, RES, raw_dir, derived_dir
 MIN_KM = 2.0          # skip shorter creeks
 STEP_M = 40           # spacing along the profile
 BOTTOM_M = 20         # channel-bottom search radius around the NHD line
-AREA_M = 60           # drainage-area search radius (NHD lines can sit a few cells off the D8 channel)
+AREA_M = 60           # drainage-area search radius (NHD lines sit up to ~60 m off the D8 channel: 58 m on lower Cabin Creek)
+# The creek's own channel: DEM reaches named after it, or unnamed ones up to OWN_CAP[0] x its largest named reach +
+# OWN_CAP[1] km2 (headwaters, links the name vote missed). Its drainage and reach attributes come only from these.
+OWN_CAP = (2.0, 1.0)
+KNN = 64              # nearest reach points searched for each profile point's own reach
 GRAD_HALF_M = 60      # gradient over +/- this distance
 SNAP_DROP, SNAP_FALL, SNAP_GAUGE = 80, 150, 250
 FLOWLINE_FTYPES = {460, 558}   # StreamRiver, ArtificialPath (through ponds / reservoirs)
@@ -73,19 +78,38 @@ for region, meta in REGIONS.items():
     zf = rasterio.open(f"{der}/dem_filled.tif").read(1).astype("float32")
     zf[zf < -1000] = np.nan
     zbot = minimum_filter(np.nan_to_num(zf, nan=1e5), size=2 * k + 1)
-    area = maximum_filter(rasterio.open(f"{der}/area_km2.tif").read(1), size=2 * int(AREA_M / RES) + 1)
+    area = rasterio.open(f"{der}/area_km2.tif").read(1)
+    ka = int(AREA_M / RES)
     H, W = zf.shape
 
     nhd = gpd.read_file(f"{raw}/nhd_flowlines.gpkg").to_crs(CRS)
     nhd = nhd[nhd.gnis_name.notna() & nhd.ftype.isin(FLOWLINE_FTYPES)]
     s = gpd.read_file(f"{MAP_OUT}/{region}/streams_scored.gpkg").to_crs(CRS)[["sid", "flow", "geometry"]]
-    s = s.merge(reaches.drop(columns=["region", "name", "flow", "lat", "lon"], errors="ignore"), on="sid", how="left")
+    s = s.merge(reaches.drop(columns=["region", "flow", "lat", "lon"], errors="ignore"), on="sid", how="left")
     pts, sids = [], []
     for sid, g in zip(s.sid, s.geometry):
         for d in np.arange(0, g.length + 20, 20):
             p = g.interpolate(min(d, g.length)); pts.append((p.x, p.y)); sids.append(sid)
     rtree, sids = cKDTree(np.array(pts)), np.array(sids)
     s_attr = s.set_index("sid")
+    p_name = s_attr.loc[sids, "name"].to_numpy(object); p_km2 = s_attr.loc[sids, "area_km2"].to_numpy(float)   # per reach point
+    # Each reach's cells, less its last vertex (the cell where it joins the next stream, which carries both arms; as in
+    # 05_score.py), keyed by the reach's name; an unnamed reach's cells carry its drainage instead. A junction cell that
+    # no reach starts from (the next stream leaves the box, or isn't mapped) stays -1: nobody's own. Vertices sit on
+    # cell corners: rounded, not truncated (the round trip through EPSG:4326 leaves them a hair off).
+    names = {n: i + 1 for i, n in enumerate(sorted(s["name"].dropna().unique()))}
+    name_at = np.zeros((H, W), np.int32)            # 0: no reach there, or an unnamed one
+    unnamed_km2 = np.zeros((H, W), np.float32)
+    cells = []
+    for g in s.geometry:
+        v = np.asarray(g.coords)
+        vc, vr = inv * (v[:, 0], v[:, 1])
+        cells.append((np.clip(np.rint(vr).astype(int), 0, H - 1), np.clip(np.rint(vc).astype(int), 0, W - 1)))
+        name_at[cells[-1][0][-1], cells[-1][1][-1]] = -1
+    for nm, km2, (vr, vc) in zip(s["name"], s["area_km2"], cells):
+        name_at[vr[:-1], vc[:-1]] = names[nm] if isinstance(nm, str) else 0
+        if not isinstance(nm, str):
+            unnamed_km2[vr[:-1], vc[:-1]] = km2
     d_reg = drops_all[drops_all.region == meta["label"]]
     d_xy = gpd.GeoSeries(gpd.points_from_xy(d_reg.lon, d_reg.lat), crs=4326).to_crs(CRS)
     kf = gpd.read_file(f"{MAP_OUT}/{region}/known_falls.gpkg").to_crs(CRS)
@@ -110,12 +134,28 @@ for region, meta in REGIONS.items():
             z = np.minimum.accumulate(z)
             lo = np.searchsorted(dist, dist - GRAD_HALF_M); hi = np.clip(np.searchsorted(dist, dist + GRAD_HALF_M), 0, len(dist) - 1)
             grad = np.where(dist[hi] > dist[lo], (z[lo] - z[hi]) / (dist[hi] - dist[lo]) * 100, 0)
+            # Drainage and reach attributes from the creek's own channel (OWN_CAP). NHD draws a creek to the receiving
+            # river's centreline, so the largest drainage within AREA_M from any channel was the river's at nearly every
+            # mouth, and the running maximum carried it to "Drainage at mouth" (Cabin Creek showed the Snake River's
+            # 3,138 km2 for its own 24; two thirds of all profiles were off, 2026-11-19). The nearest reach of any name
+            # was the river's there too, and lent many creeks the river's fish score as their best.
+            ik = rtree.query(np.c_[x, y], k=min(KNN, len(sids)))[1].reshape(len(x), -1)
+            mine = p_name[ik] == name
+            cap = OWN_CAP[0] * (p_km2[ik][mine].max() if mine.any() else np.inf) + OWN_CAP[1]
+            # the nearest reach named after the creek; failing that an unnamed one within the cap; failing that any
+            unnamed = pd.isna(p_name[ik]) & (p_km2[ik] <= cap)
+            i_ = np.arange(len(ik))
+            near = np.where(mine.any(axis=1), ik[i_, mine.argmax(axis=1)],
+                            np.where(unnamed.any(axis=1), ik[i_, unnamed.argmax(axis=1)], ik[:, 0]))
+            att = s_attr.loc[sids[near]]
+            o = np.arange(-ka, ka + 1)
+            wr, wcl = np.clip(r[:, None, None] + o[:, None], 0, H - 1), np.clip(c[:, None, None] + o[None, :], 0, W - 1)
+            win = name_at[wr, wcl]
+            own_cell = (win == names.get(name, -1)) | ((win == 0) & (unnamed_km2[wr, wcl] <= cap))
             # drainage only grows downstream (fixes off-DEM / off-channel cells); float64 first, as float32 rounded to
             # 2 places still writes 12.449999809265137
-            ar = np.maximum.accumulate(area[r, c].astype("float64"))
+            ar = np.maximum.accumulate(np.where(own_cell, area[wr, wcl], 0).max(axis=(1, 2)).astype("float64"))
             ll = to_ll(x, y)
-            _, near = rtree.query(np.c_[x, y])
-            att = s_attr.loc[sids[near]]
             ptree = cKDTree(np.c_[x, y])
 
             def snap(gx, gy):

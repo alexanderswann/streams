@@ -1,0 +1,196 @@
+"""1 m lidar (USGS 3DEP) around lakes: the newest survey's bare-earth DEM, read in place from USGS's cloud-optimized
+tiles, and the water level and shoreline it shows.
+
+Lidar DEMs are hydro-flattened: inside the breakline a survey draws around a lake (required from 2 acres, by the USGS
+lidar base specification) the water is set to one elevation. So the cells at exactly that elevation are the lake as it
+was on the survey date, to the metre: a newer and sharper shoreline than NHD's, and a measured water level.
+
+catalog(bounds, cache)          1 m DEM tiles over a lon/lat box (TNM Access API) and each survey's work units with
+                                flight dates and quality level (3DEP index); cached 30 days
+window(geom, crs, cat, pad, path)  the newest survey that fully covers a lake and a margin of `pad` m around it:
+                                (array, transform, work unit); cached as a GeoTIFF at `path`
+water(a, T, lake, others)       the water level, the share of the lake's outline at it, the flattened shoreline and
+                                whether it runs off the window
+Checked on 2026-11-19: Bradley Lake reads one level (2,139.500 m) on 99% of its NHD outline, Holly Lake 97%. The
+USGS seamless elevation service serves the 2014 Grand Teton survey there, not the 2022-23 one, so the tiles are read
+directly.
+"""
+import os, json, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
+from rasterio import features
+from rasterio.merge import merge
+from rasterio.enums import Resampling
+from scipy import ndimage
+from shapely.geometry import box, shape
+
+os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
+os.environ.setdefault("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", ".tif")
+os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "5")
+os.environ.setdefault("GDAL_HTTP_RETRY_DELAY", "4")
+TNM = "https://tnmaccess.nationalmap.gov/api/v1/products"
+WU = "https://index.nationalmap.gov/arcgis/rest/services/3DEPElevationIndex/MapServer/24/query"
+UA = {"User-Agent": "stream-analysis/0.1 (personal GIS project)"}
+FLAT_TOL = 0.005      # m: a hydro-flattened surface is one value; this only absorbs float rounding
+MIN_PART_M2 = 25      # flattened specks and pinholes smaller than this are dropped (a few lidar cells)
+NODATA = -9999.0
+
+
+def _get(url, **params):
+    for attempt in range(5):
+        try:
+            r = requests.get(url, params=params, headers=UA, timeout=180)
+            if r.ok:
+                return r.json()
+        except (requests.RequestException, ValueError):
+            pass
+        time.sleep(5 * (attempt + 1))
+    raise RuntimeError(f"no answer from {url}")
+
+
+class Catalog:
+    def __init__(self, tiles, units):
+        self.tiles, self.units = tiles, units
+
+
+def catalog(bounds_ll, cache):
+    """The 1 m DEM tiles and lidar work units over a lon/lat box."""
+    p = f"{cache}/lidar_catalog.json"
+    if os.path.exists(p) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p) < 30 * 86400:
+        js = json.load(open(p))
+    else:
+        w, s, e, n = bounds_ll
+        items, off = [], 0
+        while True:
+            d = _get(TNM, datasets="Digital Elevation Model (DEM) 1 meter", bbox=f"{w},{s},{e},{n}", max=500,
+                     offset=off, outputFormat="JSON")
+            items += d.get("items", [])
+            off += 500
+            if off >= d.get("total", 0):
+                break
+        wu = _get(WU, where="1=1", geometryType="esriGeometryEnvelope", spatialRel="esriSpatialRelIntersects",
+                  geometry=json.dumps(dict(xmin=w, ymin=s, xmax=e, ymax=n, spatialReference={"wkid": 4326})),
+                  outFields="workunit,project,collect_start,collect_end,ql", returnGeometry="true", outSR=4326,
+                  maxAllowableOffset=0.0005, f="geojson")
+        js = dict(tiles=[dict(title=x["title"], url=x["downloadURL"], bbox=x["boundingBox"], pub=x.get("publicationDate"))
+                         for x in items if x.get("downloadURL", "").endswith(".tif")],
+                  units=wu)
+        with open(p + ".tmp", "w") as f:
+            json.dump(js, f)
+        os.replace(p + ".tmp", p)
+    t = pd.DataFrame(js["tiles"])
+    t["project"] = t.url.str.extract(r"/1m/Projects/([^/]+)/")[0]
+    tiles = gpd.GeoDataFrame(t, geometry=[box(b["minX"], b["minY"], b["maxX"], b["maxY"]) for b in t.bbox], crs=4326)
+    u = gpd.GeoDataFrame.from_features(js["units"]["features"], crs=4326)
+    u["start"] = pd.to_datetime(u.collect_start, unit="ms").dt.date.astype(str)
+    u["end"] = pd.to_datetime(u.collect_end, unit="ms").dt.date.astype(str)
+    # a tile's project is named after either the work unit or the project (WY_GrandTetonElkRefuge_2014 is a work unit
+    # of WY_Grand_Teton_and_National_Elk_Refuge_LiDAR_15; WY_GrandTetonNP_D22 a project)
+    have = set(tiles["project"])                   # (u.project would be GeoDataFrame.project, a method)
+    u["tiles_as"] = [wk if wk in have else pr for wk, pr in zip(u["workunit"], u["project"])]
+    return Catalog(tiles, u.sort_values("collect_end", ascending=False).reset_index(drop=True))
+
+
+def window(geom, crs, cat, pad, path=None):
+    """(array, transform, work unit row) from the newest survey whose tiles fully cover geom.buffer(pad), or None."""
+    g = geom.buffer(pad)
+    x0, y0, x1, y1 = np.floor(g.bounds[0]), np.floor(g.bounds[1]), np.ceil(g.bounds[2]), np.ceil(g.bounds[3])
+    gl = gpd.GeoSeries([box(x0, y0, x1, y1)], crs=crs).to_crs(4326).iloc[0]
+    if path and os.path.exists(path):
+        with rasterio.open(path) as s:
+            wk = s.tags().get("workunit")
+            hit = cat.units[cat.units.workunit == wk]
+            return s.read(1), s.transform, (hit.iloc[0] if len(hit) else None)
+    inside = geom.representative_point()
+    pl = gpd.GeoSeries([inside], crs=crs).to_crs(4326).iloc[0]
+    for _, u in cat.units[cat.units.intersects(pl)].iterrows():        # newest first
+        t = cat.tiles[(cat.tiles["project"] == u["tiles_as"]) & cat.tiles.intersects(gl)]
+        if not len(t) or not shapely.union_all(t.geometry.values).buffer(1e-6).contains(gl):
+            continue
+        srcs = [rasterio.open("/vsicurl/" + url) for url in t.url]
+        try:
+            a, T = merge(srcs, bounds=(x0, y0, x1, y1), res=1.0, nodata=NODATA, resampling=Resampling.nearest)
+        finally:
+            for s in srcs:
+                s.close()
+        a = a[0].astype(np.float32)
+        a[a < -1000] = NODATA                      # the tiles' own nodata is -999999
+        m = features.geometry_mask([geom], out_shape=a.shape, transform=T, invert=True)
+        if m.any() and (a[m] == NODATA).mean() > 0.02:  # a gap in this survey: try the next one
+            continue
+        if path:
+            prof = dict(driver="GTiff", height=a.shape[0], width=a.shape[1], count=1, dtype="float32", crs=crs,
+                        transform=T, nodata=NODATA, compress="deflate", predictor=3, tiled=True)
+            with rasterio.open(path + ".tmp.tif", "w", **prof) as d:
+                d.write(a, 1)
+                d.update_tags(workunit=u.workunit)
+            os.replace(path + ".tmp.tif", path)
+        return a, T, u
+    return None
+
+
+def _clean(poly):
+    """Drop specks and pinholes under MIN_PART_M2, and the stair-steps of the 1 m grid."""
+    parts = []
+    for p in getattr(poly, "geoms", [poly]):
+        if p.geom_type != "Polygon" or p.area < MIN_PART_M2:
+            continue
+        parts.append(shapely.Polygon(p.exterior, [h for h in p.interiors if shapely.Polygon(h).area >= MIN_PART_M2]))
+    if not parts:
+        return None
+    out = shapely.make_valid(shapely.simplify(shapely.MultiPolygon(parts), 0.7, preserve_topology=True))
+    out = shapely.MultiPolygon([q for q in getattr(out, "geoms", [out]) if q.geom_type == "Polygon" and q.area >= MIN_PART_M2])
+    return out if not out.is_empty else None
+
+
+def water(a, T, lake, others=()):
+    """(level, share, shoreline polygon or None, runs off the window) from a hydro-flattened DEM window."""
+    valid = a != NODATA
+    core = lake.buffer(-3)
+    core = core if not core.is_empty and core.area >= 0.3 * lake.area else lake
+    inner = features.geometry_mask([core], out_shape=a.shape, transform=T, invert=True)
+    v = a[inner & valid]
+    if len(v) < 20:
+        return np.nan, np.nan, None, False
+    vals, cnt = np.unique(np.round(v, 3), return_counts=True)
+    level, share = float(vals[np.argmax(cnt)]), float(cnt.max() / len(v))
+    if share < 0.5:
+        # Not flattened inside the outline. A small pond's mapped outline can sit off its water: look 30 m around it
+        # for a flattened surface (200 m2 or more at one value) that overlaps the outline by 30% of the smaller one
+        zone = features.geometry_mask([lake.buffer(30)], out_shape=a.shape, transform=T, invert=True)
+        zv, zc = np.unique(np.round(a[zone & valid], 3), return_counts=True)
+        if not len(zc) or zc.max() < 200:
+            return np.nan, share, None, False
+        lev2 = float(zv[np.argmax(zc)])
+        flat2 = valid & (np.abs(a - lev2) <= FLAT_TOL)
+        lab2, _ = ndimage.label(flat2, structure=np.ones((3, 3), bool))
+        ids2 = np.unique(lab2[zone & flat2])
+        reg2 = np.isin(lab2, ids2[ids2 > 0])
+        me = features.geometry_mask([lake], out_shape=a.shape, transform=T, invert=True)
+        ov = int((reg2 & me).sum())
+        if ov < 0.3 * min(me.sum(), reg2.sum()) or reg2.sum() < 0.3 * me.sum():
+            return np.nan, share, None, False      # no flattened water here: no measured level or shoreline
+        level, share, inner = lev2, ov / max(int(me.sum()), 1), zone
+    flat = valid & (np.abs(a - level) <= FLAT_TOL)
+    lab, _ = ndimage.label(flat, structure=np.ones((3, 3), bool))
+    ids = np.unique(lab[inner & flat])
+    reg = np.isin(lab, ids[ids > 0])
+    if len(others):   # another mapped lake joined to this one at the same level (String and Leigh): nearer outline
+        me = features.geometry_mask([lake], out_shape=a.shape, transform=T, invert=True)
+        ot = features.geometry_mask(list(others), out_shape=a.shape, transform=T, invert=True)
+        if ot.any() and (reg & ot).any():
+            reg &= ndimage.distance_transform_edt(~me) <= ndimage.distance_transform_edt(~ot)
+    edge = bool(reg[0].any() or reg[-1].any() or reg[:, 0].any() or reg[:, -1].any())
+    polys = [shape(s) for s, val in features.shapes(reg.astype(np.uint8), mask=reg, transform=T, connectivity=8) if val == 1]
+    return level, share, (_clean(shapely.union_all(polys)) if polys else None), edge
+
+
+def surface_stats(a, T, lake):
+    """(median, share within 15 cm of it, interquartile range) of the DEM 3 m in from a lake's outline: how level the
+    surface is where the survey didn't flatten it."""
+    core = lake.buffer(-3)
+    core = core if not core.is_empty and core.area >= 0.3 * lake.area else lake
+    m = features.geometry_mask([core], out_shape=a.shape, transform=T, invert=True) & (a != NODATA)
+    v = a[m]
+    if len(v) < 20:
+        return np.nan, np.nan, np.nan
+    med = float(np.median(v))
+    return med, float(np.mean(np.abs(v - med) <= 0.15)), float(np.subtract(*np.percentile(v, [75, 25])))

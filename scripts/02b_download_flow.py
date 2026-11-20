@@ -71,7 +71,10 @@ if not os.path.exists(v2_path) or not os.path.exists(v2_meta) or set(json.load(o
         r = get("https://api.water.usgs.gov/geoserver/wmadata/ows", params=dict(
             service="WFS", version="1.0.0", request="GetFeature", typeName="wmadata:nhdflowline_network",
             outputFormat="application/json", srsName="EPSG:4326", bbox=f"{w},{s},{e},{n},EPSG:4326",
+            # divergence / streamcalc / dnminorhyd: NHDPlus's marks for split channels (flowlib.minor_arms), since
+            # 2026-11-19. A table cached before then has none; delete it (and its .regions.json) to fetch them
             propertyName="comid,gnis_name,totdasqkm,fcode,ftype,streamorde,qe_ma,lengthkm,hydroseq,dnhydroseq,"
+                         "divergence,streamcalc,dnminorhyd,"
                          "qe_07,qe_08,qe_09,qe_10,qa_07,qa_08,qa_09,qa_10,the_geom"))
         parts.append(gpd.GeoDataFrame.from_features(r.json()["features"], crs=4326))
     v2 = pd.concat(parts, ignore_index=True).drop_duplicates("comid")

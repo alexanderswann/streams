@@ -21,7 +21,8 @@ LBL = dict(
     # map of all areas, 13_overview.py)
     area=AREA, areas=[dict(k=k_, t=v_["label"]) for k_, v_ in AREAS.items()],
     flow="TNC Natural Flows model" if has("tnc_flows") else "NHDPlus mean flow × this area's gauge records",
-    falls="Known waterfalls (OSM + NHD + CDFW surveys)" if has("cdfw_pad") else "Known waterfalls (OSM + NHD)",
+    falls="Known waterfalls &amp; swimming holes (OSM, USGS, " + ("CDFW surveys, " if has("cdfw_pad") else "")
+          + "guidebooks)",
     fires="Fire perimeters since 2016 (" + ("CAL FIRE" if has("cal_fire") else "NIFC") + "; this year's: WFIGS, BAER)",
     fire_src="CAL FIRE" if has("cal_fire") else "NIFC",
     trout_waters="CDFW Wild / Heritage Trout Waters" if CA else "Trout waters (state designations, brook trout patches)",
@@ -31,7 +32,7 @@ LBL = dict(
     credits="USGS National Digital Trails · USFS · " + ("CDFW · " if CA else "") + "iNaturalist · "
             + ("CAL FIRE · " if has("cal_fire") else "NIFC fire history · ") + "NIFC WFIGS · USGS gauges &amp; debris-flow hazard · "
             + ("CDEC · " if has("cdec") else "") + ("TNC Natural Flows" if has("tnc_flows") else "NHDPlus V2 (EROM)")
-            + " · PRISM Group, Oregon State University")
+            + " · PRISM Group, Oregon State University · known falls: OSM, USGS GNIS, Wikidata and the guides named in each")
 from scoring import attach, score
 import crossbox
 
@@ -42,6 +43,13 @@ kp_ll = gpd.GeoDataFrame(read("waterfall_candidates.gpkg"), crs=4326).sort_value
 trails = gpd.GeoDataFrame(read("trails.gpkg"), crs=4326)
 known_falls = gpd.GeoDataFrame(read("known_falls.gpkg"), crs=4326)
 known_falls = known_falls[known_falls.geometry.notna()]
+# a guide that puts many falls on this map (gawaterfalls.com's Georgia catalogue) is named in the credits as well as in
+# each fall's popup
+_guides = [s_ for s_, n_ in known_falls.src.str.split(" · ").explode().value_counts().items() if n_ >= 50 and s_ not in
+           ("OpenStreetMap", "USGS GNIS", "USGS NHD", "Wikidata", "CDFW barrier survey")]
+if _guides:
+    LBL["credits"] = LBL["credits"].replace("known falls: OSM, USGS GNIS, Wikidata and",
+                                            "known falls: OSM, USGS GNIS, Wikidata, " + ", ".join(_guides) + " and")
 # road closures from 07_road_closures.py (optional; re-run that script to refresh)
 closures = gpd.read_file(f"{MAP_OUT}/road_closures.gpkg") if os.path.exists(f"{MAP_OUT}/road_closures.gpkg") else None
 gated = gpd.read_file(f"{MAP_OUT}/gated_roads.gpkg") if os.path.exists(f"{MAP_OUT}/gated_roads.gpkg") else None
@@ -918,17 +926,25 @@ FALL_SVG = ('<svg width="16" height="16" viewBox="0 0 16 16"><rect x="4" y="4" w
 GAUGE_SVG = ('<svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 1.5 L17 15 L1 15 Z" fill="{c}" stroke="#212529" '
              'stroke-width="1.2"/></svg>')
 svg_icon = lambda html, w, h: folium.DivIcon(html=html, icon_size=(w, h), icon_anchor=(w // 2, h // 2), class_name="svgpin")
-if "note" not in known_falls:
-    known_falls["note"] = None
+for c in ("note", "kind", "url"):     # ranges scored before 02f_known_falls.py have only name, src (and note)
+    if c not in known_falls:
+        known_falls[c] = None
+def fall_html(r):
+    """The known fall's popup, shared by the 2D, 3D and one-file maps: name, kind, sources, note, the source's page."""
+    nm_ = r.name if isinstance(r.name, str) and r.name else "waterfall"
+    kind_ = r.kind if isinstance(r.kind, str) and r.kind not in ("", "waterfall") else ""
+    note = r.note if isinstance(r.note, str) and r.note else ""
+    url = r.url if isinstance(r.url, str) and r.url.startswith("http") else ""
+    return (f"<b>{hesc(nm_)}</b>" + (f" · {hesc(kind_)}" if kind_ else "") + f"<br><span style='color:#6b7280'>{hesc(r.src)}</span>"
+            + (f"<br>{hesc(note)}" if note else "") + (f"<br><a href='{hesc(url)}' target='_blank'>Source page ↗</a>" if url else ""))
+known_falls["html"] = [fall_html(r) for r in known_falls.itertuples()]
 kf = folium.FeatureGroup(name=f"<span style='color:#0b3d91'>◆</span> {LBL['falls']}", show=False)
 for r in known_falls.itertuples():
-    note = r.note if isinstance(r.note, str) and r.note else ""
     nm_ = r.name if isinstance(r.name, str) and r.name else "waterfall"
     folium.Marker([r.geometry.y, r.geometry.x], icon=svg_icon(FALL_SVG, 16, 16),
-                  popup=folium.Popup(f"<b>{hesc(nm_)}</b> ({r.src})" + (f"<br>{hesc(note)}" if note else ""), max_width=300),
-                  tooltip=f"{nm_} ({r.src})").add_to(kf)
+                  popup=folium.Popup(r.html, max_width=300), tooltip=f"{nm_} ({r.src})").add_to(kf)
 kf.add_to(m)
-X3D["falls"] = gj(known_falls[["name", "src", "note", "geometry"]].assign(name=known_falls.name.fillna("waterfall")))
+X3D["falls"] = gj(known_falls[["name", "src", "note", "kind", "html", "geometry"]].assign(name=known_falls.name.fillna("waterfall")))
 
 if closures is not None and len(closures):
     fetched = closures.fetched.iloc[0]
@@ -959,6 +975,10 @@ if os.path.exists(f"{SHARED}/closure_areas.gpkg"):
                                              "fillOpacity": 0.1},
                    tooltip=folium.GeoJsonTooltip(["Agency", "Closure_Date"], aliases=["Closed by", "Since"])).add_to(m)
     X3D["closure_areas"] = gj(ca_)
+
+# ---- lakes (05d_lakes.py, in the areas where they are built; maplakes.py) ----
+import maplakes
+maplakes.add(m, X3D, done, approach)
 
 # ---- context layers (11_context.py) ----
 fires = ctx("fires")

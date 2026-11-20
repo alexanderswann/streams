@@ -23,9 +23,6 @@ nhd = gpd.read_file(f"{RAW}/nhd_flowlines.gpkg")
 nhd_pts = gpd.read_file(f"{RAW}/nhd_points.gpkg")
 roads = gpd.read_file(f"{RAW}/osm_roads.gpkg")
 trails = gpd.read_file(f"{RAW}/osm_trails.gpkg")
-osm_falls = gpd.read_file(f"{RAW}/osm_waterfalls.gpkg")
-if "name" not in osm_falls:   # a range with no mapped waterfalls gets an empty file without columns
-    osm_falls["name"] = pd.Series(dtype=object)
 kp = pd.concat([gpd.read_file(f"{DERIVED}/knickpoints.gpkg").assign(**{"pass": 1}),
                 gpd.read_file(f"{DERIVED}/knickpoints_bigcreek.gpkg")], ignore_index=True)
 kp = gpd.GeoDataFrame(kp, crs=CRS)
@@ -40,31 +37,19 @@ trail_u = pd.concat([trails.geometry, roads[roads.highway == "track"].geometry])
 # Artificial paths (55800, the centrelines of mapped rivers and lakes) take the area's class (config.py)
 nhd["flow"] = nhd.fcode.map({46006: "perennial", 46003: "intermittent", 46007: "ephemeral",
                              55800: ARTIFICIAL_PATH}).fillna("other")
-known_falls = pd.concat([
-    osm_falls.assign(src="OSM")[["name", "src", "geometry"]],
-    nhd_pts[nhd_pts.ftype == 487].assign(name=nhd_pts.get("gnis_name"), src="NHD")[["name", "src", "geometry"]],
-], ignore_index=True)
-known_falls = known_falls[known_falls.geometry.notna() & ~known_falls.geometry.is_empty]
-# CDFW Passage Assessment Database (California only): natural barriers noted in the field (falls, cascades, bedrock
-# chutes), many with a height and plunge-pool depth in the notes. Records whose notes say the barrier is gone are skipped.
-from geomatch import esri
-pad = esri("https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds69_fmu/FeatureServer/0",
-           gpd.GeoSeries([shapely.box(*REGIONS[REGION]["bbox"])], crs=CRS).to_crs(4326).total_bounds,
-           "PAD_ID,StreamName,SiteName,BarStatus,Notes,SurveyDate", where="SiteType='Non-structural'") if has("cdfw_pad") else []
-if len(pad):
-    pad = pad.to_crs(CRS)
-    pad = pad[~pad.Notes.str.contains(r"no longer present|no evidence of|not a barrier|no barrier", case=False, na=False)]
-    site = pad.SiteName.fillna("natural barrier").str.strip()
-    creek = pad.StreamName.fillna("").str.strip().replace(r"(?i)^unnamed.*", "", regex=True)
-    yr = [pd.Timestamp(float(v), unit="ms").year if str(v).replace(".", "").isdigit() and float(v) > 1e11
-          else int(m.group()) if (m := re.search(r"(?:19|20)\d\d", str(v or ""))) else "" for v in pad.SurveyDate]
-    pad = pad.assign(
-        name=[s if not c or c.lower() in s.lower() else f"{s}, {c}" for s, c in zip(site, creek)], src="CDFW",
-        note=[" ".join(filter(None, [(n or "").strip()[:240], f"(CDFW fish passage survey{', ' + str(y) if str(y)[:2] in ('19', '20') else ''}; "
-                                     f"barrier to fish: {(b or 'unassessed').lower()})"]))
-              for n, y, b in zip(pad.Notes, yr, pad.BarStatus)])
-    known_falls = pd.concat([known_falls.assign(note=None), pad[["name", "src", "note", "geometry"]]], ignore_index=True)
-print("known falls by source:", known_falls.src.value_counts().to_dict())
+# Known waterfalls: the area's list from every source, merged (02f_known_falls.py: OpenStreetMap, NHD, USGS GNIS,
+# Wikidata, CDFW's barrier surveys in LA, and falls from guidebooks and state inventories in data/known_falls_curated.csv).
+# This range takes those within 500 m of its box, so a drop near an edge still finds its fall, and writes out only those
+# inside it, so each fall is drawn once (the lon/lat box each range used to take overlapped its neighbours').
+kf_path = f"{SHARED}/known_falls.gpkg"
+if not os.path.exists(kf_path):
+    raise SystemExit(f"{kf_path} is missing: run AREA={AREA} 02f_known_falls.py first (run_mid.sh does)")
+range_box = shapely.box(XMIN, YMIN, XMAX, YMAX)
+known_falls = gpd.read_file(kf_path).to_crs(CRS)
+known_falls = known_falls[known_falls.intersects(range_box.buffer(500))].reset_index(drop=True)
+known_falls["precise"] = known_falls.precise.astype(bool)
+print(f"known falls: {len(known_falls)} ({int(known_falls.precise.sum())} precisely placed);",
+      "sources:", known_falls.src.str.split(" · ").explode().value_counts().to_dict())
 dams = pd.concat([nhd_pts[nhd_pts.ftype == 343].geometry, gpd.read_file(f"{RAW}/osm_dams.gpkg").geometry])
 
 # ---- stream links ----
@@ -161,7 +146,10 @@ kp["road_crossing"] = [crosses(z) for z in zone]
 # channel's offset) is that drop, whatever a road or fill suggests; 14 such were labelled artifacts. The nearest
 # artifact beyond that was 88 m off. Up to 200 m from the top a mapped fall still names a drop, but no longer outranks
 # the artifact tests.
-kp["fall_on_step"] = (shapely.distance(step, known_falls.geometry.union_all()) <= 50) if len(known_falls) else False
+# Only precisely placed falls count here (02f_known_falls.py's `precise`: OSM, NHD, CDFW and guidebook
+# GPS points on the fall); USGS GNIS placements and points placed from directions can be 100 m or more off.
+on_fall = known_falls[known_falls.precise]
+kp["fall_on_step"] = (shapely.distance(step, on_fall.geometry.union_all()) <= 50) if len(on_fall) else False
 kp["status"] = np.select(
     [kp.dam_m < 250, kp.fall_on_step, kp.road_crossing | kp.artifact_risk, kp.known_fall_m < 200,
      kp.kind == "waterfall-like step", kp.kind == "cascade / knickpoint",
@@ -201,7 +189,7 @@ kp_ll.drop(columns=["top_idx", "base_idx"]).to_file(f"{os_}/waterfall_candidates
 t_ll = trails.to_crs(4326)
 t_ll = t_ll[~t_ll.is_empty].assign(geometry=shapely.set_precision(t_ll.geometry.simplify(0.0001).values, 1e-5))
 t_ll.assign(name=t_ll["name"].fillna("trail"))[["name", "geometry"]].to_file(f"{os_}/trails.gpkg")
-known_falls.to_crs(4326).to_file(f"{os_}/known_falls.gpkg")
+known_falls[known_falls.within(range_box)].to_crs(4326).to_file(f"{os_}/known_falls.gpkg")
 
 # ---- hillshade overlay (warped to web mercator) ----
 def hillshade(z, az=315, alt=45):

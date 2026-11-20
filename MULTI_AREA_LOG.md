@@ -901,3 +901,211 @@ as served have the build's sizes, Central VT's three match by SHA-256, `streams/
 Go-to menus were built after se_pa entered `config.py`, so they list Southeastern Pennsylvania: a dead link until
 se_pa is published. The drainages are the committed `05c` (the sea-level change to `05c` came at 15:21, after
 every `05c` run here).
+
+## 2026-11-19, afternoon: known waterfalls from every source (another session)
+The user named three Vermont falls missing from the map: Triple Buckets, Bolton Potholes and Texas Falls. Texas Falls
+was in fact an OSM waterfall; its drop showed as a likely DEM artifact (fixed by the drop-rule session above).
+Bolton Potholes was in OSM only as a park, and Triple Buckets was in no source we read. Known falls had been only OSM
+waterfall nodes and NHD waterfall points (plus CDFW in LA), each range taking its own lon/lat box, so falls near a
+box edge were drawn twice.
+- New step `02f_known_falls.py` (per area, before `05_score`; `run_mid.sh` runs it) merges every source into
+  `data/raw/<area>/_shared/known_falls.gpkg`:
+  - OSM: waterfall nodes and ways, named rapids, named swimming holes and falls-named features on streams.
+  - NHD waterfall points.
+  - USGS GNIS Falls and Rapids, from the current file and the 2021 archive.
+  - Wikidata. The class ids were checked: Q34038 waterfall, Q695793 rapids, Q7658373 swimming hole.
+  - CDFW's barrier surveys, moved here from `05_score`.
+  - `data/known_falls_curated.csv`.
+- Merge rules: one fall from several sources becomes one point. A point never absorbs a second point from the same
+  source. Two different names merge only on the same spot (25 m). Upper, Lower, Little and similar words keep falls
+  apart.
+- `05_score` takes the falls within 500 m of each box and writes out only those inside it. Only `precise` points (OSM,
+  NHD, CDFW and guidebook GPS at the fall) can outrank the artifact tests.
+- Curated list: 143 rows from research across the six areas (six research agents, about 450 page reads):
+  - Vermont's 1985-88 state inventory: Jenkins & Zika, ANR basin PDFs, read with macOS PDFKit.
+  - New England Waterfalls, the World Waterfall Database and Vermont River Conservancy pins.
+  - Tom Chester's 1999 San Gabriel waterfall list, Caltech's canyoneering guide and RiverBrain (Chattooga rapids).
+  - The Chattahoochee River NRA shoals.
+  - Points placed from directions on our DEM's steps say so in their note: Webb Falls, the Granville cascade chain,
+    Benjamin Falls and Middlesex Gorge.
+  - Left out:
+    - The World Waterfall Database's lidar picks with invented names and no other attestation.
+    - Pages that withhold coordinates for posted land.
+    - Points given only to 30 seconds of latitude and longitude.
+- Fixes to source data:
+  - GNIS 1918292, a second "Bingham Falls" added in 2001, sits on Hell Brook Cascades in Smugglers Notch, 4.5 km from
+    Bingham Falls. It is replaced.
+  - Four Wikidata items in Georgia (Mud Creek, Stonewall Creek and Darnell falls, plus a rounded Bad Branch Falls)
+    carry Ammons Creek Falls' coordinate or a rounded one. They are dropped.
+  - Same-name points GNIS puts 0.5 to 1.4 km off (Raven Cliff, Amicalola) merge with OSM's.
+- Held: gawaterfalls.com's 695 Georgia falls (Mark Ozboyd's map data: names, GPS, landowner, height) are in
+  `data/known_falls_curated_gawaterfalls.csv.held`. The layers carry no license and many names are his own, so they
+  stay off the public site until the owner decides.
+- Known falls drawn per area, before (OSM + NHD per range, with edge duplicates) and after: Central VT 27 -> 99 (three
+  boxes, before the north extension), NE CT 27 -> 27, Lexington 21 -> 27, N Georgia 206 -> 249 (gawaterfalls held), LA
+  209 plus about 270 CDFW -> 412, se_pa 12 -> 13, Jackson 27 -> 23 (rebuilt at 15:55 once the Lakes session was done
+  with it; matches 16 -> 18; the lake layer kept).
+- Drop statuses after the rebuild (02f, 05_score, 06_map, 12_profiles; same drops and ids): "matches mapped waterfall"
+  Central VT 18 -> 57, LA 224 -> 256, N Georgia 122 -> 141, Lexington 11 -> 12, NE CT 0. Artifacts 124 -> 121 (VT:
+  Falls Bridge and Halpin falls under their bridges, Allen Brook Cascade below its bridge) and 208 -> 207 (LA, Newton
+  Canyon Falls). The offline count with gawaterfalls included: 803 matches.
+- Checked on the rendered maps (2D layer and popups; the 3D data carries the popups; the 3D canvas doesn't draw in the
+  hidden preview pane, so its click popup wasn't clicked). **Published 15:50 (site commit `93a2cc3`)**: Central VT, NE CT,
+  Lexington, N Georgia and LA only, by a one-off copy of `publish_site.sh` limited to those areas (Jackson was being
+  rebuilt by the Lakes session; se_pa was its own session's; the front page didn't change). se_pa was rebuilt with
+  02f at 15:50 but not published; the running-build check stopped it, and it goes out with the next publish.
+- `02f`'s caches now carry the lon/lat box they were fetched for, so an area whose boxes grow fetches again.
+- Vermont's north box grew to Jeffersonville (another session, rebuild 15:55-16:45). The strip's falls were researched
+  and added to the curated list before that rebuild's 02f ran: Brewster River Gorge, Jeff Falls, Ithiel Falls, Green
+  River Falls, Woods, Milton and Clarks falls, Sloping Falls, Gihon River and Waterman Brook falls, and Cadys Falls.
+  Rows also rename OSM's Dog Head and Fairfax falls and add the 1985 inventory's notes. The curated list now has 156
+  rows plus the 695 held.
+
+## 2026-11-19, afternoon: lakes, piloted in Jackson (this session)
+The user asked how to bring lakes into the analysis, chose a Jackson pilot, and asked for it to be "incredibly
+accurate ... the highest quality data" with "high quality bathymetry for all of the lakes". Built: `05d_lakes.py`,
+`lakelidar.py`, `lakedata.py`, `maplakes.py`, `lake_bathymetry.py` (ready, no public source to feed it), and hooks in
+`08_hike.py`, `06_map.py`, `map3d.html`, `14_portable.py` that do nothing where an area has no `lakes.gpkg`. README:
+"Lakes (pilot: Jackson)".
+- **357 lakes.** 309 from NHD HR (1,490 touching the boxes; treatment / storage ponds out; under 0.5 ha only when an
+  agency lists or a survey names them), 47 from OpenStreetMap where the lidar shows level water, 1 with the agency's
+  outline (Sleeping Indian Pond).
+- **Outlines and levels from 1 m lidar.** The newest survey per lake, read from USGS's cloud-optimized tiles. The
+  seamless service serves the 2014 Grand Teton survey, not the 2022-23 QL1 one, which was checked tile by tile.
+  167 shorelines from lidar (median overlap with NHD 0.78), 245 measured water levels. NHD's elevations were off by
+  up to 12 m (Table Mountain Lake), and its outlines by whole deltas (Lower Slide Lake 206 vs 172 ha, checked on
+  imagery).
+- **No level water.** Three cases, after the first rule flagged fish lakes as dry: flattened (lidar shoreline);
+  level within 15 cm but not flattened (Bills Bayou Pond, 95%: NHD outline, lidar level); not level (Dry Basin Lake,
+  13 m of relief), flagged only with the 10 m DEM agreeing (28 lakes) or, where the bed lies below a normal water
+  level, as drawn down that day (4; the unnamed 15 ha lake by Jackson Lake was drained in the fall 2022 flight).
+  Checked on imagery: Hardemann Reservoir is meadow, Cow Lake's water fills under half its outline.
+- **Fish.** Wyoming Game & Fish lake guide: 104 lakes, 46 with game fish, 58 with none, joined by NHD reach code
+  (102). Cross-checks: GBIF records at 17 lakes (MARIS state surveys 154, iNaturalist 30, USGS NAS 23, museum 4;
+  NAS alone is too coarse, mostly park or refuge centroids) and the 2002-03 Game & Fish / NPS gill-net survey of 22
+  alpine lakes. No conflicts; brown trout (Leigh Lake) and brook trout (Bearpaw Lake) recorded beyond the agency
+  list.
+- **Bathymetry.** A research pass (NPS DataStore, USGS ScienceBase, Reclamation, Game & Fish, University of Wyoming,
+  NOAA, the 3DEP topobathy index) found no downloadable survey for any lake here. Jenny, Jackson and Palisades are
+  surveyed, but published only as figures or held by the authors. So depths are measured maxima, each checked in its
+  source: Larsen et al. 2016 (Jenny ~73 m, mean ~43 m; the Game & Fish guide's 423 ft is shown as a conflict),
+  McGlue et al. 2023 (Jackson ~143 m in 2018), EPA NLA sonar (Phelps 48.4 m 2012, Icefloe 32 m 2017), Stephens &
+  Gipson 2005 (24 alpine lakes, transducer), the Game & Fish guide (20 more). 46 lakes.
+- **Walking.** Lakes are impassable off trails. A first run sent reaches mapped through lakes to "swim" (one +37 h);
+  a lake cell now takes its lake's quickest shore. Final: 272 of 6,419 reaches changed, 212 quicker (median 5 min),
+  18 longer by 15+ min (max 37, Leigh Creek's canyon); 48 drops changed (max 39). Summer routes, without closures, run
+  within ~10% of the Park Service's trail distances (Taggart 1.3 vs 1.5 mi, Amphitheater 4.5 vs 4.9 mi).
+- **Land.** The PAD-US public-access service gives one record per place, often a designation; its "restricted" on
+  federal land is about use rules (the Wyoming Range Withdrawal Area is mineral leasing), so only closed land and
+  non-federal restricted land is flagged (10 + 2). It leaves Jackson Lake's water and ~300 m of shore out: those
+  lakes take their shore's unit.
+- **Coordination.** Four other sessions were rebuilding and publishing. The lake file was held out of the live path
+  until Classification criteria's publish (31efc26, 15:31). Its Jackson rebuild had run the Tetons box once with the
+  file in place, and it re-ran that box before publishing, so nothing lake-aware was published. The Jackson map was
+  rebuilt at 15:56 after the known-falls session's 05_score and 12_profiles. 14_portable.py (last run 15:48, which
+  has the lakes but not the final notes) and publishing wait for the Vermont north rebuild (15:55-16:45).
+- **Later the same afternoon.** `run_mid.sh` runs `05d_lakes.py` after the drainages and flow; a failed download
+  keeps the last `lakes.gpkg`. Published on the user's "Yes, publish then", after the Vermont north rebuild finished:
+  Jackson only, by hand (the files `publish_site.sh` copies for an area), commit 94566e0 at 19:18 EST, 4 files under
+  `streams/jackson/`. It carries the known-falls session's Jackson rescore, which that session had checked. The live
+  2D map, 3D page and 3D data were confirmed byte for byte against the build: the first check of the 3D data hit a
+  cached copy from mid-deploy. `14_portable.py` (28.6 MB, 7 areas) and `phone_sync.sh` were rerun after it.
+- 16:00, owner: "Publish with credit" for the gawaterfalls.com list. It is now
+  `data/known_falls_curated_gawaterfalls.csv` with the source "gawaterfalls.com (Mark Ozboyd)". Each popup links his page
+  for that fall, and `06_map` adds any guide with 50+ falls on a map to its credit line. N Georgia rescored at 16:10
+  (929 known falls); the se_pa session's drainage refresh rebuilds its map and profiles. Stamping the old download
+  caches with their boxes (they predate the box key) stopped 02f refetching Overpass for areas whose boxes didn't change;
+  one such refetch had hung for 10 minutes.
+- 16:23 PT (the machine's clock switched to Eastern time around then: logs and file times after it read 3 hours
+  later): N Georgia's 06_map and 12_profiles with the gawaterfalls list; the drainage refresh hadn't reached it. Georgia
+  now shows 925 known falls (693 from gawaterfalls.com) and 455 drops matched to a known fall (was 141). Checked on the
+  rendered map: popups carry the credit and a link to his page for that fall, and the credit line names him.
+  **Published alone at 16:25 PT (site commit `38a2dd7`)**: only `streams/n_georgia/`, front page untouched. The live
+  Georgia data carries the credit.
+
+
+## 2026-11-19, evening: Vermont's north box reaches Jeffersonville (another session)
+**User: "expand the Vermont north map to include the stowe valley", then "i want bingham falls if its not already in
+it".** Both were already in. The north box (`stowe_lamoille`, "Stowe & upper Lamoille") held the whole Little River
+drainage (290 km², 0.1 to 0.85 km inside the edge at its closest). Bingham Falls is a known fall (OSM, USGS GNIS and
+NHD agree) with two drops on the West Branch Little River (16.5 and 9.8 m) matched to it, in the 2D and 3D maps and
+the profiles. The waterfall layers start off (default-layer rule), which may be why it wasn't seen. The box's north
+edge then ran at 44.56 to 44.57° N, through Morrisville and just past Smugglers Notch. The user asked how far north
+Johnson and Jeffersonville were, then chose "Jeffersonville, where the Brewster River meets the Lamoille" (5.4 mi
+north of the old edge at the town centre) over the suggested ~7 mi.
+
+**Change.** `config.py`: stowe_lamoille's bbox top goes from 4,937,000 to 4,947,000 (+10 km, 6.2 mi). The edge now
+runs from 44.647° N at the east end to 44.663° N at the west end. The Brewster's mouth (NHD) is at y 4,946,327, 0.4 mi
+past the town centre, so the edge sits 0.7 km beyond it.
+- The box gains 650 km²: the north side of Smugglers Notch and the whole Brewster River; the Lamoille from Morrisville
+  through Hyde Park, Johnson and Jeffersonville to Cambridge, and on to Milton in the west; the lower ends of the creeks
+  joining it from the north (Gihon, Green River, Wild Branch, Seymour River, Kenfield Brook, Malletts Creek).
+- The falls session first added the strip's falls to `data/known_falls_curated.csv` (Brewster River Gorge, Jeff
+  Falls, Ithiel, Dog's Head, Cadys, Green River, Woods, Milton, Clarks, Gihon River and Waterman Brook falls).
+  Vermont now has 114 known falls, 15 of them in the strip.
+
+**Caches that don't notice a bigger box.** These were found before the run and moved to
+`data/backup_20261119-vtnorth/caches/`, so they were fetched again.
+- DEM tiles (`01_download_dem.py`). A tile on the box's top or right edge is cut there but saved under the full
+  tile's name, so the old top row (cut at 4,937,000) would have been reused, leaving a 6 km strip with no terrain.
+  **Fixed in the script:** a tile whose bounds don't match is fetched again (all five were).
+- Keyed only by range name and age:
+  - the OSM trail, access-road and cycleway caches (`02d`, `02e`, `08`);
+  - `05_score`'s OSM waterways;
+  - the canopy raster (`11_context`, 90 days);
+  - `troutdata`'s state and TU layers;
+  - `watertemp`'s Water Quality Portal downloads;
+  - the PRISM clip (made once).
+- Keyed by the set of range names: `02b`'s NHDPlus V2 table and `flowlib`'s reservoir list.
+- `02f`'s OSM and Wikidata falls caches now record their box (the falls session's change). The rest still don't
+  notice a box change: whoever moves a box next must clear the same files, or make them record their box.
+
+**Run.** `01` and `02` for stowe_lamoille, then `run_rebuild_a.sh central_vt`, from 15:51 PT to 19:16 ET, about 25
+minutes, with no failed step. The Mac's clock switched from Pacific to Eastern time partway through, so the log's
+16:08 to 19:15 for `11_context` is about 7 minutes. The lid was closed for 8 minutes during white_river's `08_hike`,
+which carried on afterwards.
+
+**Checks** (scratch script `checks_vt.py`; the standing list from the memory notes):
+- No empty terrain cells in the strip. No negative drainage cells (largest 1,680 km²). Order-3+ stream cells with no
+  reach within 25 m: 0.0 km in all three boxes. Reach ends dead on a shared edge: 0 of 72. Sudden flow drops: 0.
+- The strip:
+  - 733 new reaches (Vermont 6,681 → 7,434): 687 year-round, 40 with no flow data, 5 reservoir; median fish score 62.
+  - The Lamoille's drainage matches NHDPlus along its course: 333 vs 331 km² entering at the east edge, 977 vs 976 at
+    Johnson, 1,275 vs 1,275 below Jeffersonville, 1,863 vs 1,863 at Milton. The Brewster has 50.7 vs 51.0 km² at its
+    mouth.
+  - Two USGS gauges joined the flow data (27 gauges; the yearly index now comes from 16, and no year moved by more
+    than 0.02).
+- The rest of Vermont against the build before (`data/backup_20261119-vtnorth/`): 99.5 % of reaches are at the same
+  spot. Of those, 88.5 % have the same score and 99.9 % are within 5 points; 0.6 % changed flow class; the median stays
+  at 64. Three reaches moved 10+ points, all at the old edge:
+  - Kenfield Brook +27 and Malletts Creek +17: the old edge had cut them off (1.2 → 24 km² and 4.3 → 49 km²).
+  - The Creek −35: its reach lies in an unnamed NHD reservoir on the refreshed reservoir list and now reads reservoir.
+- On the rendered map:
+  - the Brewster from the Notch to Jeffersonville, with its falls (Jeff Falls' popup says swimming, private land,
+    visitors allowed);
+  - Bingham Falls still marked;
+  - no console errors.
+- The 3D page loads its data (which has the Brewster and Gihon) with no errors. The browser pane draws no WebGL, though
+  (the untouched Connecticut 3D page is blank there too), so the 3D view itself wasn't looked at.
+
+**Edge effects of this edge (open; for the user to decide).** The Lamoille meanders across y 4,947,000 six times, and
+two reservoirs straddle it.
+- Between Cambridge and Milton the Lamoille loops north of the edge through Fairfax. On the 3 reaches (1.5 km) where it
+  comes back, the routing drains them back out through the edge, so they show 3 to 5 km² and no flow. By design,
+  crossbox hands the river's 1,820 km² on just below them. Between Johnson and Jeffersonville the river is off the map
+  for about 4 km.
+- The edge cuts Green River Reservoir (y 4,942,903 to 4,948,941). The routing drains the flat lake out through the
+  edge, so the lake has no dead end to carry past its dam. The Green River below the dam (about 4 km) starts from
+  nothing: 1.6 to 12.5 km² against NHDPlus's 38 to 50.
+- An edge at 4,950,000 (8.1 mi from the old edge, 1.9 mi more) crosses neither the Lamoille nor any reservoir; it
+  crosses only Lake Champlain, as the west edge already does. 4,949,500 still cuts Arrowhead Mountain Lake.
+
+**Published (site commit `739374b`, 19:27 ET (16:27 PT)).** Only `streams/central_vt/` went up: the 2D map, the 3D
+data, the profiles data and the north box's hillshade. `streams/index.html` went up too, with only Vermont's entry
+replaced in the live page's area list. LA and Jackson had been rebuilt locally after their last publish, so the
+regenerated page was not used: the other six entries and all the text around the list are byte for byte the live ones.
+- Checked afterwards: all seven files as served have the same SHA-256 as the pushed ones, and the home page answers 200.
+- The other sessions were told before and after the build. The lakes session ran `14_portable` and `phone_sync` once
+  the build was done, so `phone/` and the single file have the new Vermont.
+- Not committed in this project. Backups are in `data/backup_20261119-vtnorth/`: outputs, derived data, the north
+  box's raw files, `config.py` and `01_download_dem.py` from before the change, and the cleared caches.

@@ -7,7 +7,7 @@ opens as the same map of all areas; zoom into an area and that area's layers are
 stream reach with the popup of the full map (fish score and standing, summer flow, access, sun and water
 temperature, trout records, notes). Like every map here it opens with streams, drainages, the long trail, terrain
 shading and place labels only; drops and waterfalls, trailheads and parking, trails and dirt roads, gauges and road
-closures, and trout records each have a switch in the panel. Each area's data sits in the page as gzip (about a
+closures, trout records, and lakes (where built: fish records, access, measured depths) each have a switch in the panel. Each area's data sits in the page as gzip (about a
 fifth of its size) and is unpacked only when you go there, so the file is tens of MB instead of the 200+ MB of the
 six full maps, and a phone holds one or two areas at a time.
 
@@ -19,7 +19,7 @@ import base64, gzip, json, os, datetime as dt
 from config import AREAS, ROOT
 
 OUT = f"{ROOT}/output"
-CORE = ["streams", "drops", "falls", "parking", "gauges", "closures", "trout"]
+CORE = ["streams", "drops", "falls", "parking", "gauges", "closures", "trout", "lakes", "lake_depth"]
 EXTRA = ["trails", "roads"]
 
 
@@ -112,7 +112,7 @@ if (!go()) map.fitBounds(all, {padding: [30, 30]});     // the view first: layer
 let mode = "drainage", extras = false;
 // What is on the map: streams, drainages, the long trail, terrain shading and place labels. The rest waits for its
 // switch in the panel.
-const opt = {drops: false, access: false, live: false, trout: false};
+const opt = {drops: false, access: false, live: false, trout: false, lakes: false};
 const LOW = 15, LOWCOL = "#8d9aa8", RAMP = ["#3fb0a8", "#2a93c4", "#2a6fc0", "#3a4fb0", "#4b2f9c", "#3a1670"];
 const ramp = fs => fs < LOW ? LOWCOL : RAMP[Math.min(RAMP.length - 1, Math.floor((fs - LOW) / (100 - LOW) * RAMP.length))];
 const W = [0, 0.8, 1.15, 1.7, 2.4, 3.3, 4.4, 5.4];
@@ -197,7 +197,8 @@ async function load(a) {
     if (d.gauges) lines.push(L.geoJSON(d.gauges, {pointToLayer: pt(f => f.properties.c || "#1c7ed6", {radius: 6}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${f.properties.html}</div>`)}));
     g.live = [L.layerGroup(lines), 10.5, "live"];
     g.falls = [L.layerGroup(d.falls ? [L.geoJSON(d.falls, {pointToLayer: pt(() => "#0b3d91", {radius: 5.5}),
-      onEachFeature: (f, l) => l.bindPopup(`<div class="pp"><b>${esc(f.properties.name || "Waterfall")}</b> (mapped, ${esc(f.properties.src || "")})` +
+      onEachFeature: (f, l) => l.bindPopup(f.properties.html ? `<div class="pp">${f.properties.html}</div>` :
+        `<div class="pp"><b>${esc(f.properties.name || "Waterfall")}</b> (mapped, ${esc(f.properties.src || "")})` +
         (f.properties.note ? `<br>${esc(f.properties.note)}` : "") + "</div>")})] : []), 11, "drops"];
     const pts = [], acc = [];
     if (d.drops) pts.push(L.geoJSON(d.drops, {pointToLayer: pt(f => f.properties.c || "#e87ba4", {radius: 4.5}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${f.properties.html}</div>`)}));
@@ -206,6 +207,14 @@ async function load(a) {
         (p.no ? `<br>${esc(p.no)}` : "") + (p.u ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "") + "</div>"); }}));
     g.drops = [L.layerGroup(pts), 12, "drops"];
     g.access = [L.layerGroup(acc), 12, "access"];
+    // lakes (05d_lakes.py, where built) under the streams on the one canvas; measured depth contours over them
+    const lk = [];
+    if (d.lakes) lk.push(L.geoJSON(d.lakes, {renderer: canvas, style: f => ({color: f.properties.e, weight: 1.2, fillColor: f.properties.c,
+        fillOpacity: .55, dashArray: f.properties.dry ? "4 3" : null}),
+      onEachFeature: (f, l) => { l.bindPopup(f.properties.html, {maxWidth: 340}); l.bindTooltip(esc(f.properties.tip), {sticky: true}); }}));
+    if (d.lake_depth) lk.push(L.geoJSON(d.lake_depth, {renderer: canvas, style: f => ({color: "#1864ab", weight: f.properties.depth_m % 10 ? .8 : 1.6, opacity: .85}),
+      onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.tip), {sticky: true})}));
+    if (lk.length) g.lakes = [L.layerGroup(lk).on("add", () => lk[0].bringToBack()), 10, "lakes"];
     a.trout = d.trout ? L.geoJSON(d.trout, {pointToLayer: pt(f => f.properties.c || "#2b8a3e", {radius: 4.5}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${f.properties.html}</div>`)}) : null;
     a.state = "on";
     a.used = Date.now();
@@ -269,7 +278,7 @@ panel.onAdd = () => {
     `<div class="key"></div>` +
     `<label><input type="checkbox" data-o="drops"> Drops and waterfalls</label><label><input type="checkbox" data-o="access"> Trailheads and parking</label>` +
     `<label><input type="checkbox" id="xt"> Trails and dirt roads</label><label><input type="checkbox" data-o="live"> Gauges and road closures</label>` +
-    `<label><input type="checkbox" data-o="trout"> Trout records</label>` +
+    `<label><input type="checkbox" data-o="trout"> Trout records</label><label><input type="checkbox" data-o="lakes"> Lakes: fish, access, depth</label>` +
     `<p>Zoom into an area for every creek, and tap one for its details. The switches above add the rest once you are zoomed in. Scores rank creeks within an area; they aren't comparable between areas.</p></div>`;
   L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
   const list = d.querySelector(".list"), mark = d.querySelector("h1 span"), key = d.querySelector(".key");
