@@ -244,22 +244,44 @@ pc = np.where(tbf >= 0, cc.ravel() - offs[np.clip(tbf, 0, None), 1], cc.ravel())
 parent = (np.clip(pr, 0, H - 1) * W + np.clip(pc, 0, W - 1)).astype(np.int64)
 del rr, cc, pr, pc
 cumf = cum.ravel()
-# A point in a lake is reached at the lake's shore: every water cell takes the approach of its lake's quickest shore
-# cell and leads there, with no time or distance added. Without this, a reach mapped through a lake (an artificial
-# path) cost the crossing of the impassable water: up to 37 hours.
+# A point in a lake is reached at the lake's shore: every water cell takes the approach of the nearest shore cell of its
+# own lake that can be reached, and leads there, with no time or distance added (its lake's quickest shore where none
+# can). Without this, a reach mapped through a lake (an artificial path) cost the crossing of the impassable water: up
+# to 37 hours. With the quickest shore for every cell, a creek's mouth at the far end of a long reservoir was "reached"
+# at its quickest shore 20 km away (Panther Creek on Fontana Lake: 243 -> 2 min); boats aren't modelled
 if LAKES is not None and lake_cells.any():
     from scipy import ndimage
     lab, nl = ndimage.label(lake_cells, structure=np.ones((3, 3), bool))
     ring = (ndimage.maximum_filter(lab, size=3) * (lab == 0)).ravel()   # a shore cell takes its neighbouring lake's label
-    ri = np.flatnonzero((ring > 0) & np.isfinite(cumf))
+    # A shore reached across the water (an island's) is no target: its own route runs through lake cells, which now
+    # lead to shores, and a route could go round in a circle (Fontana Lake's islands, Cades Cove box). Which routes
+    # cross a lake cell, by pointer doubling along them
+    via = lake_cells.ravel().copy()
+    par = parent.copy()
+    for _ in range(48):
+        via |= via[par]
+        nxt = par[par]
+        if np.array_equal(nxt, par):
+            break
+        par = nxt
+    del par, nxt
+    ok = (ring > 0) & np.isfinite(cumf) & ~via
+    del via
+    ri = np.flatnonzero(ok)
     if len(ri):
         sh = pd.DataFrame({"lab": ring[ri], "c": cumf[ri], "i": ri}).sort_values("c").drop_duplicates("lab")
         best_i = np.full(nl + 1, -1, np.int64)
         best_i[sh.lab.values] = sh.i.values
+        ir, ic = ndimage.distance_transform_edt(~ok.reshape(shape), return_distances=False, return_indices=True)
+        near = (ir.astype(np.int64) * W + ic).ravel()
+        del ir, ic
         li = np.flatnonzero(lab.ravel() > 0)
-        tgt = best_i[lab.ravel()[li]]
+        own = lab.ravel()[li]
+        tgt = near[li]
+        tgt = np.where(ring[tgt] == own, tgt, best_i[own])            # the nearest shore cell is another lake's: quickest
         li, tgt = li[tgt >= 0], tgt[tgt >= 0]
         parent[li], cumf[li], tbf[li] = tgt, cumf[tgt], -1
+        del near
     del lab, ring
 # minutes spent on bike cells, and on each kind of doubtful fire road (the last row: any of them), along each route:
 # path sums by the same pointer doubling

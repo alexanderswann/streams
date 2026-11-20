@@ -30,7 +30,8 @@ import os, re, json, time, requests, numpy as np, pandas as pd, geopandas as gpd
 from rasterio import features
 from rasterio.windows import from_bounds
 from shapely.geometry import box
-from config import AREA, REGIONS, CRS, EPSG, NATIONAL, SHARED, SHARED_DERIVED, has, raw_dir, out_dir
+from config import AREA, REGIONS, CRS, EPSG, NATIONAL, SHARED, SHARED_DERIVED, has, raw_dir, out_dir, A
+import areaclip
 from units import ft        # the notes the map popups show are in feet (units.py); the columns stay metric
 
 # Areas with lakes, and the size from which an unlisted pond is kept. An area goes into BUILT once its lakes have been
@@ -277,12 +278,18 @@ if AREA.startswith("adk_"):
     def wkey(v):
         """A water's name as a set of words, word order and abbreviations aside ("Lake Colby" is "Colby Lake")."""
         return frozenset(_ab.get(x, x) for x in re.findall(r"[a-z0-9]+", (norm(v) or "").lower()))
+    def wkeys(v):
+        """The keys of a DEC water's name and of an alias it gives in brackets ("Deer Pond (AKA Little Deer Pd)"), its
+        other bracketed notes aside ("Clear Pond (P358 - Champlain)", "Barkeater Pond (Special Kids Fishing Area)")."""
+        v = str(v or "")
+        alias = re.findall(r"\(\s*a\.?k\.?a\.?\s+([^)]*)\)", v, flags=re.I)
+        return {wkey(x) for x in [re.sub(r"\s*\(.*?\)", "", v)] + alias if x.strip()}
     lkw = [wkey(n) for n in lk.gnis_name]
     _rp = lk.geometry.representative_point()
 
     def mark(i, name, aid, how):
-        if not isinstance(lk.agency.iat[i], str):
-            lk.loc[i, ["agency", "agency_id", "agency_name", "match"]] = ["NYSDEC", aid, name, how]
+        if not isinstance(lk.agency.iat[i], str):      # DEC's name without its bracketed notes ("Lake George(Green Island)")
+            lk.loc[i, ["agency", "agency_id", "agency_name", "match"]] = ["NYSDEC", aid, re.sub(r"\s*\(.*?\)", "", name).strip(), how]
     st, towns = lakesources.ny_stocking(_bb)
     if len(st):
         towns = towns.to_crs(CRS)
@@ -290,14 +297,14 @@ if AREA.startswith("adk_"):
         cty_ = {c: shapely.union_all(towns.geometry[towns.county == c].values) for c in set(towns.county)}
         n_ok = n_amb = n_none = 0
         for (cty, town, wname), g in st[st.waterbody.notna()].groupby(["county", "town", "waterbody"]):
-            k = wkey(wname)
+            k = wkeys(wname)
             tg = tw_.get((cty, str(town).strip().lower()))
-            cand = [i for i in lk.sindex.query(tg.buffer(300), predicate="intersects") if lkw[i] == k] if tg is not None else []
+            cand = [i for i in lk.sindex.query(tg.buffer(300), predicate="intersects") if lkw[i] in k] if tg is not None else []
             if len(cand) > 1:          # two of the name by the town: the one lying in it
                 inside = [i for i in cand if lk.geometry.iat[i].intersection(tg).area >= 0.5 * lk.geometry.iat[i].area]
                 cand = inside if len(inside) == 1 else cand
             if not cand and cty in cty_:   # a village's or a misspelt town: the only one of the name in the county
-                cand = [i for i in lk.sindex.query(cty_[cty], predicate="intersects") if lkw[i] == k]
+                cand = [i for i in lk.sindex.query(cty_[cty], predicate="intersects") if lkw[i] in k]
             if len(cand) != 1:
                 n_amb += len(cand) > 1
                 n_none += not cand
@@ -321,7 +328,7 @@ if AREA.startswith("adk_"):
         n_g = 0
         for r in gd.itertuples():
             near = list(lk.sindex.query(r.geometry.buffer(1000), predicate="intersects"))
-            named = [i for i in near if lkw[i] == wkey(r.water)]
+            named = [i for i in near if lkw[i] in wkeys(r.water)]
             if not near:
                 continue
             i = min(named or near, key=lambda i: lk.geometry.iat[i].distance(r.geometry))
@@ -1093,6 +1100,12 @@ if _far.any():
     lk["geometry"] = [shapely.MultiPolygon([p for q in g.geoms for p in getattr(q, "geoms", [q]) if p.geom_type == "Polygon"])
                       if g.geom_type == "GeometryCollection" else g for g in lk.geometry]
     print(f"stored to 2 km past the map: {int(_far.sum())} lakes that reach past it")
+# an area that stops at a state line keeps each lake's part on its side (areaclip.py): central Vermont has Lake
+# Champlain to the New York line, and none of the New York shore's ponds its boxes take in
+if areaclip.outline() is not None:
+    n_ = len(lk)
+    lk = areaclip.cut(lk).reset_index(drop=True)
+    print(f"cut at the {A['clip_state']} line: {len(lk)} of {n_} lakes kept")
 lk.to_file(OUT + ".tmp", driver="GPKG")
 os.replace(OUT + ".tmp", OUT)
 RECS = os.path.join(os.path.dirname(OUT), "lake_records.gpkg")      # New York's stocking and lake list (step 2c)

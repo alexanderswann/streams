@@ -12,6 +12,8 @@
 # added, changed or removed: the site that is already there stays exactly as it is (owner's rule, 2026-11-19), and
 # the script stops if its commit would touch anything else. No .nojekyll either: GitHub's Jekyll step copies these
 # files as they are (none starts with front matter, none has a name starting with _ or .).
+# A push goes up area by area (see the push section below), and after it the phone copies are rebuilt from the same
+# maps: the one-file map (14_portable.py) and phone/ (phone_sync.sh), so the phone and the website match (2026-11-20).
 cd /Users/mac/Fishing
 PY=.venv/bin/python
 SITE=publish/alexanderswann.github.io
@@ -19,11 +21,33 @@ DEST=$SITE/streams
 # Never while maps are being built, in this session or another: on 2026-11-19 a push picked up maps another
 # session was still rebuilding and had not checked. Two tests, since a build pauses between its steps: no pipeline
 # step or run_*.sh driver running, and nothing in output/ written in the last 15 minutes.
-busy=$(pgrep -fl 'run_[a-z_]+\.sh|[0-9][0-9][a-z]?_[a-z_]+\.py' | head -1)
+# With "now" (maps just built and checked), test runs launched from a session's scratchpad folder don't count, unless
+# they run a step that writes published files (03_hydrology, 06_map, 12_profiles, 13_overview, 15_preview) or are a
+# run_*.sh driver from scripts/. On 2026-11-20 scratch-only lake checks kept stopping checked publishes, which were
+# then copied by hand, around every guard here.
+scratch_run() {   # pid: true when the process or one of its parents runs a script kept in a scratchpad folder
+  local p=$1 c
+  while [[ -n $p && $p -gt 1 ]]; do
+    c=$(ps -o command= -p $p 2>/dev/null)
+    [[ $c =~ '/scratchpad/[^ ]*\.(sh|py)' ]] && return 0
+    p=$(ps -o ppid= -p $p 2>/dev/null | tr -d ' ')
+  done
+  return 1
+}
+busy=""
+for pid in $(pgrep -f 'run_[a-z_]+\.sh|[0-9][0-9][a-z]?_[a-z_]+\.py'); do
+  cmd=$(ps -o command= -p $pid 2>/dev/null) || continue
+  if [[ $2 == now && ! $cmd =~ '(03_hydrology|06_map|12_profiles|13_overview|15_preview)\.py' &&
+        ! $cmd =~ '(^| )(\./|[^ ]*/Fishing/scripts/)run_[a-z_0-9]+\.sh' ]]; then
+    scratch_run $pid && continue
+  fi
+  busy="$pid ${cmd[1,120]}"; break
+done
 [[ -n $busy ]] && { echo "STOP: a build is running ($busy). Publish when it has finished and the maps are checked."; exit 1; }
-fresh=$(find output -type f -mmin -15 ! -name index.html | head -1)
+fresh=$(find output -type f -mmin -15 ! -name index.html ! -name stream_maps_all.html | head -1)
 # "now" as the second word skips this wait, for maps that were just built and have been checked (the owner said
-# "push it now" on 2026-11-19 after the hydrology rebuild); the running-build test above always applies
+# "push it now" on 2026-11-19 after the hydrology rebuild); the running-build test above still applies, except to
+# scratch test runs
 [[ -n $fresh && $2 != now ]] && { echo "STOP: $fresh was written in the last 15 minutes; a build may be under way. Check the maps, then publish (or: push now)."; exit 1; }
 if [[ ! -d $SITE/.git ]]; then
   mkdir -p publish
@@ -62,9 +86,44 @@ git -C $SITE log --oneline | head -2
 if [[ $1 == push ]]; then
   out=$(git -C $SITE diff --name-only origin/master HEAD | grep -v '^streams/' | head -1)
   [[ -n $out ]] && { echo "STOP: not pushed, $out is outside streams/"; exit 1; }
-  GIT_TERMINAL_PROMPT=0 git -C $SITE push origin master || { echo "NOT PUSHED: the saved GitHub login was refused"; exit 1; }
+  # -- push, area by area --
+  # Packing a push, git sends a changed file as a difference from its last version only when it finds that version,
+  # and it looks for just one file of each name: every area's files have the same names, so a full republish went up
+  # nearly whole (134 MB at 10:35 and 85 MB at 12:43 on 2026-11-20, for about 5 MB of real change). So the areas go up
+  # one per push, to a temporary branch (publish-upload) that GitHub Pages doesn't build: each step is the site as it
+  # stands plus one more area from the new commit. The last area goes in the same push as master, whose commit then
+  # costs nothing more (git counts as already sent only what the steps of that same push lead from); the site builds
+  # once, the temporary branch is deleted, and master's history is the same as with one push.
+  base=$(git -C $SITE rev-parse origin/master)
+  if [[ $base == $(git -C $SITE rev-parse HEAD) ]]; then
+    echo "Nothing to push: the live site already has these maps"
+    exit 0
+  fi
+  idx=$(mktemp -t publish_index) || exit 1
+  trap 'rm -f $idx' EXIT
+  GIT_INDEX_FILE=$idx git -C $SITE read-tree $base || exit 1
+  parts=($(git -C $SITE diff --name-only $base HEAD | awk -F/ '{print (NF > 2 ? $1 "/" $2 : $0)}' | sort -u))
+  step=$base
+  for p in $parts; do
+    GIT_INDEX_FILE=$idx git -C $SITE restore --staged --source=HEAD -- $p || exit 1
+    step=$(git -C $SITE commit-tree $(GIT_INDEX_FILE=$idx git -C $SITE write-tree) -p $step -m "Upload step: $p") || exit 1
+    if [[ $p != $parts[-1] ]]; then
+      GIT_TERMINAL_PROMPT=0 git -C $SITE push -q origin "+${step}:refs/heads/publish-upload" ||
+        { echo "NOT PUSHED: the upload of $p was refused (see above; the saved GitHub login?); master is unchanged"; exit 1; }
+    fi
+  done
+  [[ $(git -C $SITE rev-parse "${step}^{tree}") == $(git -C $SITE rev-parse "HEAD^{tree}") ]] ||
+    { echo "STOP: the upload steps don't add up to the commit; master not pushed"; exit 1; }
+  GIT_TERMINAL_PROMPT=0 git -C $SITE push origin "+${step}:refs/heads/publish-upload" master ||
+    { echo "NOT PUSHED: the saved GitHub login was refused"; exit 1; }
+  GIT_TERMINAL_PROMPT=0 git -C $SITE push -q origin --delete publish-upload ||
+    echo "NOTE: the temporary branch is still on GitHub: git -C /Users/mac/Fishing/$SITE push origin --delete publish-upload"
+  # -- end of push --
   echo "Pushed. Live in a minute or two at https://alexanderswann.github.io/streams/"
+  # the phone copies follow what was just published: the one-file map, then phone/
+  { $PY scripts/14_portable.py > /dev/null && zsh scripts/phone_sync.sh | tail -1; } ||
+    echo "NOTE: the phone copies were not refreshed; run 14_portable.py and phone_sync.sh"
 else
-  echo "Ready. To publish:  git -C /Users/mac/Fishing/$SITE push origin master"
+  echo "Ready. To publish:  scripts/publish_site.sh push   (uploads area by area, then refreshes the phone copies)"
   echo "Then it is at https://alexanderswann.github.io/streams/"
 fi

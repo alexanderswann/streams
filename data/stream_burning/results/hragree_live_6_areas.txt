@@ -1,0 +1,6 @@
+adk_northwest: 10713 HR lines checked, 131 D8 misses (1.2 %); lines with 10+ km upstream: 9 of 2436
+central_vt: 18809 HR lines checked, 188 D8 misses (1.0 %); lines with 10+ km upstream: 16 of 3258
+adk_southeast: 9717 HR lines checked, 124 D8 misses (1.3 %); lines with 10+ km upstream: 28 of 2263
+ne_ct: 9131 HR lines checked, 145 D8 misses (1.6 %); lines with 10+ km upstream: 9 of 1680
+lexington_va: 6012 HR lines checked, 11 D8 misses (0.2 %); lines with 10+ km upstream: 1 of 1452
+se_pa: 5288 HR lines checked, 143 D8 misses (2.7 %); lines with 10+ km upstream: 49 of 1387

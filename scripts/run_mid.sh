@@ -17,12 +17,16 @@ steps() {
   run $a "" 02f_known_falls || return 1      # known waterfalls from every source, for 05_score's drop names
   for r in $ranges; do run $a $r 05_score || return 1; done
   run $a "" 02b_download_flow || return 1
+  # late-summer greenness of the channels (Sentinel-2), which 05b_flow.py reads for creeks the flow model rates flowing
+  # that are dry; only for areas with the late_summer_green source (it says so and does nothing elsewhere); kept once made
+  run $a "" 02g_greenness || return 1
   # every range's drainages before any range's flow: 05b_flow.py follows a creek whose way leaves its box into the
   # box it runs into and matches it there with that box's area_streams.csv (05c), so a neighbour whose 05c hadn't
   # rerun yet was read on its own box's areas (05b prints a NOTE then)
   for r in $ranges; do run $a $r 05c_drainages || return 1; done
-  for r in $ranges; do run $a $r 05b_flow || return 1; done
-  # lakes, for the areas 05d_lakes.py is built for (it says so and does nothing elsewhere); 08_hike.py reads them.
+  # lakes, for the areas 05d_lakes.py is built for (it says so and does nothing elsewhere): before the flows, since
+  # 05b_flow.py reads their outlines for the reaches that lie in a lake (05d_lakes.py reads 05c's drainages for the
+  # lakes' labels, nothing of 05b's; 2026-11-20); 08_hike.py reads them too.
   # It downloads (agency lake lists, GBIF, PAD-US, OSM, lidar): if that fails, the last lakes.gpkg stays
   # then the surveyed depths and contours (lake_bathymetry.py: Connecticut and Vermont), which 05d_lakes.py leaves out
   if run $a "" 05d_lakes; then
@@ -30,6 +34,7 @@ steps() {
   else
     echo "NOTE $a: lakes not rebuilt; the last lakes.gpkg stays" >> $LOG
   fi
+  for r in $ranges; do run $a $r 05b_flow || return 1; done
   run $a "" 02d_trails || return 1
   run $a "" 02e_access || return 1
   # the area's long-distance trail, where config.py lists one (the script stops by itself where there is none)

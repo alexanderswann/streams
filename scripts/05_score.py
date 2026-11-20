@@ -5,7 +5,9 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 import matplotlib
 from matplotlib import cm, colors
 from PIL import Image
+from rasterio import features
 from config import *
+import areaclip
 
 MAP_MIN_KM2 = 1.0  # only draw channels draining >= 1 km^2
 
@@ -26,6 +28,7 @@ trails = gpd.read_file(f"{RAW}/osm_trails.gpkg")
 kp = pd.concat([gpd.read_file(f"{DERIVED}/knickpoints.gpkg").assign(**{"pass": 1}),
                 gpd.read_file(f"{DERIVED}/knickpoints_bigcreek.gpkg")], ignore_index=True)
 kp = gpd.GeoDataFrame(kp, crs=CRS)
+kp = kp[areaclip.inside(kp.geometry.values)]    # an area that stops at a state line: drops past it go (areaclip.py)
 
 # Public roads a car can use (exclude gated/private service roads & fire roads marked no motor vehicles)
 drivable = roads[~roads.access.isin(["private", "no"]) & ~roads.motor_vehicle.isin(["no", "private"])
@@ -61,7 +64,8 @@ dams = pd.concat([nhd_pts[nhd_pts.ftype == 343].geometry, gpd.read_file(f"{RAW}/
 # two of the three agree (on the name, or the class: NHD splits a creek into many short segments), so a short side
 # creek doesn't take the name and flow of the river it runs beside. NHD has no name on many lines (e.g. San Antonio
 # Creek below Mt. Baldy); those links take the name of OpenStreetMap's named rivers and streams the same way.
-# Links mostly on sea-level cells are dropped (the DEM stores the sea as 0 m, and its flats trace fake channels).
+# Links mostly on sea-level cells are dropped (the DEM stores the sea as 0 m, and its flats trace fake channels), and
+# in an area that stops at a state line (config clip_state), links whose middle lies past it (areaclip.py).
 s = streams[streams.length > 0].copy()
 def vert(g, f):
     c = g.coords
@@ -72,7 +76,7 @@ starts = gpd.GeoSeries([shapely.Point(g.coords[0]) for g in s.geometry], index=s
 mid = gpd.GeoSeries([vert(g, 0.5) for g in s.geometry], index=s.index, crs=CRS)
 s["area_km2"] = sample(area, own_end).round(2)
 sea = np.array([np.mean(sample(dem, shapely.points(np.asarray(g.coords))) <= 0.5) for g in s.geometry])
-s = s[(s.area_km2 >= MAP_MIN_KM2) & (sea < 0.5)].copy()
+s = s[(s.area_km2 >= MAP_MIN_KM2) & (sea < 0.5) & areaclip.inside(s.geometry.values)].copy()
 mid, own_end, starts = mid[s.index], own_end[s.index], starts[s.index]
 s["order"] = sample(strahler, mid)
 s["elev_m"] = sample(dem, mid).round(0)
@@ -242,10 +246,11 @@ s_ll.to_file(f"{os_}/streams_scored.gpkg")
 kp_ll.drop(columns=["top_idx", "base_idx"]).to_file(f"{os_}/waterfall_candidates.gpkg")
 
 # light copies of trails + mapped falls for the combined map
-t_ll = trails.to_crs(4326)
+t_ll = areaclip.cut(trails).to_crs(4326)
 t_ll = t_ll[~t_ll.is_empty].assign(geometry=shapely.set_precision(t_ll.geometry.simplify(0.0001).values, 1e-5))
 t_ll.assign(name=t_ll["name"].fillna("trail"))[["name", "geometry"]].to_file(f"{os_}/trails.gpkg")
-known_falls[known_falls.within(range_box)].to_crs(4326).to_file(f"{os_}/known_falls.gpkg")
+known_falls[known_falls.within(range_box) & areaclip.inside(known_falls.geometry.values)].to_crs(4326).to_file(
+    f"{os_}/known_falls.gpkg")
 
 # ---- hillshade overlay (warped to web mercator) ----
 def hillshade(z, az=315, alt=45):
@@ -264,6 +269,8 @@ reproject(dem, dem_m, src_transform=dem_src.transform, src_crs=CRS, dst_transfor
 tint = matplotlib.colormaps["terrain"](colors.Normalize(200, 3100)(dem_m))[..., :3]
 rgb = (tint * (0.35 + 0.65 * hs_m[..., None])) * 255
 alpha = np.where(dem_m > 0, 255, 0)
+if areaclip.outline() is not None:      # an area that stops at a state line: no terrain shading past it
+    alpha[features.geometry_mask([areaclip.outline("EPSG:3857")], (h, w), dst_t)] = 0
 Image.fromarray(np.dstack([rgb, alpha]).astype("uint8")).quantize(192, method=Image.Quantize.FASTOCTREE).save(
     f"{os_}/hillshade.png", optimize=True)
 from pyproj import Transformer

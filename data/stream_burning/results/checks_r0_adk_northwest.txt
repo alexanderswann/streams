@@ -1,0 +1,57 @@
+#### score_root
+reaches identical to the project's: values taken by sid
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0/output/adk_northwest/stream_reaches_ranked.csv 8276
+#### standing
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     2683           0.0                    9             0                      0.88      730.3
+  long_lake     1881           0.0                    0             0                      0.45      412.0
+     tupper     1304           0.0                   18             0                      0.55      351.4
+   st_regis     1271           0.0                   16             0                      0.38      342.1
+lake_ozonia     1137           0.0                    6             0                      0.37      376.3
+#### short_named
+{"area": "adk_northwest", "reaches": 8276, "named_on_their_line": 1675, "under_quarter": 79, "outside_lakes": 54, "km": 23.9, "fish_60_plus": 39, "top": {"West Branch Beaver River": 8, "Dun Brook": 6, "West Branch Oswegatchie River": 5, "Saint Regis River": 5}}
+#### classify_short
+{"area": "adk_northwest", "total": 54, "side arm (main arm beside)": {"n": 31.0, "km": 7.8, "fish60": 19.0}, "water routed elsewhere": {"n": 23.0, "km": 16.1, "fish60": 20.0}, "elsewhere_top": {"West Branch Beaver River": 8, "Dun Brook": 6, "South Inlet": 4, "Little River": 3, "Fish Creek": 1, "Twin Lake Stream": 1}}
+#### v2_ends
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): NHDPlus V2 lines checked 1639; ours under half of V2 at the line's lower end: 71, under a quarter 46, over double 77, no reach within 60 m 177
+size           5-20  20-100  100-1000  1000+
+lines           773     355       449     62
+no_reach         80      51        39      7
+under_half       42      14        10      5
+under_quarter    22       9        10      5
+over_double      61      14         2      0
+#### hragree
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): HR lines checked 10713, D8 misses 131 (1.2 %)
+size       <2 km    2-10   10-50  50+ km
+lines     5572.0  2716.0  1169.0  1256.0
+miss        93.0    29.0     8.0     1.0
+miss_pct     1.7     1.1     0.7     0.1
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 9
+             lake    ha  nhd_km2  ours            sid reach_name  ratio
+   Follensby Pond 292.3     31.6  1.88 long_lake:s138        NaN   0.06
+      Graves Pond   9.2     10.0  3.82    beaver:s612        NaN   0.38
+unnamed reservoir  13.2      9.9  2.39    beaver:s263        NaN   0.24
+       Twin Ponds   9.1      9.0  2.57    beaver:s354        NaN   0.29
+      Turtle Pond  28.7      8.4  1.18     tupper:s37        NaN   0.14
+unnamed reservoir  58.9      7.4  1.09 long_lake:s237        NaN   0.15
+ McCavanaugh Pond  12.1      6.1  1.41   st_regis:s99        NaN   0.23
+unnamed reservoir  10.5      4.2  1.22 long_lake:s105        NaN   0.29
+    Streeter Lake  28.5      2.6  1.14    beaver:s565        NaN   0.44
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+Mapped falls (OSM + NHD), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  on smaller drainages:   pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  all:                    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+
+by range:
+Empty DataFrame
+Columns: [falls, pass1, both]
+Index: []
+
+named mapped falls on big creeks that both passes miss: none
+
+CDFW fish-passage barriers (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

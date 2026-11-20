@@ -323,3 +323,153 @@ def gauge_summers(sites, first_year=2011, min_summers=5):
         out[site] = dict(div_share=round(float((g.low >= FLOWING_CFS).mean()), 2), div_summers=len(g),
                          div_years=f"{g.year.min()}–{g.year.max()}", div_recent=len(recent) >= min_summers)
     return pd.DataFrame.from_dict(out, orient="index", columns=["div_share", "div_summers", "div_years", "div_recent"])
+
+
+# ---- Creeks the flow model rates as flowing that are dry most summers (2026-11-20) ----
+# Checked against the USGS gauges of all 12 areas: in LA 31 of the 53 gauged creeks dry most summers were rated "usually
+# flows" or "year-round", nearly all where the model's typical summer low is 0.1-0.45 cfs; elsewhere only Dead Creek
+# (Champlain lowland). Two kinds of evidence go into flow_streams.csv (05b_flow.py) and scoring.py decides, one-sided
+# (the user: "id rather rate a dry creek as year round than a year round creek as dry"):
+#   - a gauge on the reach's own creek (creek_gauges, gauge_record): its share of summers flowing;
+#   - the channel's late-summer greenness (channel_green): bare where it's near-certainly dry.
+GREEN_YEARS = (2022, 2023, 2024)     # the late summers 02g_greenness.py fetches (the rule was measured on these)
+GAUGE_KM = 4.0                       # a gauge's record stands for its creek this far along its model line
+GAUGE_SITE_M = 500                   # gauges this close together are one site (Whitewater River at Windy Point)
+# Station names of gauges that measure plumbing, not a creek (canals, conduits, powerhouses, spills, reservoirs),
+# as in the 2026-11-18 review of the flow model; "above the canal / reservoir / dam" is the creek upstream of it.
+PLUMBING = (r"(?:\bCN\b|CANAL|\bDIV\b|DIVERSION|FLUME|AQUEDUCT|SPILL|TUNNEL|PIPELINE|CONDUIT|\bCOND\b|COMBINED|\bPP\b|"
+            r"\bPH\b|POWERHOUSE|FOREBAY|BYPASS|OVERFLOW|INFIL|BREEDLINE|BRLNE|RETURN FLOW|SUPP|QUALITY CONTROL|FLOODWAY|"
+            r"\+|DITCH|\bDT\b|RACEWAY|TAILRACE|HEADRACE|OUTLET WORKS|RESERVOIR|\bRES\b|\bLAKE\b.*\bOUTLET\b|\bNR\b.*\bDAM\b)")
+ABOVE = r"\b(?:AB|ABOVE|ABV)\b\s+(?:[A-Z.]+\s+){0,3}(?:CANAL|RESERVOIR|RES|LAKE|LK|DIV|DIVERSION|DAM)\b"
+
+
+def green_path(box, year):
+    """02g_greenness.py's late-summer NDVI raster for a range box and year."""
+    from config import raw_dir
+    return f"{raw_dir(box)}/late_summer_ndvi_{year}.tif"
+
+
+def channel_green(geoms, box):
+    """Late-summer greenness of each reach's channel (geoms in CRS) from 02g_greenness.py's rasters for `box`:
+    green_p90 the 90th percentile of the NDVI within 30 m of the line (the greenest strip, so a DEM line a little off the
+    creek still finds its trees), the median over the summers; green_p90_max its greenest summer; green_sur the median
+    NDVI 100-400 m away (the slopes around), median over the summers; green_water the share of the pixels within 15 m
+    with NDVI < 0 (open water), median over the summers. A summer with under 3 clear pixels within 15 m doesn't count.
+    All NaN where the box has no rasters (an area without the late_summer_green source)."""
+    import rasterio
+    from rasterio.features import geometry_mask
+    from rasterio.windows import from_bounds
+    cols = ["green_p90", "green_p90_max", "green_sur", "green_water"]
+    paths = [p for p in (green_path(box, y) for y in GREEN_YEARS) if os.path.exists(p)]
+    out = pd.DataFrame(np.nan, index=range(len(geoms)), columns=cols)
+    if not paths:
+        return out
+    srcs = [rasterio.open(p) for p in paths]
+    lines = gpd.GeoSeries(list(geoms), crs=CRS).to_crs(srcs[0].crs)
+    for i, line in enumerate(lines):
+        c15, c30, ring = line.buffer(15), line.buffer(30), line.buffer(400).difference(line.buffer(100))
+        yr = []
+        for s in srcs:
+            w = from_bounds(*ring.bounds, s.transform).round_offsets().round_lengths()
+            a = s.read(1, window=w, boundless=True, fill_value=-32768)
+            if a.size == 0:
+                continue
+            tr, ok = s.window_transform(w), a != -32768
+            v15 = a[~geometry_mask([c15], a.shape, tr) & ok] / 1e4
+            if len(v15) < 3:
+                continue
+            v30 = a[~geometry_mask([c30], a.shape, tr) & ok] / 1e4
+            vr = a[~geometry_mask([ring], a.shape, tr) & ok] / 1e4
+            yr.append((np.percentile(v30, 90), (v15 < 0).mean(), np.median(vr) if len(vr) else np.nan))
+        if yr:
+            y = np.array(yr)
+            out.iloc[i] = [np.median(y[:, 0]), y[:, 0].max(), np.nanmedian(y[:, 2]) if np.isfinite(y[:, 2]).any() else np.nan,
+                           np.median(y[:, 1])]
+    for s in srcs:
+        s.close()
+    return out.round(3)
+
+
+def creek_gauges(v2):
+    """The area's USGS gauges (02b_download_flow.py) that measure a creek itself, natural or below a diversion or dam (not
+    a canal, conduit, powerhouse or reservoir gauge, nor one with no drainage area), with 5+ summers since 2011: site_no,
+    station_nm, area_km2, comid (their NHDPlus line, as validate_flow.py matches them), geometry (CRS), and their record
+    (gauge_summers: div_share, div_summers, div_years)."""
+    p = f"{FLOW}/gauge_sites.gpkg"
+    if not os.path.exists(p):
+        return gpd.GeoDataFrame(columns=["site_no", "station_nm", "area_km2", "comid", "geometry"], geometry="geometry", crs=CRS)
+    gs = gpd.read_file(p).to_crs(CRS)
+    gs["area_km2"] = pd.to_numeric(gs.drain_area_va, errors="coerce") * 2.58999
+    nm = gs.station_nm.fillna("")
+    plumbing = nm.str.contains(PLUMBING, case=False, regex=True) & ~(
+        nm.str.contains(ABOVE, case=False, regex=True)
+        & ~nm.str.contains(r"\b(?:CN|CANAL|DITCH|FLUME|CONDUIT|TUNNEL|PIPELINE)\b.*\b(?:AB|ABOVE)\b", case=False, regex=True))
+    gs = gs[~plumbing & gs.area_km2.notna()].copy()
+    if not len(gs):
+        return gs
+    rec = gauge_summers(list(gs.site_no))
+    gs = gs.join(rec, on="site_no", how="inner")
+    gs = gs[gs.div_recent.eq(True)].copy()
+    gs["comid"] = match_points(gs.geometry, gs.area_km2, v2, max_dist=300).values
+    return gs.reset_index(drop=True)
+
+
+def gauge_record(mid, area_full, comid, flow_src, in_lake, gauges, near_comid=None):
+    """Per reach: the record of the nearest gauge (creek_gauges) on its own creek, within GAUGE_KM, where the reach is on
+    the gauge's model line (its own, or the one the reach the gauge sits on takes its flow from: `near_comid`, by
+    site_no) and drains 2/3 to 1.5 x the gauge's area, and isn't in a lake. Gauges within GAUGE_SITE_M of each other
+    are one site: their shares are averaged. -> DataFrame: gauge_site, gauge_name, gauge_share, gauge_summers,
+    gauge_years, gauge_area_km2, gauge_m (distance), gauge_below (the reach drains 0.9 x the gauge's area or more: at or
+    below it, where a dry record also holds; the canyon above a dry gauge may still run)."""
+    n = len(mid)
+    best_d = np.full(n, np.inf)
+    out = pd.DataFrame({"gauge_site": None, "gauge_name": None, "gauge_share": np.nan, "gauge_summers": np.nan,
+                        "gauge_years": None, "gauge_area_km2": np.nan, "gauge_m": np.nan}, index=range(n))
+    if not len(gauges):
+        out["gauge_below"] = False
+        return out
+    mx, my = np.array([p.x for p in mid]), np.array([p.y for p in mid])
+    area_full, comid = np.asarray(area_full, float), np.asarray(comid, float)
+    ok_src = np.isin(np.asarray(flow_src, dtype=object), ["model", "scaled"]) & ~np.asarray(in_lake, bool)
+    gx, gy = gauges.geometry.x.values, gauges.geometry.y.values
+    for k, g in gauges.reset_index(drop=True).iterrows():
+        site = np.hypot(gx - gx[k], gy - gy[k]) <= GAUGE_SITE_M
+        lines = [c for c in (g.comid, (near_comid or {}).get(g.site_no)) if pd.notna(c)]
+        on = ok_src & np.isin(comid, lines) & (area_full >= g.area_km2 / 1.5) & (area_full <= g.area_km2 * 1.5)
+        d = np.hypot(mx - gx[k], my - gy[k])
+        take = on & (d <= GAUGE_KM * 1000) & (d < best_d)
+        if take.any():
+            best_d[take] = d[take]
+            out.loc[take, ["gauge_site", "gauge_name", "gauge_share", "gauge_summers", "gauge_years", "gauge_area_km2",
+                           "gauge_m"]] = [g.site_no, g.station_nm, round(float(gauges.div_share[site].mean()), 3),
+                                          int(g.div_summers), g.div_years, round(float(g.area_km2), 1), 0.0]
+            out.loc[take, "gauge_m"] = np.round(d[take])
+    out["gauge_below"] = out.gauge_share.notna() & (area_full >= 0.9 * out.gauge_area_km2.astype(float))
+    return out
+
+
+def gauge_reach_comids(gauges, lines, area_full, comid):
+    """{site_no: the model line of the reach each gauge (creek_gauges) sits on}: the reach within 300 m whose drainage
+    is 0.5-2 x the gauge's, the closest in drainage, then in distance. A "scaled" reach takes its flow from a line
+    further down, and the reaches beside the gauge do too (Piru Creek below Pyramid Dam): gauge_record follows that line."""
+    out = {}
+    if not len(gauges):
+        return out
+    ln = gpd.GeoSeries(list(lines), crs=CRS)
+    area_full, comid = np.asarray(area_full, float), np.asarray(comid, float)
+    idx = ln.sindex
+    for g in gauges.itertuples():
+        k = idx.query(g.geometry.buffer(300), predicate="intersects")
+        if not len(k):
+            continue
+        ratio = area_full[k] / g.area_km2
+        ok = (ratio >= 0.5) & (ratio <= 2)
+        if not ok.any():
+            continue
+        k, ratio = k[ok], ratio[ok]
+        d = ln.iloc[k].distance(g.geometry).values
+        rank = np.round(np.abs(np.log(ratio)), 1) * 1000 + d
+        c = comid[k[np.argmin(rank)]]
+        if not np.isnan(c):
+            out[g.site_no] = float(c)
+    return out

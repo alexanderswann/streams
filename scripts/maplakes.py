@@ -251,7 +251,7 @@ def add(m, X3D, done, approach):
              ("<span style='color:#1c7ed6'>■</span> trout stocked or recorded <span style='color:#a5d8ff'>■</span> no trout record")
     name = "<span style='color:#1c7ed6'>■</span> Lakes: " + legend
     X3D["lake_legend"] = "Lakes: " + legend
-    lakes_layer = folium.GeoJson(js, name=name, show=False,
+    lakes_layer = folium.GeoJson(js, name=name, show=True,      # on when the map opens (user, 2026-11-20)
                    style_function=lambda f: {"color": f["properties"]["e"], "weight": 1.2, "fillColor": f["properties"]["c"],
                                              "fillOpacity": 0.55, "dashArray": "4 3" if f["properties"]["dry"] else None},
                    highlight_function=lambda f: {"weight": 2.5, "fillOpacity": 0.7},

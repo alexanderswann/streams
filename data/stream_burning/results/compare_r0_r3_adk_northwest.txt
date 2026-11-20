@@ -1,0 +1,44 @@
+adk_northwest: A /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3
+fish scores  A: {'n': 8276, 'km': 7033, 'mean': np.float64(64.25), '>=40': 6849, '>=60': 5412, '>=80': 2532, 'km60': np.float64(4801.0)}
+             B: {'n': 8186, 'km': 6956, 'mean': np.float64(64.24), '>=40': 6775, '>=60': 5353, '>=80': 2475, 'km60': np.float64(4718.0)}
+B reaches matched to an A reach within 30 m: 7526 of 8186 (660 unmatched, 529.0 km); A reaches no B reach matched: 1001
+  drainage +20% or more: 226, -20% or more: 286; x2 or more: 91, /2 or less: 104
+  flow class changed: 65; name changed: 105
+  fish score up 10+: 63, down 10+: 88; any change: 1056; crossing 60: up 60, down 73
+  biggest moves:
+          sid_b             name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+    beaver:s901                NaN  10.33  10.21   0.99    year-round     reservoir          99.0          29.0 -70.0
+   beaver:s1973      Moshier Creek   9.65   9.65   1.00    year-round     reservoir         100.0          30.0 -70.0
+   beaver:s1673       Beaver River  99.64 109.64   1.10    year-round     reservoir         100.0          30.0 -70.0
+long_lake:s1100 Salmon Lake Outlet  25.81  27.43   1.06    year-round     reservoir         100.0          30.0 -70.0
+   beaver:s1583                NaN  18.75  18.75   1.00    year-round     reservoir         100.0          32.0 -68.0
+long_lake:s1025 Salmon Lake Outlet  28.94  28.93   1.00     reservoir    year-round          29.0          97.0  68.0
+long_lake:s1600      Boulder Brook  23.44  22.96   0.98     reservoir    year-round          26.0          87.0  61.0
+long_lake:s1610                NaN  29.55   1.08   0.04    year-round     reservoir          75.0          14.0 -61.0
+   beaver:s1492                NaN   3.57   3.99   1.12    year-round     reservoir          86.0          26.0 -60.0
+long_lake:s1842                NaN  50.64  17.83   0.35    year-round     reservoir          82.0          22.0 -60.0
+   beaver:s2116                NaN   1.67   3.92   2.35    year-round     reservoir          86.0          28.0 -58.0
+   beaver:s1922   Gun Harbor Brook   1.49   2.35   1.58    year-round     reservoir          84.0          26.0 -58.0
+   beaver:s1264                NaN  11.03  14.15   1.28     reservoir    year-round          24.0          82.0  58.0
+    beaver:s919                NaN   1.25   1.24   0.99    year-round     reservoir          83.0          25.0 -58.0
+   beaver:s2162                NaN   2.14   1.97   0.92     reservoir    year-round          25.0          82.0  57.0
+long_lake:s1843                NaN  50.64  50.69   1.00    year-round     reservoir          82.0          25.0 -57.0
+    beaver:s914                NaN   3.06   2.97   0.97     reservoir    year-round          25.0          82.0  57.0
+   beaver:s1379                NaN   1.67   8.64   5.17    year-round     reservoir          86.0          30.0 -56.0
+   beaver:s1891                NaN   1.52   1.52   1.00     reservoir    year-round          23.0          78.0  55.0
+   beaver:s2515                NaN   2.86   2.86   1.00    year-round     reservoir          77.0          23.0 -54.0
+long_lake:s1767                NaN 128.02  81.78   0.64     reservoir    year-round          22.0          75.0  53.0
+ long_lake:s923                NaN   2.36   2.23   0.94    year-round     reservoir          74.0          22.0 -52.0
+long_lake:s1246                NaN   4.99   5.04   1.01    year-round     reservoir          72.0          22.0 -50.0
+   beaver:s1977                NaN  39.18   2.57   0.07     reservoir    year-round          33.0          83.0  50.0
+long_lake:s1765                NaN   1.12   1.12   1.00       no data    year-round           9.0          59.0  50.0
+adk_northwest: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3 vs /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  5153.7         595.5         288.9
+10-100    1414.1         173.8          74.8
+100+       388.3          52.9          31.1
+total km 6956.2 | moved 20+ m 822.2 | 50+ m 394.8
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): straight runs of 300+ m: outside lakes 65 runs, 24.7 km (12.9 km on 10+ km2); in lakes 363 runs, 188.8 km; of 7033 km drawn
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3): straight runs of 300+ m: outside lakes 45 runs, 17.2 km (7.0 km on 10+ km2); in lakes 278 runs, 143.8 km; of 6956 km drawn

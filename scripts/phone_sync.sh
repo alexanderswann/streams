@@ -3,7 +3,8 @@
 # phone/index.html is the map of all areas (13_overview.py) and each area's maps are in phone/<area>/, so the
 # "Go to" menus and the links between the maps work the same in both places.
 # LA used to sit at the top of phone/: its old file names stay there as small pages that forward to phone/la/.
-# phone/creek-map.html is left alone.
+# phone/creek-map.html is left alone. phone/stream_maps_all.html is the one-file map (14_portable.py), copied when there
+# is one; publish_site.sh push runs 14_portable.py and this script after each publish.
 cd /Users/mac/Fishing
 PY=.venv/bin/python
 $PY scripts/13_overview.py || exit 1
@@ -16,6 +17,7 @@ for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; pri
   for d in output/$a/*/hillshade.png(N); do mkdir -p phone/$a/${d:h:t}; cp $d phone/$a/${d:h:t}/hillshade.png; done
 done
 cp output/index.html phone/index.html
+[[ -f output/stream_maps_all.html ]] && cp output/stream_maps_all.html phone/stream_maps_all.html
 # the old LA copies at the top: forwarding pages (they keep the #lat,lon,zoom part of a bookmark), and the data
 # files and hillshade folders they used are removed
 for f in stream_map.html stream_map_3d.html profiles.html; do

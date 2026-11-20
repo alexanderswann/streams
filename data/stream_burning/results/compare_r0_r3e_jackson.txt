@@ -1,0 +1,50 @@
+jackson: A /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e
+fish scores  A: {'n': 10530, 'km': 9273, 'mean': np.float64(68.65), '>=40': 9518, '>=60': 7125, '>=80': 3853, 'km60': np.float64(5604.3)}
+             B: {'n': 10537, 'km': 9240, 'mean': np.float64(68.64), '>=40': 9505, '>=60': 7129, '>=80': 3878, 'km60': np.float64(5565.0)}
+B reaches matched to an A reach within 30 m: 9936 of 10537 (601 unmatched, 592.8 km); A reaches no B reach matched: 841
+  drainage +20% or more: 227, -20% or more: 212; x2 or more: 131, /2 or less: 126
+  flow class changed: 107; name changed: 106
+  fish score up 10+: 126, down 10+: 119; any change: 908; crossing 60: up 67, down 72
+  biggest moves:
+             sid_b                         name_b    af_a    af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+    palisades:s550                            NaN  223.17    1.02   0.00    year-round    mostly dry          82.0           7.0 -75.0
+ teton_valley:s699                            NaN   54.85    3.39   0.06    year-round    mostly dry          77.0           3.0 -74.0
+ teton_snake:s1128                    Crane Creek   14.79    1.29   0.09    year-round    mostly dry          70.0           2.0 -68.0
+ teton_valley:s714                            NaN   16.43    1.34   0.08    year-round    mostly dry          70.0           2.0 -68.0
+ teton_valley:s618                    Teton River  872.23    8.02   0.01    year-round    mostly dry          80.0          14.0 -66.0
+ teton_snake:s1167                    Crane Creek   15.56    2.07   0.13    year-round    mostly dry          74.0           9.0 -65.0
+      hoback:s2009 North Fork Middle Beaver Creek   33.24    3.61   0.11    year-round    mostly dry          67.0           2.0 -65.0
+ teton_valley:s615                    Teton River  872.85    7.45   0.01    year-round    mostly dry          78.0          14.0 -64.0
+ teton_snake:s1283                            NaN    1.50   57.91  38.61    mostly dry    year-round           2.0          66.0  64.0
+jackson_lake:s1709                            NaN    3.48    3.48   1.00    year-round     reservoir          91.0          27.0 -64.0
+ teton_valley:s692                            NaN   53.92    2.54   0.05    year-round    mostly dry          65.0           2.0 -63.0
+ teton_valley:s905                            NaN    1.60   13.43   8.39    mostly dry    year-round           5.0          66.0  61.0
+ teton_valley:s691                            NaN   52.54    1.52   0.03    year-round    mostly dry          63.0           2.0 -61.0
+ teton_valley:s861                            NaN   74.85    2.44   0.03    year-round    mostly dry          66.0           5.0 -61.0
+jackson_lake:s1259                            NaN   64.48   64.57   1.00    year-round     reservoir          79.0          24.0 -55.0
+ teton_valley:s685                            NaN    3.70   61.37  16.59    mostly dry    year-round          10.0          63.0  53.0
+ teton_snake:s1194                    Crane Creek   20.14    2.67   0.13    year-round      seasonal          75.0          23.0 -52.0
+jackson_lake:s1479                    Third Creek   29.60   33.36   1.13     reservoir    year-round          21.0          71.0  50.0
+jackson_lake:s2089                            NaN    2.53    3.82   1.51    year-round     reservoir          72.0          22.0 -50.0
+ teton_valley:s749                            NaN   12.45    2.55   0.20    year-round    mostly dry          51.0           2.0 -49.0
+ teton_valley:s752                    Woods Creek    1.14    8.98   7.88    mostly dry    year-round           2.0          49.0  47.0
+ gros_ventre:s1200              Gros Ventre River 1488.36 1488.34   1.00     reservoir    year-round          20.0          67.0  47.0
+ teton_valley:s748                            NaN   10.32    1.88   0.18    year-round    mostly dry          49.0           2.0 -47.0
+ teton_valley:s694                            NaN    9.99    1.46   0.15    year-round    mostly dry          50.0           4.0 -46.0
+ teton_valley:s686                            NaN    4.42   61.66  13.95      seasonal    year-round          23.0          68.0  45.0
+jackson: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e vs /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  6611.9         366.4         250.6
+10-100    1947.4         240.5         121.5
+100+       680.3         146.0          81.1
+total km 9239.6 | moved 20+ m 753.0 | 50+ m 453.1
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): straight runs of 300+ m: outside lakes 232 runs, 94.8 km (12.5 km on 10+ km2); in lakes 219 runs, 165.5 km; of 9273 km drawn
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2465 {'steep reach': 1752, 'cascade / knickpoint': 634, 'waterfall-like step': 79}; big-creek pass 91
+  waterfall candidates by status: {'steep reach': 1736, 'unmapped cascade': 582, 'unmapped waterfall-like step': 72, 'likely DEM artifact': 60, 'unmapped short fall (big creek)': 52, 'matches mapped waterfall': 21, 'dam / weir': 1}
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e): straight runs of 300+ m: outside lakes 223 runs, 91.3 km (9.6 km on 10+ km2); in lakes 221 runs, 166.3 km; of 9240 km drawn
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2466 {'steep reach': 1752, 'cascade / knickpoint': 635, 'waterfall-like step': 79}; big-creek pass 89
+  waterfall candidates by status: {'steep reach': 1736, 'unmapped cascade': 583, 'unmapped waterfall-like step': 72, 'likely DEM artifact': 60, 'unmapped short fall (big creek)': 51, 'matches mapped waterfall': 21, 'dam / weir': 1}

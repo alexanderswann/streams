@@ -1,0 +1,57 @@
+#### score_root
+reaches 8186 (project 8276); matched within 30 m 7526, 30-200 m 544, none within 200 m 116
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3/output/adk_northwest/stream_reaches_ranked.csv 8186
+#### standing
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     2667           0.0                   11             0                      0.51      734.3
+  long_lake     1855           0.0                    0             0                      0.38      413.3
+     tupper     1289           0.0                   16             0                      0.31      346.4
+   st_regis     1250           0.0                   14             0                      0.19      340.3
+lake_ozonia     1125           0.0                    6             0                      0.14      373.6
+#### short_named
+{"area": "adk_northwest", "reaches": 8186, "named_on_their_line": 1691, "under_quarter": 88, "outside_lakes": 73, "km": 37.5, "fish_60_plus": 52, "top": {"Deer River": 13, "Saint Regis River": 12, "West Branch Oswegatchie River": 9, "West Branch Beaver River": 8}}
+#### classify_short
+{"area": "adk_northwest", "total": 73, "side arm (main arm beside)": {"n": 32.0, "km": 10.4, "fish60": 21.0}, "water routed elsewhere": {"n": 41.0, "km": 27.0, "fish60": 31.0}, "elsewhere_top": {"Deer River": 13, "West Branch Beaver River": 8, "Dun Brook": 6, "Saint Regis River": 5, "Little River": 3, "South Inlet": 2}}
+#### v2_ends
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3): NHDPlus V2 lines checked 1639; ours under half of V2 at the line's lower end: 89, under a quarter 45, over double 77, no reach within 60 m 151
+size           5-20  20-100  100-1000  1000+
+lines           773     355       449     62
+no_reach         68      41        37      5
+under_half       39      12        38      0
+under_quarter    21       7        17      0
+over_double      58      17         2      0
+#### hragree
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3): HR lines checked 10713, D8 misses 115 (1.1 %)
+size       <2 km    2-10   10-50  50+ km
+lines     5572.0  2716.0  1169.0  1256.0
+miss        81.0    23.0     3.0     8.0
+miss_pct     1.5     0.8     0.3     0.6
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 9
+             lake    ha  nhd_km2  ours             sid  reach_name  ratio
+      Beaver Lake 133.8    552.4 48.38    beaver:s2157 Alder Creek   0.09
+      Graves Pond   9.2     10.0  3.82     beaver:s613         NaN   0.38
+unnamed reservoir  13.2      9.9  2.39     beaver:s264         NaN   0.24
+      Turtle Pond  28.7      8.4  1.18      tupper:s35         NaN   0.14
+unnamed reservoir  58.9      7.4  1.09  long_lake:s234         NaN   0.15
+ South Greek Lake  23.3      6.1  1.40     beaver:s500 South Creek   0.23
+unnamed reservoir  49.0      4.8  1.68 long_lake:s1544         NaN   0.35
+unnamed reservoir  10.5      4.2  1.22   long_lake:s99         NaN   0.29
+    Streeter Lake  28.5      2.6  1.14     beaver:s569         NaN   0.44
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+Mapped falls (OSM + NHD), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  on smaller drainages:   pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  all:                    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+
+by range:
+Empty DataFrame
+Columns: [falls, pass1, both]
+Index: []
+
+named mapped falls on big creeks that both passes miss: none
+
+CDFW fish-passage barriers (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

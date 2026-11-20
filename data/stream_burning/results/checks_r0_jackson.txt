@@ -1,0 +1,52 @@
+#### score_root
+reaches identical to the project's: values taken by sid
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0/output/jackson/stream_reaches_ranked.csv 10530
+#### standing
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1636           0.0                   10             0                      0.49      505.7
+ gros_ventre     1422           0.0                   12             0                      0.16      327.3
+      hoback     2015           0.0                    0             0                      0.32      553.5
+jackson_lake     2456           0.0                   20             0                      0.35      715.4
+buffalo_fork      163           0.0                    1             0                      0.02       42.7
+teton_valley     1748           0.0                    8             0                      0.51      562.5
+   palisades     1090           0.0                    5             0                      1.40      258.2
+#### short_named
+{"area": "jackson", "reaches": 10530, "named_on_their_line": 2379, "under_quarter": 143, "outside_lakes": 140, "km": 76.8, "fish_60_plus": 110, "top": {"Gros Ventre River": 15, "Shoal Creek": 12, "Snake River": 9, "Crystal Creek": 7}}
+#### classify_short
+{"area": "jackson", "total": 140, "side arm (main arm beside)": {"n": 54.0, "km": 26.6, "fish60": 33.0}, "water routed elsewhere": {"n": 86.0, "km": 50.1, "fish60": 77.0}, "elsewhere_top": {"Shoal Creek": 12, "Gros Ventre River": 10, "Coburn Creek": 6, "Crystal Creek": 6, "Cache Creek": 6, "Little Greys River": 5}}
+#### v2_ends
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): NHDPlus V2 lines checked 1832; ours under half of V2 at the line's lower end: 107, under a quarter 66, over double 101, no reach within 60 m 229
+size           5-20  20-100  100-1000  1000+
+lines           717     522       395    198
+no_reach         79      52        41     57
+under_half       45      18        23     21
+under_quarter     9      15        21     21
+over_double      54      34        12      1
+#### hragree
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r0): HR lines checked 13986, D8 misses 169 (1.2 %)
+size       <2 km    2-10   10-50  50+ km
+lines     6348.0  3301.0  1655.0  1931.0
+miss        54.0    46.0    25.0    32.0
+miss_pct     0.9     1.4     1.5     1.7
+#### lake_outlets
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+Mapped falls (OSM + NHD), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  on smaller drainages:   pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  all:                    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+
+by range:
+Empty DataFrame
+Columns: [falls, pass1, both]
+Index: []
+
+named mapped falls on big creeks that both passes miss: none
+
+CDFW fish-passage barriers (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

@@ -16,6 +16,10 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 # sources = the data sources that exist only for that area (has("name") in the scripts); everything else is national:
 #   cdfw_pad   CDFW Passage Assessment Database natural barriers (05_score.py)
 #   tnc_flows  The Nature Conservancy's California Natural Flows model (02b_download_flow.py, 05b_flow.py)
+#   late_summer_green  Sentinel-2 greenness along each channel in late summer (02g_greenness.py, 05b_flow.py), which
+#              scoring.py uses to find creeks the flow model rates flowing that are bare, so near-certainly dry, in
+#              summer. Only where summer drought browns the slopes: in the humid areas every channel is green then and
+#              the rule changed nothing (measured 2026-11-20)
 #   cdfw_trout CDFW trout surveys, stocking and Wild / Heritage Trout Waters (11_context.py)
 #   cal_fire   CAL FIRE historic fire perimeters (11_context.py); elsewhere the national interagency history
 #   cpad       California Protected Areas Database access (11_context.py); elsewhere PAD-US
@@ -40,11 +44,15 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 #   filters (02d, 02e; default 100). Lower in gentle country, where the creeks are in hills, not mountains.
 # artificial_path = the flow class of NHD artificial paths (river and lake centrelines): "other" in LA, where they
 #   run through dry washes and reservoirs; "perennial" in wet country, where they are the rivers themselves.
+# clip_state = the state an area stops at where its boxes reach past a state line (areaclip.py): central Vermont's
+#   west edge is the New York line down the middle of Lake Champlain. The hydrology still runs on the whole boxes.
+# hidden = True: the area is built and its map stays where it is (website included), but nothing lists or links it:
+#   not the map of all areas, the "Go to" menus or the one-file map (13_overview.py, 06_map.py, 14_portable.py).
 AREAS = {
     "la": dict(
         label="LA mountains", crs=26911,
         sources=("cdfw_pad", "tnc_flows", "cdfw_trout", "cal_fire", "cpad", "cdec", "ca_closures", "pct",
-                 "la_trail_layers"),
+                 "la_trail_layers", "late_summer_green"),
         elev_band=(700, 2300, 400), artificial_path="other", minor_label="Minor front-range drainages",
         long_trail=("Pacific Crest Trail", "PCT", r"^PCT|Pacific Crest"),
         # ZIP 90404 (Santa Monica), approximate ZCTA centroid
@@ -98,7 +106,7 @@ AREAS = {
     # x 506 crosses no creek twice.
     "jackson": dict(
         label="Jackson Hole, Grand Teton & Teton Valley", crs=26912,
-        sources=("wy_trout", "id_trout", "grte_roads", "teton_county", "id_511"),
+        sources=("wy_trout", "id_trout", "grte_roads", "teton_county", "id_511", "late_summer_green"),
         home=dict(label="83001 Jackson (town square; the ZIP spans the valley)", lon=-110.7624, lat=43.4799),
         ranges={
             "teton_snake": dict(label="Tetons & Snake River", hu4=("1704",),
@@ -151,16 +159,25 @@ AREAS = {
         label="Central Vermont", crs=26918, sources=("vt_trout", "tu_brook_trout", "ne_compass"),
         long_trail=("Long Trail", "LT", r"^Long Trail\b"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
+        clip_state="VT",       # the map ends at the New York line in Lake Champlain (areaclip.py)
         ranges={
+            # West edge moved from 640000 to 625000 on 2026-11-20 (user: "expand vermont all the way to the its eastern
+            # border in the middle of lake champlain, dont expand north or south"). Between the boxes' south and north
+            # edges the Vermont / New York line runs down the lake between x 625,145 (off Crown Point) and 635,795 (off
+            # Burlington), so 625,000 takes in all of Vermont there; the New York shore it also takes in (about 300 km2,
+            # Ticonderoga to Willsboro) is cut off at the line (clip_state). Adds the Champlain Valley from Orwell and
+            # Shoreham through Addison, Vergennes, Ferrisburgh, Charlotte, Shelburne and Burlington to Colchester,
+            # Milton, South Hero and Grand Isle, and Vermont's half of the lake. 625,000 is one DEM tile (15 km) west
+            # of the old edge, so the tiles on disk keep their names.
             # North edge moved from 4937000 to 4950000 on 2026-11-19 (user: first "Jeffersonville, where the Brewster River
             # meets the Lamoille", y 4946327, then "move it" on to an edge that crosses neither the Lamoille, which
             # meanders up to y 4949320 near Fairfax, nor a reservoir: Green River Reservoir reaches y 4948941 and
             # Arrowhead Mountain Lake crosses 4949500). Adds the north side of Smugglers Notch, the whole Brewster River,
             # Morrisville, Hyde Park, Johnson, Jeffersonville, Cambridge and Fairfax.
-            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(640000, 4913000, 705000, 4950000)),
-            "mad_winooski": dict(label="Mad River, Winooski & New Haven River", hu4=("0430", "0108"), bbox=(640000, 4880000, 705000, 4913000)),
+            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(625000, 4913000, 705000, 4950000)),
+            "mad_winooski": dict(label="Mad River, Winooski & New Haven River", hu4=("0430", "0108"), bbox=(625000, 4880000, 705000, 4913000)),
             "white_river": dict(label="Middlebury River, Breadloaf & White River", hu4=("0108", "0430"),
-                                bbox=(640000, 4845000, 705000, 4880000)),
+                                bbox=(625000, 4845000, 705000, 4880000)),
         }),
     "ne_ct": dict(
         label="Northeastern Connecticut", crs=26918,   # straddles the 18N / 19N line at 72 W
@@ -264,8 +281,11 @@ AREAS = {
     # Atlanta. Sources: NYSDEC trout streams, trout (T) / (TS) water classes and fishing access (ny_trout), the brook
     # trout patches, and the Forest Preserve's wilderness, primitive and canoe areas, where bikes aren't allowed
     # (nys_forest_preserve). Long trail: the Northville-Placid Trail. Road closures: 511NY needs a key, so none.
+    # Hidden since 2026-11-20 (user: "hide the adks on the map for now dont get rid of the code or delete anything just
+    # hide anywhere it is displayed on the website"): the four maps are kept, built and published as before, but no
+    # page lists or links them. Take hidden=True out of all four to show them again.
     "adk_high_peaks": dict(
-        label="Adirondacks: High Peaks & Lake Placid", crs=26918,
+        label="Adirondacks: High Peaks & Lake Placid", crs=26918, hidden=True,
         min_relief=50,     # the Champlain valley and the northern plains are gentle; the peaks pass any test
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
@@ -285,7 +305,7 @@ AREAS = {
                                bbox=(544400, 4938000, 609400, 4971500)),
         }),
     "adk_northwest": dict(
-        label="Adirondacks: Long Lake, Tupper & Cranberry", crs=26918, min_relief=50,
+        label="Adirondacks: Long Lake, Tupper & Cranberry", crs=26918, min_relief=50, hidden=True,
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
@@ -302,7 +322,7 @@ AREAS = {
                                 bbox=(505600, 4934000, 544400, 4960000)),
         }),
     "adk_southwest": dict(
-        label="Adirondacks: Old Forge & West Canada Lakes", crs=26918, min_relief=50,
+        label="Adirondacks: Old Forge & West Canada Lakes", crs=26918, min_relief=50, hidden=True,
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
@@ -317,7 +337,7 @@ AREAS = {
                                bbox=(522000, 4765000, 556400, 4818000)),
         }),
     "adk_southeast": dict(
-        label="Adirondacks: Hudson, Indian Lake & Lake George", crs=26918, min_relief=50,
+        label="Adirondacks: Hudson, Indian Lake & Lake George", crs=26918, min_relief=50, hidden=True,
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),

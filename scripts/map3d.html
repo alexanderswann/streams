@@ -247,7 +247,7 @@
       map.addLayer({id: "lakes-dry", type: "line", source: "lakes", filter: ["get", "dry"], layout: {visibility: "none"},
         paint: {"line-color": ["get", "e"], "line-width": 1.4, "line-dasharray": [3, 2]}});
       ov.push(["lakes", D.lake_legend || ("Lakes: <span style='color:#1c7ed6'>■</span> game fish <span style='color:#adb5bd'>■</span> none listed " +
-               "<span style='color:#a5d8ff'>■</span> no record"), "<span style='color:#1c7ed6'>■</span>", ["lakes", "lakes-o", "lakes-dry"]]);
+               "<span style='color:#a5d8ff'>■</span> no record"), "<span style='color:#1c7ed6'>■</span>", ["lakes", "lakes-o", "lakes-dry"], true]);
     }
     if (D.lake_depth) {
       src("lake_depth", D.lake_depth);

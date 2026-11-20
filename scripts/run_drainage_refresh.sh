@@ -2,6 +2,8 @@
 # Redo the drainages, the flows and everything drawn from them for one or more areas, after a change to
 # 05c_drainages.py, 05b_flow.py, flowlib.py, crossbox.py or 06_map.py: 05c for every range, then 05b for every range
 # (05b follows creeks into the next box and reads that box's area_streams.csv), then the area's map and creek profiles.
+# 05b reads the lakes layer as 05d_lakes.py last wrote it (its outlines don't depend on 05c or 05b; run_mid.sh runs it
+# between them, so the lakes' drainage labels follow 05c).
 #   ./run_drainage_refresh.sh lexington_va ne_ct      (logs to data/drainage_<area>.log)
 # The reaches and their ids stay; scores change only where a reach's flow does. Stops an area at its first failure and goes on.
 # Afterwards: 13_overview.py, 14_portable.py, phone_sync.sh (and publish_site.sh for the website copy).

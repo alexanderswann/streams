@@ -15,6 +15,8 @@ from config import AREAS, ROOT
 OUT = f"{ROOT}/output"
 areas = []
 for key in AREAS:
+    if AREAS[key].get("hidden"):     # built and kept, but not shown (config.py: the Adirondack maps since 2026-11-20)
+        continue
     p = f"{OUT}/{key}/overview.json"
     if os.path.exists(p) and os.path.exists(f"{OUT}/{key}/stream_map.html"):
         with open(p) as f:

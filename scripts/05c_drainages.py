@@ -10,10 +10,11 @@ A pond's or small reservoir's basin too small for a name of its own joins the dr
 Writes output/<region>/drainages.gpkg (fork polygons with drainage + fork names, plus the unnamed basins that drain
 off an edge, for 06_map.py to join; in the area's own CRS, so two boxes' outlines meet exactly on the edge they
 share) and output/<region>/stream_drainage.csv (sid -> drainage, fork). Run after 05_score.py, with REGION set."""
-import re, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
+import os, re, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from rasterio import features
 from config import *
 from crossbox import graph, jump, exit_points, inflows, dam_links, shared_edges, D8
+import areaclip
 
 MAJOR_KM2 = 25   # outlet basins at least this big are named drainages
 FORK_KM2 = 35    # a tributary this big joining a drainage's trunk becomes its own fork...
@@ -89,6 +90,19 @@ with rasterio.open(f"{RAW}/dem_10m.tif") as src:
     z_ = src.read(1)
     sea = ((z_ <= SEA_M) & (z_ > -1000)).ravel()          # (-9999 is nodata)
 del z_
+# A lake whose water leaves the map through its own surface (03b_stitch.py writes them: Lake Champlain off central
+# Vermont's west edge, Tellico Lake off the Smokies' north edge) is the water the creeks that reach it run into, as the
+# sea is: their paths end at their mouths, and its water belongs to no drainage (it had been painted in strips of the
+# creeks around it, each creek's path running on across it to the map's edge).
+p_off = f"{DERIVED}/lakes_off_map.gpkg"
+if os.path.exists(p_off):
+    off_ = gpd.read_file(p_off).to_crs(CRS)
+    lake_ = features.rasterize(((g, 1) for g in off_.geometry), out_shape=(H, W), transform=T, fill=0,
+                               dtype="uint8").ravel() > 0
+    print(f"lakes whose water leaves the map, read like the sea: {', '.join(off_.gnis_name.fillna('unnamed'))} "
+          f"({lake_.sum() * RES * RES / 1e6:.1f} km2 of water in this box)")
+    sea |= lake_
+    del lake_
 mouth = np.zeros(N, bool)
 if sea.any():                                             # SEA_M above: paths end at the creek's mouth
     mouth = ~sea & sea[nxt]
@@ -597,6 +611,8 @@ inp, owner = shapely.STRtree(geoms).query(shapely.point_on_surface(faces), predi
 faces, owner = faces[inp], owner
 simp = gpd.GeoDataFrame({"i": owner}, geometry=shapely.coverage_simplify(faces, 60), crs=CRS).dissolve("i")
 poly.loc[simp.index, "geometry"] = simp.geometry.values
+# an area that stops at a state line: drainages end at it (areaclip.py; central Vermont's at the New York line)
+poly = areaclip.cut(poly).reset_index(drop=True)
 poly[["region", "drainage", "fork", "area_km2", "out_x", "out_y", "geometry"]].to_file(f"{OUT}/drainages.gpkg")
 
 print(f"{len(basin_km2)} outlets, {len(major)} >= {MAJOR_KM2} km2; {(poly.drainage == MINOR).sum()} unnamed basins "

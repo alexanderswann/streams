@@ -405,6 +405,7 @@ def run(group):
             print("note: lakes across an edge between two boxes (check the drainage below each dam against NHDPlus): "
                   + ", ".join(f"{n if isinstance(n, str) else 'unnamed'} ({a / 1e4:.0f} ha)" for n, a in zip(across.gnis_name, across.area)))
     n_wet = n_through = 0
+    off_map = []                                        # lakes whose water leaves the map through their own surface
     if len(lakes):
         level, best = {}, {}
         for r in group:
@@ -434,23 +435,47 @@ def run(group):
         for i, (a, r_, c_) in best.items():
             if most.get(i, 0) * RES * RES / 1e4 < LEVEL_HA:
                 continue
+            # one whose water gathers most on the map's rim leaves the map through its own surface (step 4)
+            ring = fd[max(r_ - 1, 0):r_ + 2, max(c_ - 1, 0):c_ + 2]
+            if not (0 < r_ < H - 1 and 0 < c_ < W - 1 and (ring > 0).all()):
+                off_map.append(i)
+                continue
             # A lake whose water leaves it on an edge between two boxes flows on instead: crossbox.py reads a dead end
             # on a box's rim as water leaving the box, and carries a lake past its dam only within one box (Raquette
             # Pond's water leaves it 13 m from the tupper box, through tupper's sliver of the pond)
             if near_shared_edge(r_, c_, group, where):
                 n_through += 1
                 continue
-            ring = fd[max(r_ - 1, 0):r_ + 2, max(c_ - 1, 0):c_ + 2]
-            if 0 < r_ < H - 1 and 0 < c_ < W - 1 and (ring > 0).all():      # one on the rim leaves the map anyway
-                fd[r_, c_] = PIT
-                n_wet += 1
+            fd[r_, c_] = PIT
+            n_wet += 1
         acc, _ = accumulate(fd, DR, DC)
     # 4. streams and their orders, across the group
     stream = acc >= int(round(STREAM_KM2 * 1e6 / (RES * RES)))      # in cells: no float copy of a 250-million-cell grid
+    # A lake whose water leaves the map through its own surface (the cell where most of its water gathers lies on the
+    # map's rim) has no outlet in the map to end the paths at. Its flat water drained to the rim along dozens of
+    # parallel paths, which the maps drew as made-up creeks across it, and the drainages painted it in strips of the
+    # creeks around it: Lake Champlain in the Adirondack maps (1,113 km of such lines in one box), Tellico, Hartwell
+    # and Elsinore lakes, 33 lakes over the 12 areas (measured 2026-11-20, when central Vermont's west edge moved to
+    # the middle of Lake Champlain). Its water now carries no stream: the creeks end at its shore, and
+    # 05c_drainages.py treats it as the sea (lakes_off_map.gpkg, step 5). The lakes layer (05d_lakes.py) draws it.
+    for i in off_map:
+        g_ = lakes.geometry.iloc[i - 1]
+        ca, ra = ~T * (g_.bounds[0], g_.bounds[3])
+        cb, rb = ~T * (g_.bounds[2], g_.bounds[1])
+        r0_, r1_ = max(int(np.floor(ra)), 0), min(int(np.ceil(rb)), H)
+        c0_, c1_ = max(int(np.floor(ca)), 0), min(int(np.ceil(cb)), W)
+        if r1_ > r0_ and c1_ > c0_:
+            wet = rasterio.features.geometry_mask([g_], (r1_ - r0_, c1_ - c0_), T * rasterio.Affine.translation(c0_, r0_),
+                                                  invert=True)
+            stream[r0_:r1_, c0_:c1_] &= ~wet
+            del wet
     order = strahler(fd, stream, DR, DC)
     print(f"{' + '.join(group)}: {W} x {H} cells, {int(stream.sum())} stream cells, max order {int(order.max())}, "
           f"{n_wet} of {len(lakes)} lakes end paths at their outlet"
           + (f" ({n_through} more flow on: outlet on an edge between boxes)" if n_through else "")
+          + (f", {len(off_map)} drain off the map through their water and carry no stream lines ("
+             + ", ".join(n if isinstance(n, str) else "unnamed" for n in lakes.gnis_name.iloc[[i - 1 for i in off_map]]) + ")"
+             if off_map else "")
           + (f", {loops} cells on loops ended in pits" if loops else ""))
     # 5. each box's files
     from pysheds.grid import Grid
@@ -468,6 +493,14 @@ def run(group):
         for name, arr, dt in (("flowdir", f, "uint8"), ("area_km2", area, "float32"), ("strahler", od, "uint8")):
             with rasterio.open(f"{derived_dir(r)}/{name}.tif", "w", **dict(prof, dtype=dt)) as dst:
                 dst.write(arr.astype(dt), 1)
+        # the lakes in this box whose water leaves the map (step 4), for 05c_drainages.py
+        p_off = f"{derived_dir(r)}/lakes_off_map.gpkg"
+        here = [i - 1 for i in off_map if lakes.geometry.iloc[i - 1].intersects(shapely.box(*boxes[r]))]
+        if here:
+            lakes.iloc[here][["gnis_name", "geometry"]].to_file(p_off + ".tmp", driver="GPKG")
+            os.replace(p_off + ".tmp", p_off)
+        elif os.path.exists(p_off):
+            os.remove(p_off)
         # The lines: pysheds on the box with a ring of one cell of its neighbours around it. pysheds leaves the
         # outermost ring of cells out of the lines' starts but lets a line end there: so a line that leaves the box
         # ends on the first cell of the next box, exactly where that box's line for the same creek starts. On a side

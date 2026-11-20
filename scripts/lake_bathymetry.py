@@ -20,6 +20,7 @@ import os, re, json, requests, numpy as np, pandas as pd, geopandas as gpd, shap
 from rasterio import features
 from rasterio.transform import from_origin
 from config import AREA, REGIONS, CRS, SHARED, SHARED_DERIVED
+import areaclip
 from units import ft, acres  # the depth notes the map popups show are in feet and acres (units.py)
 from shapely.geometry import box
 
@@ -321,7 +322,7 @@ def main():
         facts.update(f_)
     if rows:
         out = gpd.GeoDataFrame(rows, geometry="geometry", crs=CRS)
-        out = out[~out.geometry.is_empty]
+        out = areaclip.cut(out[~out.geometry.is_empty])       # an area that stops at a state line (areaclip.py)
         out.to_file(OUT + ".tmp", driver="GPKG")
         os.replace(OUT + ".tmp", OUT)
     for lid, f in facts.items():

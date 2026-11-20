@@ -29,6 +29,8 @@ def pack(obj):
 
 areas, blobs, sizes = [], [], []
 for key in AREAS:
+    if AREAS[key].get("hidden"):     # built and kept, but not shown (config.py: the Adirondack maps since 2026-11-20)
+        continue
     p, q = f"{OUT}/{key}/overview.json", f"{OUT}/{key}/map3d_data.js"
     if not (os.path.exists(p) and os.path.exists(q)):
         continue
@@ -122,9 +124,9 @@ if (!go()) map.fitBounds(all, {padding: [30, 30]});     // the view first: layer
 
 // ---- colours ----
 let mode = "drainage", extras = false;
-// What is on the map: streams, drainages, the long trail, terrain shading and place labels. The rest waits for its
-// switch in the panel.
-const opt = {drops: false, access: false, live: false, trout: false, lakes: false};
+// What is on the map: streams, drainages, the long trail, terrain shading, place labels and lakes (since 2026-11-20).
+// The rest waits for its switch in the panel.
+const opt = {drops: false, access: false, live: false, trout: false, lakes: true};
 const LOW = 15, LOWCOL = "#8d9aa8", RAMP = ["#3fb0a8", "#2a93c4", "#2a6fc0", "#3a4fb0", "#4b2f9c", "#3a1670"];
 const ramp = fs => fs < LOW ? LOWCOL : RAMP[Math.min(RAMP.length - 1, Math.floor((fs - LOW) / (100 - LOW) * RAMP.length))];
 const W = [0, 0.8, 1.15, 1.7, 2.4, 3.3, 4.4, 5.4];
@@ -290,7 +292,7 @@ panel.onAdd = () => {
     `<div class="key"></div>` +
     `<label><input type="checkbox" data-o="drops"> Drops and waterfalls</label><label><input type="checkbox" data-o="access"> Trailheads and parking</label>` +
     `<label><input type="checkbox" id="xt"> Trails and dirt roads</label><label><input type="checkbox" data-o="live"> Gauges and road closures</label>` +
-    `<label><input type="checkbox" data-o="trout"> Trout records</label><label><input type="checkbox" data-o="lakes"> Lakes: fish, access, depth</label>` +
+    `<label><input type="checkbox" data-o="trout"> Trout records</label><label><input type="checkbox" data-o="lakes" checked> Lakes: fish, access, depth</label>` +
     `<p>Zoom into an area for every creek, and tap one for its details. The switches above add the rest once you are zoomed in. Scores rank creeks within an area; they aren't comparable between areas.</p></div>`;
   L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
   const list = d.querySelector(".list"), mark = d.querySelector("h1 span"), key = d.querySelector(".key");

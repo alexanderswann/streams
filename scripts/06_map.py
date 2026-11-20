@@ -20,9 +20,11 @@ LBL = dict(
     long_trail=LONG_TRAIL[0] if LONG_TRAIL else None,
     # for the "go to another area" menu in both maps (every area's map sits in output/<key>/; ../index.html is the
     # map of all areas, 13_overview.py). Only areas whose map has been built: an area just added to config.py (the
-    # Smokies, 2026-11-19) was otherwise listed everywhere as a dead link until its first build and publish.
+    # Smokies, 2026-11-19) was otherwise listed everywhere as a dead link until its first build and publish. Hidden
+    # areas (config.py: the four Adirondack maps since 2026-11-20) are listed only in their own maps.
     area=AREA, areas=[dict(k=k_, t=v_["label"]) for k_, v_ in AREAS.items()
-                      if k_ == AREA or os.path.exists(f"{os.path.dirname(MAP_OUT)}/{k_}/stream_map.html")],
+                      if k_ == AREA or (not v_.get("hidden")
+                                        and os.path.exists(f"{os.path.dirname(MAP_OUT)}/{k_}/stream_map.html"))],
     flow="TNC Natural Flows model" if has("tnc_flows") else "NHDPlus mean flow × this area's gauge records",
     falls="Known waterfalls &amp; swimming holes (OSM, USGS, " + ("CDFW surveys, " if has("cdfw_pad") else "")
           + "guidebooks)",
@@ -38,6 +40,7 @@ LBL = dict(
             + " · PRISM Group, Oregon State University · known falls: OSM, USGS GNIS, Wikidata and the guides named in each")
 from scoring import attach, score
 import crossbox
+import areaclip      # an area that stops at a state line (config clip_state) shows nothing past it
 
 done = [r for r in REGIONS if os.path.exists(f"{MAP_OUT}/{r}/streams_scored.gpkg")]
 read = lambda name: pd.concat([gpd.read_file(f"{MAP_OUT}/{r}/{name}") for r in done], ignore_index=True)
@@ -56,6 +59,7 @@ if _guides:
 # road closures from 07_road_closures.py (optional; re-run that script to refresh)
 closures = gpd.read_file(f"{MAP_OUT}/road_closures.gpkg") if os.path.exists(f"{MAP_OUT}/road_closures.gpkg") else None
 gated = gpd.read_file(f"{MAP_OUT}/gated_roads.gpkg") if os.path.exists(f"{MAP_OUT}/gated_roads.gpkg") else None
+closures, gated = areaclip.cut(closures), areaclip.cut(gated)
 if closures is not None and len(closures):
     # nearest full closure within 3 km of each drop, for the popup
     full = closures[closures.severity.str.startswith("full")].to_crs(EPSG).reset_index(drop=True)
@@ -413,7 +417,7 @@ kp_ll = attach(kp_ll, "did", dirs, "drops")
 CTX = f"{MAP_OUT}/context"
 def ctx(n):
     """A context layer (11_context.py), or None if it wasn't written or is empty (no fires in Connecticut)."""
-    g = gpd.read_file(f"{CTX}/{n}.gpkg") if os.path.exists(f"{CTX}/{n}.gpkg") else None
+    g = areaclip.cut(gpd.read_file(f"{CTX}/{n}.gpkg")) if os.path.exists(f"{CTX}/{n}.gpkg") else None
     return g if g is not None and len(g) else None
 
 def approach(r):
@@ -440,7 +444,8 @@ CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn
            "trout_water", "trout_found", "trout_absent", "trout_ev", "crit_habitat", "wilderness", "non_fs_land",
            "cpad_access"]
 FLOWC = ["water_class", "dry_cfs", "dry_cfs_drought", "flow_years", "flow_src", "below_dam",   # 05b_flow.py
-         "below_div", "div_share", "div_years", "water_by_gauge"]                                # (the last: scoring.py)
+         "below_div", "div_share", "div_years", "gauge_name", "gauge_share", "gauge_years", "green_p90",
+         "water_by_gauge", "water_rule"]                                                     # (the last two: scoring.py)
 for c_ in CONTEXT + FLOWC:   # older context files may lack a column
     if c_ not in s_ll:
         s_ll[c_] = None
@@ -541,6 +546,23 @@ def cfs(v):
     return f"{v:.0f}" if v >= 10 else f"{v:.1f}" if v >= 1 else f"{v:.2f}"
 
 
+_GAUGE_WORDS = {"C": "Creek", "Cr": "Creek", "Ck": "Creek", "R": "River", "Nr": "near", "Near": "near", "Bl": "below",
+                "Blw": "below", "Ab": "above", "Abv": "above", "A": "at", "At": "at", "Cyn": "Canyon", "Lk": "Lake",
+                "Res": "Reservoir", "Br": "Branch", "Trib": "tributary", "Ef": "East Fork", "Wf": "West Fork",
+                "Nf": "North Fork", "Sf": "South Fork", "Mf": "Middle Fork", "Of": "of", "And": "and", "Pt": "Point"}
+
+
+def gauge_label(name):
+    """A USGS station name as words: "PIRU C BL PYRAMID LK NR GORMAN CA" -> "Piru Creek below Pyramid Lake near Gorman,
+    CA" (the abbreviations USGS uses in its names; the state stays in capitals)."""
+    w = [x for x in str(name).replace(",", " ").split() if x]
+    if not w:
+        return ""
+    st = w.pop().upper() if len(w) > 1 and len(w[-1]) == 2 and w[-1].isalpha() else ""
+    out = " ".join(_GAUGE_WORDS.get(x.title(), x.title()) for x in w)
+    return out + (f", {st}" if st else "")
+
+
 def summer_flow(r):
     """Popup line from the flow model (05b_flow.py): class, typical / drought-year low flow, share of summers flowing.
     Below a gauged diversion, the record of the USGS gauge below it too; where the score uses it, it comes first."""
@@ -563,6 +585,14 @@ def summer_flow(r):
     if gauge and r.water_by_gauge == True:
         return (f"{c} · {gauge}, which the score uses · the {src}, which can't see the diversion: " + ", ".join(bits)
                 + f" · NHD: {r.flow}")
+    # scoring.py's water (1) and (2): a gauge on this creek, or a bare channel in late summer, overrides the model
+    if r.water_rule == "gauge" and pd.notna(r.gauge_share):
+        return (f"{c} · the USGS gauge on this creek ({gauge_label(r.gauge_name)}) kept flowing {r.gauge_share:.0%} of "
+                f"summers in {r.gauge_years}, which the score uses · the {src}: " + ", ".join(bits) + f" · NHD: {r.flow}")
+    if r.water_rule == "bare channel":
+        nhd = {"unmapped": "doesn't map it as a stream"}.get(r.flow, f"maps it {r.flow}")
+        return (f"{c} · likely dry most summers: no green along the channel in late summer (satellite, 2022–24), and "
+                f"NHD {nhd}; the score takes it as seasonal · the {src} said: " + ", ".join(bits))
     return (" · ".join([c] + bits) + f" ({src})" + (f" · below {dam}: releases set the flow" if dam else "")
             + (f" · {gauge}" if gauge else "") + f" · NHD: {r.flow}")
 
@@ -698,10 +728,12 @@ SAC = {"hiking": "easy (T1)", "mountain_hiking": "mountain hiking (T2)", "demand
        "alpine_hiking": "alpine (T4)", "demanding_alpine_hiking": "demanding alpine (T5)",
        "difficult_alpine_hiking": "difficult alpine (T6)"}
 study = gpd.GeoSeries([shapely.box(*v["bbox"]) for v in REGIONS.values()], crs=EPSG).union_all().buffer(1000)
+if areaclip.outline() is not None:      # (the state line itself isn't widened: Crown Point is 1 km across the lake)
+    study = study.intersection(areaclip.outline())
 study_ll = gpd.GeoSeries([study], crs=EPSG).to_crs(4326).iloc[0]
 if os.path.exists(f"{SHARED}/trails.gpkg"):
     tr = gpd.read_file(f"{SHARED}/trails.gpkg")
-    tr = tr[tr.intersects(study_ll)]
+    tr = areaclip.cut(tr[tr.intersects(study_ll)])
     col_ = lambda c, d=None: tr[c] if c in tr else pd.Series(d, index=tr.index)
     def agency(s):
         s = str(s)
@@ -824,7 +856,7 @@ t_feat = beside_creeks(t_feat)
 roads_json, park_json = None, None
 if os.path.exists(f"{SHARED}/access_roads.gpkg"):
     ar = gpd.read_file(f"{SHARED}/access_roads.gpkg")
-    ar = ar[ar.intersects(study_ll)]
+    ar = areaclip.cut(ar[ar.intersects(study_ll)])
     getc = lambda c: ar[c] if c in ar else pd.Series(None, index=ar.index)
     r_feat = gpd.GeoDataFrame({"n": ar["name"], "c": ar.cls, "sf": getc("surface"), "tt": getc("tracktype"),
                                "sm": getc("smoothness"), "fs": getc("fs_id"), "lv": getc("fs_level"),
@@ -842,7 +874,7 @@ if os.path.exists(f"{SHARED}/access_roads.gpkg"):
     print("access roads", len(r_feat), "|", r_feat.c.value_counts().to_dict())
 if os.path.exists(f"{SHARED}/parking_trailheads.gpkg"):
     pk = gpd.read_file(f"{SHARED}/parking_trailheads.gpkg")
-    pk = pk[pk.intersects(study_ll)]
+    pk = areaclip.cut(pk[pk.intersects(study_ll)])
     park_json = json.loads(gpd.GeoDataFrame(
         {"k": pk.kind, "n": pk["name"], "u": pk.url, "no": pk.note, "fee": pk.fee, "cap": pk.capacity,
          "p": pk.parking.fillna(False).astype(int), "src": pk.source,

@@ -1,0 +1,57 @@
+#### score_root
+reaches 8199 (project 8276); matched within 30 m 7611, 30-200 m 485, none within 200 m 103
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e/output/adk_northwest/stream_reaches_ranked.csv 8199
+#### standing
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     2672           0.0                   11             0                      0.59      734.1
+  long_lake     1855           0.0                    0             0                      0.42      412.5
+     tupper     1290           0.0                   16             0                      0.30      347.8
+   st_regis     1251           0.0                   14             0                      0.23      341.4
+lake_ozonia     1131           0.0                    6             0                      0.15      374.7
+#### short_named
+{"area": "adk_northwest", "reaches": 8199, "named_on_their_line": 1690, "under_quarter": 62, "outside_lakes": 47, "km": 20.9, "fish_60_plus": 35, "top": {"West Branch Beaver River": 8, "Dun Brook": 6, "West Branch Oswegatchie River": 5, "West Branch Saint Regis River": 4}}
+#### classify_short
+{"area": "adk_northwest", "total": 47, "side arm (main arm beside)": {"n": 26.0, "km": 5.4, "fish60": 16.0}, "water routed elsewhere": {"n": 21.0, "km": 15.5, "fish60": 19.0}, "elsewhere_top": {"West Branch Beaver River": 8, "Dun Brook": 6, "Little River": 3, "Bog Stream": 1, "Fish Creek": 1, "South Inlet": 1}}
+#### v2_ends
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e): NHDPlus V2 lines checked 1639; ours under half of V2 at the line's lower end: 56, under a quarter 33, over double 76, no reach within 60 m 159
+size           5-20  20-100  100-1000  1000+
+lines           773     355       449     62
+no_reach         69      45        39      6
+under_half       38      13         5      0
+under_quarter    20       8         5      0
+over_double      59      15         2      0
+#### hragree
+adk_northwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/r3e): HR lines checked 10713, D8 misses 109 (1.0 %)
+size       <2 km    2-10   10-50  50+ km
+lines     5572.0  2716.0  1169.0  1256.0
+miss        82.0    22.0     3.0     2.0
+miss_pct     1.5     0.8     0.3     0.2
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 9
+             lake    ha  nhd_km2  ours             sid  reach_name  ratio
+      Beaver Lake 133.8    552.4 48.38    beaver:s2159 Alder Creek   0.09
+      Graves Pond   9.2     10.0  3.82     beaver:s609         NaN   0.38
+unnamed reservoir  13.2      9.9  2.39     beaver:s263         NaN   0.24
+      Turtle Pond  28.7      8.4  1.18      tupper:s35         NaN   0.14
+unnamed reservoir  58.9      7.4  1.09  long_lake:s235         NaN   0.15
+ South Greek Lake  23.3      6.1  1.40     beaver:s498 South Creek   0.23
+unnamed reservoir  49.0      4.8  1.68 long_lake:s1545         NaN   0.35
+unnamed reservoir  10.5      4.2  1.22   long_lake:s99         NaN   0.29
+    Streeter Lake  28.5      2.6  1.14     beaver:s565         NaN   0.44
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+Mapped falls (OSM + NHD), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  on smaller drainages:   pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+  all:                    pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+
+by range:
+Empty DataFrame
+Columns: [falls, pass1, both]
+Index: []
+
+named mapped falls on big creeks that both passes miss: none
+
+CDFW fish-passage barriers (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
