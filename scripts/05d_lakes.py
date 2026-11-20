@@ -32,12 +32,16 @@ from rasterio.windows import from_bounds
 from shapely.geometry import box
 from config import AREA, REGIONS, CRS, EPSG, NATIONAL, SHARED, SHARED_DERIVED, has, raw_dir, out_dir
 
-BUILT = {"jackson"}
-if AREA not in BUILT:           # not an error: a build script may call this for every area
-    print(f"lakes: not built for {AREA} yet (pilot areas: {', '.join(sorted(BUILT))}); nothing to do")
+# Areas with lakes, and the size from which an unlisted pond is kept. An area goes into BUILT once its lakes have been
+# checked, because any build of it (run_mid.sh) then puts them on its map. A PLANNED area can be built into a file of
+# one's choosing to check it first: LAKES_OUT=/some/where/lakes.gpkg AREA=<area> 05d_lakes.py
+BUILT = {"jackson": 0.5, "ne_ct": 1.0}
+PLANNED = {"central_vt": 1.0, "lexington_va": 0.5, "n_georgia": 2.0, "la": 1.0}   # North Georgia: 1,835 farm ponds of 0.5-2 ha
+if AREA not in BUILT and not (AREA in PLANNED and os.environ.get("LAKES_OUT")):
+    print(f"lakes: not built for {AREA} yet (areas: {', '.join(sorted(BUILT))}); nothing to do")   # not an error
     raise SystemExit(0)
 
-MIN_HA = 0.5             # lakes and ponds smaller than this are kept only when an agency lists them
+MIN_HA = BUILT.get(AREA, PLANNED.get(AREA))   # lakes and ponds smaller than this are kept only when an agency lists them
 LEVEL_TOL_M = 0.3        # a DEM cell within this of the lake's median elevation is on its water surface
 EV_BUFFER_M = 50         # a fish record this close to the shore counts for the lake
 EV_MAX_UNCERT_M = 250    # ... unless its stated coordinate uncertainty is larger than this
@@ -279,6 +283,16 @@ cat = lakelidar.catalog(tuple(boxes.buffer(3000).to_crs(4326).total_bounds), CAC
 
 
 def lidar_one(g, ck, mine):
+    """(level, share, shoreline, runs off, work unit, surface stats) for one outline, or None; a lake whose lidar can't
+    be read keeps its NHD outline (the step goes on)."""
+    try:
+        return _lidar_one(g, ck, mine)
+    except Exception as ex:
+        print(f"  lidar not read for {ck}: {type(ex).__name__}: {str(ex)[:120]}")
+        return None
+
+
+def _lidar_one(g, ck, mine):
     """(level, share, shoreline, runs off, work unit) for one outline; the window widens while the water runs off it."""
     res = None
     for pad in (60, 240, 720):
@@ -609,12 +623,26 @@ def match(name, at, g=None):
 
 lk["survey"] = None
 meas, miss = {}, []
-for d in lakedata.DEPTHS.get(AREA, []):
-    i = match(d["lake"], d["at"])
+# EPA National Lakes Assessment soundings (lakesources.py), matched to the lake they were taken in; on a reservoir
+# the index site is mid-lake, a lower bound
+import lakesources
+_nla = lakesources.nla_depths(tuple(boxes.buffer(3000).to_crs(4326).total_bounds)).to_crs(CRS)
+nla_recs = []
+for r in _nla.itertuples():
+    j = [i for i in lk.sindex.query(r.geometry.buffer(100), predicate="intersects")]
+    if not j:
+        continue
+    i = min(j, key=lambda i: lk.geometry.iat[i].distance(r.geometry))
+    p4 = gpd.GeoSeries([r.geometry], crs=CRS).to_crs(4326).iloc[0]
+    nla_recs.append(dict(lake=lk.name.iat[i] or "", max_m=float(r.depth_m), mean_m=None, rank=2, date=r.date,
+                         method=r.method, src=f"EPA National Lakes Assessment {r.cycle} (sonar)", at=(p4.x, p4.y),
+                         ref=lakesources.NLA[r.cycle][0], reservoir_index=lk.ftype.iat[i] == "reservoir", _i=i))
+for d in lakedata.DEPTHS.get(AREA, []) + nla_recs:
+    i = d["_i"] if "_i" in d else match(d["lake"], d["at"])
     (miss.append(d["lake"]) if i is None else meas.setdefault(i, []).append(d))
 for i, ds in meas.items():
     full = [d for d in ds if not d.get("reservoir_index")]
-    best = min(full, key=lambda d: d["rank"]) if full else None
+    best = min(full, key=lambda d: (d["rank"], -d["max_m"])) if full else None   # same rank: the deepest sounding
     agency = lk.depth_max_m.iat[i] if isinstance(lk.depth_src.iat[i], str) and lk.depth_src.iat[i].startswith("Wyoming") else np.nan
     notes = []
     if best is not None:
@@ -652,6 +680,33 @@ print(f"measured depths matched to {len(meas)} lakes, surveys to {lk.survey.notn
 for i in meas:
     print(f"  {lk.name.iat[i]}: {lk.depth_max_m.iat[i]:g} m ({lk.depth_src.iat[i]})" + (f"; {lk.depth_note.iat[i]}" if isinstance(lk.depth_note.iat[i], str) else ""))
 
+# ---- 6c. the state's lake access, rules and designations (lakesources.py): an outline that covers a third of a lake
+# (or of itself) belongs to it, a point within 150 m of a lake's shore to the nearest lake ----
+ex = lakesources.extras(AREA, tuple(boxes.buffer(3000).to_crs(4326).total_bounds))
+for c in ("access", "rules", "designation", "links"):
+    lk[c] = None
+if len(ex):
+    ex = ex.to_crs(CRS)
+    got_ = {}
+    for r in ex.itertuples():
+        g = r.geometry
+        if g is None or g.is_empty:
+            continue
+        if g.geom_type in ("Point", "MultiPoint"):
+            j = [i for i in lk.sindex.query(g.buffer(150), predicate="intersects")]
+            hit = [min(j, key=lambda i: lk.geometry.iat[i].distance(g))] if j else []
+        else:
+            g = shapely.make_valid(g)
+            hit = [i for i in lk.sindex.query(g, predicate="intersects")
+                   if lk.geometry.iat[i].intersection(g).area >= 0.33 * min(lk.geometry.iat[i].area, g.area)]
+        for i in hit:
+            got_.setdefault((i, r.kind), set()).add(r.text)
+            if isinstance(r.url, str) and r.url.startswith("http"):
+                got_.setdefault((i, "links"), set()).add(r.url)
+    for (i, k), v in got_.items():
+        lk.loc[i, k] = "; ".join(sorted(v))
+    print("state lake facts:", {k: int(lk[k].notna().sum()) for k in ("access", "rules", "designation")})
+
 # ---- 7. land: the most specific PAD-US unit at the lake (a park, refuge, wilderness or forest; fishing rules and
 # access go with it), and its public access code; none = private or unlisted land ----
 from geomatch import esri
@@ -687,7 +742,11 @@ if len(pad):
             # federal forests, parks and BLM land: "restricted" is about rules on use (and the Wyoming Range Withdrawal
             # Area is about mineral leasing), not entry
             fed = fed or u.MngNm_Desc in ("Forest Service", "National Park Service", "Bureau of Land Management")
-            lk.loc[i, ["land", "land_access"]] = [(f"{u.MngNm_Desc}: {u.Unit_Nm}" if isinstance(u.MngNm_Desc, str) else u.Unit_Nm) + shore,
+            # PAD-US's "Unknown" is the manager it doesn't know (most Connecticut holdings): the unit's name says enough
+            known = isinstance(u.MngNm_Desc, str) and u.MngNm_Desc != "Unknown"
+            unit = u.Unit_Nm if isinstance(u.Unit_Nm, str) and u.Unit_Nm != "Unknown" else None
+            label = f"{u.MngNm_Desc}: {unit}" if known and unit else unit or (u.MngNm_Desc if known else "PAD-US land, manager unknown")
+            lk.loc[i, ["land", "land_access"]] = [label + shore,
                                                   acc if acc == "closed" or (acc == "restricted" and not fed) else None]
 print("land (PAD-US):", lk.land.fillna("private or unlisted").str.replace(r":.*", "", regex=True).value_counts().to_dict(),
       "| access flagged:", lk.land_access.value_counts().to_dict())
@@ -706,7 +765,7 @@ cols = ["lid", "name", "name_src", "gnis_name", "agency_name", "nhd_id", "osm_id
         "lidar_dates", "lidar_ql", "lidar_share", "level_share", "dem_cells", "water_note", "agency", "agency_id",
         "lake_type", "game_fish", "common_fish", "private_shore", "regs_area", "depth_max_m", "depth_mean_m",
         "depth_src", "depth_note", "inlets", "inlet_names", "outlets", "outlet_name", "connection", "drainage", "fork",
-        "land", "land_access", "n_records", "records", "also_recorded", "survey", "conflict", "match", "geometry"]
+        "land", "land_access", "access", "rules", "designation", "links", "n_records", "records", "also_recorded", "survey", "conflict", "match", "geometry"]
 for c in cols:
     if c not in lk:
         lk[c] = None

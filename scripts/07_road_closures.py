@@ -17,13 +17,15 @@ Outside California (config.py `sources`; each feed was fetched and checked on 20
   gdot_511        Georgia 511 events (points with the event's line, Google-encoded); refreshed every 15 minutes
   ne_compass      New England Compass work-zone feed (WZDx GeoJSON): Vermont's closures, seasonal ones included
                   (Lincoln Gap, Smugglers Notch), and lane closures
+  id_511          Idaho 511's work-zone feed (WZDx 4.1 GeoJSON, checked 2026-11-19; its event API needs a key): road
+                  work closures on the Idaho side of the Jackson map (Teton Valley, Palisades)
   vdot_511        Virginia 511's map files (points; the wording says whether the road is closed). Undocumented
                   files behind 511.vdot.virginia.gov: they may move
   blri_roads      Blue Ridge Parkway closures: the park's web table of milepost sections, drawn between the
                   park's milepost points along OSM roads
 WYDOT's highway conditions and Connecticut's closures have no feed that works without an account: not included.
 """
-import json, os, re, time, datetime as dt, requests, numpy as np, pandas as pd, geopandas as gpd, networkx as nx
+import json, os, re, time, datetime as dt, requests, shapely, numpy as np, pandas as pd, geopandas as gpd, networkx as nx
 from shapely.geometry import LineString, Point, box, shape
 from shapely.ops import linemerge, substring
 from config import REGIONS, CRS, EPSG, ROOT, MAP_OUT, raw_dir, has
@@ -337,6 +339,23 @@ if has("ne_compass"):
         add("New England Compass (VTrans)", ", ".join(cd.get("road_names") or []), "full closure" if imp == "all-lanes-closed" else "lane / one-way",
             cd.get("description"), iso(pr.get("start_date")), iso(pr.get("end_date")), line_of(g))
     print("New England Compass", len(rows) - n0)
+if has("id_511"):     # the same WZDx format as New England Compass's
+    n0 = len(rows)
+    iso = lambda v: pd.Timestamp(v).tz_convert(None).to_pydatetime() + (dt.datetime.now() - dt.datetime.utcnow()) if v else None
+    for f in get_json("https://511.idaho.gov/api/wzdx").get("features", []):
+        pr, cd = f.get("properties", {}), f.get("properties", {}).get("core_details", {})
+        try:
+            g = gpd.GeoSeries([shape(f["geometry"])], crs=4326).to_crs(CRS).iloc[0]
+        except Exception:
+            continue
+        if not g.intersects(area):
+            continue
+        imp = str(pr.get("vehicle_impact") or "")
+        if imp in ("all-lanes-open", "unknown", ""):
+            continue
+        add("Idaho 511 (ITD)", ", ".join(cd.get("road_names") or []), "full closure" if imp == "all-lanes-closed" else "lane / one-way",
+            cd.get("description"), iso(pr.get("start_date")), iso(pr.get("end_date")), line_of(g))
+    print("Idaho 511", len(rows) - n0)
 if has("vdot_511"):
     n0 = len(rows)
     base = "https://data.511-atis-ttrip-prod.iteriscloud.com/datasets"
@@ -384,6 +403,140 @@ if has("blri_roads"):     # the Parkway's closures page: a table of milepost sec
     except requests.RequestException:
         print("  Blue Ridge Parkway: page not reachable")
     print("Blue Ridge Parkway", len(rows) - n0)
+if has("ncdot_tims"):     # NCDOT's incidents and work zones (TIMS, the feed behind DriveNC): lines, and points for the rest
+    n0, seen = len(rows), set()
+    TIMS = "https://services.arcgis.com/NuWFvHYDMVmmxMeM/arcgis/rest/services/NCDOT_TIMS_Incidents/FeatureServer"
+    for lyr in (1, 0):                   # the same event is in both layers: its line first
+        for p, g in arc(f"{TIMS}/{lyr}"):
+            cond = str(p.get("Condition") or "").strip().lower()
+            if p.get("Id") in seen or cond == "open":       # "Open": shoulder work and the like, every lane open
+                continue
+            seen.add(p.get("Id"))
+            what = txt(p.get("LanesAffected"), p.get("Reason"), p.get("Location"))
+            full = str(p.get("IsFullClosure")).lower() == "true" or cond == "closed"
+            add("NCDOT (DriveNC)", p.get("Road"), ("ramp / rest area closed" if SIDE.search(what) else "full closure") if full
+                else "lane / one-way", what, from_ms(p.get("StartDateTime")), from_ms(p.get("EndDateTime")), line_of(g))
+    print("NCDOT", len(rows) - n0)
+if has("tdot_smartway"):  # TDOT SmartWay events: points, and the road is named only in the description
+    n0 = len(rows)
+    # one direction's impact shuts it: "Northbound closed", "all lanes (of 2 lanes) blocked", "road closed"
+    shut = lambda v: bool(re.search(r"(?i)\ball lanes\b[^,;]*\b(?:blocked|closed)\b|^\s*\w+bound closed\b|\broad (?:is )?closed\b", str(v or "")))
+    for p, g in arc("https://spatial.tdot.tn.gov/ArcGIS/rest/services/Smartway/Smartway_Events/FeatureServer/0"):
+        imp, opp = p.get("VEHICLE_IMPACT"), p.get("OPPOSITE_VEHICLE_IMPACT")
+        if not re.search(r"(?i)blocked|closed", txt(imp, opp)):
+            continue
+        desc = str(p.get("DESCRIPTION") or "")
+        both = shut(imp) and (shut(opp) or (not opp and re.search(r"(?i)both", str(p.get("CD_DIRECTION") or ""))))
+        sev = "ramp / rest area closed" if (shut(imp) or shut(opp)) and SIDE.search(desc) else "full closure" if both \
+            else "full closure (one direction)" if shut(imp) or shut(opp) else "lane / one-way"
+        road = re.match(r"\s*(.+?)\s+(?:[NSEW]B\b|(?:North|South|East|West)bound|in\s+\w+\s+County)", desc)
+        add("TDOT SmartWay", road.group(1) if road else desc[:60], sev, txt(p.get("EVENT_SUBTYPE"), desc),
+            from_ms(p.get("START_DATE")), from_ms(p.get("END_DATE")), line_of(g))
+    print("TDOT SmartWay", len(rows) - n0)
+if has("grsm_roads"):     # Great Smoky Mountains NP: its alerts (closures by road name, no geometry; drawn on the park's
+    n0 = len(rows)        # roads layer, else on OSM roads of that name) and its table of secondary roads' open seasons
+    def _roadkey(n):
+        """'Parson Branch Road' -> a pattern for the name as the alerts write it (Parsons Branch, Balsam Mtn, ...).
+        North / South halves of a road share it; East / West are different roads (Foothills Parkway, Lakeview Drive)."""
+        n = re.sub(r"\(.*?\)", " ", n).replace("Clingmans Dome", "Kuwohi")
+        n = re.sub(r"(?i)\b(?:road|rd|drive|dr|motor nature trail|north|south)\b\.?", " ", n).split()
+        alt = {"mountain": "(?:mountain|mtn)\\.?", "kuwohi": "(?:kuwohi|clingmans\\s+dome)"}
+        return r"\b" + r"\s+".join(alt.get(w.lower(), re.escape(w) + "'?s?") for w in n) + r"\b" if n else None
+    try:
+        park = {}
+        for p, g in arc("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRSM_ROADS/FeatureServer/0", fields="RDNAME"):
+            nm = " ".join(str(p.get("RDNAME") or "").split())
+            if nm and not re.search(r"(?i)parking|pullout|overlook|\bsign\b|campground", nm):
+                park.setdefault(nm, []).append(g)
+        osm_named = roads[roads["name"].notna()] if "name" in roads else roads.iloc[0:0]
+        def geom_of(name):
+            """The park road (or, failing that, the OSM roads) whose name the pattern for `name` matches."""
+            k = _roadkey(name)
+            if not k:
+                return None
+            hit = [g for nm, gs in park.items() if re.search(k, nm, re.I) for g in gs]
+            if not hit:
+                hit = list(osm_named.geometry[osm_named["name"].str.contains(k, case=False, regex=True)].values)
+            return line_of(shapely.union_all(hit)) if hit else None
+        done = set()
+        alerts = get_json("https://www.nps.gov/grsm/park-alerts-grsm.json")
+        when = lambda s: dt.datetime.strptime(" ".join(s.split()), "%B, %d %Y %H:%M:%S") if s and s.strip() else None
+        for a in alerts if isinstance(alerts, list) else []:
+            if not (a.get("road_closure_name") or a.get("road_closure_road_names")) or str(a.get("is_active")) != "1":
+                continue
+            text = " ".join(str(a.get(k) or "") for k in ("title", "description", "road_closure_road_names",
+                                                         "road_closure_description"))
+            for nm in sorted({re.sub(r"\s+(?:North|South)$", "", n) for n in park}):
+                k = _roadkey(nm)
+                if k and nm not in done and re.search(k, text, re.I) and (g := geom_of(nm)) is not None:
+                    done.add(nm)
+                    add("Great Smoky Mountains NP", nm, "full closure", txt(a.get("title"), a.get("road_closure_description")),
+                        when(a.get("road_closure_start_date")), when(a.get("road_closure_end_date")), g, always=True)
+        # the seasonal roads table: "4/1-11/29" -> closed outside those dates (this year's); "TBD", "Year-round" -> nothing
+        html = requests.get("https://www.nps.gov/grsm/planyourvisit/seasonalroads.htm", headers=UA, timeout=120).text
+        cell = lambda t: " ".join(re.sub(r"<[^>]+>", " ", t).replace("&nbsp;", " ").replace("&amp;", "&").split())
+        for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", html):
+            tds = [cell(t) for t in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)]
+            m = re.fullmatch(r"(\d{1,2})/(\d{1,2})\s*[-–]\s*(\d{1,2})/(\d{1,2})", tds[1]) if len(tds) >= 2 else None
+            if not m or (g := geom_of(tds[0])) is None or any(re.search(_roadkey(d), tds[0], re.I) for d in done if _roadkey(d)):
+                continue
+            y = NOW.year
+            opens, shuts = dt.datetime(y, int(m[1]), int(m[2])), dt.datetime(y, int(m[3]), int(m[4]), 23, 59)
+            start, end = (shuts, dt.datetime(y + 1, int(m[1]), int(m[2]))) if NOW > opens else (dt.datetime(y - 1, int(m[3]), int(m[4]), 23, 59), opens)
+            add("Great Smoky Mountains NP", re.sub(r"\s*\(.*?\)", "", tds[0]), "full closure",
+                f"closed for the season (open {m[1]}/{m[2]}–{m[3]}/{m[4]} this year)" + (f" · {tds[2]}" if len(tds) > 2 else ""),
+                start, end, g, always=True)
+    except (requests.RequestException, RuntimeError, ValueError) as e:
+        print("  Great Smoky Mountains NP: not reachable", e)
+    print("Great Smoky Mountains NP", len(rows) - n0)
+if has("cherokee_nf"):    # Cherokee NF (Tennessee): its road construction table, with begin / end points and dates in words
+    n0 = len(rows)
+    SEASONS = {"spring": (3, 5), "summer": (6, 8), "fall": (9, 11), "autumn": (9, 11), "winter": (1, 3)}
+    MONTHS = "jan feb mar apr may jun jul aug sep oct nov dec".split()
+    def words_date(s, last=False):
+        """'September 23, 2026', 'July 2026', 'Fall 2026', 'Aug 26th', 'Aug-26' (August 2026) -> the first day of that
+        (the last with last=True); None for TBD or blank."""
+        s = " ".join(str(s or "").replace(",", " ").split()).lower()
+        if not s or "tbd" in s:
+            return None
+        yr = re.search(r"\b(20\d\d)\b|^[a-z]+-(\d\d)$", s)
+        y = int(yr.group(1)) if yr and yr.group(1) else 2000 + int(yr.group(2)) if yr else NOW.year
+        span = next((v for k, v in SEASONS.items() if k in s), None)
+        mo = next((i + 1 for i, m_ in enumerate(MONTHS) if re.search(rf"\b{m_}", s)), None)
+        day = re.search(r"(?:^|[a-z.]\s)(\d{1,2})(?:st|nd|rd|th)?\b(?!\d)", s) if mo and not re.search(r"^[a-z]+-\d\d$", s) else None
+        if span is None and mo is None:
+            return None
+        a, b = span or (mo, mo)
+        if day and mo:
+            d0 = dt.datetime(y, mo, int(day.group(1)))
+            return d0.replace(hour=23, minute=59) if last else d0
+        return (dt.datetime(y + (b == 12), b % 12 + 1, 1) - dt.timedelta(minutes=1)) if last else dt.datetime(y, a, 1)
+    try:
+        html = requests.get("https://www.fs.usda.gov/r08/cherokee/conditions/road-construction", headers=UA, timeout=120).text
+        cell = lambda t: " ".join(re.sub(r"<[^>]+>", " ", t).replace("&nbsp;", " ").replace("&amp;", "&").split())
+        trs = [[cell(t) for t in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)] for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", html)]
+        head = [h.replace("_", " ") for h in next((r for r in trs if any("Lat" in c for c in r)), [])]
+        col = lambda r, k: next((r[i] for i, h in enumerate(head) if k.lower() in h.lower() and i < len(r)), "")
+        ll = lambda v: [float(x) for x in re.findall(r"-?\s*\d+\.\d+", v.replace("- ", "-"))][:2]
+        for r in trs:
+            if not head or len(r) < len(head) or any("Lat" in c for c in r):
+                continue
+            b_, e_ = ll(col(r, "Begin")), ll(col(r, "End Lat")) or ll(col(r, "Begin"))
+            start = words_date(col(r, "Start"))
+            if len(b_) < 2 or len(e_) < 2 or start is None:      # no place, or not begun ("TBD")
+                continue
+            p_, q_ = to_utm(b_[1], b_[0]), to_utm(e_[1], e_[0])
+            g = route(p_, q_) if Point(p_).distance(Point(q_)) > 30 else Point(p_).buffer(60).exterior
+            if not g.intersects(area):
+                continue
+            why = col(r, "Reason")
+            full = re.search(r"(?i)fully closed|full closure|closed to (?:the )?public|bridge out|^closed\b|closed from", why)
+            add("Cherokee NF (USFS)", f"FS {col(r, 'Road Number')} {col(r, 'Road Name')}", "full closure" if full else "phased closure",
+                txt(why, f"milepost {col(r, 'Milepost')}" if col(r, "Milepost") else ""), start, words_date(col(r, "End Date"), last=True),
+                g, always=True)
+    except requests.RequestException:
+        print("  Cherokee NF: page not reachable")
+    print("Cherokee NF", len(rows) - n0)
 
 COLS = ["source", "road", "from_", "to", "severity", "work", "reason", "start", "end", "when", "long_term", "always", "geometry"]
 cl = gpd.GeoDataFrame(rows, crs=CRS) if rows else gpd.GeoDataFrame({c: [] for c in COLS[:-1]}, geometry=[], crs=CRS)

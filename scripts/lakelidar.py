@@ -107,12 +107,33 @@ def window(geom, crs, cat, pad, path=None):
             continue
         srcs = [rasterio.open("/vsicurl/" + url) for url in t.url]
         try:
-            a, T = merge(srcs, bounds=(x0, y0, x1, y1), res=1.0, nodata=NODATA, resampling=Resampling.nearest)
+            # Tiles come in their survey's UTM zone (zone 19 for the Massachusetts surveys along NE Connecticut's
+            # edge, where the area's maps are in zone 18). Tiles of one zone are merged in it and the window is
+            # reprojected to the area's 1 m grid by nearest neighbour, which keeps flattened water at one value.
+            by = {}
+            for s in srcs:
+                by.setdefault(s.crs.to_string(), []).append(s)
+            dst_crs = rasterio.crs.CRS.from_user_input(crs)
+            same = [v for k, v in by.items() if rasterio.crs.CRS.from_string(k) == dst_crs]
+            if same:
+                a, T = merge(same[0], bounds=(x0, y0, x1, y1), res=1.0, nodata=NODATA, resampling=Resampling.nearest)
+                a = a[0].astype(np.float32)
+                a[a < -1000] = NODATA                  # the tiles' own nodata is -999999
+            else:
+                from rasterio.warp import reproject
+                from rasterio.transform import from_origin
+                zone = max(by.values(), key=len)       # the zone with the most tiles here
+                bs = gpd.GeoSeries([box(x0, y0, x1, y1)], crs=crs).to_crs(zone[0].crs).buffer(5).total_bounds
+                a_s, T_s = merge(zone, bounds=tuple(bs), res=1.0, nodata=NODATA, resampling=Resampling.nearest)
+                a_s = a_s[0].astype(np.float32)
+                a_s[a_s < -1000] = NODATA
+                T = from_origin(x0, y1, 1.0, 1.0)
+                a = np.full((int(y1 - y0), int(x1 - x0)), NODATA, np.float32)
+                reproject(a_s, a, src_transform=T_s, src_crs=zone[0].crs, dst_transform=T, dst_crs=dst_crs,
+                          resampling=Resampling.nearest, src_nodata=NODATA, dst_nodata=NODATA)
         finally:
             for s in srcs:
                 s.close()
-        a = a[0].astype(np.float32)
-        a[a < -1000] = NODATA                      # the tiles' own nodata is -999999
         m = features.geometry_mask([geom], out_shape=a.shape, transform=T, invert=True)
         if m.any() and (a[m] == NODATA).mean() > 0.02:  # a gap in this survey: try the next one
             continue

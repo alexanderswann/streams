@@ -25,8 +25,11 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 #   la_trail_layers  NPS Santa Monica Mountains, State Parks and LA County Eaton Fire trail layers (02d, 02e)
 #   ct_trout, vt_trout, va_trout, ga_trout, wy_trout, pa_trout, de_trout   each state's surveys, stocking and trout
 #              waters (troutdata.py)
+#   id_trout   Idaho Fish & Game's Yellowstone cutthroat trout streams, as StreamNet serves them (troutdata.py)
 #   tu_brook_trout   Trout Unlimited / EBTJV wild brook trout patches, Connecticut to Georgia (troutdata.py)
-#   grte_roads, teton_county, gdot_511, ne_compass, vdot_511, blri_roads   current road closures (07_road_closures.py)
+#   grte_roads, teton_county, gdot_511, ne_compass, vdot_511, blri_roads, id_511   current road closures (07_road_closures.py)
+#   ncdot_tims, tdot_smartway, grsm_roads, cherokee_nf   the same for North Carolina DOT, Tennessee DOT, Great Smoky
+#              Mountains National Park and the Cherokee National Forest (07_road_closures.py)
 # long_trail = (name, OSM ref, regex on the OSM relation or way name) of the area's long-distance trail, drawn as its
 #   own layer and left out of the ordinary trail labels (02c_pct.py, 06_map.py); None where there is none.
 # elev_band = (lo, hi, soft) in m for 05_score.py's first-pass score (None: no elevation term).
@@ -74,8 +77,17 @@ AREAS = {
 
     # ---- New areas: boxes from lon/lat extents; HU4 codes checked against the national WBD on 2026-11-18.
     # Home points: the user's ZIPs, at the town centre (rural ZIPs span whole valleys).
+    # Grown on 2026-11-19 (user: "expand the wyoming map to include all of GTNP, driggs, and alpine") by three boxes
+    # beside the first three, which keep their edges. Grand Teton NP's boundary (NPS) spans x 504.2-546.4 km and
+    # y 4820.6-4881.2 km; the old north edge (y 4856) ran through Jackson Lake, and Driggs (x 491.1) and Palisades
+    # Reservoir lay west of x 495. Outer edges sit where no lake of 8+ ha is cut and no named creek crosses more than once:
+    # Yellowstone's boundary (y 4886.6) cuts Grassy Lake Reservoir, Winegar and Tanager lakes and runs along Calf and
+    # Harebell creeks, so the top is y 4885 (1.6 km short of it, past Flagg Ranch and Huckleberry Hot Springs); x 548
+    # clears the park's east side (Pacific Creek crosses once); x 476 crosses the Teton River and the Snake once each; the
+    # Teton Valley box reaches y 4878 because Bitch Creek crosses x 495 at y 4870.0, the corner an edge there would make.
     "jackson": dict(
-        label="Jackson Hole & Hoback", crs=26912, sources=("wy_trout", "grte_roads", "teton_county"),
+        label="Jackson Hole, Grand Teton & Teton Valley", crs=26912,
+        sources=("wy_trout", "id_trout", "grte_roads", "teton_county", "id_511"),
         home=dict(label="83001 Jackson (town square; the ZIP spans the valley)", lon=-110.7624, lat=43.4799),
         ranges={
             "teton_snake": dict(label="Tetons & Snake River", hu4=("1704",),
@@ -87,6 +99,20 @@ AREAS = {
             "hoback": dict(label="Hoback & Snake River Canyon", hu4=("1704", "1404"),
                            # Hoback River (Granite, Cliff, Shoal creeks), Hoback Range, Snake River Canyon to Alpine
                            bbox=(495000, 4766000, 558000, 4800000)),
+            "jackson_lake": dict(label="Jackson Lake, the northern Tetons & Flagg Ranch", hu4=("1704",),
+                                 # the north of Grand Teton NP: Jackson Lake and its dam, Colter Bay, Moran, Two Ocean and
+                                 # Emma Matilda lakes, Pacific Creek's lower course, the northern Tetons (Webb Canyon,
+                                 # Owl and Berry creeks, Bitch Creek's head), the Rockefeller Parkway, Polecat Creek
+                                 bbox=(495000, 4856000, 548000, 4885000)),
+            "teton_valley": dict(label="Teton Valley, Idaho: Driggs, Victor & the Teton River", hu4=("1704",),
+                                 # the Tetons' west slope in Idaho (Teton, Darby, Fox, Moose and Trail creeks), the Teton
+                                 # River from Victor past Driggs and Tetonia to Badger and Bitch creeks, the Big Holes'
+                                 # east side, Pine Creek Pass, Palisades Creek and the Snake below Palisades Dam to Irwin
+                                 bbox=(476000, 4800000, 495000, 4878000)),
+            "palisades": dict(label="Palisades Reservoir & Alpine", hu4=("1704",),
+                              # the reservoir from Alpine to the dam, the Salt River's mouth, McCoy, Bear, Big Elk and
+                              # Little Elk creeks
+                              bbox=(476000, 4767000, 495000, 4800000)),
         }),
     "n_georgia": dict(
         label="North Georgia mountains", crs=26917,   # the west boxes reach ~1 degree past zone 17; error < 0.2%
@@ -108,10 +134,12 @@ AREAS = {
         long_trail=("Long Trail", "LT", r"^Long Trail\b"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
         ranges={
-            # North edge moved from 4937000 to 4947000 on 2026-11-19 (user: "Jeffersonville, where the Brewster River
-            # meets the Lamoille"): the north side of Smugglers Notch, the whole Brewster River to its mouth (y 4946327),
-            # Morrisville, Hyde Park, Johnson and Cambridge. The Lamoille's meanders cross the new edge here and there.
-            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(640000, 4913000, 705000, 4947000)),
+            # North edge moved from 4937000 to 4950000 on 2026-11-19 (user: first "Jeffersonville, where the Brewster River
+            # meets the Lamoille", y 4946327, then "move it" on to an edge that crosses neither the Lamoille, which
+            # meanders up to y 4949320 near Fairfax, nor a reservoir: Green River Reservoir reaches y 4948941 and
+            # Arrowhead Mountain Lake crosses 4949500). Adds the north side of Smugglers Notch, the whole Brewster River,
+            # Morrisville, Hyde Park, Johnson, Jeffersonville, Cambridge and Fairfax.
+            "stowe_lamoille": dict(label="Stowe & upper Lamoille", hu4=("0430",), bbox=(640000, 4913000, 705000, 4950000)),
             "mad_winooski": dict(label="Mad River, Winooski & New Haven River", hu4=("0430", "0108"), bbox=(640000, 4880000, 705000, 4913000)),
             "white_river": dict(label="Middlebury River, Breadloaf & White River", hu4=("0108", "0430"),
                                 bbox=(640000, 4845000, 705000, 4880000)),
@@ -156,6 +184,49 @@ AREAS = {
                                   # Media's creeks, Valley Forge, the lower Perkiomen and the Wissahickon; Chester and
                                   # the airport north to Schwenksville and Lansdale
                                   bbox=(453000, 4408000, 487000, 4461000)),
+        }),
+    # Added 2026-11-19 ("add in smokey mountain NP and the surrounding areas as a new location too"). The whole of Great
+    # Smoky Mountains National Park (its NPS boundary spans x 226.8-319.1 km, y 3923.7-3968.5 km in zone 17N) and the
+    # trout country around it: Townsend, Wears Valley, Gatlinburg and Cosby on the Tennessee side; the Tellico, Bald
+    # River and Citico Creek (Cherokee NF) to the south-west; Snowbird, Santeetlah, the Nantahala, Bryson City, Cherokee
+    # and the Tuckasegee to the south; Cataloochee, Maggie Valley and Max Patch to the east. All of it is HU4 0601
+    # except the Hiwassee side of the Unicoi and Snowbird mountains (0602). Drive times start from 30305 (Atlanta,
+    # Buckhead), the user's answer when asked; the same home as North Georgia.
+    # The outer edges were moved (by up to 6 km) so that no creek leaves the map and comes back in further down, where
+    # it would start again from nothing: Waldens Creek (Wears Valley), Burningtown and Scott creeks (both stocked
+    # trout water) and the Hiwassee are now inside or outside throughout. They also clear Cedar Cliff Lake on the
+    # Tuckasegee. Tellico Lake still crosses the Tellico box's north edge (moving it below the lake would cut off the
+    # lower half of Citico Creek); its dam is 30 km outside the map in any case.
+    "smokies": dict(
+        label="Great Smoky Mountains", crs=26917,
+        sources=("tu_brook_trout", "blri_roads", "ncdot_tims", "tdot_smartway", "grsm_roads", "cherokee_nf"),
+        long_trail=("Appalachian Trail", "AT", r"Appalachian (National Scenic )?Trail"),
+        home=dict(label="30305 Atlanta (Buckhead)", lon=-84.3850, lat=33.8317),
+        ranges={
+            "cades_cove": dict(label="Abrams Creek, Cades Cove, Little River & Twentymile", hu4=("0601",),
+                               # Chilhowee and Calderwood east to Tremont and the Hazel Creek divide; Fontana Dam north
+                               # past Walland and Wears Valley
+                               bbox=(226000, 3922000, 262000, 3966000)),
+            "le_conte": dict(label="Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee", hu4=("0601",),
+                             # Elkmont and Clingmans Dome east to Smokemont and Cherokee; Bryson City north to Pigeon Forge
+                             bbox=(262000, 3922000, 298000, 3972000)),
+            "cataloochee": dict(label="Raven Fork, Cosby, Big Creek, Cataloochee & Maggie Valley", hu4=("0601",),
+                                # Straight Fork and Balsam Mountain east to Max Patch; Soco Gap and Waynesville north to
+                                # Cosby and the Pigeon River gorge
+                                bbox=(298000, 3922000, 324000, 3970000)),
+            "tellico": dict(label="Tellico River, Bald River & Citico Creek", hu4=("0601", "0602"),
+                            # Tellico Plains east to the North Carolina line; the Tellico headwaters north to Tellico Lake
+                            bbox=(198000, 3901000, 226000, 3940000)),
+            "snowbird": dict(label="Snowbird, Santeetlah & Joyce Kilmer", hu4=("0601", "0602"),
+                             # the Snowbird backcountry, Santeetlah Creek and Lake, Robbinsville
+                             bbox=(226000, 3901000, 250000, 3922000)),
+            "nantahala": dict(label="Nantahala Lake, Gorge & Wesser", hu4=("0601", "0602"),
+                              # the lake and its dam, the river below the powerhouse through the gorge to Wesser
+                              bbox=(250000, 3886000, 272000, 3922000)),
+            "tuckasegee": dict(label="Tuckasegee, Alarka & Dillsboro", hu4=("0601",),
+                               # Bryson City's south side east through Dillsboro and Sylva to Cullowhee and Caney Fork;
+                               # the east edge stops just short of Cedar Cliff Lake
+                               bbox=(272000, 3898000, 308700, 3922000)),
         }),
 }
 

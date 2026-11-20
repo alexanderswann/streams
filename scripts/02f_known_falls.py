@@ -42,7 +42,8 @@ GNIS_DIR = f"{NATIONAL}/gnis"
 # states each area's boxes reach into (GNIS comes by state); the boxes are UTM rectangles and cross state lines.
 # An area missing here gets no GNIS falls (a NOTE says so)
 STATES = {"la": ("CA",), "jackson": ("WY", "ID"), "n_georgia": ("GA", "NC", "SC", "TN"), "central_vt": ("VT",),
-          "ne_ct": ("CT", "MA", "RI"), "lexington_va": ("VA", "WV"), "se_pa": ("PA", "DE", "MD", "NJ")}
+          "ne_ct": ("CT", "MA", "RI"), "lexington_va": ("VA", "WV"), "se_pa": ("PA", "DE", "MD", "NJ"),
+          "smokies": ("TN", "NC")}
 SRC_LABEL = {"OSM": "OpenStreetMap", "NHD": "USGS NHD", "GNIS": "USGS GNIS", "Wikidata": "Wikidata",
              "CDFW": "CDFW barrier survey"}
 

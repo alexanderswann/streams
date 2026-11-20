@@ -125,6 +125,10 @@ _TAILWATERS = {
     # Ridge Dam does the same for the Toccoa down to the Tennessee line.
     "n_georgia": {"Lake Sidney Lanier": ("Chattahoochee River", 285), "Bull Sluice Lake": ("Chattahoochee River", 265),
                   "Blue Ridge Lake": ("Toccoa River", 475)},
+    # Nantahala Lake's water reaches the river from the bottom of the lake: through the tunnel to the powerhouse at
+    # Beechertown, where the cold tailwater starts that runs through the gorge to Fontana Lake, and as the minimum flow
+    # into the bypassed reach below the dam (the river is at 848 m just below it on the 10 m DEM; the lake at 917 m)
+    "smokies": {"Nantahala Lake": ("Nantahala River", 850)},
 }
 # Jackson: Jackson Lake Dam is just north of the area's boxes, and the Snake below it is cold water all the way
 # anyway. Vermont, Connecticut, Lexington: none known.

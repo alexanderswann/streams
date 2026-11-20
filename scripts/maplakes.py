@@ -57,6 +57,30 @@ def load(done):
             hit = wd[wd.intersects(g)]
             if len(hit):
                 lk.loc[i, "wilderness"] = hit.loc[hit.geometry.intersection(g).area.idxmax(), "wilderness"]
+    # the state agency's stocking and survey records at the lake (11_context.py's trout evidence; iNaturalist comes
+    # through GBIF already): a record within 150 m of the shore, or one naming the lake within 2 km
+    lk["agency_recs"], lk["agency_trout"] = None, False
+    tp = f"{MAP_OUT}/context/trout_evidence.gpkg"
+    if os.path.exists(tp):
+        te = gpd.read_file(tp).to_crs(lk.crs)
+        te = te[te.kind != "iNaturalist"]
+        key = lambda v: "".join(ch for ch in str(v).lower() if ch.isalnum()) if isinstance(v, str) else ""
+        names = [{key(n) for n in (r.name, r.gnis_name, r.agency_name) if isinstance(n, str)} for r in lk.itertuples()]
+        got = {}
+        for e in te.itertuples():
+            near = [i for i in lk.sindex.query(e.geometry.buffer(2000), predicate="intersects")]
+            if not near:
+                continue
+            named = [i for i in near if key(e.water) and key(e.water) in names[i]]
+            close = [i for i in near if lk.geometry.iat[i].distance(e.geometry) <= 150]
+            pick = named or close
+            if pick:
+                i = min(pick, key=lambda i: lk.geometry.iat[i].distance(e.geometry))
+                got.setdefault(i, []).append((e.year if pd.notna(e.year) else 0, str(e.label), bool(e.trout)))
+        for i, v in got.items():
+            v = sorted(set(v), reverse=True)
+            lk.loc[lk.index[i], "agency_recs"] = json.dumps([l for _, l, _ in v][:6])
+            lk.loc[lk.index[i], "agency_trout"] = any(t for _, _, t in v)
     pt = lk.geometry.representative_point().to_crs(4326)
     lk["lat"], lk["lon"] = pt.y.round(6).values, pt.x.round(6).values
     return lk
@@ -72,11 +96,17 @@ def _fish(r):
             continue
         seen.add(k)
         lines.append(f"{SCI.get(x['species'], x['species'])}: {x['source']}" + (f" {x['year']}" if x.get("year") else ""))
+    ag = json.loads(r.agency_recs) if isinstance(getattr(r, "agency_recs", None), str) else []
+    lines = ag + lines
     if isinstance(r.game_fish, str) and r.game_fish != "None":
         return "fish", f"{r.game_fish} ({r.agency})", lines
     if r.game_fish == "None":
         return ("fish" if rec else "none"), f"No game fish ({r.agency})", lines
-    return ("fish" if rec else "unknown"), ("No fisheries agency record" + ("; fish recorded there" if rec else "")), lines
+    if getattr(r, "agency_trout", False) or rec:
+        return "fish", "Trout stocked or recorded here", lines
+    if ag:
+        return "unknown", "No trout in the agency's records here", lines
+    return "unknown", "No fisheries agency record", lines
 
 
 def _size(ha):
@@ -122,6 +152,9 @@ def popup(r, approach):
             ("Depth", hesc(_depth(r))),
             ("Water", hesc("; ".join(conn) if conn else r.connection)),
             ("Access", hesc(acc)),
+            *([("On site", hesc(r.access))] if isinstance(getattr(r, "access", None), str) else []),
+            *([("Rules", hesc("; ".join(x for x in (getattr(r, "designation", None), getattr(r, "rules", None)) if isinstance(x, str))))]
+              if isinstance(getattr(r, "designation", None), str) or isinstance(getattr(r, "rules", None), str) else []),
             ("Land", hesc(getattr(r, "land", None) if isinstance(getattr(r, "land", None), str) else "private or unlisted (not in PAD-US)")
              + (f" <span class='warn'>· public access {hesc(r.land_access)}</span>"
                 if getattr(r, "land_access", None) in ("restricted", "closed") else ""))]
@@ -140,7 +173,9 @@ def popup(r, approach):
             + (f" · <a href='profiles.html#q={quote(r.outlet_name.split(', ')[0])}' target='_blank'>Outlet creek profile ↗</a>"
                if isinstance(r.outlet_name, str) else "")
             + (" · <a href='https://wgfd.wyo.gov/current-fishing-regulations' target='_blank'>Fishing regulations ↗</a>"
-               if r.agency == "Wyoming Game & Fish" else "") + "</div>")
+               if r.agency == "Wyoming Game & Fish" else "")
+            + "".join(f" · <a href='{hesc(u)}' target='_blank'>Agency page ↗</a>"
+                      for u in (str(getattr(r, "links", "") or "").split("; ")[:2]) if u.startswith("http")) + "</div>")
     short = fish.split(" (")[0] if cls == "fish" and isinstance(r.game_fish, str) and r.game_fish != "None" else \
         {"fish": "fish recorded", "none": "no game fish listed", "unknown": "no fish record"}[cls]
     tip = f"{nm} · {_size(r.ha).split(' (')[0]} · {short}" + (
@@ -160,8 +195,12 @@ def add(m, X3D, done, approach):
     g2 = lk[["lid", "c", "e", "dry", "tip", "html", "geometry"]].copy()
     g2["geometry"] = shapely.set_precision(g2.geometry.simplify(2.0).to_crs(4326).values, 1e-6)   # area CRS: metres
     js = json.loads(g2.to_json(drop_id=True))
-    name = ("<span style='color:#1c7ed6'>■</span> Lakes: <span style='color:#1c7ed6'>■</span> game fish "
-            "<span style='color:#adb5bd'>■</span> none listed <span style='color:#a5d8ff'>■</span> no record")
+    full = lk.agency.eq("Wyoming Game & Fish").any()           # a full inventory (game fish or "None") only there
+    legend = ("<span style='color:#1c7ed6'>■</span> game fish <span style='color:#adb5bd'>■</span> none listed "
+              "<span style='color:#a5d8ff'>■</span> no record") if full else \
+             ("<span style='color:#1c7ed6'>■</span> trout stocked or recorded <span style='color:#a5d8ff'>■</span> no trout record")
+    name = "<span style='color:#1c7ed6'>■</span> Lakes: " + legend
+    X3D["lake_legend"] = "Lakes: " + legend
     folium.GeoJson(js, name=name, show=False,
                    style_function=lambda f: {"color": f["properties"]["e"], "weight": 1.2, "fillColor": f["properties"]["c"],
                                              "fillOpacity": 0.55, "dashArray": "4 3" if f["properties"]["dry"] else None},
@@ -175,11 +214,13 @@ def add(m, X3D, done, approach):
         dc = gpd.read_file(dp)
         if len(dc):
             dc = dc.to_crs(4326)
-            dc["tip"] = [f"{d:g} m ({d * FT:.0f} ft) deep · {s}" for d, s in zip(dc.depth_m, dc.src)]
-            dj = json.loads(dc[["depth_m", "tip", "geometry"]].assign(
+            ft_ = dc.depth_ft if "depth_ft" in dc else dc.depth_m / 0.3048
+            dc["tip"] = [f"{f:g} ft ({m:g} m) deep · {s}" for f, m, s in zip(ft_.round(0), dc.depth_m, dc.src)]
+            dc["major"] = dc.major.astype(bool) if "major" in dc else (dc.depth_m % 10 == 0)
+            dj = json.loads(dc[["depth_m", "major", "tip", "geometry"]].assign(
                 geometry=shapely.set_precision(dc.geometry.values, 1e-6)).to_json(drop_id=True))
             folium.GeoJson(dj, name="<span style='color:#1864ab'>〰</span> Lake depth contours (measured surveys)", show=False,
-                           style_function=lambda f: {"color": "#1864ab", "weight": 0.8 if f["properties"]["depth_m"] % 10 else 1.6,
+                           style_function=lambda f: {"color": "#1864ab", "weight": 1.6 if f["properties"]["major"] else 0.8,
                                                      "opacity": 0.85},
                            tooltip=folium.GeoJsonTooltip(["tip"], labels=False)).add_to(m)
             X3D["lake_depth"] = dj
@@ -188,7 +229,8 @@ def add(m, X3D, done, approach):
     keep = ["lid", "name", "agency_name", "lake_type", "ftype", "ha", "acres", "elev_m", "elev_src", "depth_max_m",
             "depth_mean_m", "depth_src", "depth_note", "survey", "game_fish", "common_fish", "fish", "n_records", "conflict", "outlet_name",
             "inlet_names", "connection", "drainage", "fork", "approach_min", "bike_min", "walk_min", "route_km",
-            "bike_check", "th_road", "th_lat", "th_lon", "drive_min", "drive_km", "land", "land_access", "wilderness", "private_shore",
+            "bike_check", "th_road", "th_lat", "th_lon", "drive_min", "drive_km", "land", "land_access", "access", "rules",
+            "designation", "links", "agency_recs", "wilderness", "private_shore",
             "water_note", "src_outline", "nhd_ha", "lidar_dates", "lat", "lon"]
     tab[[c for c in keep if c in tab]].sort_values(["ha"], ascending=False).to_csv(f"{MAP_OUT}/lakes.csv", index=False)
     with open(f"{MAP_OUT}/lakes.gpx", "w", encoding="utf-8") as f:

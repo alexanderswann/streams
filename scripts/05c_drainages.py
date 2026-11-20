@@ -60,6 +60,10 @@ NAME_FIX = {("santa_monica", "Garapito Creek"): "Topanga Creek",
             ("san_gabriel", "Texas Canyon"): "Bouquet Canyon"}
 # forks NHD names oddly: the East Fork is just "San Gabriel River"; the Mojave trunk here is Deep Creek's canyon
 FORK_FIX = {("san_gabriel", "San Gabriel River", "Iron Fork"): "East Fork San Gabriel River",
+            # the same fork since 05_score names a river's reaches by their neighbours (2026-11-19): the one reach that
+            # carried "East Fork San Gabriel River" is "San Gabriel River" like the rest of the stem, and the fork's
+            # next name is its headwater, Prairie Fork
+            ("san_gabriel", "San Gabriel River", "Prairie Fork"): "East Fork San Gabriel River",
             # lower Bouquet Canyon (with Haskell Canyon), from where it enters the Piru box to the Santa Clara at
             # Saugus; its channel has no NHD name. Joins the stretch upstream in the San Gabriel box (NAME_FIX)
             ("piru", "Santa Clara River", "Santa Clara River, unnamed fork"): "Bouquet Canyon",

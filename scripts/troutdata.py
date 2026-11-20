@@ -16,6 +16,9 @@ Which sources an area has is in config.py (`sources`); all were checked against 
   wy_trout   Wyoming Game & Fish: fishing-guide streams with trout (blue / red / yellow / green ribbon classes and
              the game fish present), native cutthroat waters. Its "Clear (no trout present)" class is a
              classification, not a dated survey, so it is not used as a no-trout record
+  id_trout   Idaho Fish & Game (checked 2026-11-19): its Yellowstone cutthroat trout streams (year-round use; the 2002
+             and 2023 range-wide status assessments and its own IFWIS records), as StreamNet's regional fish
+             distribution serves them. Idaho publishes no survey or stocking layer
   pa_trout   Pennsylvania Fish & Boat Commission (checked 2026-11-19): Class A wild trout streams (as DCNR's Conservation
              Explorer serves PFBC's layer), streams with natural trout reproduction, trout special-regulation areas
              (delayed harvest, catch-and-release, fly-fishing only), the newest year's stocked sections (fish per
@@ -248,6 +251,17 @@ def _wy():
     return [], wa
 
 
+# ---- Idaho ----
+STREAMNET = "https://gis.psmfc.org/server/rest/services/StreamNet/Fish_Dist/MapServer"
+def _id():
+    # layer 13 = Yellowstone cutthroat trout; only Idaho's agency compiles it here (Wyoming's waters are in wy_trout)
+    y = fetch("id_yct", f"{STREAMNET}/13", where="CompiledBy = 'IDFG'", fields="StreamName,UseType,Year")
+    if not len(y):
+        return [], []
+    name = y.StreamName.fillna("").str.replace(r"^Unnamed Stream.*$", "", regex=True)
+    return [], [_waters(y, name, "Yellowstone cutthroat trout water (IDFG, via StreamNet)")]
+
+
 # ---- Pennsylvania ----
 PFBC = "https://fbweb.pa.gov/arcgis/rest/services/PFBC_Map_Services"
 # PFBC's Class A wild trout layer: its own map services leave it out, DCNR's Conservation Explorer serves it
@@ -329,7 +343,7 @@ def _tu():
 
 
 _BY_SOURCE = (("ct_trout", _ct), ("vt_trout", _vt), ("va_trout", _va), ("ga_trout", _ga), ("wy_trout", _wy),
-              ("pa_trout", _pa), ("de_trout", _de), ("tu_brook_trout", _tu))       # state designations first: a reach's label is the first that covers it
+              ("id_trout", _id), ("pa_trout", _pa), ("de_trout", _de), ("tu_brook_trout", _tu))       # state designations first: a reach's label is the first that covers it
 _done = None
 def _load():
     global _done

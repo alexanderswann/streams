@@ -54,12 +54,13 @@ it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other area
 | Area key | Area | Ranges | Home (drive times) |
 |---|---|---|---|
 | `la` | LA mountains | the eight above | 90404 Santa Monica |
-| `jackson` | Jackson Hole & Hoback, WY | `teton_snake`, `gros_ventre`, `hoback` | 83001 Jackson |
+| `jackson` | Jackson Hole, Grand Teton & Teton Valley, WY and ID (all of Grand Teton NP, Teton Valley around Driggs, Palisades Reservoir and Alpine; grown from the first three boxes on 2026-11-19) | `teton_snake`, `gros_ventre`, `hoback`, `jackson_lake`, `teton_valley`, `palisades` | 83001 Jackson |
 | `n_georgia` | North Georgia mountains | `cohutta`, `blue_ridge`, `rabun`, `hooch_tailwater` | 30305 Atlanta |
 | `central_vt` | Central Vermont | `stowe_lamoille`, `mad_winooski`, `white_river` | 05753 Middlebury |
 | `ne_ct` | Northeastern Connecticut | `natchaug`, `quinebaug` | 06281 Woodstock |
 | `lexington_va` | Lexington, Virginia | `maury_goshen`, `blue_ridge_va` | 24450 Lexington |
 | `se_pa` | Southeastern Pennsylvania (and northern Delaware) | `brandywine`, `ridley_valley` | 19063 Media |
+| `smokies` | Great Smoky Mountains National Park and around it (TN / NC) | `cades_cove`, `le_conte`, `cataloochee`, `tellico`, `snowbird`, `nantahala`, `tuckasegee` | 30305 Atlanta |
 
 | Folder | What |
 |---|---|
@@ -77,10 +78,10 @@ it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other area
 | TNC California Natural Flows (modelled monthly flow per year) | NHDPlus V2's EROM mean flow for the month × a yearly index from the area's own USGS gauges (`02b_download_flow.py`). One index per area, so small headwaters that dry faster than the gauged creeks are over-rated in droughts |
 | CAL FIRE fire history | The interagency fire perimeter history (NIFC) |
 | CPAD restricted / no public access | PAD-US holdings recorded as restricted or closed. Most eastern holdings are "unknown" there and aren't flagged |
-| CDFW surveys, stocking, Wild / Heritage Trout Waters | Each state's own (`troutdata.py`): CT DEEP fish samples, stocking and trout management areas; Vermont's brook trout waters and stocking list; Virginia DWR wild trout streams (classes I–IV) and stocked waters; Georgia DNR designated trout streams, stocking and samples; Wyoming Game & Fish trout-stream classes and native cutthroat waters; the Pennsylvania Fish & Boat Commission's Class A and natural-reproduction wild trout streams, trout special-regulation areas, stocked sections (fish per species) and stocked lakes; Delaware DNREC's designated trout streams; plus Trout Unlimited's brook trout patches from Connecticut to Georgia, and iNaturalist (rainbow, brown, brook and cutthroat trout). Outside California a no-trout sample counts for the same creek within 1.5 km only, and only Connecticut's electrofishing samples make one |
+| CDFW surveys, stocking, Wild / Heritage Trout Waters | Each state's own (`troutdata.py`): CT DEEP fish samples, stocking and trout management areas; Vermont's brook trout waters and stocking list; Virginia DWR wild trout streams (classes I–IV) and stocked waters; Georgia DNR designated trout streams, stocking and samples; Wyoming Game & Fish trout-stream classes and native cutthroat waters; Idaho Fish & Game's Yellowstone cutthroat trout streams, as StreamNet's regional fish distribution serves them (the Idaho side of the Jackson map: Teton Valley and Palisades; Idaho publishes no survey or stocking layer); the Pennsylvania Fish & Boat Commission's Class A and natural-reproduction wild trout streams, trout special-regulation areas, stocked sections (fish per species) and stocked lakes; Delaware DNREC's designated trout streams; plus Trout Unlimited's brook trout patches from Connecticut to Georgia, and iNaturalist (rainbow, brown, brook and cutthroat trout). Outside California a no-trout sample counts for the same creek within 1.5 km only, and only Connecticut's electrofishing samples make one |
 | CDFW natural fish-passage barriers among the known falls | none; the other sources are the same everywhere (OSM, NHD, USGS GNIS, Wikidata and the area's guidebook and inventory falls, `02f_known_falls.py`) |
-| Caltrans and county road closures | Keyless feeds where they exist: Grand Teton NP and Teton County (Jackson), Georgia 511, New England Compass (Vermont), the Blue Ridge Parkway and Virginia 511 (Lexington); none for NE Connecticut or southeastern Pennsylvania |
-| The Pacific Crest Trail layer | The area's own long trail (`long_trail` in `AREAS`): the Appalachian Trail (North Georgia, Lexington), the Long Trail (Vermont), the Horse-Shoe Trail (southeastern Pennsylvania); none for Jackson or NE Connecticut |
+| Caltrans and county road closures | Keyless feeds where they exist: Grand Teton NP and Teton County (Jackson), Georgia 511, New England Compass (Vermont), the Blue Ridge Parkway and Virginia 511 (Lexington); in the Smokies the Blue Ridge Parkway, NCDOT's incident layer (the TIMS feed behind DriveNC), TDOT SmartWay's event points, the park's own alerts (closures by road name, drawn on the park's roads layer) and its table of secondary roads' open seasons, and the Cherokee National Forest's road construction table (North Carolina's national forests publish closures only as prose and PDFs); none for NE Connecticut or southeastern Pennsylvania |
+| The Pacific Crest Trail layer | The area's own long trail (`long_trail` in `AREAS`): the Appalachian Trail (North Georgia, Lexington, the Smokies), the Long Trail (Vermont), the Horse-Shoe Trail (southeastern Pennsylvania); none for Jackson or NE Connecticut |
 | CDEC gauges, the State Parks / NPS / Eaton Fire trail layers | none |
 | NHD "artificial paths" (river and lake centrelines) are not perennial: they cross dry washes and reservoirs | They count as perennial: in wet country they are the rivers |
 | Elevation band in `05_score.py`'s first-pass score | none |
@@ -91,7 +92,8 @@ water-temperature fit (`watertemp.py`) is made per area from the best of August 
 (LA: air + elevation; NE Connecticut: drainage area; Lexington and Jackson: elevation + drainage area; Vermont:
 air + drainage area; North Georgia: elevation; southeastern Pennsylvania: air + drainage area, which can't see the
 limestone-spring creeks such as Valley Creek: they read about 22 °C and measure about 15). Tailwaters are listed per area in `scoring.py` (LA's two; in North
-Georgia the Chattahoochee below Buford Dam and the Toccoa below Blue Ridge Dam); diversions in `flowlib.py` (LA
+Georgia the Chattahoochee below Buford Dam and the Toccoa below Blue Ridge Dam; in the Smokies the Nantahala below
+Nantahala Lake, whose powerhouse at Beechertown releases water from the bottom of the lake); diversions in `flowlib.py` (LA
 only).
 
 To build another area, from `scripts/`: `./run_base.sh <area>` (DEM, NHD + OSM, hydrology, drops), then
@@ -171,7 +173,12 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    from the nearest NHD lines at three points along the link, each kept when two agree on the name (or the class;
    NHD splits a creek into many short segments). NHD has no name on many lines (e.g. San Antonio Creek below
    Mt. Baldy): those links take the name of OpenStreetMap's named rivers and streams the same way (cached a week in
-   `data/raw/<area>/<range>/osm_waterways.gpkg`). Links mostly on sea-level
+   `data/raw/<area>/<range>/osm_waterways.gpkg`). A link between two links of one river takes the river's name when
+   the vote gave it none, or the name of a much smaller stream (every other link of that name within 3 km drains
+   under half as much). Its two neighbours are its largest upstream link and the link below, with unnamed links
+   passed over. This matters because NHD draws a creek's line out to the river's centreline, so on a short river link
+   two of the three points can lie nearest the creek's line. A drop takes the name of the link its top cell is on; on
+   an unnamed link it takes the nearest NHD line's within 80 m. Links mostly on sea-level
    cells (fake channels across the ocean) are dropped. Known falls are the area's list from `02f_known_falls.py`, taken
    within 500 m of the range's box; each range writes out only those inside its box, so each fall is drawn once.
    Each drop gets a status, first match wins: **dam / weir** (a mapped dam within 250 m); **matches mapped
@@ -230,9 +237,10 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    reaches: the model now matching a creek it didn't before, or a side creek inheriting a different segment), the
    old estimate stays, so possible trout water isn't lowered on uncertain evidence. A reach takes the nearest segment
    whose drainage agrees, leaving out the side arms of split channels (`flowlib.minor_arms`), which NHDPlus gives the
-   whole drainage but little of the flow: NHDPlus's own minor-path flags (divergence 2, streamcalc 0) where the cached
-   table has them (downloaded since 2026-11-19: southeastern Pennsylvania so far; another area's table gets them when
-   it is deleted and fetched again), and a pair rule for the rest. Reaches off the model network take
+   whole drainage but little of the flow: NHDPlus's own minor-path flags (divergence 2, streamcalc 0) where the flow is
+   NHDPlus's (every area but LA; each table was fetched again with the flags on 2026-11-19), and a pair rule for the
+   rest. LA's Natural Flows model gives a minor path the natural flow of its whole drainage, so there only the pair
+   rule applies. Reaches off the model network take
    the unit-area flow of the first modelled segment downstream ("scaled"). Reaches in or below a reservoir are flagged,
    since releases set their flow. So are reaches below the seven diversions where a USGS gauge on the creek below shows
    it often dry (`DIVERSIONS` in `flowlib.py`): the Santa Ana River No. 1 dam, two Mill Creek intakes, and the Lytle,
@@ -369,9 +377,10 @@ want fresh closures on the map; the layer name shows when they were fetched. Sou
 - **Other areas** (feeds that need no account): Grand Teton National Park's road status and Teton County's
   emergency closures (Jackson); Georgia 511 events; the New England Compass work-zone feed (Vermont, with seasonal
   closures such as Lincoln Gap); the Blue Ridge Parkway's closure table and Virginia 511's map files (Lexington).
-  Park roads are kept wherever they are, the rest only in mountain terrain. WYDOT's highway conditions and
-  Connecticut's closures need a registered key, so NE Connecticut has no closure layer and Jackson's state highways
-  (Teton Pass) aren't covered.
+  Park roads are kept wherever they are, the rest only in mountain terrain. WYDOT's highway conditions,
+  Idaho 511 and Connecticut's closures need a registered key, so NE Connecticut has no closure layer, and on the
+  Jackson map the state highways (Teton Pass, the Snake River Canyon), Lincoln County (Alpine) and the Idaho side
+  (Teton Valley, Palisades) aren't covered.
 
 Drop popups name any full closure within 3 km.
 

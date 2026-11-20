@@ -106,6 +106,49 @@ if os.path.exists(osm_wp):
     s["name"] = s["name"].fillna(vote(gpd.read_file(osm_wp).to_crs(CRS), "name"))
     print(f"names: NHD {nhd_named}, OpenStreetMap {s['name'].notna().sum() - nhd_named} more, of {len(s)} links")
 
+# A reach between two reaches of one river (its largest upstream reach and the reach below, passing over unnamed reaches)
+# is that river, if the vote gave it no name or the name of a much smaller stream: every other reach of that name within
+# 3 km drains under half as much. Where a creek comes in, NHD draws the creek's line out to the river's centreline, and
+# on a short reach two of the vote's three points can lie nearest it: the Snake River between Little Red Creek's and
+# Station Creek's mouths took their names (3,321 and 3,242 km2), Castaic Creek's the Santa Clara River below it, and
+# creek profiles read the river's drainage at the mouth. Streams of about the same size keep the vote (forks, lakes where
+# two rivers meet, spelling variants). Decided once, from the vote's names, so no reach is renamed back and forth.
+geoms = s.geometry.values
+end_key = lambda c: (round(c[0], 1), round(c[1], 1))
+ends = {}
+for i, g in enumerate(geoms):
+    ends.setdefault(end_key(g.coords[-1]), []).append(i)
+km2 = s["area_km2"].to_numpy(float)
+voted = s["name"].to_numpy(object)
+main_up, down = np.full(len(s), -1), np.full(len(s), -1)
+for i, g in enumerate(geoms):
+    donors = ends.get(end_key(g.coords[0]), [])
+    if donors:
+        main_up[i] = max(donors, key=lambda j: km2[j])
+    down[donors] = i
+def named_along(i, ptr, steps=20):
+    """The vote's name of the first named reach from reach i along ptr (upstream main stem, or downstream)."""
+    for _ in range(steps):
+        i = ptr[i]
+        if i < 0:
+            return None
+        if isinstance(voted[i], str):
+            return voted[i]
+    return None
+reach_tree, renamed = shapely.STRtree(geoms), {}
+for i in range(len(s)):
+    y = named_along(i, main_up) if main_up[i] >= 0 and down[i] >= 0 else None
+    if y is None or y == voted[i] or y != named_along(i, down):
+        continue
+    if isinstance(voted[i], str):
+        same = [j for j in reach_tree.query(geoms[i].buffer(3000)) if j != i and voted[j] == voted[i]]
+        if same and km2[same].max() >= 0.5 * km2[i]:
+            continue
+    renamed[i] = y
+s["name"] = [renamed.get(i, n) for i, n in enumerate(voted)]
+print(f"names along rivers: {len(renamed)} reaches take the river's name "
+      f"({sum(isinstance(voted[i], str) for i in renamed)} had another stream's, the rest none)")
+
 # Fishability score 0-100 (heuristic, tuned for SoCal trout water)
 def band(x, lo, hi, soft):  # 1 inside [lo,hi], linear falloff over `soft`
     return np.clip(1 - np.clip(np.maximum(lo - x, x - hi), 0, None) / soft, 0, 1)
@@ -117,8 +160,21 @@ remote = np.clip(s.road_m / 2000, 0, 1)                           # 2 km+ from a
 s["fish_score"] = (100 * water * (0.35 * size + 0.25 * cold + 0.15 * grad + 0.25 * remote)).round(0)
 
 # ---- drop candidates ----
-kp["stream"] = gpd.sjoin_nearest(kp[["geometry"]], nhd[["gnis_name", "geometry"]], max_distance=80,
+# A drop takes the name of the reach its top cell is on. The nearest NHD line can be the river's where a creek comes in
+# (drops on Little Cottonwood and Blue Bell creeks were "Snake River", Pigpen Falls "Lick Log Creek"); on an unnamed
+# reach, or a channel too small to be one, the nearest NHD line's within 80 m, as before. The junction cell at a reach's
+# end belongs to the reach below (vertices sit on cell corners: rounded, as in 12_profiles.py).
+reach_at = {}
+for i, g in enumerate(geoms):
+    v = np.asarray(g.coords)[:-1]
+    vc, vr = inv * (v[:, 0], v[:, 1])
+    for k in np.rint(vr).astype(int) * dem.shape[1] + np.rint(vc).astype(int):
+        reach_at[int(k)] = i
+reach_name = s["name"].to_numpy(object)
+on_reach = [reach_name[reach_at[t]] if t in reach_at else None for t in kp.top_idx.astype(int)]
+nearest_line = gpd.sjoin_nearest(kp[["geometry"]], nhd[["gnis_name", "geometry"]], max_distance=80,
                                  how="left").groupby(level=0).first().gnis_name
+kp["stream"] = [o if isinstance(o, str) else n for o, n in zip(on_reach, nearest_line.reindex(kp.index))]
 kp["flow"] = gpd.sjoin_nearest(kp[["geometry"]], nhd[["flow", "geometry"]], max_distance=80,
                                how="left").groupby(level=0).first().flow.fillna("unmapped")
 kp["road_m"] = kp.distance(road_u).round(0)

@@ -1109,3 +1109,45 @@ regenerated page was not used: the other six entries and all the text around the
   the build was done, so `phone/` and the single file have the new Vermont.
 - Not committed in this project. Backups are in `data/backup_20261119-vtnorth/`: outputs, derived data, the north
   box's raw files, `config.py` and `01_download_dem.py` from before the change, and the cleared caches.
+
+## 2026-11-19, evening: the two fixes applied to the other areas
+**User: "Yes, apply them"** (both fixes from the se_pa work, in the other six areas). Times from here on are Eastern:
+the Mac's clock moved from Pacific to Eastern around 16:20 PT.
+- **Sea-level paths (05c).** Only LA's santa_monica box has sea cells. `run_drainage_refresh.sh la`: 174 reaches
+  changed drainage, all on the Malibu coast.
+  - Santa Monica Creek is its own drainage (before: a fork of Topanga).
+  - Topanga 186 -> 51 km2; Arroyo Sequit 99 -> 28.
+  - The "Zuma Creek" and "Solstice Canyon Creek" groups split into their own creeks, and 16 coastal creeks are named
+    (Kenter, Trancas, Santa Ynez, Las Flores, Ramirez, Corral, Escondido, Carbon, Encinal, Temescal, ...).
+  - Flows and fish scores are unchanged.
+  - On the rendered map the outlines end at the shoreline.
+  - Also seen, and older than today's work: a straight stream line about 2.5 km out to sea off Malibu. 06_map's
+    drawn-through count is 59 breaks / 61.7 km before and after. Not changed.
+- **NHDPlus split-channel flags (`flowlib.minor_arms`).** The first LA run, with the rule as written, moved 68 LA fish
+  scores, 48 of them down:
+  - Bear Creek below Big Bear: 100 -> 38.
+  - Smith Creek: about 59 -> 28.
+  - A Santa Clara River stretch: 60 -> 35.
+  - Day Creek: 55 -> 15, as "no data".
+  LA's flows come from TNC Natural Flows, which gives a minor path's COMID the natural flow of its whole drainage
+  (Day Creek's line 0.63 cfs, a Santa Clara arm 0.16, where EROM has 0.02 and 0.002). So in LA those lines aren't the
+  near-dry trap they are with NHDPlus's EROM flows, and leaving them out only moved reaches onto other lines.
+  Streamcalc 0 also marks main lines inside a minor path's own split (Day Creek's line has divergence 1). The rule
+  now applies only where the flows are NHDPlus's (`not has("tnc_flows")`). After the LA rerun, no segment, flow or
+  score differs from before.
+- **Tables fetched again with the flags.**
+  - ne_ct, lexington_va, jackson and n_georgia by this session; central_vt by the Vermont session's rebuild (18:56);
+    LA's table has them too, unused.
+  - Against copies taken just before (`data/backup_20261119-fixes/`, Jackson and N Georgia re-copied after the
+    waterfalls session's rebuilds): ne_ct no change; Lexington 3 segments / 1 low flow; Jackson 1 segment;
+    N Georgia 2 segments / 2 low flows. No flow class or fish score changed in any of them.
+  - Standing checks: no negative areas. No reach end dead on a shared edge; the creek heads that start at a box edge
+    are the same as before. Flow drops: 0 in Lexington, Jackson and N Georgia. NE CT has 1 and LA 4, all on reaches
+    whose flows today's work didn't change. NE CT's is the known below-pond case: a 2 km2 "Quinebaug River" reach
+    below a lake that carries 33 km2.
+- **Published (19:43, site commit `458a1fe`), by hand again.** The new `smokies` area's base build was running.
+  - Published: `streams/la/`, `streams/se_pa/` (the waterfalls session's checked known-falls rebuild) and LA's
+    front-page entry. The live files match the build by SHA-256.
+  - Not published: ne_ct, lexington_va, jackson, n_georgia. They were rebuilt after `smokies` entered `config.py`
+    (19:24), so their "Go to" menus list it; their changes are negligible. They go out with the first smokies publish
+    (told that session).

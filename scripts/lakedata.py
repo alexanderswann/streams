@@ -4,6 +4,8 @@ measurement: a published sonar survey first, then EPA's sonar sounding at the de
 fisheries survey's transducer depth, then the fisheries agency's listed depth. The others are kept as notes, and a
 disagreement of more than 20% (and 2 m) is shown. Modelled depths (GLOBathy, HydroLAKES) are never used.
 
+EPA National Lakes Assessment soundings are read from the EPA files by lakesources.py, for every area.
+
 No lake in the Jackson boxes has published bathymetry (a depth grid, contours or soundings) that can be downloaded:
 surveys exist for Jenny Lake (NPS bathymetry raster; Larsen et al. 2016, 2019), Jackson Lake (CHIRP, 2018 and 2021;
 McGlue et al. 2023; Johnson 2024) and Palisades Reservoir (multibeam, June 2022; Reclamation ENV-2023-008), but only as
@@ -28,16 +30,6 @@ DEPTHS = {"jackson": [
          src="McGlue et al. 2023 (sonar survey; the depth varies with the reservoir level)", at=(-110.65, 43.90),
          ref="McGlue et al. 2023, Earth Science, Systems and Society, doi:10.3389/esss.2023.10066 ('~190 ms TWTT (~143 m) "
              "during our survey'); https://par.nsf.gov/servlets/purl/10395463"),
-    dict(lake="Phelps Lake", max_m=48.4, mean_m=None, rank=2, date="2012-08-16", method="sonar, index site",
-         src="EPA National Lakes Assessment 2012 (sonar; 48.0 m in 2007)", at=(-110.793793, 43.643175), ref=NLA + "; nla2012_wide_profile"),
-    dict(lake="Icefloe Lake", max_m=32.0, mean_m=None, rank=2, date="2017-08-14", method="sonar, index site",
-         src="EPA National Lakes Assessment 2017 (sonar)", at=(-110.82419, 43.726), ref=NLA + "; nla_2017_profile-data"),
-    dict(lake="Two Ocean Lake", max_m=21.2, mean_m=None, rank=2, date="2022-06-22", method="sonar, index site",
-         src="EPA National Lakes Assessment 2022 (sonar)", at=(-110.53008, 43.91088), ref=NLA + "; nla22_siteinfo"),
-    dict(lake="Jackson Lake", max_m=50.0, mean_m=None, rank=2, date="2017-08-15", method="sonar, index site",
-         src="EPA National Lakes Assessment 2017", at=(-110.6764, 43.8839), ref=NLA, reservoir_index=True),
-    dict(lake="Palisades Reservoir", max_m=47.6, mean_m=None, rank=2, date="2022-07-19", method="sonar, index site",
-         src="EPA National Lakes Assessment 2022", at=(-111.14025, 43.29284), ref=NLA, reservoir_index=True),
 ] + [dict(lake=n, max_m=round(ft * 0.3048, 1), mean_m=None, rank=3, date=d, method="portable transducer, deepest point found",
           src="Wyoming Game & Fish / NPS alpine lake survey", at=(e, n_), ref=SG2005)
      for n, ft, d, e, n_ in [
