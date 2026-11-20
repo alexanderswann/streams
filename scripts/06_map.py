@@ -645,14 +645,19 @@ if os.path.exists(f"{SD_}/lakes.gpkg") and "below_dam" in s_ll:
     print(f"reaches lying in a lake, drawn whole only while Lakes is off: {int(s_ll.in_lake_drawn.sum())}")
 # ... but their stretch outside the lake is drawn, so a river runs on to the shore and into the lake. Left off whole, a
 # reach mostly in the lake took its approach with it and the line stopped short (around Jackson Lake 18.9 km of river,
-# a 2.5 km gap above one inlet). Stubs under 20 m are left off.
+# a 2.5 km gap above one inlet). A stretch under 20 m is left off (a sliver of land the line crosses inside the lake)
+# unless it carries on a line drawn whole: then it is a river's last few metres to the shore (5 around Jackson Lake).
 s_show = s_ll.assign(lk_=False)
 if s_ll.in_lake_drawn.any():
     il_ = s_ll.in_lake_drawn.values
     out_ = s_ll[il_].to_crs(EPSG)
     out_ = out_.assign(geometry=shapely.difference(out_.geometry.values, shapely.union_all(lw_.geometry.values)))
     out_ = out_[~out_.geometry.is_empty].explode(index_parts=False)          # one line per stretch, as every reach is
-    out_ = out_[(out_.geom_type == "LineString") & (out_.length >= 20)].to_crs(s_ll.crs)
+    out_ = out_[(out_.geom_type == "LineString").values]
+    on_ = np.zeros(len(out_), bool)                                          # meets a line drawn whole
+    on_[shapely.STRtree(s_ll[~il_].to_crs(EPSG).geometry.values).query(out_.geometry.values, predicate="dwithin",
+                                                                        distance=0.5)[0]] = True
+    out_ = out_[(out_.length >= 20).values | on_].to_crs(s_ll.crs)
     # ... and the whole reaches once more, marked lk_, for the layer shown while Lakes is off (STREAMS_LAKE below)
     s_show = gpd.GeoDataFrame(pd.concat([s_ll[~il_].assign(lk_=False), out_.assign(lk_=False),
                                          s_ll[il_].assign(lk_=True)]), crs=s_ll.crs).reset_index(drop=True)

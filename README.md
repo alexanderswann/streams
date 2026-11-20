@@ -439,12 +439,16 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   bike colouring and the trail key come on with the trail layer. In 3D, each overlay's starting
   state is the last entry of its `ov` row in `map3d.html`. Drops, waterfalls, gauges, closures,
   trout waters, trout evidence, springs, trails and trailheads are in the (collapsed) layer list, each named with its map symbol.
-- Reaches lying in a lake are drawn as the lake, not as stream lines, in the 2D and 3D maps and the main rivers of the
-  map of all areas and the single-file map (since 2026-11-20; the Lakes layer starts on): a reach `05b` reads as lying
-  in a lake (below_dam "in:") that lies at least half inside a lake the Lakes layer draws. The routing ran its paths
-  dead straight across flat water, and their names and colours came from the lake's own drainage vote ("Trout Creek"
-  across Palisades Reservoir). 7,970 reaches on 11 maps (central_vt follows with its rebuild); about 170 at lake edges,
-  where the two outlines differ, stay drawn. Their data stays: scores, ranks, profiles, `stream_reaches_ranked.csv`.
+- Reaches lying in a lake are drawn as the lake while the Lakes layer is on (it starts on), and as streams again when
+  it is switched off, so the rivers run on through the lakes (since 2026-11-20): a reach `05b` reads as lying in a lake
+  (below_dam "in:") that lies at least half inside a lake the Lakes layer draws goes whole into a layer of its own
+  (`STREAMS_LAKE` in `map3d_data.js`), which `map_drainages.js` (2D), `map3d.html` (3D, the `lk` filter) and
+  `14_portable.py` (`!lakes`) show only while Lakes is off; its stretch outside the lake stays with the other streams,
+  so a river reaches the shore (the lakes session). The routing ran its paths dead straight across flat water, and their
+  names and colours came from the lake's own drainage vote ("Trout Creek" across Palisades Reservoir). About 8,200
+  reaches over the 12 maps; about 170 at lake edges, where the two outlines differ, stay with the other streams. The
+  map of all areas draws no lakes, so its main rivers keep the whole reaches. Their data stays: scores, ranks,
+  profiles, `stream_reaches_ranked.csv`.
 
 `07_road_closures.py` (no REGION needed) fetches **current road closures**. Run it, then `06_map.py`, whenever you
 want fresh closures on the map; the layer name shows when they were fetched. Sources:

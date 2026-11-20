@@ -2390,6 +2390,21 @@ score), installed by a script that applies the measured code, and checked afterw
   1,442 (7,970). Rendered: Palisades Reservoir and Long Lake draw as water with no lines across them; Lakes on; no
   console errors. The live site (2db6522, the dry-creek session's publish, 15:59) has the lakes-layer rule: Cheoah's 32
   reaches read "reservoir (Cheoah Reservoir)" there. These two changes go out with the Vermont session's publish.
+- **Lake reaches back when Lakes is off (the user, via the overview session, ~16:15).** The Vermont session's publish
+  21266ec (16:30) carried them hidden whatever the Lakes switch, and the map of all areas lost its rivers at every
+  lake. Now (`item9/install6.py`, 16:34; on top of the lakes session's 16:30 edit that draws each lake reach's stretch
+  outside the lake, so rivers reach the shore): 06_map.py puts the whole lake reaches in their own layer (STREAMS_LAKE,
+  map3d_data.js) and keeps them in the overview's main rivers; map_drainages.js adds them as a 2D stream layer with
+  the same style, hover and popups, on only while the Lakes overlay is off (overlayadd / overlayremove); map3d.html
+  adds them to the streams source marked lk and filters them out of streams, halo and creek names while the Lakes box
+  is ticked; 14_portable.py packs streams_lake and shows that network layer only while opt.lakes is off. **Tested on
+  Lexington** (06_map rerun 16:34): 2D 0 lake lines with Lakes on, all 41 with it off (the Little Calfpasture runs
+  through Lake Merriweather), none again with it back on; one-file map the same; overview main rivers 1,190 -> 1,215;
+  no console errors. The 3D page doesn't load in a hidden browser pane (nor does the old one), so its toggle is left
+  to the final pass's check. The final 06_map pass for all 12 is the Vermont session's (after its edge-lake rebuild),
+  and the overview session publishes.
+  3D checked there by the Vermont session (jackson's final-pass map, a visible pane): the streams filter is
+  ["!",["has","lk"]] with Lakes on, ["all"] with it off, and back again; no console errors.
 
 ## 2026-11-20, midday: website size and phone copies (this session)
 Task from the "Today's task overview" session. Full numbers:
@@ -2846,3 +2861,74 @@ hillshade, LA's data and an Adirondack page match the push by SHA-256. Phone cop
 
 **Open:** the edge-lake fix for the other 11 areas (needs their hydrology rebuilt); Lake Champlain's depth (NOAA's
 2018 multibeam isn't read); Wikidata falls at the next 02f run.
+
+## 2026-11-20, late afternoon: rivers drawn all the way into the lakes (lakes session)
+
+- **The user** (with a screenshot of the Jackson map at Jackson Lake's north end): "make the rivers flow all the way
+  into the lakes". Cause: 06_map.py's lake rule (open-items entry above) left off whole every reach lying at least half
+  in a lake, and with it the reach's stretch outside the lake, so lines stopped short of the shore (around Jackson Lake
+  18.9 km of river; a 2.5 km gap above the Snake River's inlet).
+- **Fix (06_map.py, 16:30 and 16:37):** such a reach's stretch outside the lakes is drawn with the other streams, cut at
+  the shore of the lakes the Lakes layer draws, one line per stretch. Stretches under 20 m are left off (slivers of land
+  the routing line crosses inside a lake) unless they carry on a line drawn whole: those are a river's last metres to
+  the shore. The whole lake reaches stay in the layer shown while Lakes is off (open-items session).
+- **Measured on Jackson** (the in-lake block run on the drawn lines): 94 of the 431 lake reaches draw 37.1 km of line
+  outside the lakes, in 128 pieces; 5 of them are 2-20 m pieces that close gaps at the shore. **Rendered** (local
+  build, 16:31): the Snake River now runs into Jackson Lake at its north end (43.967 N, 110.646 W). Drawing only: no
+  score, rank or profile changes.
+- **Goes out** with the Vermont session's final 06_map pass for all 12 areas and the overview session's publish.
+
+## 2026-11-20, evening: lakes cut by a map edge, the fix rolled out to every area (Vermont session)
+**User: "Yes, rebuild them"** (asked whether the 03b edge-lake rule, installed with the Vermont widening above, should
+be applied to the other areas). Rebuilt from 03b on (03_hydrology not re-run: the conditioned DEMs don't change) for
+the ten areas that have such a lake: la, jackson, n_georgia, ne_ct, se_pa, smokies and the four adk_ maps
+(lexington_va has none). Driver: scratch `edgelakes_phase1.sh` (03b, 04, 04b, `run_mid.sh`, then run_late's steps up to
+the map), two lanes, 16:33-17:37. Then one final map pass, `edgelakes_maps.sh` (06_map, 12_profiles, the score
+diagram) for all 12 areas, 16:38-17:39, agreed with the open-items and lakes sessions so that every map carries their
+map-step changes (lake reaches drawn only while Lakes is off; rivers drawn up to the shore) as well as this one.
+Backups for the comparison: `data/backup_20261120-edgelakes/<area>/` (ranked CSV, per-box streams_scored, drainages,
+flow and area tables).
+
+**What 03b found** (lakes whose water leaves the map, now carrying no stream lines; as measured beforehand):
+- Smokies: Tellico Lake and an unnamed pond.
+- North Georgia: Hartwell Lake, Lake Sidney Lanier, Stone Mountain Park Lake-South, the Atlanta water works reservoir
+  and Gypsum Pond. Stone Mountain Lake, which the rough measurement had listed, drains inside the map and keeps its lines.
+- LA: Lake Casitas, Lake Elsinore, Stone Canyon Reservoir. Connecticut: Lake Chaubunagungamaug, Hamilton Reservoir and
+  four ponds. Jackson: Brewster Lake. SE Pennsylvania: one unnamed pond (no reach on it before either).
+- Adirondacks: Lake Champlain (High Peaks and Southeast), Moreau Lake, Lake Butterfield and eleven ponds on the edges.
+
+**Checks** (scratch `checks_edgelakes.py`, plus before/after runs of the dead-end and flow-drop checks):
+- No negative drainage anywhere; 03b passed in every area (no edge dead ends left).
+- The lakes: no stream cells on any of them. Drainage colour over them is now 0 km2 in every area: Champlain in High
+  Peaks had 455 km2, Southeast 38, Hartwell and Lanier together 37, LA's three 18, Tellico 15, Connecticut's six 6.
+  Lines on the water: High Peaks 647 km -> 0.5, Southeast 100 -> 0.6, North Georgia 116 -> 1.2, Smokies 68 -> 0.9,
+  LA 47 -> 0.1, Connecticut 14 -> 0.1.
+- Everything else as before: 97.8-100 % of reaches at the same spot (High Peaks 93.5 %, the lake's 596 reaches gone);
+  of those 99.8-100 % keep their exact score.
+- Dead reach ends on box edges, order-3+ gaps and sudden flow drops are the same before and after, so none is new:
+  Smokies' 2 dead ends (Santeetlah Creek, a 1 km2 creek), Jackson's Yeaman Creek and the 1.2 km gap in the Palisades box,
+  LA's gaps (0.1-1.5 km a box) and two drops, adk_northwest's Tooley Pond Outlet, adk_southwest's three drops (the
+  Sacandaga among them), adk_southeast's one, High Peaks' Saint Regis drop. High Peaks also lost two dead ends that
+  were lake paths across its champlain / boquet line.
+- Map step, all 12: "reaches lying in a lake, drawn whole only while Lakes is off" 7,114 in all (about 1,100 fewer than
+  before the rebuild: the edge lakes' reaches are gone); "drawn up to the shore": Jackson 93 (37.0 km, 127 pieces), as
+  the lakes session expected less Brewster Lake's.
+- On the rendered maps (localhost): Tellico, Hartwell, Lake Chaubunagungamaug and Champlain in High Peaks are drawn as
+  lake only, with the creeks ending at the shore. The Snake reaches Jackson Lake's north shore with Lakes on. In the 3D
+  map (Jackson, browser pane shown) the streams layer's filter is ["!",["has","lk"]] with Lakes on and ["all"] with it
+  off; the Go-to menus list the eight shown areas. No console errors.
+
+**Side effects, measured:**
+- Creeks running into such a lake had taken their flow from the lake's own NHDPlus line, found by following their
+  path across the water. With the lines ending at the shore, about 15 small creeks (most unnamed, 1-6 km2) now read "no
+  data" and drop 30-60 points: High Peaks 9 (2 others rise), North Georgia 2 by Hartwell, Connecticut 2 by Lake
+  Chaubunagungamaug, Jackson 1 by Brewster Lake, adk_southeast 1. The old flow was weak evidence: a lake's flow per km2
+  applied to a 1-6 km2 creek, which 05b already won't let lower a creek's NHD class.
+- Two tiny unnamed creeks by Tellico Lake fell under the 1 km2 floor once their lines stopped at the shore.
+- Creeks into these lakes now count as whole basins (named from 5 km2, as at the sea): drainage changed for 0.3-3.7 %
+  of reaches, around the lakes.
+- SE Pennsylvania's scoring step hadn't run since 2026-11-19 18:50, so the rebuild also brought the 2026-11-19 "names
+  along rivers" rule there. 5 reaches moved about 10 points as names and stocking records moved: the reach at the
+  Wissahickon's mouth is the Schuylkill now, and two Stony Creek reaches gain their 2026 stocking record.
+
+**Not published by this session:** the overview session publishes (user's arrangement, 2026-11-20); handed over at 17:41.
