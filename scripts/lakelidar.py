@@ -206,12 +206,14 @@ def water(a, T, lake, others=()):
 
 def surface_stats(a, T, lake):
     """(median, share within 15 cm of it, interquartile range) of the DEM 3 m in from a lake's outline: how level the
-    surface is where the survey didn't flatten it."""
+    surface is where the survey didn't flatten it; and the median along the outline itself, its shore."""
     core = lake.buffer(-3)
     core = core if not core.is_empty and core.area >= 0.3 * lake.area else lake
     m = features.geometry_mask([core], out_shape=a.shape, transform=T, invert=True) & (a != NODATA)
     v = a[m]
+    s = a[features.geometry_mask([lake.boundary.buffer(1.5)], out_shape=a.shape, transform=T, invert=True) & (a != NODATA)]
+    shore = float(np.median(s)) if len(s) >= 20 else np.nan
     if len(v) < 20:
-        return np.nan, np.nan, np.nan
+        return np.nan, np.nan, np.nan, shore
     med = float(np.median(v))
-    return med, float(np.mean(np.abs(v - med) <= 0.15)), float(np.subtract(*np.percentile(v, [75, 25])))
+    return med, float(np.mean(np.abs(v - med) <= 0.15)), float(np.subtract(*np.percentile(v, [75, 25]))), shore

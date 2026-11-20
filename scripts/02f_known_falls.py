@@ -13,6 +13,7 @@ in OSM only as a park, Triple Buckets not at all, and USGS names some falls that
             centre of a state park named for its falls is not the falls.
   NHD       USGS NHD waterfall points (FType 487)
   CDFW      (LA only) CDFW Passage Assessment Database natural barriers (falls, cascades, chutes), with their notes
+  NPS       (Smokies only, source grsm_falls) Great Smoky Mountains National Park's waterfalls layer
   GNIS      USGS Geographic Names, class Falls or Rapids: the current file, and the 2021 archive for names since dropped
   Wikidata  items that are a waterfall, cascade, rapids, swimming hole or plunge pool
   curated   data/known_falls_curated*.csv: falls from guidebooks, state inventories (Vermont's 1985-88 survey of its
@@ -43,9 +44,11 @@ GNIS_DIR = f"{NATIONAL}/gnis"
 # An area missing here gets no GNIS falls (a NOTE says so)
 STATES = {"la": ("CA",), "jackson": ("WY", "ID"), "n_georgia": ("GA", "NC", "SC", "TN"), "central_vt": ("VT",),
           "ne_ct": ("CT", "MA", "RI"), "lexington_va": ("VA", "WV"), "se_pa": ("PA", "DE", "MD", "NJ"),
-          "smokies": ("TN", "NC")}
+          "smokies": ("TN", "NC"),
+          # the Adirondack maps' east edges cross Lake Champlain to the Vermont shore
+          "adk_high_peaks": ("NY", "VT"), "adk_northwest": ("NY",), "adk_southwest": ("NY",), "adk_southeast": ("NY", "VT")}
 SRC_LABEL = {"OSM": "OpenStreetMap", "NHD": "USGS NHD", "GNIS": "USGS GNIS", "Wikidata": "Wikidata",
-             "CDFW": "CDFW barrier survey"}
+             "CDFW": "CDFW barrier survey", "NPS": "Great Smoky Mountains NP"}
 
 boxes = gpd.GeoSeries([shapely.box(*R["bbox"]) for R in REGIONS.values()], crs=CRS)
 area_u = boxes.union_all()
@@ -168,8 +171,8 @@ def on_stream(pt):
 
 # ---- OpenStreetMap ----
 FW = "[Ff]alls?\\b|[Cc]ascades?|[Cc]ataract|[Pp]otholes?|[Ff]lume|[Pp]unch ?[Bb]owl|[Ss]wimming [Hh]ole"
-bb = f"({S:.5f},{W:.5f},{N:.5f},{E:.5f})"
-q = f"""[out:json][timeout:600];
+def osm_query(bb):
+    return f"""[out:json][timeout:600];
 (nwr["waterway"="waterfall"]{bb}; nwr["natural"="waterfall"]{bb}; nwr["waterway"="rapids"]["name"]{bb};
  nwr["leisure"~"^(swimming_area|bathing_place)$"]["name"]{bb};
  nwr["sport"="swimming"]["name"]["leisure"!~"^(sports_centre|swimming_pool|fitness_centre|sports_hall|water_park|pitch|common)$"]{bb};
@@ -177,7 +180,24 @@ q = f"""[out:json][timeout:600];
  nwr["name"~"{FW}"]["tourism"="attraction"]{bb};
  nwr["name"~"{FW}|[Ss]wim"]["natural"~"^(water|beach)$"]{bb};);
 out tags bb;"""
-osm = cached(f"{SHARED}/osm_falls.json", 7, lambda: overpass(q), "OpenStreetMap falls")
+
+
+def osm_tiles(step=0.5):
+    """The query in tiles of at most `step` degrees, merged (a way in two tiles comes once). On 2026-11-19 the Smokies'
+    whole box (1.4 x 0.8 degrees) ran past 4 minutes on both public servers and hung two runs for 20+ minutes, while
+    the same query in six tiles took 2-3 s each."""
+    nx, ny = max(1, int(np.ceil((E - W) / step))), max(1, int(np.ceil((N - S) / step)))
+    els = {}
+    for i in range(nx):
+        for j in range(ny):
+            w_, e_ = W + (E - W) * i / nx, W + (E - W) * (i + 1) / nx
+            s_, n_ = S + (N - S) * j / ny, S + (N - S) * (j + 1) / ny
+            for el in overpass(osm_query(f"({s_:.5f},{w_:.5f},{n_:.5f},{e_:.5f})")):
+                els[(el["type"], el["id"])] = el
+    return list(els.values())
+
+
+osm = cached(f"{SHARED}/osm_falls.json", 7, osm_tiles, "OpenStreetMap falls")
 if osm is None:   # no Overpass and no earlier copy: the ranges' waterfall nodes from 02_download_vectors.py
     osm = []
     for r in REGIONS:
@@ -253,6 +273,23 @@ if has("cdfw_pad"):
                                           f"barrier to fish: {(b_ or 'unassessed').lower()})"]))
             add(name=nm, alt=[], kind=kind_from_name(nm, "waterfall"), src="CDFW", precise=True, rank=2, nrank=3, note=note,
                 url=None, lon=g_.x, lat=g_.y, ref=f"cdfw/{pid}", onstream=True)
+
+if has("grsm_falls"):     # Great Smoky Mountains NP's own waterfalls layer (80 named falls and cascades in the park). Its fish
+    def grsm_fetch():     # barriers layer (359 more) is marked "Internal NPS Only" and is not used
+        g = esri("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRSM_WATERFALLS/FeatureServer/0",
+                 (W, S, E, N), "GlobalID,STATION_NAME,BARRIERTYPE,STREAMNAME,TRAIL,XYACCURACY", where="DATAACCESS = 'Unrestricted'")
+        return json.loads(g.to_json()) if len(g) else {"type": "FeatureCollection", "features": []}
+    gj = cached(f"{SHARED}/grsm_falls.json", 30, grsm_fetch, "Great Smoky Mountains NP waterfalls")
+    for f_ in (gj or {}).get("features", []):
+        p_, xy = f_.get("properties") or {}, (f_.get("geometry") or {}).get("coordinates")
+        if not xy:
+            continue
+        nm = str(p_.get("STATION_NAME") or "").strip() or f"{p_.get('BARRIERTYPE') or 'Falls'} on {p_.get('STREAMNAME') or 'a creek'}"
+        # placed to under 14 m by the park ("Unknown" for many of the older points)
+        exact = bool(re.match(r">=\s*\d+(?:\.\d+)?\s*(?:cm|m)\s+and\s+<\s*(?:1|5|14)\s*m", str(p_.get("XYACCURACY") or "")))
+        add(name=nm, alt=[], kind=kind_from_name(nm, "waterfall"), src="NPS", precise=exact, rank=2 if exact else 4, nrank=2,
+            note="Great Smoky Mountains NP waterfall" + (f", by the {p_['TRAIL']}" if p_.get("TRAIL") else ""), url=None,
+            lon=xy[0], lat=xy[1], ref=f"grsm/{p_.get('GlobalID') or nm}", onstream=True)
 
 # ---- GNIS: named Falls and Rapids ----
 os.makedirs(GNIS_DIR, exist_ok=True)

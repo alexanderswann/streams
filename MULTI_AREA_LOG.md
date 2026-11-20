@@ -1151,3 +1151,1017 @@ the Mac's clock moved from Pacific to Eastern around 16:20 PT.
   - Not published: ne_ct, lexington_va, jackson, n_georgia. They were rebuilt after `smokies` entered `config.py`
     (19:24), so their "Go to" menus list it; their changes are negligible. They go out with the first smokies publish
     (told that session).
+
+## 2026-11-19, afternoon: creek profiles take drainage from the creek's own channel (another session)
+(This entry was first written at about 15:55 PT. Another session's rewrite of this log dropped it before the 16:47
+checkpoint, so it is restored here in short.)
+- **Symptom.** The Cabin Creek profile (Hoback) said "Drainage at mouth 3,138 km²". That is the Snake River's figure;
+  the creek drains 24 km².
+- **Cause, in `12_profiles.py`.**
+  - A point's drainage was the largest value within 60 m of the NHD line. The search is that wide because the line can
+    sit up to about 60 m off the DEM channel.
+  - NHD draws every creek out to the receiving river's centreline, so at a mouth the search reached the river's
+    channel. A running maximum then carried the river's value to the mouth.
+  - The strips used the nearest reach of any name, which at a mouth is the river's.
+- **Scale.** 1,983 of 2,962 checkable profiles read more than 1.5x their own drainage. 1,091 showed the receiving
+  stream's fish score as their best.
+- **Fix.** Drainage, strips and best score now come only from the creek's own channel:
+  - reaches named after the creek;
+  - unnamed reaches up to 2x its largest named one + 1 km² (`OWN_CAP`);
+  - never a reach's junction cell.
+- **After.** 47 profiles still read more than 1.5x (6 at 10x or more), and 80 best scores still come from another
+  stream. Ids, lines, elevations and drops are unchanged.
+- **Published** 15:51 (site commit `af1e0d2`). Committed in `e8d5957` by the overview session.
+
+## 2026-11-19, evening: reach names along rivers, and drops named after their reach (another session)
+Of the 47 profiles left high above, 22 came from `05_score.py`'s name vote. The vote takes the nearest NHD line at
+three points of each reach. Where a creek comes in, NHD draws the creek's line out to the river's centreline, so on a
+short river reach two of those points can lie nearest the creek's line. Examples of river reaches that took a
+creek's name:
+- The Snake at Little Red Creek's and Station Creek's mouths (3,321 and 3,242 km²).
+- The Santa Clara River below Castaic Creek (1,008 km²).
+- The Chauga at Hell Hole Creek's mouth.
+
+Many short river reaches also got no name at all. The same nearest-line rule named drops after a neighbouring stream:
+two Jackson drops on Little Cottonwood and Blue Bell creeks read "Snake River", and the Pigpen Falls drops read
+"Lick Log Creek".
+
+**Fix, in `05_score.py`.**
+- A reach between two reaches of one river takes the river's name. Its two neighbours are its largest upstream reach
+  and the reach below, with unnamed reaches passed over. It applies when the vote gave the reach no name, or the name
+  of a much smaller stream (every other reach of that name within 3 km drains under half as much).
+- Streams of about the same size keep the vote: forks, the Chattooga and Tugaloo in Tugaloo Lake, and spelling
+  variants such as Trabuco Creek / Arroyo Trabuco.
+- The rule runs once, from the vote's names. Repeated passes flipped such pairs back and forth.
+- A drop takes the name of the reach its top cell is on. On an unnamed reach it takes the nearest NHD line's, as before.
+- The perennial test for big-creek drops still uses the nearest NHD line. Its disagreements with the reach are mostly
+  NHD gaps, not junctions, and changing it would change the set of drops and their ids.
+
+**`05c_drainages.py`.** NHD calls the East Fork's stem "San Gabriel River". Its fork had been named from the one reach
+that carried "East Fork San Gabriel River", which this fix renames. That left 271 reaches labelled "Prairie Fork",
+until a `FORK_FIX` entry put "East Fork San Gabriel River" back.
+
+**Test.** Before the real rebuild, the script was run in scratch on five areas. Only names changed: reach ids, drop
+ids, scores, flow classes and statuses all matched.
+
+**Rebuild.** Per range `05_score` then `05c`, then `11_context`, `06_map` and `12_profiles`, for central_vt,
+lexington_va, ne_ct, n_georgia and la (19:40–20:01 ET).
+- Jackson is left to the Wyoming expansion rebuild. Central VT was rebuilt again afterwards by the Vermont session,
+  and that session published it at 20:18 (`ffe5189`). Both runs include this change.
+
+| | reaches renamed | of those, had a wrong name | drops renamed |
+|---|---|---|---|
+| la | 208 | 20 | 456 |
+| n_georgia | 249 | 17 | 29 |
+| ne_ct | 73 | 7 | 4 |
+| lexington_va | 32 | (not counted) | 7 |
+| central_vt | 91 | 3 | 28 |
+| jackson (tested in scratch only) | 103 | 5 | 108 |
+
+**What else changed.** No drop status changed. Trout records follow the corrected names, so some fish scores moved:
+- **Down:** the Mill Creek reach below Mountain Home Creek 85 -> 35 (Mill Creek's surveys found no trout); a Great
+  Meadow Brook gap 76 -> 31.
+- **Up:** the Chauga at Hell Hole Creek 75 -> 90; a Quinebaug reach 65 -> 78.
+- **Tailwaters:** three lower Piru Creek gaps and one Chattahoochee gap now count as tailwaters (about +10).
+- **Built channels:** five gaps filled with an aqueduct's name now take the built-channel x0.2.
+
+**Profiles.** The ones above 1.5x their own reaches drop again. Some of the larger moves:
+
+| creek | before (km²) | after (km²) |
+|---|---|---|
+| Castaic Creek | 1,008 | 108 |
+| Deep Creek (San Bernardino) | 356 | 1.0 |
+| Sneaking Creek | 321 | 5.2 |
+| Chicken Creek | 165 | 21 |
+| Hell Hole Creek | 66 | 2.5 |
+| Labonte Brook | 102 | 2.9 |
+| Marl Creek | 73 | 18.6 |
+
+**Checked.** The North Georgia map labels the 65 km² reach "Chauga River" (32 cfs low flow, fish score 90), and the
+two Pigpen Falls drops "Pigpen Branch".
+
+**Published.**
+- 20:23 (site `f7d56a2`): la, n_georgia and lexington_va maps and profiles, plus ne_ct's profiles. ne_ct's map was
+  rebuilt by the lakes session at 20:02, after this run, so it was left to that session.
+- The three maps were rebuilt after `smokies` entered `config.py`, so their "Go to" menus list the unpublished
+  Smokies. They were put back to the previous versions at 20:25 (`e5749e0`).
+- Live now: the profiles. The maps go out with the first Smokies publish (that session was told).
+
+**Committed.** The overview session committed `05_score.py`, the README note and the `FORK_FIX` entry in `4a8c1c8`.
+This entry is new since then.
+
+**Moved on to 4,950,000 (user: "Yes, move it"), 19:47 to 20:20 ET.** `config.py`: stowe_lamoille's top goes from
+4,947,000 to 4,950,000, 13 km (8.1 mi) north of this morning's edge. The edge now runs at about 44.67° N at the east end
+and 44.69° N at the west. It crosses neither the Lamoille nor any reservoir: Arrowhead Mountain Lake, Green River
+Reservoir and Schofield Pond are now inside, and only Lake Champlain is cut, as the west edge already cuts it.
+- Same cache clearing as before, now also the three `trout_lake_vt_*` caches that the lakes work had added. `01`
+  fetched again the five tiles of the row cut at 4,947,000; `02f` refetched its falls on its own (its caches know
+  their box now).
+- Run 19:48 to 19:58 ET, with no failed step. `05d_lakes` did nothing: asked first, the lakes session took central_vt
+  out of `BUILT` at about 19:50 (Vermont's lakes aren't ready), and will add them itself.
+
+*Checks.*
+- No empty terrain cells in the strip (8.45 M cells), no negative drainage cells, order-3+ cells with no reach 0.0 km,
+  dead ends on shared edges 0 of 72, sudden flow drops 0.
+- The two edge flaws are gone:
+  - The Lamoille is continuous through the Fairfax loop and between Johnson and Jeffersonville (21.8 km drawn there).
+    From Cambridge past Fairfax to Milton it carries 1,398 → 1,746 → 1,804 km², against NHDPlus's 1,408 / 1,784 /
+    1,863. Lamoille reaches with no flow data went from 3 to 1 (a 157 m side reach in Arrowhead Mountain Lake).
+  - The Green River below its reservoir now carries the reservoir's water: 28 to 39 km² against NHDPlus's 42 to 50,
+    where it had 1.6 to 12.5. Its fish scores rose 11 to 27 points, to 79 to 92.
+- Still there, and not caused by the edge: 12 short reaches named "Lamoille River" carry little drainage. They are
+  side channels and tributary mouths beside the river, plus two small creeks along NHD's line through Arrowhead
+  Mountain Lake (one is 2 km long, 4.2 km², 700 m from the routed river) that take the river's name by vote.
+- Against the Jeffersonville build: 96.7 % the same score, 99.8 % within 5 points. Ten reaches moved 10+: the 8 Green
+  River reaches above, and two short reaches at dams now matched to the NHDPlus line inside the lake, so they read
+  reservoir (54 m inside Waterbury Reservoir, 80 → 24; 215 m at Lake Lamoille, −56).
+- Against this morning's build, before both moves: 99.5 % of reaches at the same spot; of those, 88.9 % the same score,
+  99.9 % within 5 points, median 64. Five moved 10+: the Waterbury Reservoir reach and The Creek (both inside
+  reservoirs), an unnamed reach +14, and Malletts Creek +17 and Kenfield Brook +27 (no longer cut off).
+- The strip north of this morning's edge: 965 reaches (Vermont 6,681 → 7,666), 791 km of stream, 94 % year-round,
+  3.9 % with no flow data, 509 reaches at fish 60+. 16 known falls (Five Chutes joined).
+- Rendered map: the Lamoille whole from the east edge to Milton; Green River Reservoir's basin inside the map, with the
+  Green River running from the dam to the Lamoille; no console errors.
+
+**Published (site commit `ffe5189`, 20:18 ET).** `streams/central_vt/` (the 2D map, the 3D page and data, the
+profiles data, the north box's hillshade) and only Vermont's entry in the live front page. Checked afterwards: all
+seven files as served match the build by SHA-256, and the home page answers 200.
+- `phone/`: only Vermont was refreshed (its files and its entry in `phone/index.html`), because Jackson's expansion
+  and the new Smokies area were mid-build. The single file (`stream_maps_all.html`) still has the 19:16 Vermont until
+  the next full `14_portable` / `phone_sync`.
+- The project commits `e8d5957` and `4a8c1c8` (made by another session at the user's request) hold this session's
+  `config.py` and `01_download_dem.py` changes; this entry is not committed.
+- Backups: `data/backup_20261119-vtnorth2/` (the Jeffersonville build and the caches cleared for this run).
+
+**Go-to menus listed unbuilt areas (raised by the Cabin Creek session).** The Vermont map published as `ffe5189` lists
+"Great Smoky Mountains" in its Go-to menu (in `stream_map.html` and `map3d_data.js`). That area entered `config.py`
+during the build, and no Smokies map exists yet, locally or on the site, so the entry leads to a missing page.
+- Cause: `06_map.py` built the menu from every area in `config.AREAS`. Fixed: it now lists only areas whose
+  `output/<key>/stream_map.html` exists (plus its own area). An area appears in other maps' menus once it is built
+  and those maps are rebuilt.
+- Still open: an area built but not yet published can still be a dead link on the site, if another map is
+  published in between.
+- The live Vermont map was left as it is: its Smokies entry starts working when the Smokies map is published, and a
+  republish to hide it would add about 64 MB to the site repository, which is already about 772 MB (GitHub
+  recommends under 1 GB). The Cabin Creek session put its la, n_georgia and lexington_va maps back to the previous
+  build instead (`e5749e0`).
+- Checked later in the user's Chrome on the live site (the 3D canvas doesn't draw in a hidden preview pane): the 3D maps' known-falls popups work. Central VT: Bolton Potholes shows its kind, three sources, note and source link. N Georgia: Frogface Falls shows the gawaterfalls.com (Mark Ozboyd) credit and his page's link, and the credit line names him. No change was needed.
+
+## 2026-11-19, evening: Great Smoky Mountains, a new area (this session)
+User: "add in smokey mountain NP and the surrounding areas as a new location too". Asked which town drive times should
+start from, the user answered "30305" (Buckhead, as for North Georgia).
+
+**The area (`smokies`, UTM 17N, HU4 0601 and 0602, 7,901 km2).** The whole national park (its NPS boundary spans x
+226.8-319.1 km, y 3923.7-3968.5 km) and the trout country around it, in seven boxes: `cades_cove` (Abrams Creek, Cades
+Cove, Little River, Twentymile), `le_conte` (Elkmont, Gatlinburg, Greenbrier, Deep Creek, the Oconaluftee), `cataloochee`
+(Raven Fork, Cosby, Big Creek, Cataloochee, Maggie Valley, Max Patch), `tellico` (Tellico and Bald rivers, Citico
+Creek), `snowbird` (Snowbird, Santeetlah, Joyce Kilmer), `nantahala` (Nantahala Lake, the gorge, Wesser), `tuckasegee`
+(Bryson City's south side to Dillsboro, Sylva, Cullowhee, Caney Fork).
+- Outer edges were placed by measuring, for each candidate edge, the named streams (NHD) the edge would cut into pieces
+  that leave the map and come back in (each piece starts again from nothing) and the lakes it would cross: the first
+  layout cut Waldens, Burningtown, Scott and Hanging Dog creeks and the Hiwassee (79 km of stranded pieces, weighted);
+  moving edges by 2-6 km brought it to 47, most of it the Little Tennessee inside Tellico Lake. Tellico Lake still
+  crosses the Tellico box's north edge (below it, half of Citico Creek would be lost; the lake's dam is 30 km outside
+  the map). The tuckasegee box's east edge (x 308.7 km) clears Cedar Cliff Lake.
+- The first base build was started on the first layout, stopped in its DEM step and restarted after the edges moved
+  (only the new area's own folders were cleared; DEM tiles cut at the old edges were refetched by `01`).
+
+**Sources.** Trout: `nc_trout` (NCWRC's 2026 Public Mountain Trout Waters, streams and impoundments: Hatchery Supported
+and Delayed Harvest, which it stocks, catch-and-release and the named Wild Trout Waters; left out, the game lands'
+blanket "Wild Trout Waters unless otherwise noted", drawn on every creek there, 85 % of the km), `tn_trout` (TWRA's 201
+stocking sites, its 1996-2022 wadeable electrofishing samples: 39 site records with trout, 88 with 2+ other species and
+none, which count as no-trout records like Connecticut's; the 2016 brook trout genetics collections), `grsm_trout`
+(the park's trout distribution, 1,828 segments; its "No Fish" code marks unsampled streams and is not used; segments
+the park marks "Internal NPS Only" are left out), `ebci_trout` (the Raven Fork trophy section and the Enterprise
+Waters), plus Trout Unlimited's 447 brook trout patches. Left out on purpose: NC's HUC12 trout watersheds (whole
+catchments) and the park's fish barriers layer (all "Internal NPS Only"). Falls: `grsm_falls`, the park's own 80
+waterfalls (precise where placed to under 14 m). Roads: the Blue Ridge Parkway, `ncdot_tims` (NCDOT's TIMS incidents,
+the feed behind DriveNC; its old eapps API is gone), `tdot_smartway` (points), `grsm_roads` (the park's alerts JSON,
+which names roads without geometry, matched to the park's roads layer; and its seasonal-roads table), `cherokee_nf`
+(the Cherokee NF's road construction table, dates in words: "Fall 2026"). North Carolina's national forests publish
+closures only as prose and PDFs; USFS MVUM seasonal dates exist as data but are not used for any area yet. Long trail:
+the Appalachian Trail. Tailwater: Nantahala Lake -> Nantahala River (from 850 m, just below the dam at 848 m).
+- Not used yet: the park's three-pass electrofishing workbook (1983-2024, 2,631 station-visits, on NPS DataStore)
+  and NC DEQ fish samples through the Water Quality Portal (154 visits with species lists); both would add dated
+  surveys and a few no-trout records.
+
+**Build.** Base 19:48-19:58 ET (checks: no DEM holes, elevation 204-2,025 m, no negative areas). `02f` hung twice
+on its one Overpass query over the whole lon/lat box (28 minutes, then 15, on both public servers), while the same
+query in six 0.5-degree tiles answered in 2-3 s each: `02f` now runs its OSM query in tiles of at most 0.5 degrees
+(all areas; same result, merged by element id). `09_drive`'s major roads (Atlanta to the Smokies, 52,146 ways) were
+fetched the same way into its cache. Each step ran under a time limit with one retry.
+- 9,017 reaches; median fish score 62; 4,995 at 60+. Drive from Buckhead: median 170 min to the Tuckasegee box, 261 to
+  Cades Cove, 269 to the Gatlinburg/Le Conte box, 291 to Cataloochee. 207 known falls (OSM 161, NPS 79, NHD 44, GNIS
+  26, Wikidata 5; 190 precisely placed); every famous one checked is there (Abrams, Laurel, Grotto, Rainbow, Ramsey
+  Cascades, Thousand Drips, Lynn Camp, Mingo, Soco, Bald River, Falls Branch...). 20 closures today, among them six
+  park roads and the Citico Creek Road bridge. Water temperature fit: August air + drainage area, 248 sites, leave-one-
+  out RMSE 1.6 C. The Tuckasegee is not a tailwater: 14.7 C once below the dams near Cullowhee, 19.4 at East LaPorte,
+  23.0 at Bryson City (45 readings). The Nantahala's bypassed reach above the powerhouse measures 20.6 C (2 readings),
+  so the tailwater flag from the dam down overrates it by about 2 points at most.
+- Bike access inside the park: 1,205 km of park trails are posted no-bikes in OSM, the AT no-bikes; the few fire roads
+  read as bikeable are mostly the lower Deep Creek and Indian Creek trails (bikes allowed) and roads open to cars, so
+  no change to the NPS rule (which would also have flagged Forest Service roads crossing the AT corridor elsewhere).
+- Standing checks: order-3+ cells with no reach within 25 m 0.0-0.1 km per box; reach ends dead on a shared edge 0 of
+  126; sudden flow drops 0; the big rivers end to end (Little Tennessee, Tuckasegee, Nantahala, Oconaluftee, Raven
+  Fork, Deep Creek, Little River, Little Pigeon and its prongs, the Pigeon, Big Creek, Cataloochee, Abrams, Hazel,
+  Tellico, Citico, Cheoah, Snowbird, Scott, Cosby). Rendered map: no console errors, default layers as set, popups
+  checked at Fontana Lake and on the Nantahala, Soco Creek whole across the box edge.
+
+**Two fixes found on the rendered map.**
+- `05b_flow.py`: a reach lying at least half inside an NHD lake or reservoir with no model segment of its own was scored
+  as a stream: "no data" took NHD's perennial label, "scaled" took the flow of the river below the dam (Fontana Lake's
+  arms showed "year-round, 1,304 cfs, fish 83"). Such reaches are now "reservoir", the test model segments already got
+  (`below_dam_comids`: half the length in the water). Counted on the builds as they stood: no data / scaled inside
+  lakes LA 64 / 122, Jackson 198 / 138, N Georgia 48 / 230, Vermont 91 / 57, NE CT 54 / 79, Lexington 0 / 5, se_pa 2 /
+  7, Smokies 93 / 118. In the Smokies 211 reaches changed, all to reservoir, median -43 points, no other reach changed.
+  The other areas change at their next `05b` run; the Wyoming and Adirondacks sessions were told.
+- `05c_drainages.py` NAME_FIX / FORK_FIX: in the le_conte box the Little Tennessee's arm of Fontana Lake took the name
+  of the one named creek in its basin, Fishtrap Branch (the lake's centreline has no river name there), and `06_map`
+  passed it up the Little Tennessee, Alarka, Burningtown and Tellico creeks across the box edges. Now "Little
+  Tennessee River".
+- Also checked at the Wyoming session's warning about lakes across box edges (in Jackson they broke the carry past
+  dams): Fontana and Chilhowee cross edges here, but the full drainage just below every dam matches NHDPlus within
+  1-4 % (Fontana 4,042 vs 4,089 km2, Cheoah 4,681 vs 4,726, Calderwood 4,777 vs 4,821, Chilhowee 5,096 vs 5,150,
+  Santeetlah 453 vs 458, Nantahala 234 vs 243).
+- Final rebuild 21:57-21:59 ET with the falls deep-dive session's three curated rows (the park layer's second "Chasteen
+  Creek Cascade", which its own fields put on Flat Creek, now Flat Creek Falls; two roadside falls on Cooper Creek
+  Road from ncwaterfalls.com): `02f`, `05_score` for the seven ranges (reach ids, geometry and names checked identical
+  to the run before, so the flow, drainage, hiking and sun tables stand), `06_map`, `12_profiles`. 208 known falls.
+  Standing checks as above; the map is in imperial units (the units session's change, picked up by `06_map`).
+- Publishing: by agreement with the imperial-units session, one combined commit (its se_pa, central_vt and ne_ct
+  re-renders, `streams/smokies/` and a front page with the Smokies), to keep the site repository's growth down (814 MB
+  of history before it; GitHub recommends under 1 GB). The Cabin Creek session's la, n_georgia and lexington_va maps
+  are left to the Lakes session, which rebuilds them with lakes.
+- **Published (site commit `c6df975`, pushed by the imperial-units session at about 22:07 ET; live at 22:08).** Checked
+  afterwards: all 12 files of `streams/smokies/` as served (2D and 3D maps, 3D data, profiles page and data, seven
+  hillshades) match the build by SHA-256; the live front page is the committed one and lists eight areas, the Smokies
+  among them; the old home page answers 200. Live at https://alexanderswann.github.io/streams/smokies/stream_map.html.
+  The site repository's history is about 883 MB now. The Smokies map's Go-to menu lists the Adirondack maps, which
+  stay dead links until they are published; maps of other areas list the Smokies once they are rebuilt.
+- Not committed in this project's git: the changes after the 17:04 PT checkpoint (05b lake rule, 02f tiling and park
+  falls, troutdata NC/TN/park/Cherokee sources, 07 closure feeds, 05c name fix, config sources and home, README, this
+  entry).
+- Open, raised by the Adirondacks session (adk_southwest, `speculator:s518` Piseco Outlet, 700 m below Piseco Lake: 0.43
+  cfs on 174 km2) and diagnosed here, not changed: the reach's own NHDPlus line runs mostly through the lake, so it is
+  flagged "in:Piseco Lake" and the full-area match reads "reservoir"; `05b`'s keep-the-higher-estimate rule then keeps
+  the box-area estimate, scaled from the river downstream by 1.3/374 km2. Possible fixes: treat a reach outside the
+  lake that matches an "in:" segment as below the dam, or don't keep a scaled box-area estimate where the full area
+  is many times the box area. Not caused by the new lake rule (which only touches reaches lying in a lake); none in
+  the Smokies.
+
+## 2026-11-19, evening: the Adirondack Park (this session)
+
+**20:00 — Request.** "add in the adirondacks park as a new location too". Read as the whole park inside the Blue Line.
+The boundary is OpenStreetMap relation 1695394 (source: Adirondack Park Agency): 23,560 km², x 474.2-635.8 km,
+y 4,766.7-4,970.1 km in UTM 18N, about four times Central Vermont.
+
+**Four maps, not one.** At the other areas' 4-8 KB of map per km², one map of the park would be about 150 MB: over
+GitHub's 100 MB limit for a file (`publish_site.sh` stops at 95 MB) and too heavy for a phone. So the park is four
+areas, each its own map, linked by the "Go to" menus and the map of all areas:
+`adk_high_peaks` (High Peaks & Lake Placid), `adk_northwest` (Long Lake, Tupper & Cranberry), `adk_southwest`
+(Old Forge & West Canada Lakes), `adk_southeast` (Hudson, Indian Lake & Lake George). 20 boxes, 29,700 km² of
+boxes for the park's 23,560.
+
+**Where the maps meet.** Each map's hydrology ends at its edge (03b joins only one area's boxes), so the lines
+between maps and the outer edges were placed with scripts (scratch, not kept) that scored every candidate line
+by the NHD lakes it cuts (a lake cut at an outer edge drains out through it, as Green River Reservoir did in
+Vermont) and the named streams it crosses more than once (a creek that leaves and comes back starts again from
+nothing, the Smokies' lesson). The first layout counted only rivers and missed creeks that run along a line
+(Fourth Creek, Browns Tract Inlet, Bear Brook on y 4,850; the West Branch Oswegatchie for 13 km along the west
+edge; the Black River at Forestport; the Saranac at Plattsburgh; the Hudson meandering along y 4,867.6 at
+Newcomb, where it runs through lakes as NHD artificial paths); the final one counts every named stream,
+artificial paths included. Results:
+- No lake of 1 km² or more is cut by a line between maps. Long Lake, the Raquette from Long Lake past its loop at
+  Axton to Tupper Lake, Stillwater, Raquette Lake, Forked Lake and Blue Mountain Lake are in the northwest map; the
+  whole Saranac chain in the High Peaks map; Indian Lake and the Hudson below Newcomb in the southeast; the Black
+  River from Forestport to Lyons Falls in the southwest.
+- Cut and left so: Round Pond (0.92 km², by Long Lake's east shore) and Square Pond (0.86 km², St. Regis Canoe
+  Area) lie across the line between the northwest and High Peaks maps; Queer Lake (0.48) is touched.
+- Creeks that still leave a map and come back, all outside the park or big enough for `crossbox.py` to carry
+  their NHDPlus drainage back in: the Salmon at Plattsburgh (1.9 km), the Little River (9 km, northwest corner),
+  Halfway Brook (Queensbury), Kennyetto, Crook Brook and Chase Vly Creek (south of the Great Sacandaga), East
+  Canada Creek (0.5 km), the Cedar River (0.3 km at a corner), Sucker Brook (2.5 km, on the northwest/southwest
+  line).
+- Inside a map, box edges may cut lakes (Raquette Pond, Lake Clear, Carry Falls Reservoir, Seventh Lake...):
+  03b routes an area's boxes as one surface.
+
+**Area-specific code.**
+- `config.py`: the four areas; `min_relief=50` (the Champlain valley and the western plains are gentle);
+  `long_trail` the Northville-Placid Trail (OSM relation 4286650, no ref, matched by name).
+- `troutdata.py`: `ny_trout` (`_ny`): NYSDEC's categorized trout stream reaches (Wild-Quality, Stocked,
+  Stocked-Extended; species, schedule and number stocked, as trout waters and as stocking records), the streams
+  classed trout (T) or trout spawning (TS) in the water quality standards, and public fishing access along trout
+  streams (DEC's fishing rights easements, other agencies' banks). All on DEC's ArcGIS Online (services6 ...
+  DZHaqZm9cxOD4CWM). Not used: DEC's pond stocking list on data.ny.gov (towns, no coordinates). Plus
+  `tu_brook_trout` (1,602 brook trout patches in the park's box).
+- `geomatch.wilderness_path()`: source `nys_forest_preserve` adds the Forest Preserve's Wilderness, Primitive and
+  Canoe areas (NYSDEC lands layer, CLASS) to the wilderness layer: no bikes there by the State Land Master Plan,
+  so trails in them are "no bikes" and fire-road rides through them get the bike_check flag, as in a federal
+  wilderness. Other areas unchanged (NE Connecticut's file re-read: 0 units).
+- `02f_known_falls.py`: STATES for the four areas (NY; VT too for the two whose east edges reach the Vermont shore).
+- Home for drive times: 05753 Middlebury, the user's nearest home ZIP (Central Vermont's), following the Smokies
+  session, whose user answer was "the same home as North Georgia". Not asked here; easy to change (09_drive,
+  06_map).
+- Road closures: none (511NY's API needs a key).
+- `troutdata._tu()` fix (general, found here): Trout Unlimited's patch layer in New York also covers catchments
+  marked "No trout documented" (229 of the High Peaks map's 638 patches) and "Brook trout predicted" (213, a
+  model), and `_tu()` labelled every patch "Wild brook trout patch", which gives the creeks in it the trout-water
+  bonus. Those two classes are now left out (no label, no bonus; nothing lowers a score), and "Brown trout only" /
+  "Rainbow trout only" patches are labelled "Wild trout patch". Checked every other area's cached patches: none
+  has any of these four values (Central Vermont: 165 patches before and after), so no other map changes.
+
+**Builds (all four on the same code; base 20:41-21:54, re-run of mid + late 21:58-22:14).** Two chains, base then
+mid then late per area. Two steps stalled on the network and recovered by themselves (the northwest's 01 on a 3DEP
+transfer for ~50 min, the southwest's 05_score in the Overpass retry loop). The known-falls session's 52 curated
+Adirondack rows (World Waterfall Database, nnywaterfalls.com / David J. Schryver, the Beaver Meadow(s) and Falls of
+Carillon merges) landed at 21:57, so every area re-ran run_mid and run_late before the first publish; that also gave
+all four the Smokies session's 05b lake rule (21:25) and the imperial display units. Then 06_map again for the three
+maps rendered before the northwest map existed, so every Go-to menu lists all twelve areas.
+
+| Map | Boxes | Reaches (ranked table) | Median fish score | Known falls (drawn) | Drops at a mapped fall | Water-temperature fit |
+|---|---|---|---|---|---|---|
+| adk_high_peaks | 6 | 9,800 | 67 | 67 (66) | 56 | elevation, 109 sites |
+| adk_northwest | 5 | 8,459 | 67 | 71 (71) | 27 | August air, 87 sites |
+| adk_southwest | 4 | 6,951 | 73 | 49 (48) | 11 | drainage area, 115 sites |
+| adk_southeast | 5 | 8,704 | 64 | 79 (79) | 34 | drainage area, 54 sites (leave-one-out RMSE 2.53 C) |
+
+- Trout-water labels: 70% of the southeast's reaches, 86% of the High Peaks' (Central Vermont 61%, NE CT 57%,
+  N Georgia 49%). Checked that this isn't the 25 m buffer clipping tributary mouths: requiring 20% of a reach
+  inside a record would only take the High Peaks from 85% to 81%. The rest is real: DEC classes most Adirondack
+  streams (T) and the brook trout patches cover much of the park.
+- Northville-Placid Trail: 148 OSM ways, 220.9 km. Drive times from Middlebury: 18-200 min (the southeast's Lake
+  George box reaches the Vermont shore; Indian Lake 96-200, median 130).
+- Wilderness layer, e.g. the southeast: 25 Forest Preserve units (Siamese Ponds, West Canada Lake, Hudson Gorge,
+  Pharaoh Lake wildernesses, Essex Chain Lakes and other primitive areas).
+
+**Standing checks (scratch script, vectorised).** Reaches are stored in lon/lat: reproject before measuring (my
+first run measured nothing and reported hundreds of km).
+- Negative cells in any area_km2.tif: 0 in all 20 boxes.
+- Order-3+ stream cells of 1+ km2 with no reach within ~25 m: 0.0-0.1 km per box (Central Vermont 0.0 by the same
+  script).
+- Reach ends on a shared box edge with no other reach end within 30 m, downstream ends only (creek heads that start
+  on an edge set aside): High Peaks 10, northwest 13, southwest 5, southeast 3, all first- or second-order creeks of
+  1-2 km2; Central Vermont, published, gives 3 by the same script. Not chased.
+- Sudden flow drops (flow per km2 under a quarter of both neighbours; lake reaches excluded, they are low on
+  purpose): 0 in the High Peaks, northwest and southeast; 1 in the southwest: speculator:s518, Piseco Outlet 700 m
+  below Piseco Lake, 0.43 cfs on 174 km2. Diagnosed by the Smokies session (read-only): its own NHDPlus line
+  (22297164) runs mostly through the lake, so the full-area pass classes it "reservoir"; the box-area pass (1.3 km2,
+  restarting at the outlet) walks down to the West Branch Sacandaga (374 km2) scaled by 1.3/374, and "keep the old
+  estimate where the new one would be lower" keeps that. **Open**, two fixes proposed there: treat a reach outside
+  the lake that matches an "in:<lake>" segment as below that dam with the segment's flow, or don't keep a scaled
+  box-area estimate when area_edge is many times area_box.
+- Looked at on the rendered maps (local server): the Hudson leaving the High Peaks map at Newcomb and entering the
+  southeast map as one thick line, with the Boreas and Goodnow; the Raquette in the northwest map from Long Lake
+  north past the Axton bend and west toward Tupper Lake, the Cold River entering from the High Peaks side; the
+  Black River in the southwest map from Forestport across the box edge toward Lyons Falls, with Woodhull Creek;
+  the West Branch Ausable at Wilmington Notch with The Flume Fall.
+
+**Published (site commit `138467b`, 22:18 ET)** by hand on top of the imperial-units session's `c6df975` (and the
+Lexington lakes commit `aa7035d`): `streams/adk_high_peaks|northwest|southwest|southeast/` (map, 3D page and data,
+profiles, hillshades; 64 / 46 / 44 / 62 MB) and the four entries added to the live front page's area list from each
+area's overview.json, with "eight" -> "twelve" in its two descriptions; nothing else in the page changed. Checked
+afterwards: the twelve served files (map, 3D data and profile data of each area) have the pushed SHA-256s, the front
+page answers 200 and says twelve. `streams/` is now 822 MB, near GitHub Pages' 1 GB site limit: the next areas will
+need a plan (for example leaving the 3D data off the site). Local 13_overview (12 areas, 9.5 MB), 14_portable (51.5 MB,
+was about 24), phone_sync (phone/ 881 MB) run at 22:22, before Jackson's re-run reached its map step.
+
+**Open:** Piseco Outlet's flow (above); Round Pond and Square Pond on
+a line between maps; the known-falls session's second batch (nyfalls.com blocks automated reads); DEC's pond stocking
+list (towns, no coordinates) not used; maps rendered by other sessions before 22:14 list three of the four adk_
+areas in their Go-to menus until their next 06_map.
+
+**After publishing (2026-11-19, late).** Asked whether to keep 05753 Middlebury as the Adirondack maps' start for drive
+times, the user answered "Keep Middlebury". Nothing to rebuild. The Piseco Outlet flow fix runs in its own session
+("Fix scaled flows on reaches just below lakes").
+
+## 2026-11-19, evening: the Wyoming map takes in all of Grand Teton NP, Driggs and Alpine (this session)
+**User: "expand the wyoming map to include all of GTNP, driggs, and alpine".** The Jackson map ended at y 4,856 km,
+straight through Jackson Lake (Grand Teton's NPS boundary reaches y 4,881.2), 4 km east of Driggs (x 491.1) and 2 km
+west of Alpine, with Palisades Reservoir cut in two.
+
+**New extent** (`config.py`): seven boxes, 9,305 km² (was 5,670), label "Jackson Hole, Grand Teton & Teton Valley".
+North to y 4,885: all of the park, Flagg Ranch and Huckleberry Hot Springs. The Rockefeller Parkway's last 1.6 km to
+Yellowstone are left out, because Yellowstone's own boundary cuts Grassy Lake Reservoir, Winegar and Tanager lakes
+and runs along Calf and Harebell creeks. West to x 476: Teton Valley from Victor past Driggs and Tetonia to Badger and
+Bitch creeks; Palisades Reservoir, its dam and the Snake down to Irwin. Boxes: `teton_snake` (now ends at y 4,842),
+`gros_ventre` (ends at y 4,842), `hoback` (starts at x 506), `jackson_lake` (y 4,842-4,885, x 495-548), `buffalo_fork`
+(new, x 548-558, y 4,842-4,856), `teton_valley` (new, x 476-495, y 4,800-4,878), `palisades` (new, x 476-506,
+y 4,767-4,800). Edges were scored on NHD first: no lake of 2+ ha on an edge between two boxes, and no named creek
+crossing an outer edge twice. The Teton Valley box reaches y 4,878 because at y 4,870 Bitch Creek crosses x 495
+exactly at the corner. GRTE lies wholly inside, Driggs 15 km and Alpine 12.6 km from the nearest edge.
+
+**Idaho.** New source `id_trout` (`troutdata.py`): Idaho Fish & Game's Yellowstone cutthroat streams, as StreamNet's
+regional fish distribution serves them (layer 13; 124 lines here, from the 2002 and 2023 range-wide status
+assessments and IFWIS records). Idaho publishes no survey or stocking layer. New closure feed `id_511`
+(`07_road_closures.py`): Idaho 511's WZDx work-zone feed, which needs no key (its event API does); none in the area
+tonight. 02f already took GNIS falls for WY and ID.
+
+**Three box layouts in one evening** (backups in `data/backup_20261119-wyexpand/`, with the cleared caches):
+1. Three boxes added beside the old three, which kept their edges. The checks found the Snake below Jackson Lake Dam
+   at 16-28 km² for 5 km (NHDPlus 2,088) and short by about 2,100 km² all the way down; the South Fork below
+   Palisades Dam had 1,130 km² (NHDPlus 13,444). (The user saw this build: "the Snake below the dam draws as a creek",
+   reported through another session.) Cause: both reservoirs lay across edges between boxes (Jackson Lake under
+   y 4,856 and x 528, Palisades under x 495). Each box conditions the flat water within its 5 km halo its own way, so
+   the lakes' water ended in pits and flats on the edges (478 km² on jackson_lake's bottom row, the Snake's 3,836 km²
+   on hoback's west column), 03b's outlet (the most-water cell) was one of those edge pits, and crossbox treats a pit
+   on a box border as an exit, not a lake dead end, so nothing was carried past either dam.
+2. Boxes laid out so each lake lies in one box. Jackson Lake then ended in one dead end 247 m from its dam and
+   crossbox carried 1,949 km² past it. But the Snake's 3,619 km² still ended on the new Palisades edge at x 503: the
+   Palisades box fills the reservoir's basin to its spill level (1,716.6 m), a flat reaching 4 km up the Snake to
+   x 503.8, while the Hoback box, which can't see the dam, leaves those cells unfilled, 2 m lower. **An edge between
+   two boxes must clear every lake and every filled flat around one, not just the lake's outline.**
+3. Palisades edge at x 506. A gate after 03b (dead ends of 20+ km² on a shared edge) found none. The other session
+   that ran it over all twelve areas found such dead ends only in adk_northwest and adk_high_peaks.
+
+**Fixes in shared code that this expansion turned up:**
+- `04b_bigcreek_steps.py` crashed on a box with no candidate (the 10 x 14 km Buffalo Fork box), and its first fix
+  wrote the empty file with text-typed columns, which made that box's drops text and stopped 06_map. Now it writes an
+  empty, numeric file.
+- `watertemp.py` / `scoring.py`: with the new sites the water-temperature fit lost its skill (145 sites, leave-one-out
+  RMSE 3.37 °C against a 3.72 °C spread: 0.906, bar 0.9; Jackson's was already marginal at 0.82, and with the larger
+  spread the outlier pass no longer dropped Ditch Creek's two single readings of 22-23 °C). With no fit every reach
+  got the neutral half credit and every Jackson score fell about 7.5 points (median 72 -> 64), although the old fit put
+  every reach below 18 °C. A fit with no skill now falls back to the model the skill test compares with: every reach
+  takes the measured sites' mean (13.4 °C here, full credit; `watertemp.area_mean()`, `mean_sites` in the fit file).
+  No other area changes: all their fits pass (ratios 0.57-0.78).
+- `03b_stitch.py` prints a WARNING for lakes lying across an edge between two boxes (print only). The Smokies
+  session checked Fontana and Chilhowee, which do cross edges: their carries hold, since each dam and outlet sit well
+  inside one box.
+
+**Results** (checked against the build before the expansion, scratch `checks_jackson.py`):
+- Standing checks: no negative drainage cells; order-3+ stream cells with no drawn reach 0.0 km in six boxes, 1.2 km in
+  palisades (cells along its outer south edge, where the ground slopes off the map; no reach is drawn there: only
+  3.1 km of drawn line lies within 25 m of the whole outer boundary); reach ends dead on a shared edge 0 of 163 (12 in
+  layout 1); one sudden flow drop, an unnamed 11 km² reach near Moose that had it before (1.99 cfs then, 1.94 now).
+- The Snake against NHDPlus: Flagg Ranch 1,209 vs 1,207 km², below Jackson Lake Dam at Moran 2,101 vs 2,112, Deadman's
+  Bar 3,824 vs 3,929, Alpine 8,812 vs 8,959, below Palisades Dam 13,042 vs 13,234. The Teton River leaves the map with
+  1,706 km² (NHDPlus 1,663). 16 short "Snake River" reaches are side channels, as before.
+- 10,561 reaches (was 6,448), 2,524 drops, 547 lakes (139 on Game & Fish's list, 58 with a measured depth), 526 creek
+  profiles. New boxes' median fish score: jackson_lake 74, buffalo_fork 77, palisades 63, teton_valley 61 (109 valley
+  reaches "mostly dry": creeks that sink into the valley fill or go to ditches).
+- The old area: 97 % of its reaches at the same spot; 85.6 % with the same score, 98 % within 5 points; median 72 -> 74.
+  The big drops are reaches inside lakes (Jenny, Leigh, String, Taggart, Lower Slide), now "reservoir" by the Smokies
+  session's 05b change. The big rises are creeks on the old outer edges that now get their drainage or Idaho's
+  trout designation (Corral Creek, East Fork Palisades Creek, King Creek).
+- Names the Cabin Creek session asked about hold: the Snake at Station Creek's mouth is "Snake River"; the drops on
+  Little Cottonwood and Blue Bell creeks carry those names. Table Mountain Lake has its 1.34 ha lidar shoreline and
+  no drawn-down note (the lakes session's 05d fix).
+- On the rendered map: the Snake draws at full width from the dam through Oxbow Bend to Moran (popup: order 7,
+  808 sq mi, "below Jackson Lake: releases set the flow"); below Palisades Dam 5,035 sq mi; Teton River popups read
+  "Yellowstone cutthroat trout water (IDFG, via StreamNet)"; no seam at y 4,842; no console errors. The 3D page loads
+  its data; the pane draws no WebGL, so the 3D view itself wasn't looked at.
+
+**Published** (site commit `3c421fe`): `streams/jackson/` and the jackson element of `streams/index.html`'s area list,
+by hand, after pulling the other sessions' commits (smokies, imperial units, the Adirondacks); the rest of the page
+was checked byte for byte unchanged. `phone/jackson/` and phone/index.html's jackson entry updated the same way.
+`14_portable.py` not rerun (other areas' lake builds were running).
+
+**Open:**
+- 05b's "scaled" flow (a reach off the model network takes the flow of the first modelled segment downstream) looks
+  only within its own box, so small creeks draining across an edge between boxes get "no data": 10 % of reaches
+  within 1.5 km of a shared edge here, 2.5 % overall (14 % near edges in the old build). It affects every area.
+- In Teton Valley the fit's single estimate is the area mean, so a warm valley-floor creek isn't told apart from a
+  cold canyon one in the thermal term (as before: the old fit put none above 18 °C). Single grab samples (n = 1) carry
+  most of the misfit; weighting sites by their readings would help every area and wasn't tried.
+
+## 2026-11-19, late: known falls for the Smokies and the four Adirondack maps (another session)
+The guidebook research the first round did for seven areas, now for `smokies` and the four `adk_*` maps. Rows go in
+`data/known_falls_curated.csv`; `02f_known_falls.py` is unchanged.
+- **Research.** Six agents ran for 35 minutes against the first publishes' deadline. Scripted passes followed:
+  - the World Waterfall Database's state KML exports (NY, VT, NC, TN) and each candidate's page (name status, height,
+    form, status);
+  - all 292 pages of ncwaterfalls.com;
+  - nnywaterfalls.com's county list (630 falls in 12 counties).
+  nyfalls.com answers automated reads with a Cloudflare bot check, and swimmingholes.org has shut down, so neither was
+  used. A script checked every coordinate against its own page (decimal, or DMS within a second).
+- **Left out:** names the WWD made up (marked "Unofficial") unless a guidebook it cites backs them; falls that are now
+  dams or are gone (Union, Franklin, Dills, Stark, Rainbow on the Raquette, the La Chute mill dams); Mingus Mill's millrace
+  fall; entries with no height; and catalogue points that conflict with existing ones (Tenant Creek's upper falls, Jay
+  Falls).
+- **Source-data fixes:**
+  - The park layer's second "Chasteen Creek Cascade" sits on Flat Creek (its own stream and trail fields say so). It
+    is renamed and now merges with OSM/GNIS Flat Creek Falls.
+  - OSM "Beaver Meadow Falls" and GNIS "Beaver Meadows Falls" (90 m apart, kept apart by the plural) now merge.
+  - OSM "Falls of Carrilon" and Wikidata "Falls of Carillon" (70 m apart) now merge.
+  - OSM's "Indian Lake Day Use Area" node, tagged as a waterfall 21 m from Beaver Brook Waterfall, is dropped.
+- **Batch 1 (55 rows, 21:57 ET)** was folded into both build sessions' first builds and published: the Adirondacks in
+  site commit `138467b`, the Smokies with the imperial-units commit. 02f's NOTE lines: none.
+
+  | known falls | before | after |
+  |---|---|---|
+  | smokies | 207 | 208 |
+  | adk_high_peaks | 60 | 67 |
+  | adk_northwest | 67 | 71 |
+  | adk_southwest | 27 | 49 |
+  | adk_southeast | 77 | 79 |
+
+  Checked on the rendered Southwest map: the falls layer draws the new points, and their popups show name, source, note
+  and source link.
+- **Terms problem, found after that publish.** Two of the sources forbid redistribution:
+  - nnywaterfalls.com: "It is forbidden to distribute or otherwise exploit the content within this site in any form,
+    commercially or otherwise, without the express written permission of nnywaterfalls.com", covering its lists and
+    data.
+  - The World Waterfall Database: "No part of this website may be reproduced in any form or redistributed without prior
+    written consent."
+
+  ncwaterfalls.com states no terms.
+- **The owner's decision (22:55 ET): "keep both, ask both".** Points from both sites stay live, each credited in
+  `source` and linked to the site's page for that fall. The held batch is published, and the owner asks both sites for
+  consent. If a site says no, its points come off everywhere, including the first round's WWD rows in central_vt and
+  la. Rows by source in `data/known_falls_curated.csv` now:
+
+  | source | rows | areas |
+  |---|---|---|
+  | World Waterfall Database | 106 | central_vt 44, adk_high_peaks 15, la 13, adk_northwest 13, adk_southwest 9, adk_southeast 6, smokies 6 |
+  | nnywaterfalls.com (David J. Schryver) | 116 | adk_southeast 64, adk_southwest 26, adk_high_peaks 21, adk_northwest 5 |
+
+  **Consent pending.** Draft emails are in the session notes:
+  - david@nnywaterfalls.com, from the site's Contact Us page;
+  - contact@worldwaterfalldatabase.com; its contact form is broken.
+
+  Nothing has been sent.
+
+  To pull a site: move its rows (match `source`) into a `.held` file; then for each affected area run 02f, 05_score
+  for each range, 06_map and 12_profiles, and publish that area's folder.
+- **Batch 2 (117 rows)** landed at 22:57 ET: 93 nnywaterfalls, 23 WWD, 1 ncwaterfalls (Bunches Creek Falls). Rules:
+  - WWD falls only where its page calls the name official, historical or colloquial. Exceptions: three "unofficial"
+    names that its pages tie to Kevin Adams' or Russell Dunn's guides (Buckner Branch, Wilson Creek and Hull Basin
+    Brook falls).
+  - nnywaterfalls falls if named, or unnamed and at least 10 ft. Its labels for unnamed falls are kept as names, and
+    the note says so.
+  - The Opalescent Falls row lost its "Opalescent Flume" alias: the WWD page lists none, and nnywaterfalls puts the
+    flume 1.8 km away.
+  - Three notes no longer repeat a name that 02f already appends as "Also called".
+- **Rebuilt** smokies, adk_high_peaks, adk_southwest and adk_southeast (02f, 05_score for each range, 06_map,
+  12_profiles; 22:57 to 23:07 ET). The builds carry the Piseco Outlet session's 05b fix, as agreed. No NOTE lines from
+  02f.
+
+  | known falls | before batch 1 | batch 1 | batch 2 |
+  |---|---|---|---|
+  | smokies | 207 | 208 | 212 |
+  | adk_high_peaks | 60 | 67 | 88 |
+  | adk_northwest | 67 | 71 | 81 (dry run; its rebuild belongs to the Jackson Lake outlet session) |
+  | adk_southwest | 27 | 49 | 56 |
+  | adk_southeast | 77 | 79 | 143 |
+
+- **Checked on the rendered maps** (falls layer on, popups opened, no console errors):
+  - known-falls markers drawn: Smokies 211, High Peaks 87, Southwest 55, Southeast 143;
+  - the new falls appear, among them Basin Creek, Bunches Creek, Beer Walls, Gleasmans, Trenton, The Potholers and
+    Natural Stone Bridge falls;
+  - the Southeast credits line now names nnywaterfalls.com (David J. Schryver), which supplies 50 or more of that
+    map's falls.
+- **Published 23:09 ET (site commit `5f7660b`):** smokies, adk_high_peaks, adk_southwest and adk_southeast only, by a
+  one-off copy of `publish_site.sh` limited to those folders. Checked at 23:12: all 16 files as served (map, 3D page and
+  data, profiles data for each of the four) match the build by SHA-256, and the home page answers 200. adk_northwest
+  goes out once the Jackson Lake outlet session's rebuild is done and checked (expected 23:45 to 00:15).
+
+## 2026-11-19, late evening: creeks on NHDPlus lines that run through a lake (Piseco Outlet) (another session)
+Task from the Smokies/Adirondacks sessions: the last sudden flow drop in the Adirondack maps, adk_southwest
+`speculator:s518`, Piseco Outlet 700 m below Piseco Lake: 0.43 cfs on 174 km2, where the reach below carries 75.
+
+**Cause.** The reach's own NHDPlus V2 line, comid 22297164 (Piseco Outlet, ArtificialPath, 176.5 km2), is 3.9 km long
+and 73 % inside Piseco Lake; its last kilometre runs on down the outlet, 13 m from the reach's midpoint (the reach
+itself starts 400 m below the shore, 0 % in the lake). `flowlib.below_dam_comids` flags the line "in:Piseco Lake",
+so the full-area pass (173.67 km2) read the reach "reservoir" (water 0.3). The box-area pass (1.3 km2: the box's
+routing starts the outlet again from nothing) matched no line and scaled the West Branch Sacandaga (22297212,
+374 km2) by 1.3/374, year-round (water 1.0). "Keep the old estimate where the new one would be lower" kept that,
+since its line (374 km2) passes the under-half-the-drainage test.
+
+**Both candidate fixes measured on all 12 areas** before choosing. A scratch copy of 05b computed the current code
+and each variant in one pass per box (55 boxes), writing only to a scratch folder. Where an area's last 05b ran on
+the current code (Jackson, the Smokies, the four Adirondack maps), its baseline matched the tables on disk exactly.
+- (a) A reach lying outside the lake (under half its length in any NHD lake, the Smokies lake rule's test) that
+  matches an "in:<lake>" line isn't "reservoir": it takes the line's flow, as below that dam.
+- (b) Don't keep a scaled box-area estimate where the reach's full area is over K times its box area (K = 2, 4, 10).
+- Sudden flow drops: the Adirondack session's check (dry cfs per km2 of `area_full_km2` under a quarter of both the
+  reach above and below; reaches of 1+ km2 with a flow, "reservoir" reaches left out), run on each variant's tables.
+
+| Map | Reaches | Changed by (a) | "reservoir" -> creek | other flow source | below the lake (dam set) | Sudden drops now -> (a) | (b), K=2: changed / creeks made "reservoir" / downgraded |
+|---|---|---|---|---|---|---|---|
+| la | 17,857 | 12 | 12 | 0 | 0 | 1,000 -> 1,002 | 9 / 0 / 9 |
+| jackson | 10,530 | 5 | 4 | 1 | 0 | 48 -> 48 | 17 / 1 / 0 |
+| n_georgia | 15,045 | 20 | 18 | 2 | 0 | 2 -> 1 | 26 / 2 / 0 |
+| central_vt | 7,632 | 7 | 7 | 0 | 1 | 0 -> 0 | 1 / 0 / 0 |
+| ne_ct | 3,436 | 13 | 8 | 5 | 0 | 0 -> 0 | 18 / 1 / 0 |
+| lexington_va | 4,287 | 3 | 3 | 0 | 0 | 0 -> 0 | 0 / 0 / 0 |
+| se_pa | 4,623 | 2 | 2 | 0 | 0 | 1 -> 1 | 0 / 0 / 0 |
+| smokies | 9,000 | 9 | 7 | 2 | 0 | 0 -> 0 | 15 / 0 / 0 |
+| adk_high_peaks | 9,688 | 24 | 21 | 3 | 3 | 0 -> 0 | 23 / 2 / 0 |
+| adk_northwest | 8,264 | 20 | 17 | 3 | 2 | 0 -> 0 | 33 / 0 / 0 |
+| adk_southwest | 6,816 | 17 | 15 | 2 | 4 | 1 -> 0 | 12 / 1 / 0 |
+| adk_southeast | 8,557 | 29 | 20 | 9 | 2 | 1 -> 0 | 18 / 3 / 0 |
+| all | 105,735 | 161 | 134 | 27 | 12 | | 172 / 10 / 9 |
+
+- (a): 134 reaches outside lakes had read "reservoir". Most are creeks coming into a lake that matched the line's
+  part in the water: Eagle, Noland, Alarka and Sawyer creeks at Fontana Lake; the Nottely River above Nottely Lake;
+  the Jessup and Miami rivers above Indian and Lewey lakes; the Willimantic above Eagleville Lake; the West Fork San
+  Gabriel at San Gabriel Reservoir. Nearly all now read year-round. 27 more take the in-lake line's flow instead of a
+  scaled or "no data" one: Piseco Outlet 0.43 -> 70 cfs; the Indian River below Indian Lake, no data -> 123 cfs; the
+  Little Tennessee at Chilhowee Lake's head, no data -> 1,524 cfs; the Hubbardton River 2.1 -> 11 cfs. 5 drops follow
+  their reaches.
+- Drops found by the check: adk_southwest 1 -> 0 (Piseco Outlet), adk_southeast 1 -> 0 (lake_george:s1126, the
+  Hubbardton River), n_georgia 2 -> 1 (cohutta:s606). The two LA additions are the check, not drops: dry side creeks
+  of 2 and 4 km2 (san_gabriel:s3004, santa_ana_mtns:s367) whose main-stem neighbours were "reservoir", so left out
+  of the check, and now count. LA's ~1,000 by this check are the check itself: LA's flows are natural flows scaled on
+  the area without dammed water (area_edge), and the check divides by area_full. Not chased; nor Jackson's 48,
+  se_pa's brandywine:s2587 or n_georgia's remaining one (all there before this change).
+- (b) alone changes 172 reaches:
+  - 153 are reaches inside lakes whose cfs changes while they stay "reservoir" (a reservoir's popup shows no cfs);
+  - 10 are creeks outside lakes that it makes "reservoir": Piseco Outlet itself, the Greys River above Palisades
+    Reservoir, the Hubbardton River, Mayfield Creek and others;
+  - 9 in LA move down a class, from year-round or usually flows to seasonal: 7 reaches of Smith Creek (san_jacinto,
+    9-22 km2 in its box, 55-68 with the inflow) and 2 in the San Bernardino box. That is the drop the keep rule
+    exists to stop ("keep possible trout water").
+  K = 4 or 10 shrinks the same kinds (81 and 23 reaches). On top of (a) it finds no further drop.
+- Chosen: (a), the root cause: a line's "in:" flag was applied to a reach lying outside the water.
+
+**One refinement, from looking at the reaches (a) changed.** As first written, (a) put every such reach "below" the
+lake. But a creek matched to a side arm's in-lake line would then read "below Indian Lake: releases set the flow"
+(indian_lake:s759, 8.5 km2, on Indian Lake's shore). So the dam is set only where the reach sits on the line's
+stretch below the lake: its midpoint projects onto the line past the line's last point in that lake. NHDPlus lines
+run downstream (checked on 3,000 of them). That is 12 of the 161:
+- Piseco Outlet, below Piseco Lake;
+- the North Branch Moose below Dart Lake;
+- Black Cat Outlet;
+- the Indian River below Indian Lake;
+- Spring Run below Lake Lonely;
+- the outlets of Lake Kushaqua, Spectacle Ponds, Spitfire Lake, Loon Pond and Handsome Pond;
+- Martin Brook in Vermont.
+The other 149 get no dam, and their class comes from their flow. Flow and class are the same either way, so the
+counts above stand.
+
+**Code (`05b_flow.py` only; nothing in flowlib).** Each reach's largest share inside one NHD lake is now computed
+once; the Smokies lake rule reuses it, with the same result. A new `below_lake()` does the downstream test above. In
+`evidence()`, for a reach or drop outside the water, the "in:" flag is dropped, or turned into the lake's name where
+the reach sits below the lake. Each run prints how many reaches this applied to. Checks:
+- the installed file against the scratch measurements on all 55 boxes: flow columns equal (a)'s, the dam text is as
+  described, nothing else moves, the output columns are unchanged;
+- the tables written by the reruns are byte-identical to that test run.
+Installed at 22:52 in one write (the "Let scaled flows follow creeks across box edges" session edits 05b next, on
+top of this).
+
+**Reruns.** 05b at 22:54-22:56 in every box except adk_northwest's.
+- Rendered here: se_pa (06_map, 12_profiles 22:57-22:58).
+- Rendered by the known-falls session for its second falls batch: smokies, adk_high_peaks, adk_southwest,
+  adk_southeast (22:58-23:06), which it publishes together.
+- jackson, lexington_va, central_vt: rendered here (06_map, 12_profiles 23:08-23:10), after the lakes session
+  checked that its latest lake fix changes nothing there.
+- la, n_georgia, ne_ct: the lakes session runs 06_map and 12_profiles there after this 05b, with its own lake changes
+  (a corrected drawn-down rule, Stiles Pond's lidar outline), and publishes them. Pending when this was written
+  (23:12).
+- adk_northwest: no 05b from here. The Jackson Lake outlet session's rebuild (03b lakes across box edges, 03 -> late)
+  runs this 05b, and was running when this was written.
+- The reruns also brought the Smokies lake rule into six areas whose tables predated it: la 186, n_georgia 278,
+  central_vt 148, ne_ct 133, lexington_va 5, se_pa 9 reaches differ for that reason. Scores from it: central_vt 149
+  (median -27), se_pa 9 (-34), lexington_va 5 (-29), all reaches in lakes now "reservoir".
+
+**After, on the rendered maps** (before/after of stream_reaches_ranked.csv; the check on the tables on disk):
+
+| Map | Fish scores changed by the fix (median) | Sudden drops |
+|---|---|---|
+| se_pa | 2 (+29.5) | 1 (brandywine:s2587, there before) |
+| jackson | 4 (+53.5) | 48, there before (see below) |
+| lexington_va | 3 (+40) | 0 |
+| central_vt | 8 (+39.5) | 0 |
+| smokies | 8 (+43) | 0 |
+| adk_high_peaks | 22 (+56) | 0 |
+| adk_southwest | 16 (+44.5) | 0 |
+| adk_southeast | 22 (+46) | 0 |
+| la | 12 (+33.5) | 1,002 (the check, above) |
+| n_georgia | 20 (+45) | 1 (cohutta:s13, there before) |
+| ne_ct | 9 (+41) | 0 |
+| adk_northwest | rebuilt by the Jackson Lake outlet session: its 05b (00:27) read 20 reaches as creeks, 2 below a lake, as measured (Bog Stream and Moshier Creek 28-29 -> 94-98) | 0 (that session's check) |
+
+Jackson's 48:
+- 47 are small creeks in the Teton Valley (1-20 km2, little summer water next to the spring-fed Teton River). The
+  check takes two main-stem reaches as their "above" and "below".
+- The 48th is the Snake below Jackson Lake (teton_snake:s818: 1,656 km2, 51 cfs on a Gros Ventre line), the Jackson
+  Lake outlet session's case.
+
+The biggest moves are creeks that had been scored as "reservoir": Eagle Creek into Fontana Lake (67 km2, 33 cfs) 34
+-> 100, Noland Creek 27 -> 90, the Jessup River above Indian Lake 28 -> 93, the East Branch St. Regis above Meacham
+Lake 26 -> 86. Piseco Outlet stays at 70: its water term was already 1.0, and only its flow figures were wrong.
+
+**Checked on the rendered map** (adk_southwest, local server, no console errors). Piseco Outlet's popup reads: fish
+70, 67.1 sq mi, "year-round · low flow about 70 cfs in a typical July–October, 44 cfs in a drought year · kept
+flowing 100% of summers since 2011 · below Piseco Lake: releases set the flow". The reaches below read 75-80 cfs,
+the lake's own reaches "reservoir (Piseco Lake)".
+
+**Publishing.**
+- Live with this fix: smokies, adk_high_peaks, adk_southwest, adk_southeast. They went out in site commit
+  `5f7660b` (23:09), pushed by the known-falls session with its second falls batch. Checked: the four maps as pushed
+  are byte-identical to the builds checked here, and adk_southwest's carries Piseco Outlet's 70 cfs.
+- ne_ct: live in site commit `a742b5c` (23:13), pushed by the lakes session with its Stiles Pond change.
+- la, n_georgia: live in site commits `7caab8b` and `bf15161` (00:29), pushed by the lakes session with its lake
+  layers. Both were rendered after this 05b (its tables unchanged since), and the maps as pushed match their builds.
+- adk_northwest: the Jackson Lake outlet session's rebuild ran this 05b at 00:27 and rendered the map at 00:30. Not
+  published when this was written (00:35); checking and publishing it is that session's part.
+- se_pa, jackson, lexington_va, central_vt: published at the user's OK ("Yes, publish them"), by hand, in site
+  commit `c22ed4c` (23:16). publish_site.sh would have copied every area, including the ones other sessions were
+  still building.
+  - Commit and push: only these four folders (12 files: each map, 3D data and profile data; the hillshades and page
+    shells were unchanged); nothing outside streams/.
+  - Before the push: each map loaded locally without console errors and showed the fix's reaches as year-round. No
+    map code had changed since these areas' previous live renders, so the flows are the only change.
+  - After the push: all 12 files as pushed match the builds by SHA-256. streams/ stays 848 MB, since these files
+    replace ones of about the same size.
+  - Live from about 23:19; all 12 served files match by SHA-256. (Two read different on a first fetch while the CDN
+    was still updating, and matched on the second.) The live adk_southwest map, from the known-falls session's
+    push, matches its build too, and its Piseco Outlet popups read "about 70 cfs ... below Piseco Lake: releases set
+    the flow".
+  - 13_overview, 14_portable and phone_sync were not rerun.
+  - central_vt's render (23:09) predates the lakes session's maplakes.py fix (about 23:20: a White River stocking
+    record no longer shows on Sunset Lake). The lakes session re-rendered it over these flows and published it again
+    in `38ef337` (00:29); ne_ct went out again in `c9c8f60` (00:30). streams/ is now 858 MB.
+
+**Open:**
+- The Chattahoochee at Bull Sluice Lake's head (hooch_tailwater:s1492, 260 m, outside the lake) now reads
+  year-round, 1,177 cfs, tailwater. scoring.TAILWATERS' 265 m split names that tailwater Bull Sluice Lake, though
+  the reach is above Morgan Falls Dam and the cold water is Lanier's. The thermal term is the same either way.
+- The sudden-flow-drop check doesn't work in LA: it divides LA's natural flows, scaled on area_edge, by area_full.
+  And at confluences it pairs side creeks with the main stem (Jackson's Teton Valley).
+
+## 2026-11-20, after midnight: lakes cut by an edge between boxes lost their water (03b fix; another session)
+
+**Reported:** the user's screenshot of Jackson's 20:55 map: "at the outlet of jackson lake the snake river gets jacked
+up". Below the dam the Snake drew as a creek, 1.8 km2 at order 2 and still 27.6 km2 at Pacific Creek, which (415 km2,
+order 6) drew as the main river. The user asked for the root cause and where else it happens, then said to fix it in
+03b and rebuild adk_northwest.
+
+**Cause:** 03_hydrology conditions each box with only a 5 km halo of its neighbours. A lake, or a reservoir's basin
+filled to its spill level, that reaches further across a shared edge is filled and drained one way by each box.
+- Jackson's first expansion layout put the jackson_lake / teton_snake edge at y 4,856,000, through the lake about
+  150 m from the dam.
+- At Raquette Pond (adk_northwest) the long_lake box filled the pond 6 cm above its raw surface (469.92 m, its spill
+  level), while the tupper box left its 273 m sliver at 469.86 m, draining it to its own halo's edge.
+- In 03b's joined directions the higher side points into the lower, and all the water stops in a pit on the edge:
+  154 km2 at Raquette Pond.
+- crossbox reads a dead end on a box's rim as water leaving the box, not as a lake. `_dam_links` carries a lake past
+  its dam only within one box. So nothing went past the dam, and 06_map's order raise had no carried area to work
+  with.
+- Jackson was fixed by the Wyoming session's relayout (its 22:28 map: order 7 and 2,077 km2 below the dam). The
+  standing checks found the same bug live only in adk_northwest:
+  - Raquette Pond and Carry Falls Reservoir: the Raquette below them drew at 3-13% of NHDPlus's drainage, from
+    Tupper Lake to Warm Brook Flow.
+  - Grass Pond: 61 km2 stopped on an edge.
+  - adk_high_peaks: Lake Champlain stops on an edge too, but its outlet is off the map anyway.
+
+**Fix, in `03b_stitch.py`:**
+- **Step 2b, `mend_seams()`.** Every dead end of 0.25+ km2 on an edge between boxes gets a piece of the raw DEM around
+  it conditioned again, whole, as 03 does it.
+  - The cells whose direction that changes, joined to the dead end, take the new directions.
+  - The piece starts 3 km each way and doubles, to 30 km at most, while those cells reach a 1.5 km band inside its
+    own edges.
+  - The new directions are kept only if the water then leaves the re-routed cells without a loop: off the map, or on
+    to a dead end further down that has its own mend.
+  - A first version demanded the map's edge and failed Raquette Pond, whose water met Carry Falls' unmended dead end.
+- **03b exits 1** after writing its files if any such dead end is left. This is the Wyoming session's edge gate,
+  built in.
+- **Lakes with their outlet on an edge flow on.** A lake whose outlet cell (the one gathering the most water) is
+  within one cell of an edge shared with another box no longer ends in a pit. Raquette Pond's water leaves it through
+  tupper's sliver, 13 m from the dam in long_lake, where crossbox couldn't carry it.
+- **Which areas this changes.** On every area's current 03b output both rules change nothing (0 dead ends on shared
+  edges, no lake outlet within a cell of one), except adk_northwest and adk_high_peaks (Champlain, at its next 03b
+  run). Other near-edge lake pits are 2-4 cells in and keep their pits.
+- **Rebuild.** adk_northwest was rebuilt 00:24-00:31 with 03b → 04/04b → run_mid → run_late. 03 wasn't rerun
+  (dem_cond unchanged, the mend reads dem_10m). The run picked up the 22:52 05b fix (creeks on NHDPlus lines through
+  a lake) and the known-falls session's 22:57 falls (81 known falls).
+- **Numba cache.** Testing the mend in memory, by importing 03b with importlib, wrote a numba cache that the real run
+  couldn't load ("No module named '<dynamic>'"). Removed (scripts/__pycache__/03b_stitch.accumulate-75.*). In tests,
+  set NUMBA_CACHE_DIR to a scratch folder.
+
+**Results (adk_northwest):**
+- **03b:** all 7 dead ends on edges mended (5,928 cells re-routed; pieces 12-48 km). 2 lakes flow on. 03b took about
+  2 minutes; an earlier test took an hour while the machine was swapping (10 of 11 GB of swap in use).
+- **Standing checks:** no negative drainage cells. Order-3+ cells with no drawn reach: 0.0-0.1 km per box. Dead ends
+  on shared edges: 0 (was 5). Reach ends dead on a shared edge: 0 of 108. Sudden flow drops: 0.
+- **The Raquette against NHDPlus:** about 0.9 from Long Lake down, now also below Tupper Lake.
+  - On the rendered map: Raquette Pond's outlet order 7, 1,698 km2; Piercefield 1,812; below Carry Falls 2,097.
+  - Before the fix: 51 km2 (order 4) below the pond, and 80-331 km2 below Carry Falls.
+  - The NHDPlus comparison of lake outlets flags 6 lakes where it flagged 17; all 7 reservoirs of the Raquette chain
+    are fixed.
+- **Against the 22:06 build:**
+  - 99.8% of reaches are at the same spot; 99.2% keep their score; 1.4% changed flow class.
+  - 165 reaches changed full drainage by 20%+, 110 of them on the Raquette.
+  - 45 moved 10+ points, all upward: the Raquette's main stem from "no data" to year-round (e.g. 12 → 82), plus
+    side creeks from the 05b lake fix.
+
+**Open:**
+- Published at the user's OK ("Yes, publish it") in site commit `9363c92` (2026-11-20 10:25). By hand, only
+  `streams/adk_northwest/` stream_map.html, map3d_data.js and profiles_data.js; the hillshades, profiles.html and
+  stream_map_3d.html were unchanged. The local map loaded with 8,473 reaches and no console errors. Live from 10:28;
+  the three served files match the build by SHA-256. The cross-box flow session's 05b change was rerunning in every
+  area at the time; it re-renders all 12 areas, adk_northwest included, and publishes them after this commit.
+- The "Let scaled flows follow creeks across box edges" session's 05b change waits for the user's OK. It will need
+  adk_northwest's 05b/06_map again.
+- Short "Raquette River" reaches of 1-30 km2 lying on NHDPlus's line are left over: side channels and stubs, and the
+  stretch between Simon Pond and Raquette Pond (about 28 km2 against 1,324). They were the same in the 22:06 build;
+  not chased.
+- 6 small lakes in adk_northwest still read under half of NHDPlus below their outlets (Big Moose Lake, Rollins and
+  Floodwood ponds, Bridge Brook Pond, two unnamed). They aren't on edges and crossbox links them; my NHDPlus
+  comparison misread Silverwood Lake the same way (89 of 91 km2 carried, but the DEM's channel lies over 300 m from
+  NHDPlus's line). Not chased.
+
+## 2026-11-19, evening: lakes in five more areas, and the lake rules checked across all six (this session)
+The user asked to extend the Jackson lakes pilot to the other areas at the same accuracy, and later to sync up with
+the sessions fixing flows at lakes. Lakes are now built in Jackson, NE Connecticut, central Vermont, Lexington, North
+Georgia and LA (`BUILT` in `05d_lakes.py`, smallest size per area), and published per area with
+`publish_area.sh`-style commits that touch only `streams/<area>/` and that area's front-page entry.
+
+| Area | Lakes | Lidar shorelines | Named from OSM | Measured depth | Contours | Trout stocked or recorded |
+|---|---|---|---|---|---|---|
+| Jackson (0.5 ha) | 547 | 244 | 3 | 58 | 0 | (Game & Fish list) |
+| NE Connecticut (1 ha) | 725 | 650 | 83 | 45 | 1,076 lines, 35 lakes | 24 |
+| central Vermont (1 ha) | 412 | 294 | 7 | 16 | 520 lines, 14 lakes | 23 |
+| Lexington (0.5 ha) | 184 | 113 | 5 | 1 | 0 | 2 |
+| North Georgia (2 ha) | 560 | 501 | 22 | 9 | 0 | 13 |
+| LA (1 ha) | 398 | 92 | 46 | 6 | 16 lines, 1 lake | 18 |
+
+- **State sources** (`lakesources.py`). Connecticut: CT DEEP boat launches and fisheries-management lake designations.
+  Vermont: Fish & Wildlife fishing access areas, special regulations and restricted waters (its map server refuses
+  paged queries: `troutdata.fetch` asks for ids first). Virginia: DWR public fishing lakes, with their boat and motor
+  rules. EPA National Lakes Assessment soundings are now read for every area (they were typed in for Jackson).
+- **Bathymetry** (`lake_bathymetry.py`). CT DEEP's lake contours (24 surveys of 1959-2002, a lower bound: "deepest
+  contour X ft"); Vermont ANR's 2.4 million sonar soundings (compiled 2020), gridded at 5 m per lake with the shore
+  at 0: Lake Dunmore 106 ft deep, 29 ft mean (published: 105 and 28). The script now repeats exactly when run twice,
+  and `run_mid.sh` runs it after `05d_lakes.py` (before, a rebuild dropped the surveyed depths). LA: USGS's 2022
+  multibeam grid of Little Rock Reservoir (76 ft deep, 38 ft mean; its elevations sit 106.4 ft under NAVD88 though
+  labelled NAVD88, found against the lidar on land and confirmed by USGS's stage-storage zero) and Lake Arrowhead's 2008
+  Reclamation sonar survey (152 ft, 61 ft mean, typed in from the report). Virginia: Lake Robertson's DWR contour map
+  (deepest contour 45 ft, typed in). Not public or not usable: California DWR's Castaic, Pyramid and Silverwood
+  multibeam; USACE's Lanier transects (sparse, CUI-marked); TVA's single Chatuge drawdown line. A research agent checked
+  ScienceBase, the 3DEP topobathy inventory, state portals and agency services.
+- **NHD's normal levels are unreliable, so the lidar decides.** Stage elevations are in feet at some lakes and metres
+  at others, read per lake against the DEM (161 Connecticut lakes had been read wrongly, published e70326e, fixed
+  fb69421). "Drawn down" needed a dam (reservoir, OSM dam or NHD dam line within 100 m), then also the normal shore
+  standing over 1 m above the water in the same lidar: at 50 dammed North Georgia lakes NHD's level sits 2-28 m over
+  water whose shore the lidar shows at the water's edge (Teague Lake, Etowah Number 32 Lake), so they were full and
+  NHD is wrong. A bed under a neighbour's normal level counts only where its own shore lies at that level (the lake
+  by Jackson Lake, 0.5 m under it); Cochrans Lake North sits 9.7 m below Cochrans Lake South's level and fills on its
+  own. A dammed lake without an NHD level is judged against its own lidar shore (Cave Mountain Lake, a Forest Service
+  swimming lake full on today's imagery, lay drained in the 2017-18 flight). A lake caught low shows its normal level
+  as its elevation (Lynchburg Reservoir 1,029 ft, not the 1,014 ft of that day).
+- **Lidar dates** are each survey's span ("2017-04 to 2018-05"): VA_West_Chesapeake_B1_2017 flew for 13 months, so
+  no single month says when a lake was seen.
+- **Names.** Where NHD has none, OpenStreetMap's, if one named outline and the lake cover half of each other and no
+  lake within 2 km has the name; not a name ending in "Dam" (the dam's). 166 lakes across the six areas, e.g.
+  Stonehouse Lake and Mill Creek Reservoir (Virginia DWR's own page; its GIS layer says "Mill Reservoir", so that
+  layer isn't used for names). The popup says "name from OpenStreetMap".
+- **Checked on imagery** (Esri World Imagery, outlines drawn over it): the "largely dry, marsh or overgrown" lakes in
+  Lexington, North Georgia and LA are forest, field, marsh or bare basins; the drawn-down reservoirs (San Gabriel,
+  Cogswell, Big Tujunga, Gypsum Pond) show low water or exposed beds. LA keeps its debris, percolation and flood
+  control basins: their names say what they are, and a name rule would also drop Hansen Flood Control Basin, which
+  held level water.
+- **Fish records.** A stocking or survey record attaches to a lake by name (within 2 km, word order aside), or by position (150 m) only if it is a lake record: CT DEEP's stream electrofishing at pond inlets and outlets had given 44 Connecticut ponds fish records that were the streams' (trout lakes there 44 -> 24), Vermont's White River stocking had shown on Sunset Lake, Georgia's Blue Ridge tailwater stocking on a 5 ha pool of the Toccoa. A lake record inside an unnamed lake names it (Yucaipa Lake, CDFW).
+- **Smaller fixes.** One shared table of trout-family names (popups showed "Salmo salar", "Oncorhynchus
+  virginalis"); `regulated` written as true/false (it was text, and "False" reads true); a contour click opens its
+  lake's popup in the 2D and 3D maps.
+- **Walking.** Lakes are impassable off trails, as in the Jackson pilot. Vermont: 274 reaches quicker, none 5+ min slower. Connecticut: 482 quicker, none 5+ min slower. Lexington: 50 quicker, 2 slower by 5 and 9 min beside a pond. North Georgia: 782 quicker (median 7 min), 4 reaches and 3 drops 5+ min slower (at most 24). LA: 462 quicker (median 12 min); 22 reaches and 29 drops 5+ min slower, up to 3 h, every one beside Castaic, Pyramid or Morris (water) or San Gabriel, Big Tujunga or Cogswell (caught low but normally full): the old routes walked on the water, and boats aren't modelled. Dry debris and flood-control basins are barriers too; one reach is 12 min slower for it.
+- **Coordination.** The imperial-units session converted the popups and notes while this ran; the flow session
+  for reaches below lakes reran `05b_flow` in North Georgia, LA, Connecticut and Vermont before this session's
+  `06_map`, so one publish carries both (the session for flows across box edges reran nothing). Published per area: Vermont f674be0, 449abcd, 38ef337; Lexington aa7035d; Connecticut 96b604b, a742b5c, c9c8f60; North Georgia bf15161; LA 7caab8b, 97e45b8; Lexington again 5c8845e (Jackson by the Wyoming session, 3c421fe). streams/ is 858 MB of GitHub Pages' 1 GB limit after these (848 before North Georgia and LA).
+
+
+## 2026-11-20, after midnight: scaled flows follow creeks across box edges (measured here; installed and published the next morning, below; another session)
+Task from the Wyoming session. 05b's "scaled" flow (a reach off the NHDPlus model network takes the unit-area flow
+of the first modelled segment downstream) searched only the reach's own box. A creek whose way left its box over an
+edge shared with another box got flow_src "none" ("no data"), and the fish score's water term fell to NHD's class
+(often "unmapped", 0.15). Jackson: 9.9 % of the reaches within 1.5 km of a shared edge read "no data", 2.5 % overall.
+On the rendered map the creeks above Deadman's Bar (jackson_lake, just above its edge with teton_snake at
+y 4,842 km) read "NHD unmapped", fish 8-11, and turn blue right past the edge: the same creek there
+(teton_snake:s14) reads year-round, 1.22 cfs, fish 65.
+
+**Cause.** 03b_stitch routes an area's boxes as one surface: a line that leaves its box ends on the first cell of the
+next box, where that box's line for the same creek starts. But each box's reaches and 05b's D8 walk end at the
+box's rim, so the search for a modelled reach below stopped there.
+
+**Change (`05b_flow.py` only, on top of the lake-line fix, sha1 7399164; in scratch, not installed):**
+- The D8 walk is a small class (`Walk`), run one reach at a time. For the box itself it gives exactly the old walk:
+  the next reach of every reach is identical in all 55 boxes. It no longer reads area_km2.tif or builds full-grid
+  pointer arrays.
+- A creek with no segment in its own box by either drainage area (its box's own, or with the water from other
+  boxes) is followed into the box it runs into. The way leaves its box at the line's last vertex, where the line
+  runs on into the next box; else at the rim cell where its walk stops: a direction pointing off the grid, or a pit
+  or flat on the rim, which steps straight out as in crossbox.exit_points.
+- In the next box the way runs to the first reach it meets, then on through that box's reaches as that box's own run
+  walks them, to the first with a segment of its own. Limits: 60 reaches per box, 4 boxes, loops stopped. Each reach
+  is settled once: the first version walked the same chains once per creek and took up to 18 min in a Smokies box;
+  now 2-3 s.
+- The next box's reaches are matched with the areas its own run uses: with the water from other boxes, from its
+  area_streams.csv when that lists its current reaches (the test scoring.attach makes), else its own box's areas,
+  with a NOTE. This matters. On box areas alone, the Snake below Jackson Lake (698 km2 in teton_snake's own routing,
+  3,986 on NHDPlus) took the Hoback River's segment, and the Snake below Palisades Dam took Palisades Creek's. That
+  is 28 Jackson reaches, 11 each in adk_high_peaks and adk_northwest, 2 each in lexington_va and adk_southeast.
+- A reach with a segment in its own box by either area keeps the result it always had. In the first version the keep
+  rule could prefer the other area's segment, found far down another box: 7 Jackson reaches, e.g. teton_snake:s483
+  0.11 -> 0.49 cfs from the Hoback box.
+- A segment found in another box may raise a creek's water estimate, never lower it below NHD's class (what the map
+  had). This follows the keep rule's reasoning: a side creek inheriting a segment further down is no evidence that it
+  dries, and possible trout water stays in. Without this rule 9 scores fell by 10+:
+  - ne_ct: Smith Brook 59 -> 45 and Skinner Brook 58 -> 37 (both trout water, perennial on NHD, "usually flows"
+    scaled from the Little River); Cedar Swamp Brook 45 -> 32;
+  - central_vt: two 1 km2 creeks in stowe_lamoille, 53 -> 34 and 42 -> 27;
+  - LA: Encino Creek 43 -> 5 (perennial on NHD; mostly dry, scaled from the LA River's natural flow in the San
+    Gabriel box).
+  78 reaches keep NHD's class this way: LA 61, ne_ct 8, central_vt 6, lexington_va 2, adk_high_peaks 1.
+
+**Measured on all 12 areas.** The current 05b and the new one ran in every box on the same inputs, writing only to
+scratch. Fish scores came from scoring.score() on each area's stream_reaches_ranked.csv with only the flow columns
+swapped. The current 05b's run reproduces every published score where its flow columns equal the published ones
+(0 differ in 105,747 reaches). adk_northwest was measured on its 00:30 rebuild (the 03b lake fix).
+
+| Map | Reaches | No data -> scaled | Class changes | Keep NHD's class | Fish +10 or more | Fish -10 or more | No data within 1.5 km of a shared edge | No data, all reaches |
+|---|---|---|---|---|---|---|---|---|
+| jackson | 10,530 | 185 | 185 | 0 | 122 | 0 | 9.9 % -> 0.0 % | 2.5 % -> 0.8 % |
+| la | 17,857 | 34 | 34 | 61 | 3 | 0 | 12.1 % -> 9.5 % | 7.9 % -> 7.7 % |
+| n_georgia | 15,045 | 9 | 9 | 0 | 0 | 0 | 1.6 % -> 0.0 % | 0.3 % -> 0.2 % |
+| central_vt | 7,632 | 56 | 54 | 6 | 3 | 0 | 11.3 % -> 2.7 % | 2.4 % -> 1.7 % |
+| ne_ct | 3,436 | 4 | 4 | 8 | 3 | 0 | 7.1 % -> 5.5 % | 2.0 % -> 1.9 % |
+| lexington_va | 4,287 | 3 | 3 | 2 | 0 | 0 | 2.7 % -> 1.7 % | 1.4 % -> 1.4 % |
+| se_pa | 4,623 | 2 | 2 | 0 | 1 | 0 | 0.9 % -> 0.0 % | 2.1 % -> 2.1 % |
+| smokies | 9,000 | 23 | 18 | 0 | 0 | 0 | 1.9 % -> 0.3 % | 0.4 % -> 0.2 % |
+| adk_high_peaks | 9,688 | 124 | 118 | 1 | 52 | 0 | 10.8 % -> 1.5 % | 3.6 % -> 2.3 % |
+| adk_northwest | 8,276 | 80 | 68 | 0 | 31 | 0 | 6.2 % -> 1.1 % | 1.8 % -> 1.0 % |
+| adk_southeast | 8,557 | 35 | 31 | 0 | 14 | 0 | 7.2 % -> 2.9 % | 2.6 % -> 2.2 % |
+| adk_southwest | 6,816 | 14 | 14 | 0 | 9 | 0 | 3.6 % -> 1.1 % | 1.0 % -> 0.8 % |
+| all | 105,747 | 569 | 540 | 78 | 238 | 0 | | |
+
+- Nothing else moves. No reach changes source except "none" -> "scaled", and no score goes down. The 29 that change
+  source but not class lie in lakes and stay "reservoir".
+- New classes: year-round nearly everywhere; "mostly dry" in LA (ephemeral on NHD); a few "usually flows" or
+  "seasonal" in ne_ct and central_vt (intermittent or unmapped on NHD).
+- Median rise where scores move: 41-45 in Jackson and the Adirondacks, 20-28 in Vermont and Connecticut, 3 in LA.
+- Still "no data" near edges, as they should be:
+  - creeks leaving the map over its outer edge near a corner (sierra_pelona 21, piru 10);
+  - creeks that run into the next box but have no modelled reach below them there either, so they read "no data"
+    in that box too (piru -> sierra_pelona 17, champlain -> boquet 10, mad_winooski -> stowe_lamoille 4);
+  - in LA, most of the rest are the reaches kept at NHD's class by the rule above.
+
+**Checked.**
+- Traces (the way into the next box, the first reach met there, the segment taken):
+  - the Deadman's Bar creeks enter teton_snake at y 4,842 km and reach the Snake 4 reaches on (segment 23123161,
+    3,986 km2, 66 m from that reach's midpoint): 0.17-1.22 cfs, fish 8-11 -> 54-72 (the brief's ~65);
+  - Glacier Gulch -> Cottonwood Creek;
+  - saranac:s79 -> the same creek in wilmington (Grass Pond Outlet), fish 14 -> 92;
+  - tupper:s59 -> the Jordan River in st_regis; tupper:s810 -> the Raquette (1,855 km2) in long_lake;
+  - Monty Brook -> the Little River in quinebaug; Elizabeth Lake Canyon -> itself in the piru box.
+- On the rendered maps (local server, the builds before this change), the seam is where the counts put it:
+  - Jackson above Deadman's Bar: jackson_lake:s2210 "NHD unmapped", fish 11, now 1.22 cfs, the same as its
+    continuation past the edge;
+  - adk_high_peaks south of Grass Pond: saranac reaches at fish 12-14 next to wilmington's 79-100, now 81-92.
+
+**Not installed; nothing rebuilt or published.** scripts/05b_flow.py is unchanged (sha1 7399164), so no session's
+05b run picks the change up before the user's OK. After the OK:
+1. Apply the change on top of the 05b on disk, with the patch script.
+2. Update README's 05b paragraph.
+3. Run 05b for every box (no 05c needed), then 06_map and 12_profiles per area.
+4. Publish.
+The new file, the patch script, the diff and the summary are in the side-session notes folder.
+
+**Open:**
+- Run order. run_mid.sh, run_drainage_refresh.sh and run_la_refresh.sh run 05c and 05b box by box. With this
+  change, a box's 05b can read a neighbour's area_streams.csv before that box's 05c has rerun. Where the neighbour's
+  reaches changed (a 03b rebuild), 05b falls back to box areas for that neighbour and prints a NOTE. Running 05c for
+  every box before any 05b avoids this. run_mid.sh is the lakes session's file; to be agreed with it.
+- 05b maps a reach's vertices to cells by truncation, though the vertices are cell corners (+-3e-10 m after the
+  round trip through EPSG:4326). About half of them land one column or row off. The walk still finds its reaches (the
+  same before and after this change), and rounding would be exact. Not changed: it would move own-box results.
+  Worth measuring separately.
+
+
+## 2026-11-20, morning: cross-box scaled flows installed; all 12 maps rebuilt and published (another session)
+**User: "Yes, install and rebuild"** (the question asked about installing, rebuilding and publishing all 12 maps).
+
+- **Installed.** `05b_flow.py` was patched on top of the file on disk (sha1 7399164) and replaced in one move. The
+  result, sha1 a093ae9, is byte-identical to the file measured above.
+- **README.** The 05b paragraph now says that creeks with no segment in their own box follow their way into the next
+  box, that 05c must run for every box before 05b, and that a segment found across an edge never lowers a creek
+  below NHD's class.
+- **05b in all 55 boxes** (10:2x). The 110 flow tables (streams and drops) are byte-identical to the measured runs.
+  The run's own counts sum to 569 reaches scaled from another box, as measured.
+- **06_map and 12_profiles for all 12 areas** (10:26-10:35, no failures). Each area's new stream_reaches_ranked.csv
+  was compared with a snapshot taken just before the render. Only the measured reaches changed, by the measured
+  amounts: flow source on the same 569 reaches, fish score on the same 252, of which 238 rose by 10+ and none fell.
+  area_rank_pct shifts with them (2,991 reaches in Jackson, 1,417 in adk_high_peaks, 0 in n_georgia, lexington_va
+  and the Smokies).
+- **Checked on the rendered maps** (local server, no console errors):
+  - Jackson above Deadman's Bar: the creek just above the jackson_lake/teton_snake edge (jackson_lake:s2210) has
+    the popup "year-round · low flow about 1.2 cfs in a typical July–October, 0.98 cfs in a drought year · kept
+    flowing 100% of summers since 2011 (… scaled from the creek below) · NHD: unmapped", fish 72 (was "NHD
+    unmapped", 11). The five creeks above it read year-round, fish 54-64 (were 8-10). The gray seam at the edge is
+    gone.
+  - adk_high_peaks south of Grass Pond: saranac:s78-80 read year-round, fish 81-92 (were 12-14).
+- **13_overview, 14_portable and phone_sync rerun.** stream_maps_all.html is 53.1 MB; phone/ is 893 MB.
+- **Published.** Site commit 80562eb, on top of 9363c92 (the 03b session's adk_northwest). The copy step was done by
+  hand with publish_site.sh's guards, so the commit could say what changed. It holds 37 files: each area's
+  stream_map.html, map3d_data.js and profiles_data.js, plus streams/index.html. Nothing outside streams/ changed;
+  streams/ stays 859 MB, and the site repository's packed history was about 300 MB before this push. Live in about
+  90 s; all 37 live files match the build by SHA-256.
+
+**Not done:**
+- **Run order.** Splitting the 05c/05b loop in run_mid.sh and run_drainage_refresh.sh (05c for every range, then 05b
+  for every range) was refused by the permission check; run_mid.sh is the lakes session's file. Until it is split,
+  a box's 05b that reads a neighbour's area_streams.csv written for other reaches (after a 03b rebuild) matches that
+  neighbour on its own box's areas and prints a NOTE; rerunning that box's 05b after the neighbour's 05c fixes it.
+  This rebuild ran only 05b, on tables that all listed their current reaches (no NOTE in any box).
+- **Vertex-to-cell truncation** in 05b (see the entry above): unchanged.

@@ -124,7 +124,7 @@
     <div id="chart" role="img" aria-label="Long profile chart"></div>
     <div class="spot" id="spot" role="region" aria-label="Clicked spot" hidden></div>
     <div class="note">Distance runs downstream from the channel head (left) to the mouth (right). Elevation is the
-      hydro-conditioned 10 m DEM used by the drop detectors, so short falls look like steep steps rather than vertical
+      hydro-conditioned USGS 3DEP DEM (33 ft cells) used by the drop detectors, so short falls look like steep steps rather than vertical
       drops. Hover the profile and a ring follows along the creek on any open map of this area. Click a spot to keep
       its details and GPS position below the chart and to send that map to it.</div>
   </section>
@@ -138,6 +138,18 @@
 <script>
 const DATA = window.PROFILE_DATA;
 const P = DATA.profiles;
+// Imperial units: profiles_data.js (12_profiles.py) is in km, m and km². Each profile gets its distances in miles
+// (mi) and heights in feet (ft) here, once, and everything below shows and works in those.
+const MI = 0.621371, FT = 3.28084, SQMI = 0.386102;
+P.forEach(p => {
+  p.mi = p.km.map(k => k * MI); p.ft = p.z.map(z => z * FT); p.length_mi = p.length_km * MI;
+  p.top_ft = Math.round(p.top_m * FT); p.bottom_ft = Math.round(p.bottom_m * FT);
+  p.drops.forEach(d => { d.mi = d.km * MI; d.drop_ft = Math.round(d.drop * FT);
+                         d.excess_ft = d.excess == null ? null : Math.round(d.excess * FT); });
+  p.falls.forEach(f => { f.mi = f.km * MI; });
+  p.gauges.forEach(g => { g.mi = g.km * MI; });
+});
+const ftText = v => Math.round(v).toLocaleString("en-US");
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const DROP = {
   "unmapped waterfall-like step":     { v: "--d-step",    sym: "triangle-down", label: "Waterfall-like step" },
@@ -149,11 +161,11 @@ const DROP = {
 };
 const ARTIFACT = "likely DEM artifact";
 const realDrops = p => p.drops.filter(d => d.status !== ARTIFACT);
-let current = null, pickedKm = null;
+let current = null, pickedMi = null;
 const burnText = (p, i) => p.burn[i] >= 0 ? p.burn_vals[p.burn[i]] : "none since 2016";
 const habText = (p, i) => p.habitat[i] >= 0 ? p.habitat_vals[p.habitat[i]] : "none";
-// drainage to sensible places (older data files carry float32 noise: 12.449999809265137)
-const fmtArea = a => a == null ? "–" : a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2);
+// drainage (km² in the data) in square miles, to sensible places (older data files carry float32 noise: 12.449999809265137)
+const fmtArea = a => { if (a == null) return "–"; const v = a * SQMI; return v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2); };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 
 document.getElementById("gen").textContent =
@@ -206,73 +218,73 @@ function legendHTML(p) {
 function render(p) {
   const ink = css("--text-primary"), ink2 = css("--text-secondary"), muted = css("--text-muted");
   const grid = css("--grid"), surf = css("--surface-1"), line = css("--line");
-  const n = p.km.length;
+  const n = p.mi.length;
   const burnAt = i => burnText(p, i), habAt = i => habText(p, i);
-  const custom = p.km.map((_, i) => [p.grad[i], fmtArea(p.area[i]), p.score[i] ?? "–", burnAt(i), habAt(i),
+  const custom = p.mi.map((_, i) => [p.grad[i], fmtArea(p.area[i]), p.score[i] ?? "–", burnAt(i), habAt(i),
                                      p.perennial[i] ? "perennial" : "not perennial (NHD)", p.trout[i] ? "Wild/Heritage Trout Water" : ""]);
   const traces = [{
-    x: p.km, y: p.z, type: "scatter", mode: "lines", name: "Elevation", line: { color: line, width: 2 },
+    x: p.mi, y: p.ft, type: "scatter", mode: "lines", name: "Elevation", line: { color: line, width: 2 },
     customdata: custom, xaxis: "x", yaxis: "y",
-    hovertemplate: "<b>%{x:.2f} km</b> · %{y:.0f} m<br>Gradient %{customdata[0]:.1f}% · drainage %{customdata[1]} km²" +
+    hovertemplate: "<b>%{x:.2f} mi</b> · %{y:,.0f} ft<br>Gradient %{customdata[0]:.1f}% · drainage %{customdata[1]} sq mi" +
       "<br>Fish score %{customdata[2]} · %{customdata[5]}<br>Burned: %{customdata[3]}<br>Critical habitat: %{customdata[4]}" +
       "<br>%{customdata[6]}<extra></extra>",
   }];
   // drops, by type (one trace per type so the legend/tooltip stay per entity)
-  const zAt = km => { let i = p.km.findIndex(k => k >= km); if (i < 0) i = n - 1; return p.z[i]; };
+  const zAt = mi => { let i = p.mi.findIndex(k => k >= mi); if (i < 0) i = n - 1; return p.ft[i]; };
   for (const [status, d] of Object.entries(DROP)) {
     const ds = p.drops.filter(x => x.status === status);
     if (!ds.length) continue;
     traces.push({
-      x: ds.map(x => x.km), y: ds.map(x => zAt(x.km)), type: "scatter", mode: "markers", name: d.label,
+      x: ds.map(x => x.mi), y: ds.map(x => zAt(x.mi)), type: "scatter", mode: "markers", name: d.label,
       marker: { symbol: d.sym, size: ds.map(x => Math.max(9, Math.min(18, 7 + x.drop / 6))), color: css(d.v),
                 line: { color: surf, width: 2 } },
       // bike: the minutes of the approach ridden (08_hike.py bike_min), said only when there is a bike leg
-      customdata: ds.map(x => [x.drop, x.excess ?? "–", x.approach ?? "–", x.bike >= 1 ? ` (${x.bike} by bike)` : "", x.drive ?? "–", x.why ?? ""]),
-      hovertemplate: `<b>${d.label}</b><br>%{x:.2f} km · drop %{customdata[0]} m` +
-        (status.includes("big creek") ? " (excess %{customdata[1]} m)" : "") +
+      customdata: ds.map(x => [x.drop_ft, x.excess_ft ?? "–", x.approach ?? "–", x.bike >= 1 ? ` (${x.bike} by bike)` : "", x.drive ?? "–", x.why ?? ""]),
+      hovertemplate: `<b>${d.label}</b><br>%{x:.2f} mi · drop %{customdata[0]} ft` +
+        (status.includes("big creek") ? " (excess %{customdata[1]} ft)" : "") +
         (status === ARTIFACT ? "<br>%{customdata[5]}: probably not a real fall<extra></extra>" :
          "<br>Approach %{customdata[2]} min%{customdata[3]} · drive %{customdata[4]} min<extra></extra>"),
       xaxis: "x", yaxis: "y",
     });
   }
   // direct labels for named falls; neighbours closer than ~4% of the creek alternate above/below to avoid collisions
-  const falls = [...p.falls].sort((a, b) => a.km - b.km);
-  let lastKm = -1e9, flip = false;
-  const fallPos = falls.map(f => { flip = (f.km - lastKm < p.length_km * 0.04) ? !flip : false; lastKm = f.km;
+  const falls = [...p.falls].sort((a, b) => a.mi - b.mi);
+  let lastMi = -1e9, flip = false;
+  const fallPos = falls.map(f => { flip = (f.mi - lastMi < p.length_mi * 0.04) ? !flip : false; lastMi = f.mi;
                                    return flip ? "bottom center" : "top center"; });
   if (falls.length) traces.push({
-    x: falls.map(f => f.km), y: falls.map(f => zAt(f.km)), type: "scatter", mode: "markers+text",
+    x: falls.map(f => f.mi), y: falls.map(f => zAt(f.mi)), type: "scatter", mode: "markers+text",
     name: "Mapped waterfall", text: falls.map(f => f.name === "mapped waterfall" ? "" : f.name),
     textposition: fallPos, textfont: { color: ink2, size: 11 },
     marker: { symbol: "star", size: 12, color: ink, line: { color: surf, width: 2 } },
-    hovertemplate: "<b>%{text}</b><br>%{x:.2f} km<extra>mapped waterfall</extra>", xaxis: "x", yaxis: "y",
+    hovertemplate: "<b>%{text}</b><br>%{x:.2f} mi<extra>mapped waterfall</extra>", xaxis: "x", yaxis: "y",
   });
   if (p.gauges.length) traces.push({
-    x: p.gauges.map(g => g.km), y: p.gauges.map(g => zAt(g.km)), type: "scatter", mode: "markers", name: "USGS gauge",
+    x: p.gauges.map(g => g.mi), y: p.gauges.map(g => zAt(g.mi)), type: "scatter", mode: "markers", name: "USGS gauge",
     marker: { symbol: "triangle-up", size: 12, color: css("--gauge"), line: { color: surf, width: 2 } },
     customdata: p.gauges.map(g => [g.name, g.cfs, g.status]),
     hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]} cfs · %{customdata[2]}<extra>gauge</extra>", xaxis: "x", yaxis: "y",
   });
   // gradient panel (its own axis: never a second y-scale on the elevation panel)
-  traces.push({ x: p.km, y: p.grad.map(g => Math.min(g, 80)), type: "scatter", mode: "lines", name: "Gradient",
+  traces.push({ x: p.mi, y: p.grad.map(g => Math.min(g, 80)), type: "scatter", mode: "lines", name: "Gradient",
     line: { color: ink2, width: 1.5 }, fill: "tozeroy", fillcolor: grid, xaxis: "x", yaxis: "y2",
-    hovertemplate: "%{x:.2f} km · gradient %{y:.1f}%<extra></extra>" });
+    hovertemplate: "%{x:.2f} mi · gradient %{y:.1f}%<extra></extra>" });
   // attribute strips
   // one single-row heatmap per strip, placed by number (several 1-row heatmaps on a category axis break Plotly)
   const stripNames = [];
   const strip = (name, vals, color, _, text) => ({
-    x: p.km, y0: stripNames.push(name) - 1, dy: 1, z: [vals], type: "heatmap", xaxis: "x", yaxis: "y3", showscale: false,
+    x: p.mi, y0: stripNames.push(name) - 1, dy: 1, z: [vals], type: "heatmap", xaxis: "x", yaxis: "y3", showscale: false,
     colorscale: color, zmin: 0, zmax: name === "Fish score" ? 100 : 1, ygap: 3, text: [text],
-    hovertemplate: "%{x:.2f} km · " + name + ": %{text}<extra></extra>",
+    hovertemplate: "%{x:.2f} mi · " + name + ": %{text}<extra></extra>",
   });
   const on = c => [[0, surf], [0.5, surf], [0.5001, c], [1, c]];
   const seq = [[0, css("--seq-0")], [0.25, css("--seq-1")], [0.5, css("--seq-2")], [0.75, css("--seq-3")], [1, css("--seq-4")]];
-  traces.push(strip("Critical habitat", p.habitat.map(v => v >= 0 ? 1 : 0), on(css("--strip-habitat")), 0, p.km.map((_, i) => habAt(i))));
+  traces.push(strip("Critical habitat", p.habitat.map(v => v >= 0 ? 1 : 0), on(css("--strip-habitat")), 0, p.mi.map((_, i) => habAt(i))));
   traces.push(strip("Wild trout water", p.trout, on(css("--strip-trout")), 0, p.trout.map(v => v ? "yes" : "no")));
-  traces.push(strip("Burned since 2016", p.burn.map(v => v >= 0 ? 1 : 0), on(css("--strip-burn")), 0, p.km.map((_, i) => burnAt(i))));
+  traces.push(strip("Burned since 2016", p.burn.map(v => v >= 0 ? 1 : 0), on(css("--strip-burn")), 0, p.mi.map((_, i) => burnAt(i))));
   traces.push(strip("Perennial (NHD)", p.perennial, on(css("--strip-perennial")), 0, p.perennial.map(v => v ? "yes" : "no")));
   traces.push(strip("Fish score", p.score.map(v => v ?? null), seq, 0, p.score.map(v => v ?? "–")));
-  if (pickedKm != null) traces.push({ x: [pickedKm], y: [zAt(pickedKm)], type: "scatter", mode: "markers", name: "Picked spot",
+  if (pickedMi != null) traces.push({ x: [pickedMi], y: [zAt(pickedMi)], type: "scatter", mode: "markers", name: "Picked spot",
     marker: { symbol: "circle-open", size: 16, color: css("--accent"), line: { width: 2.5 } }, hoverinfo: "skip", xaxis: "x", yaxis: "y" });
 
   const axis = { gridcolor: grid, zeroline: false, linecolor: grid, tickfont: { color: muted, size: 11 },
@@ -281,9 +293,9 @@ function render(p) {
     paper_bgcolor: surf, plot_bgcolor: surf, showlegend: false, margin: { l: 120, r: 16, t: 8, b: 44 },
     font: { family: "system-ui, -apple-system, Segoe UI, sans-serif", color: ink },
     hovermode: "closest", hoverlabel: { bgcolor: surf, bordercolor: grid, font: { color: ink, size: 12 } },
-    xaxis: { ...axis, title: { ...axis.title, text: "Distance downstream from channel head (km)" }, anchor: "y3",
+    xaxis: { ...axis, title: { ...axis.title, text: "Distance downstream from channel head (miles)" }, anchor: "y3",
              showspikes: true, spikemode: "across", spikecolor: muted, spikethickness: 1, spikedash: "dot" },
-    yaxis: { ...axis, domain: [0.42, 1], title: { ...axis.title, text: "Elevation (m)" } },
+    yaxis: { ...axis, domain: [0.42, 1], title: { ...axis.title, text: "Elevation (ft)" }, tickformat: ",d" },
     yaxis2: { ...axis, domain: [0.2, 0.38], title: { ...axis.title, text: "Gradient (%)" }, rangemode: "tozero" },
     yaxis3: { ...axis, domain: [0, 0.17], showgrid: false, tickfont: { color: ink2, size: 11 }, fixedrange: true,
               tickvals: stripNames.map((_, i) => i), ticktext: stripNames, range: [-0.5, stripNames.length - 0.5] },
@@ -293,46 +305,47 @@ function render(p) {
 }
 
 function show(p, opts = {}) {
-  current = p; pickedKm = opts.km ?? null;
+  current = p; pickedMi = opts.mi ?? null;
   document.getElementById("missing").hidden = true;
   document.getElementById("title").textContent = p.label;
   document.getElementById("where").textContent = p.region;
-  const drop = p.top_m - p.bottom_m;
+  // the average gradient from the metric data (a slope is the same in any unit)
+  const slope = (p.top_m - p.bottom_m) / p.length_km / 10;
   document.getElementById("stats").innerHTML =
-    `<span>Length <b>${p.length_km.toFixed(1)} km</b></span><span>Elevation <b>${p.top_m}–${p.bottom_m} m</b> (−${drop} m, avg ${(drop / p.length_km / 10).toFixed(1)}%)</span>` +
-    `<span>Drainage at mouth <b>${p.area_km2} km²</b></span><span>Best fish score <b>${p.best_score.toFixed(0)}</b></span>` +
+    `<span>Length <b>${p.length_mi.toFixed(1)} mi</b></span><span>Elevation <b>${ftText(p.top_ft)}–${ftText(p.bottom_ft)} ft</b> (−${ftText(p.top_ft - p.bottom_ft)} ft, avg ${slope.toFixed(1)}%)</span>` +
+    `<span>Drainage at mouth <b>${fmtArea(p.area_km2)} sq mi</b></span><span>Best fish score <b>${p.best_score.toFixed(0)}</b></span>` +
     `<span>Drops <b>${realDrops(p).length}</b></span>` +
     (p.drops.length > realDrops(p).length ? `<span>Likely DEM artifacts <b>${p.drops.length - realDrops(p).length}</b></span>` : "");
   document.getElementById("legend").innerHTML = legendHTML(p);
   render(p);
   table(p);
   spotPanel();
-  setMapLink(pickedKm ?? p.km[Math.floor(p.km.length / 2)], pickedKm == null ? 13 : 16);
-  history.replaceState(null, "", "#id=" + encodeURIComponent(p.id) + (pickedKm != null ? "&km=" + pickedKm.toFixed(3) : ""));
+  setMapLink(pickedMi ?? p.mi[Math.floor(p.mi.length / 2)], pickedMi == null ? 13 : 16);
+  history.replaceState(null, "", "#id=" + encodeURIComponent(p.id) + (pickedMi != null ? "&mi=" + pickedMi.toFixed(3) : ""));
   document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c.textContent === p.label));
 }
 
-// index of the profile point nearest a distance (km is sorted)
-function nearest(p, km) {
-  let lo = 0, hi = p.km.length - 1;
-  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.km[mid] < km) lo = mid; else hi = mid; }
-  return km - p.km[lo] <= p.km[hi] - km ? lo : hi;
+// index of the profile point nearest a distance in miles (mi is sorted)
+function nearest(p, mi) {
+  let lo = 0, hi = p.mi.length - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.mi[mid] < mi) lo = mid; else hi = mid; }
+  return mi - p.mi[lo] <= p.mi[hi] - mi ? lo : hi;
 }
-const spotText = (p, i) => `${p.name} · ${p.km[i].toFixed(2)} km · ${Math.round(p.z[i])} m`;
+const spotText = (p, i) => `${p.name} · ${p.mi[i].toFixed(2)} mi · ${ftText(p.ft[i])} ft`;
 const pinHash = (lat, lon, zoom, text) => `#${lat},${lon},${zoom},pin,${encodeURIComponent(text)}`;
-function setMapLink(km, zoom) {
-  const p = current, i = nearest(p, km);
+function setMapLink(mi, zoom) {
+  const p = current, i = nearest(p, mi);
   document.getElementById("mapLink").href = "stream_map.html" +
-    (pickedKm == null ? `#${p.lat[i]},${p.lon[i]},${zoom}` : pinHash(p.lat[i], p.lon[i], zoom, spotText(p, i)));
+    (pickedMi == null ? `#${p.lat[i]},${p.lon[i]},${zoom}` : pinHash(p.lat[i], p.lon[i], zoom, spotText(p, i)));
 }
 
 // The spot under the mouse, to the area's map open in another tab (map_drainages.js showPin draws it there):
 // "hover" moves the ring, "pick" (a click) also sends the map to it.
 const spotChan = "BroadcastChannel" in window ? new BroadcastChannel("streams-profile-spot") : null;
 let spotSeq = 0, lastSpot = null;
-function sendSpot(km, kind) {
-  const p = current; if (!p || km == null) return;
-  const i = nearest(p, km), key = p.id + ":" + i + ":" + kind;
+function sendSpot(mi, kind) {
+  const p = current; if (!p || mi == null) return;
+  const i = nearest(p, mi), key = p.id + ":" + i + ":" + kind;
   if (key === lastSpot) return;
   lastSpot = key;
   const m = { seq: Date.now() + "-" + (spotSeq++), kind, lat: p.lat[i], lon: p.lon[i], text: spotText(p, i) };
@@ -341,31 +354,31 @@ function sendSpot(km, kind) {
 }
 
 // The clicked spot's details, kept below the chart: what the hover box says, plus its GPS position and any drop,
-// mapped waterfall or gauge within 60 m (1.5 profile steps; at 100 m twice as many clicks on a drop also list a
-// different one). Stays until another spot or creek is picked, or ×.
+// mapped waterfall or gauge within 200 ft (60 m: 1.5 profile steps; at 100 m twice as many clicks on a drop also
+// list a different one). Stays until another spot or creek is picked, or ×.
 function spotPanel(scroll) {
   const el = document.getElementById("spot"), p = current;
-  if (!p || pickedKm == null) { el.hidden = true; el.innerHTML = ""; return; }
+  if (!p || pickedMi == null) { el.hidden = true; el.innerHTML = ""; return; }
   const opening = el.hidden;
-  const i = nearest(p, pickedKm), lat = p.lat[i].toFixed(5), lon = p.lon[i].toFixed(5);
+  const i = nearest(p, pickedMi), lat = p.lat[i].toFixed(5), lon = p.lon[i].toFixed(5);
   const near = xs => xs.filter(x => Math.abs(x.km - p.km[i]) <= 0.06);
   const item = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
   const feats = [
-    ...near(p.drops).map(d => `<li><b>${DROP[d.status].label}</b> at ${d.km.toFixed(2)} km: drop ${d.drop} m` +
-      (d.excess != null ? ` (excess ${d.excess} m)` : "") +
+    ...near(p.drops).map(d => `<li><b>${DROP[d.status].label}</b> at ${d.mi.toFixed(2)} mi: drop ${d.drop_ft} ft` +
+      (d.excess_ft != null ? ` (excess ${d.excess_ft} ft)` : "") +
       (d.status === ARTIFACT ? ` · ${esc(d.why || "set aside")}: probably not a real fall`
                              : ` · approach ${d.approach ?? "–"} min${d.bike >= 1 ? ` (${d.bike} by bike)` : ""} · drive ${d.drive ?? "–"} min`) +
       ` · <span class="mono">${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</span></li>`),
-    ...near(p.falls).map(f => `<li><b>Mapped waterfall</b>: ${esc(f.name)} (${f.km.toFixed(2)} km)</li>`),
+    ...near(p.falls).map(f => `<li><b>Mapped waterfall</b>: ${esc(f.name)} (${f.mi.toFixed(2)} mi)</li>`),
     ...near(p.gauges).map(g => `<li><b>USGS gauge</b>: ${g.url ? `<a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.name)}</a>`
                                                             : esc(g.name)} · ${g.cfs ?? "–"} cfs · ${esc(g.status)}</li>`),
   ];
-  el.innerHTML = `<div class="spot-head"><h3>${esc(p.name)} at ${p.km[i].toFixed(2)} km</h3>
+  el.innerHTML = `<div class="spot-head"><h3>${esc(p.name)} at ${p.mi[i].toFixed(2)} mi</h3>
       <button type="button" class="iconbtn" id="spotClose" title="Close" aria-label="Close the spot details">×</button></div>
     <dl>${[
-      item("Elevation", `${Math.round(p.z[i])} m`),
+      item("Elevation", `${ftText(p.ft[i])} ft`),
       item("Gradient", `${p.grad[i].toFixed(1)}%`),
-      item("Drainage", `${fmtArea(p.area[i])} km²`),
+      item("Drainage", `${fmtArea(p.area[i])} sq mi`),
       item("Fish score", p.score[i] ?? "–"),
       item("Flow", p.perennial[i] ? "perennial" : "not perennial (NHD)"),
       item("Wild trout water", p.trout[i] ? "yes" : "no"),
@@ -383,8 +396,8 @@ function spotPanel(scroll) {
   if (scroll && opening) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 function clearSpot() {
-  pickedKm = null; render(current); spotPanel();
-  setMapLink(current.km[Math.floor(current.km.length / 2)], 13);
+  pickedMi = null; render(current); spotPanel();
+  setMapLink(current.mi[Math.floor(current.mi.length / 2)], 13);
   history.replaceState(null, "", "#id=" + encodeURIComponent(current.id));
 }
 function copyText(t, btn) {
@@ -403,11 +416,11 @@ function table(p) {
   document.getElementById("dropCount").textContent = (nReal ? `${nReal} on the profile` : "none detected on this creek") +
     (nArt ? ` · ${nArt} likely DEM artifact${nArt > 1 ? "s" : ""}` : "");
   if (!p.drops.length) { t.innerHTML = ""; return; }
-  t.innerHTML = `<thead><tr><th class="num">km</th><th>Type</th><th class="num">Drop (m)</th><th class="num">Excess (m)</th>
+  t.innerHTML = `<thead><tr><th class="num">mi</th><th>Type</th><th class="num">Drop (ft)</th><th class="num">Excess (ft)</th>
     <th class="num">Drive (min)</th><th class="num">Bike (min)</th><th class="num">Approach (min)</th><th>Map</th></tr></thead><tbody>` +
-    p.drops.map(d => `<tr${d.status === ARTIFACT ? ' class="muted"' : ""}><td class="num">${d.km.toFixed(2)}</td><td>${DROP[d.status].label}${d.why ? ` (${d.why})` : ""}</td><td class="num">${d.drop}</td>
-      <td class="num">${d.excess ?? "–"}</td><td class="num">${d.drive ?? "–"}</td><td class="num">${d.bike ?? "–"}</td>
-      <td class="num">${d.approach ?? "–"}</td><td><a href="stream_map.html${pinHash(d.lat, d.lon, 16, `${DROP[d.status].label}, ${d.drop} m · ${p.name} ${d.km.toFixed(2)} km`)}" target="_blank">map</a></td></tr>`).join("") +
+    p.drops.map(d => `<tr${d.status === ARTIFACT ? ' class="muted"' : ""}><td class="num">${d.mi.toFixed(2)}</td><td>${DROP[d.status].label}${d.why ? ` (${d.why})` : ""}</td><td class="num">${d.drop_ft}</td>
+      <td class="num">${d.excess_ft ?? "–"}</td><td class="num">${d.drive ?? "–"}</td><td class="num">${d.bike ?? "–"}</td>
+      <td class="num">${d.approach ?? "–"}</td><td><a href="stream_map.html${pinHash(d.lat, d.lon, 16, `${DROP[d.status].label}, ${d.drop_ft} ft · ${p.name} ${d.mi.toFixed(2)} mi`)}" target="_blank">map</a></td></tr>`).join("") +
     "</tbody>";
 }
 
@@ -415,26 +428,27 @@ function wireClick() {
   const chart = document.getElementById("chart");
   chart.on("plotly_click", ev => {
     const pt = ev.points && ev.points[0]; if (!pt) return;
-    pickedKm = pt.x; render(current); setMapLink(pickedKm, 16); spotPanel(true);
-    lastSpot = null; sendSpot(pickedKm, "pick");
-    history.replaceState(null, "", "#id=" + encodeURIComponent(current.id) + "&km=" + pickedKm.toFixed(3));
+    pickedMi = pt.x; render(current); setMapLink(pickedMi, 16); spotPanel(true);
+    lastSpot = null; sendSpot(pickedMi, "pick");
+    history.replaceState(null, "", "#id=" + encodeURIComponent(current.id) + "&mi=" + pickedMi.toFixed(3));
   });
   // every panel shares the distance axis, so the strips and gradient move the ring too
-  let raf = 0, hoverKm = null;
+  let raf = 0, hoverMi = null;
   chart.on("plotly_hover", ev => {
     const pt = ev.points && ev.points[0]; if (!pt || typeof pt.x !== "number") return;
-    hoverKm = pt.x;
-    if (!raf) raf = requestAnimationFrame(() => { raf = 0; sendSpot(hoverKm, "hover"); });
+    hoverMi = pt.x;
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; sendSpot(hoverMi, "hover"); });
   });
   // leaving the chart puts the ring back on the clicked spot, if there is one (otherwise it stays where it was)
-  chart.on("plotly_unhover", () => { if (pickedKm != null) sendSpot(pickedKm, "hover"); });
+  chart.on("plotly_unhover", () => { if (pickedMi != null) sendSpot(pickedMi, "hover"); });
 }
 
 function fromHash() {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get("id")) {
     const p = P.find(p => p.id === h.get("id"));
-    if (p) return show(p, { km: h.get("km") ? parseFloat(h.get("km")) : null });
+    // a spot as mi (km in links made before the page went imperial, 2026-11-19)
+    if (p) return show(p, { mi: h.get("mi") ? parseFloat(h.get("mi")) : h.get("km") ? parseFloat(h.get("km")) * MI : null });
   }
   if (h.get("q")) {
     // from the map: creek name plus a location, pick the same-named profile passing closest to it
@@ -443,15 +457,15 @@ function fromHash() {
     for (const p of P.filter(p => p.name.toLowerCase() === name)) {
       for (let i = 0; i < p.lat.length; i++) {
         const d = (p.lat[i] - lat) ** 2 + ((p.lon[i] - lon) * 0.83) ** 2;
-        if (!best || d < best.d) best = { d, p, km: p.km[i] };
+        if (!best || d < best.d) best = { d, p, mi: p.mi[i] };
       }
     }
-    if (best) return show(best.p, { km: isNaN(lat) ? null : best.km });
+    if (best) return show(best.p, { mi: isNaN(lat) ? null : best.mi });
     // no profile under that name (they need 2 km of channel named in the USGS hydrography): say so, instead of
     // opening the first creek in the list as if it were the one asked for
     show(P[0]);
     const miss = document.getElementById("missing");
-    miss.textContent = `No long profile for “${h.get("q")}”: profiles are drawn only for creeks with at least 2 km of ` +
+    miss.textContent = `No long profile for “${h.get("q")}”: profiles are drawn only for creeks with at least 1.2 miles of ` +
       `channel named in the USGS hydrography. Showing ${P[0].label} instead; search above for another creek.`;
     miss.hidden = false;
     return;

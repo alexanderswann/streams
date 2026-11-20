@@ -87,6 +87,10 @@ __BLOBS__
 <script>
 const AREAS = __AREAS__;
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+// imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation in m)
+const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
+  return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
+const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
 const canvas = L.canvas({tolerance: 9, padding: 0.3});            // a wide touch margin for thin lines under a finger
 const map = L.map("map", {zoomSnap: 0.5, preferCanvas: true, renderer: canvas});
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
@@ -96,7 +100,7 @@ const photo = L.tileLayer(ESRI + "/World_Imagery/MapServer/tile/{z}/{y}/{x}", {a
 const shade = L.tileLayer(ESRI + "/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, opacity: .45}).addTo(map);
 const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, pane: "shadowPane"}).addTo(map);
 L.control.layers({"Light gray": gray, "USGS topo": topo, "Satellite": photo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
-L.control.scale().addTo(map);
+L.control.scale({metric: false}).addTo(map);
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD · Trails © OpenStreetMap contributors · USFS · iNaturalist · PRISM Group, Oregon State University");
 
 const all = L.latLngBounds([]);
@@ -129,9 +133,9 @@ function pop(p, a) {
   const where = p.d === p.k ? esc(p.d) : `${esc(p.k)} · ${esc(p.d)}`;
   return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where} · ${esc(a.label)}</div>` +
     `<table><tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr>` +
-    `<tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
+    `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
     `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || String(p.fl || "").replace(/^NHD /, ""))}</td></tr>` +
-    `<tr><td>Elev / gradient</td><td>${p.el ?? "?"} m · ${p.gr}%</td></tr>` +
+    `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
     `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` +
     (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
     (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +

@@ -54,13 +54,21 @@ it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other area
 | Area key | Area | Ranges | Home (drive times) |
 |---|---|---|---|
 | `la` | LA mountains | the eight above | 90404 Santa Monica |
-| `jackson` | Jackson Hole, Grand Teton & Teton Valley, WY and ID (all of Grand Teton NP, Teton Valley around Driggs, Palisades Reservoir and Alpine; grown from the first three boxes on 2026-11-19) | `teton_snake`, `gros_ventre`, `hoback`, `jackson_lake`, `teton_valley`, `palisades` | 83001 Jackson |
+| `jackson` | Jackson Hole, Grand Teton & Teton Valley, WY and ID (all of Grand Teton NP, Teton Valley around Driggs, Palisades Reservoir and Alpine; grown from three boxes to seven on 2026-11-19, laid out so no lake, and no reservoir's filled basin, crosses an edge between two boxes: see `MULTI_AREA_LOG.md`) | `teton_snake`, `gros_ventre`, `hoback`, `jackson_lake`, `buffalo_fork`, `teton_valley`, `palisades` | 83001 Jackson |
 | `n_georgia` | North Georgia mountains | `cohutta`, `blue_ridge`, `rabun`, `hooch_tailwater` | 30305 Atlanta |
 | `central_vt` | Central Vermont | `stowe_lamoille`, `mad_winooski`, `white_river` | 05753 Middlebury |
 | `ne_ct` | Northeastern Connecticut | `natchaug`, `quinebaug` | 06281 Woodstock |
 | `lexington_va` | Lexington, Virginia | `maury_goshen`, `blue_ridge_va` | 24450 Lexington |
 | `se_pa` | Southeastern Pennsylvania (and northern Delaware) | `brandywine`, `ridley_valley` | 19063 Media |
 | `smokies` | Great Smoky Mountains National Park and around it (TN / NC) | `cades_cove`, `le_conte`, `cataloochee`, `tellico`, `snowbird`, `nantahala`, `tuckasegee` | 30305 Atlanta |
+| `adk_high_peaks` | Adirondacks: High Peaks & Lake Placid (the High Peaks, Saranac lakes, Ausable, Boquet, Lake Champlain shore, Chateaugay and Chazy lakes) | `high_peaks`, `boquet`, `saranac`, `wilmington`, `champlain`, `chateaugay` | 05753 Middlebury |
+| `adk_northwest` | Adirondacks: Long Lake, Tupper & Cranberry (the Raquette from Raquette Lake to Carry Falls, Stillwater, Cranberry Lake, Five Ponds, the St. Regis) | `beaver`, `long_lake`, `tupper`, `st_regis`, `lake_ozonia` | 05753 Middlebury |
+| `adk_southwest` | Adirondacks: Old Forge & West Canada Lakes (the Moose and Black rivers, West Canada Creek, Piseco and Speculator) | `moose`, `west_canada_lakes`, `west_canada`, `speculator` | 05753 Middlebury |
+| `adk_southeast` | Adirondacks: Hudson, Indian Lake & Lake George (the Hudson below Newcomb, Indian Lake, the Great Sacandaga, Schroon and Lake George) | `indian_lake`, `minerva`, `siamese`, `sacandaga`, `lake_george` | 05753 Middlebury |
+
+The four `adk_` areas are the whole Adirondack Park (its Blue Line, 23,560 km²) in four maps: one map of the park
+would be about 150 MB, over GitHub's 100 MB file limit and too heavy for a phone. The lines between them avoid
+cutting lakes and keep each river on one side (see `config.py` and `MULTI_AREA_LOG.md`, 2026-11-19 evening).
 
 | Folder | What |
 |---|---|
@@ -78,10 +86,11 @@ it says otherwise. `MULTI_AREA_LOG.md` is the dated record of how the other area
 | TNC California Natural Flows (modelled monthly flow per year) | NHDPlus V2's EROM mean flow for the month × a yearly index from the area's own USGS gauges (`02b_download_flow.py`). One index per area, so small headwaters that dry faster than the gauged creeks are over-rated in droughts |
 | CAL FIRE fire history | The interagency fire perimeter history (NIFC) |
 | CPAD restricted / no public access | PAD-US holdings recorded as restricted or closed. Most eastern holdings are "unknown" there and aren't flagged |
-| CDFW surveys, stocking, Wild / Heritage Trout Waters | Each state's own (`troutdata.py`): CT DEEP fish samples, stocking and trout management areas; Vermont's brook trout waters and stocking list; Virginia DWR wild trout streams (classes I–IV) and stocked waters; Georgia DNR designated trout streams, stocking and samples; Wyoming Game & Fish trout-stream classes and native cutthroat waters; Idaho Fish & Game's Yellowstone cutthroat trout streams, as StreamNet's regional fish distribution serves them (the Idaho side of the Jackson map: Teton Valley and Palisades; Idaho publishes no survey or stocking layer); the Pennsylvania Fish & Boat Commission's Class A and natural-reproduction wild trout streams, trout special-regulation areas, stocked sections (fish per species) and stocked lakes; Delaware DNREC's designated trout streams; plus Trout Unlimited's brook trout patches from Connecticut to Georgia, and iNaturalist (rainbow, brown, brook and cutthroat trout). Outside California a no-trout sample counts for the same creek within 1.5 km only, and only Connecticut's electrofishing samples make one |
-| CDFW natural fish-passage barriers among the known falls | none; the other sources are the same everywhere (OSM, NHD, USGS GNIS, Wikidata and the area's guidebook and inventory falls, `02f_known_falls.py`) |
-| Caltrans and county road closures | Keyless feeds where they exist: Grand Teton NP and Teton County (Jackson), Georgia 511, New England Compass (Vermont), the Blue Ridge Parkway and Virginia 511 (Lexington); in the Smokies the Blue Ridge Parkway, NCDOT's incident layer (the TIMS feed behind DriveNC), TDOT SmartWay's event points, the park's own alerts (closures by road name, drawn on the park's roads layer) and its table of secondary roads' open seasons, and the Cherokee National Forest's road construction table (North Carolina's national forests publish closures only as prose and PDFs); none for NE Connecticut or southeastern Pennsylvania |
-| The Pacific Crest Trail layer | The area's own long trail (`long_trail` in `AREAS`): the Appalachian Trail (North Georgia, Lexington, the Smokies), the Long Trail (Vermont), the Horse-Shoe Trail (southeastern Pennsylvania); none for Jackson or NE Connecticut |
+| CDFW surveys, stocking, Wild / Heritage Trout Waters | Each state's own (`troutdata.py`): CT DEEP fish samples, stocking and trout management areas; Vermont's brook trout waters and stocking list; Virginia DWR wild trout streams (classes I–IV) and stocked waters; Georgia DNR designated trout streams, stocking and samples; Wyoming Game & Fish trout-stream classes and native cutthroat waters; Idaho Fish & Game's Yellowstone cutthroat trout streams, as StreamNet's regional fish distribution serves them (the Idaho side of the Jackson map: Teton Valley and Palisades; Idaho publishes no survey or stocking layer); the Pennsylvania Fish & Boat Commission's Class A and natural-reproduction wild trout streams, trout special-regulation areas, stocked sections (fish per species) and stocked lakes; Delaware DNREC's designated trout streams; in the Smokies, North Carolina WRC's mountain trout waters by class (Hatchery Supported and Delayed Harvest, which it stocks, catch-and-release, named Wild Trout Waters; not the game lands' blanket "Wild Trout Waters unless otherwise noted", which covers every creek there), Tennessee WRA's stocking sites, electrofishing samples (1996-2022) and brook trout genetics collections, the national park's own trout distribution map (its "No Fish" code marks unsampled streams and is not used; segments it marks internal are left out) and the Cherokee tribal fishing zones (the Raven Fork trophy section and the Enterprise Waters); in the Adirondacks, New York DEC's categorized trout stream reaches (Wild-Quality, Stocked, Stocked-Extended, with the species and number stocked), the streams classed trout (T) or trout spawning (TS) in the state's water quality standards, and public fishing access along trout streams (DEC's fishing rights easements; DEC publishes no survey layer, and its pond stocking list has towns, not coordinates); plus Trout Unlimited's brook trout patches from New York and Connecticut to Georgia, and iNaturalist (rainbow, brown, brook and cutthroat trout). Outside California a no-trout sample counts for the same creek within 1.5 km only, and only Connecticut's and Tennessee's electrofishing samples make one |
+| CDFW natural fish-passage barriers among the known falls | none, except the Smokies, where the national park's own waterfalls layer is added; the other sources are the same everywhere (OSM, NHD, USGS GNIS, Wikidata and the area's guidebook and inventory falls, `02f_known_falls.py`) |
+| Caltrans and county road closures | Keyless feeds where they exist: Grand Teton NP and Teton County (Jackson), Georgia 511, New England Compass (Vermont), the Blue Ridge Parkway and Virginia 511 (Lexington); in the Smokies the Blue Ridge Parkway, NCDOT's incident layer (the TIMS feed behind DriveNC), TDOT SmartWay's event points, the park's own alerts (closures by road name, drawn on the park's roads layer) and its table of secondary roads' open seasons, and the Cherokee National Forest's road construction table (North Carolina's national forests publish closures only as prose and PDFs); none for NE Connecticut, southeastern Pennsylvania or the Adirondacks (511NY needs an API key) |
+| The Pacific Crest Trail layer | The area's own long trail (`long_trail` in `AREAS`): the Appalachian Trail (North Georgia, Lexington, the Smokies), the Long Trail (Vermont), the Horse-Shoe Trail (southeastern Pennsylvania), the Northville-Placid Trail (the Adirondacks); none for Jackson or NE Connecticut |
+| USFS wilderness (no bikes) | The same layer, plus in the Adirondacks the Forest Preserve's Wilderness, Primitive and Canoe areas (NYSDEC lands; the State Land Master Plan keeps bikes out of them), source `nys_forest_preserve` in `geomatch.wilderness_path()` |
 | CDEC gauges, the State Parks / NPS / Eaton Fire trail layers | none |
 | NHD "artificial paths" (river and lake centrelines) are not perennial: they cross dry washes and reservoirs | They count as perennial: in wet country they are the rivers |
 | Elevation band in `05_score.py`'s first-pass score | none |
@@ -106,6 +115,13 @@ profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes 0
 OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass server second.
 
 ## Outputs (`output/la/`)
+Everything the maps, popups, creek profiles and GPX files show is in imperial units: feet, miles, square miles,
+acres and °F (flows in cfs), with scale bars and the measuring tool in feet and miles (owner's choice, 2026-11-19).
+The pipeline and its files stay metric (the columns are named `_m`, `_km`, `_km2`, `_ha`); `scripts/units.py`
+converts what a person reads, and the pages' own scripts carry the same few conversions. New popup or legend text
+goes through those helpers. Text quoted from a source keeps its words, with the imperial figure in brackets after
+each metric one (`units.imperial_text`: CDFW's surveyors write "2.5 meters [8.2 ft] wide by 2.5 feet high").
+
 | File | What |
 |---|---|
 | `stream_map.html` | Combined interactive map. Keep it next to the region folders, which hold the hillshade PNGs |
@@ -132,6 +148,12 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    side, so a creek crosses a box edge as one line with one size. (Until 2026-11-19 each box was solved alone and no
    stream crossed an edge.) `area_km2.tif` counts every cell upstream in the joined boxes; `crossbox.py` adds only what
    the terrain can't see: rivers entering from outside every box, and lakes' water past their dams.
+   A lake, or a reservoir's basin filled to its spill level, that reaches further across an edge than the 5 km margin
+   can be filled one way by each box, and its water stopped on the edge short of the dam (the Snake below Jackson Lake,
+   the Raquette below Raquette Pond and Carry Falls). Since 2026-11-20 03b finds every such dead end and conditions a
+   piece of the DEM around it again as one (`mend_seams`); it exits with an error if one is left. A lake whose water
+   leaves it on an edge between two boxes flows on instead of ending there, since `crossbox.py` carries a lake past its
+   dam only within one box.
    Flats are given their slope in steps of 1e-9 m a cell, not pysheds' default 1e-5: the default piles up across the
    flattened water surface of a mapped river until the flat becomes a pit, which ended flow paths all along the big
    rivers of the wetter areas (found 2026-11-18; LA's dry channels showed it only at reservoirs). Flow paths are
@@ -150,10 +172,12 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    Only hits on NHD-perennial creeks are kept, and anything pass 1 already found is dropped.
    Shared flow-path code lives in `flowpath.py`.
    `02f_known_falls.py` (per area, before step 5; `run_mid.sh` runs it first): the known waterfalls, every source merged
-   into `data/raw/<area>/_shared/known_falls.gpkg`. Sources: OpenStreetMap (waterfall nodes and ways, named rapids,
+   into `data/raw/<area>/_shared/known_falls.gpkg`. Sources: OpenStreetMap (queried in tiles of at most 0.5 degrees: one
+   query over a whole area's box hung on both public servers; waterfall nodes and ways, named rapids,
    named swimming holes, and features named for falls, cascades or potholes that sit on a stream); NHD waterfall points;
    USGS GNIS features of class Falls or Rapids (the current file and the 2021 archive, in `data/raw/_national/gnis`);
-   Wikidata waterfalls, rapids and swimming holes; CDFW's barrier surveys (LA); and the hand-researched falls in
+   Wikidata waterfalls, rapids and swimming holes; CDFW's barrier surveys (LA); the national park's waterfalls layer
+   (Smokies); and the hand-researched falls in
    `data/known_falls_curated.csv`: Vermont's 1985-88 state inventory of waterfalls, cascades and gorges, New England
    Waterfalls, the World Waterfall Database, the Vermont River Conservancy, the 1999 San Gabriel waterfall list
    (Chester, Strong & Ayers) and others, each row with its source page and a note on how its point was placed. One fall
@@ -215,8 +239,8 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
      the outer boundary flowing in, its drainage there, less what the box's own routing and the edge links already
      have at that spot, is carried down the creek the same way. One that comes in through a reservoir (the
      Chattahoochee in Lake Lanier) is handed to the cell below the dam.
-   - **Past dams**: every lake and reservoir ends its D8 paths at its outlet (`03_hydrology.py`), so the creek below
-     the dam starts again near nothing. `crossbox.py` links each reservoir's dead
+   - **Past dams**: every lake and reservoir ends its D8 paths at its outlet (`03b_stitch.py`; not one whose outlet is
+     on an edge between two boxes), so the creek below the dam starts again near nothing. `crossbox.py` links each reservoir's dead
      ends to the cell below its dam where the water goes on, found by walking down the NHDPlus flowlines leaving the
      lake (Morris 533 km², Pyramid 514, Castaic Lagoon 412, Big Tujunga 212, Littlerock 165, Lake Hemet 143, Big Bear
      137, Matilija 132). Lakes with no outflow (Baldwin Lake) and dead ends away from lakes (desert fans, the sea)
@@ -241,8 +265,16 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    NHDPlus's (every area but LA; each table was fetched again with the flags on 2026-11-19), and a pair rule for the
    rest. LA's Natural Flows model gives a minor path the natural flow of its whole drainage, so there only the pair
    rule applies. Reaches off the model network take
-   the unit-area flow of the first modelled segment downstream ("scaled"). Reaches in or below a reservoir are flagged,
-   since releases set their flow. So are reaches below the seven diversions where a USGS gauge on the creek below shows
+   the unit-area flow of the first modelled segment downstream ("scaled"). Where a creek has none below it in its own
+   box (by either area) and its way leaves the box, the search goes on in the box it runs into: `03b_stitch.py` routes
+   an area's boxes as one surface, but each box's reaches end at its rim, so until 2026-11-20 such creeks read "no
+   data" (10 % of Jackson's reaches within 1.5 km of an edge between boxes; 569 reaches over the 12 areas). That box's
+   reaches are matched as its own run matches them, with the water from other boxes from its `area_streams.csv`, so
+   run `05c_drainages.py` for every box before `05b_flow.py`. A segment found in another box may raise a creek's
+   estimate, never lower it below NHD's class (possible trout water stays in). Reaches in or below a reservoir are flagged,
+   since releases set their flow. A reach lying at least half inside an NHD lake or reservoir with no model segment of
+   its own is a reservoir reach too (until 2026-11-19 such reaches read "no data" or took the flow of the river below
+   the dam, and were scored as streams: Fontana Lake's arms at fish 83). So are reaches below the seven diversions where a USGS gauge on the creek below shows
    it often dry (`DIVERSIONS` in `flowlib.py`): the Santa Ana River No. 1 dam, two Mill Creek intakes, and the Lytle,
    Plunge, City Creek and San Jacinto River diversions. The model can't see water leave in a canal. Their popups
    quote the gauge's share of summers flowing. Writes `flow_streams.csv` / `flow_drops.csv`: typical and drought-year low flow,
@@ -462,7 +494,7 @@ send it only to `api.waterdata.usgs.gov`.
 ```bash
 for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 01_download_dem 02_download_vectors 03_hydrology; do REGION=$r ../.venv/bin/python $s.py; done; done; ../.venv/bin/python 03b_stitch.py; for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 04_knickpoints 04b_bigcreek_steps 05_score; do REGION=$r ../.venv/bin/python $s.py; done; done; ../.venv/bin/python 07_road_closures.py
 ../.venv/bin/python 02b_download_flow.py
-for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 05c_drainages 05b_flow; do REGION=$r ../.venv/bin/python $s.py; done; done
+for s in 05c_drainages 05b_flow; do for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do REGION=$r ../.venv/bin/python $s.py; done; done
 ../.venv/bin/python 02c_pct.py; ../.venv/bin/python 02d_trails.py; ../.venv/bin/python 02e_access.py
 for r in san_gabriel santa_monica san_bernardino sespe piru sierra_pelona san_jacinto santa_ana_mtns; do for s in 08_hike 10_sun; do REGION=$r ../.venv/bin/python $s.py; done; done
 ../.venv/bin/python 09_drive.py; ../.venv/bin/python 11_context.py; ../.venv/bin/python 06_map.py
@@ -474,7 +506,8 @@ To refresh only the live data (closures, gauges) before a trip: `07_road_closure
 
 The order matters. `08_hike.py` reads the trail and access-road layers that `02d_trails.py` and `02e_access.py`
 write. The reach and drop keys (`sid`, `did`) are row numbers `05_score.py` hands out, so after re-running it for a
-range, re-run that range's `05c`, `05b`, `08`, `10` and `11_context.py` before `06_map.py`. `06_map.py` stops if one
+range, re-run that range's `05c`, `05b`, `08`, `10` and `11_context.py` before `06_map.py`, and `05b` of the ranges
+whose creeks run on into it (their flows can come from its reaches). `06_map.py` stops if one
 of their tables doesn't list the same reaches or drops as the range's `streams_scored.gpkg` /
 `waterfall_candidates.gpkg`, and notes any table older than those files.
 
@@ -504,7 +537,11 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
 - **thermal:** 50% water temperature, 35% summer shade, 15% north-facing mountainside. Water temperature is the
   reach's estimated July–August daytime water temperature (`watertemp.py`; see *Stream temperature* below): full
   credit at 20 °C or cooler, none at 25 °C or warmer (`WATER_FULL`, `WATER_ZERO` in `scoring.py`). There's no
-  penalty for cold water, and a reach with no estimate gets half credit. Until 2026-11-18 this part was an elevation
+  penalty for cold water. Where an area's fit has no skill (it can't beat "every creek is the average" by 10 %), every
+  reach takes that average, the measured sites' mean (`watertemp.area_mean()`): a cold area stays cold rather than
+  unknown. Since its 2026-11-19 expansion that is Jackson (145 sites, mean 13.4 °C, fit 3.37 °C off against a 3.72 °C
+  spread), so its reaches keep full credit, as under its earlier fit (which put every reach under 18 °C). A reach with
+  no estimate in an area with no measured sites gets half credit. Until 2026-11-18 this part was an elevation
   band (700–2300 m); the estimate replaced it so the same cutoffs work in every study area. Shade combines the
   terrain's shade with the tree canopy along the reach: 1 − (1 − terrain) × (1 − 0.8 × canopy), full credit at 45%.
   **Tailwaters** get the water-temperature part in full whatever the estimate says. These are the rivers below a dam that
@@ -580,47 +617,64 @@ Critical habitat, wilderness and non-Forest-Service land are shown as flags, not
 *designated* habitat clipped to the study areas. It is not a closure map: Forest Service closures for arroyo toad and
 other species are set by forest orders, usually cover less ground, and have to be checked on the forest's site.
 
-## Lakes (pilot: Jackson, 2026-11-19)
-Lakes and ponds as places to go: outline, water level, depth, fish, access and land. Built so far for Jackson only
-(`BUILT` in `05d_lakes.py`); every other area is unchanged, and the scripts below do nothing there.
-- `05d_lakes.py` (AREA only, after `05c_drainages.py`) writes `data/derived/<area>/_shared/lakes.gpkg`, 357 lakes in
-  Jackson. With `lakelidar.py` (1 m lidar) and `lakedata.py` (measured depths and gill-net surveys typed in from
-  their reports).
-- `08_hike.py` reads it: lakes are impassable for walking off trails (before, a flat lake surface read as easy ground
+## Lakes (Jackson, NE Connecticut, central Vermont, Lexington, North Georgia, LA; 2026-11-19)
+Lakes and ponds as places to go: outline, water level, depth, fish, access and land. Built for six areas, each from
+its own smallest size (`BUILT` in `05d_lakes.py`): Jackson 0.5 ha, NE Connecticut 1 ha, central Vermont 1 ha,
+Lexington 0.5 ha, North Georgia 2 ha (below that it has 1,835 farm ponds) and LA 1 ha. SE Pennsylvania, the Smokies
+and the Adirondacks have none yet; the scripts below do nothing there.
+- `05d_lakes.py` (AREA only, after `05c_drainages.py`) writes `data/derived/<area>/_shared/lakes.gpkg`, with
+  `lakelidar.py` (1 m lidar), `lakedata.py` (measured depths and gill-net surveys typed in from their reports, and
+  the trout family's names), `lakesources.py` (EPA National Lakes Assessment soundings, every area; each state's lake
+  access, rules and designations).
+- `lake_bathymetry.py` (after it) reads measured depth surveys: contours into `lake_depth.gpkg`, and each surveyed
+  lake's maximum and mean depth into `lakes.gpkg`. Running it twice gives the same result.
+- `08_hike.py` reads the lakes: impassable for walking off trails (before, a flat lake surface read as easy ground
   and routes crossed lakes on foot), a point in a lake counts as reached at that lake's quickest shore, and each lake
-  gets an approach (`hike_lakes.csv` per range). Every route now also has `route_km`, its length.
-- `06_map.py` draws them through `maplakes.py`: a "Lakes" layer, off at start, in the 2D, 3D and one-file maps;
-  `output/<area>/lakes.csv` and `lakes.gpx`. Fill: blue where game fish are listed or recorded, grey where the
-  agency lists none, pale blue where there is no record either way; a dashed edge where the lidar found little level
-  water. Measured depth contours would be a layer of their own (`lake_bathymetry.py`), but no survey is public (below).
-- `run_mid.sh` runs `05d_lakes.py` after the drainages and flow (a failed download keeps the last `lakes.gpkg`).
+  gets an approach (`hike_lakes.csv` per range). Every route also has `route_km`, its length.
+- `06_map.py` draws them through `maplakes.py`: a "Lakes" layer and a "Lake depth contours" layer, both off at start,
+  in the 2D, 3D and one-file maps (a click on a contour opens its lake); `output/<area>/lakes.csv` and `lakes.gpx`.
+  Fill: blue where trout are stocked or recorded (Jackson: where Game & Fish lists game fish), pale blue where there
+  is no record (Jackson: grey where the agency lists none); a dashed edge where the lidar found little level water.
+- `run_mid.sh` runs `05d_lakes.py` then `lake_bathymetry.py` after the drainages and flow (a failed download keeps the
+  last `lakes.gpkg`).
+
+| Area | Lakes | Lidar shorelines | Measured depth | Depth contours | Trout stocked or recorded | Walk-in times changed |
+|---|---|---|---|---|---|---|
+| Jackson | 547 | 244 | 58 | none public | Game & Fish list: 56 with game fish | 272 of 6,419 reaches (pilot) |
+| NE Connecticut | 725 | 650 | 45 | 1,076 lines at 35 lakes (CT DEEP) | 24 | 482 reaches quicker, none 5+ min slower |
+| central Vermont | 412 | 294 | 16 | 520 lines at 14 lakes (VT ANR) | 23 | 274 reaches quicker, none 5+ min slower |
+| Lexington | 184 | 113 | 1 | none public | 2 | 50 quicker; 2 slower by 5 and 9 min, beside a pond |
+| North Georgia | 560 | 501 | 9 | none public | 13 (Lake Burton, Winfield Scott, Black Rock, Nancy Town...) | 782 reaches quicker (median 7 min); 4 reaches and 3 drops 5+ min slower, at most 24 |
+| LA | 398 | 92 | 6 | 16 lines at Little Rock Reservoir (USGS) | 18 (Big Bear, Jenks, Gregory, Hansen Dam, Yucaipa...) | 462 reaches quicker (median 12 min); 22 reaches and 29 drops 5+ min slower, up to 3 h, all beside Castaic, Pyramid, Morris, San Gabriel, Big Tujunga or Cogswell: their old routes walked on the water |
 
 Each attribute comes from the best source there is for it, and the sources were checked against each other:
 
 | Attribute | Source | Checked |
 |---|---|---|
-| Outline | 1 m lidar (USGS 3DEP), the newest survey over each lake: WY_GrandTetonNP 2022-23 (QL1), WY_NConverse 2021, WY_Southwest 2020, WY_FEMA_East 2019. Lidar DEMs are hydro-flattened, so the cells at the lake's one elevation are its shoreline on the survey date. Read in place from USGS's cloud-optimized tiles (the seamless service still serves the 2014 Grand Teton survey). NHD High Resolution where the lidar didn't flatten the lake, for reservoirs and lakes drawn down that day, and over 600 ha | Shoreline from lidar for 167 lakes; median overlap with NHD's outline 0.78. On imagery the lidar follows the water: NHD's Lower Slide Lake (206 ha) still holds the Gros Ventre's inlet delta, now vegetated (lidar 172 ha); NHD takes in Table Mountain Lake's bare shore band |
-| Water level | The lidar's flattened level (170 lakes); the median of a level but unflattened surface (75: 70%+ within 15 cm); else the 10 m DEM | NHD's stage elevations are off by up to 12 m (Table Mountain Lake: NHD and Game & Fish 2,839 m, water at 2,827.2 m); String Lake sits 3 m below Leigh Lake, which drains into it (NHD gives both one level) |
-| Missing lakes | OpenStreetMap water of 0.5 ha or more that no NHD lake covers, kept where the lidar shows level water | 47 added (ponds on the valley floor; R Park in Wilson is a 0.3 ha remnant in NHD) |
-| Fish | Wyoming Game & Fish's lake fishing guide (`Lakes_FishingGuide_PublicView`): game fish present or "None", lake class, depths, private shore. Joined by NHD reach code (102 of 104), overlap (1), or its own outline (1) | Dated records at the lake from GBIF: MARIS state fish surveys, iNaturalist, USGS NAS, museum specimens (17 lakes); the 2002-03 Game & Fish / NPS gill-net survey of 22 alpine lakes (trout only in Grizzly Bear, Holly and Lake Solitude). Species recorded since 2000 but not on the agency's list are shown beside it (brown trout in Leigh Lake, brook trout in Bearpaw Lake) |
-| Depth | Measured values only, best first: published sonar surveys (Jenny Lake ~73 m, mean ~43 m, Larsen et al. 2016; Jackson Lake ~143 m in 2018, McGlue et al. 2023), EPA National Lakes Assessment sonar soundings (Phelps 48.4 m, Icefloe 32 m), the 2002-03 transducer survey (Stephens & Gipson 2005, 24 alpine lakes), then the Game & Fish guide's listed depth. 46 lakes | Disagreements over 20% (and 2 m) are shown: the Game & Fish guide gives Jenny Lake 423 ft (129 m) against the measured 73 m. An EPA sounding on a reservoir is a lower bound, not a maximum |
-| Inlets, outlets | NHD HR flowlines that start or end at the shore; an unnamed outlet is followed down to the first named water | NHD maps no stream at many small alpine lakes (Surprise, Amphitheater): "no mapped inlet or outlet (NHD)" |
-| Land | PAD-US (the public-access service: one record per place, often a designation inside the park or forest). Where PAD-US leaves the water out (Jackson Lake, with ~300 m of shore), the unit most of the shore lies in. Access is flagged only where closed, or restricted outside federal land | 10 closed (land-trust and ranch easements), 2 restricted (a fish hatchery, a state habitat area) |
-| Level water | Lakes of 2 acres or more whose lidar surface isn't level (under half the outline within 15 cm), with the 10 m DEM agreeing: "largely dry, marsh or overgrown then" (28). A bed below its own or a neighbouring lake's normal level: "caught drawn down" | On imagery Hardemann Reservoir is meadow inside its outline, Cow Lake's water fills under half of it; the unnamed 15 ha lake beside Jackson Lake holds water in summer and was drained in the fall 2022 flight, hence the second wording |
+| Outline | 1 m lidar (USGS 3DEP), the newest survey over each lake, read in place from USGS's cloud-optimized tiles (tiles in another UTM zone are reprojected). Lidar DEMs are hydro-flattened, so the cells at the lake's one elevation are its shoreline on the survey date. NHD High Resolution where the lidar didn't flatten the lake, for reservoirs and lakes drawn down that day, and over 600 ha | Jackson: median overlap with NHD 0.78; on imagery the lidar follows the water (Lower Slide Lake's vegetated inlet delta, Table Mountain Lake's bare shore band are in NHD's outline) |
+| Water level, elevation | The lidar's flattened level; the median of a level but unflattened surface (70%+ within 15 cm); else the 10 m DEM. A lake the lidar caught low shows its normal level | NHD's stage elevations are in feet at some lakes and metres at others (read per lake against the DEM) and can be metres off: Table Mountain Lake 12 m, 50 North Georgia lakes 2-28 m |
+| Survey date | Each lidar survey's span: one can fly for a year (VA_West_Chesapeake_B1_2017: 2017-04 to 2018-05) | |
+| Missing lakes | OpenStreetMap water of the area's smallest size or more that no NHD lake covers, kept where the lidar shows level water | Jackson 61, Connecticut 124, Vermont 13, Lexington 11, North Georgia 52, LA 7 |
+| Name | GNIS (NHD); Wyoming Game & Fish's where it names a group or adds a qualifier; else OpenStreetMap's, where one named outline and the lake cover half of each other, no lake within 2 km has the name, and it doesn't end in "Dam" (166 lakes); Connecticut's survey name for one more | Virginia's public-fishing-lake layer isn't used for names: it calls the 189-acre Mill Creek Reservoir "Mill Reservoir" (DWR's own page and OpenStreetMap: Mill Creek Reservoir) |
+| Fish | Jackson: Wyoming Game & Fish's lake fishing guide (game fish or "None", lake class, depths, private shore). Elsewhere: the state's stocking and survey records already gathered for the streams (`context/trout_evidence.gpkg`: CT DEEP stocking and electrofishing, Vermont's trout stocking list, Virginia's trout stocking plan, Georgia DNR stocking and surveys, CDFW's stocking schedule): a record naming the lake within 2 km (word order aside: "Gregory Lake" is Lake Gregory), or a lake record within 150 m of the shore. A stream's stocking or survey point beside a pond stays the stream's (CT DEEP's stream surveys sit at the inlets and outlets of 44 ponds). A lake record inside an unnamed lake names it (Yucaipa Lake). Everywhere: GBIF records at the lake (state surveys, iNaturalist, USGS NAS, museums), shown with source and year | Species recorded since 2000 but not on Game & Fish's list are shown beside it (brown trout in Leigh Lake) |
+| Depth | Measured values only, best first: published sonar surveys and state bathymetry (CT DEEP contours, a lower bound; Vermont ANR sonar soundings, gridded per lake), EPA National Lakes Assessment sonar (the index site: a natural lake's deepest spot, a reservoir's lower bound), fisheries transducer surveys, an agency's listed depth | Vermont's grid against published figures: Lake Dunmore 106 ft deep and 29 ft mean (published 105 and 28). Disagreements over 20% (and 2 m) are shown |
+| Inlets, outlets | NHD HR flowlines that start or end at the shore; an unnamed outlet is followed down to the first named water | Many small lakes have no mapped stream: "no mapped inlet or outlet (NHD)" |
+| Access, rules | Connecticut: CT DEEP boat launches, fisheries-management lake designations. Vermont: fishing access areas, special regulations, restricted waters. Virginia: DWR public fishing lakes and their boat and motor rules | |
+| Land | PAD-US (the public-access service). Where PAD-US leaves the water out (Jackson Lake, with ~300 m of shore), the unit most of the shore lies in. Access is flagged only where closed, or restricted outside federal land | |
+| Level water | Lakes of 2 acres or more whose lidar surface isn't level (under half the outline within 15 cm), with the 10 m DEM agreeing: "largely dry, marsh or overgrown then". A dammed lake whose bed lies over a metre under its own lidar shore, or under a neighbour's normal level where its own shore lies at that level: "caught drained / drawn down". A flattened dammed lake over 2 m under NHD's level, with its normal shore over 1 m clear of the water: "below its normal level when the lidar was flown" | On imagery (Esri World Imagery) the flagged lakes in Lexington, North Georgia and LA are forest, field, marsh, bare or low basins. Without the shore test, NHD's level made 50 full North Georgia lakes "drawn down" |
 
-**Bathymetry.** No lake in the Jackson boxes has a depth survey that can be downloaded (grid, contours or
-soundings), checked 2026-11-19: Jenny Lake (NPS bathymetry raster, Larsen et al.), Jackson Lake (CHIRP surveys 2018
-and 2021, University of Kentucky; a 2024 University of Wyoming survey) and Palisades Reservoir (multibeam, June 2022,
-Reclamation report ENV-2023-008) are published only as figures or held by their authors. No topobathymetric
-(water-penetrating) lidar covers these lakes. Modelled depths (GLOBathy, HydroLAKES) are not used.
+**Bathymetry.** Connecticut DEEP's lake contours (24 surveys of 1959-2002 by depth finder, GPS or lead line; feet;
+the deepest contour is a lower bound) and Vermont ANR's sonar soundings (2.4 million points in 66 lakes, compiled
+2020; depth below the survey day's level) are read by `lake_bathymetry.py`. No lake in the Jackson boxes has a depth
+survey that can be downloaded (checked 2026-11-19): Jenny Lake, Jackson Lake and Palisades Reservoir are surveyed
+but published only as figures or held by their authors. LA: USGS's multibeam survey of Little Rock Reservoir (8-9 Feb 2022, a 1 m grid, doi:10.5066/P9BQW35E) gives 16 contour lines, 76 ft deep and 38 ft mean below the lidar's water level (the spillway crest). Its file says ft NAVD88, but its elevations sit 106.4 ft under the 3DEP lidar on land (the geoid separation here), so they are raised by that much; the deepest bed then comes to USGS's own stage-storage zero (3,197.5 against 3,199.5 ft). Lake Arrowhead's 2008 Reclamation sonar survey (a report: area-capacity table) gives 152 ft deep, 61 ft mean below full pool, typed in; EPA's 2007 sounding, 153 ft, agrees. California DWR's multibeam surveys of Castaic, Pyramid and Silverwood are not public. North Georgia: USACE's Lake Lanier cross-section surveys (1955-90) are sparse lines and carry a CUI marking, so they are not used; TVA has published one drawdown waterline of Chatuge; nothing for Georgia Power's or the Forest Service's lakes (Georgia DNR's contour layer covers south Georgia only). Lexington: Virginia DWR's map of Lake Robertson (5 ft contours, deepest 45 ft) is a picture, so its depth is typed in as a lower bound. Checked 2026-11-20. Modelled depths (GLOBathy, HydroLAKES) are
+never used.
 
-**Walking.** Making lakes impassable changed the approach of 272 of 6,419 Jackson reaches (4%). 212 got quicker
-(median 5 min): a reach mapped through a lake now counts as reached at the shore. 18 got 15 min or more longer, at
-most 37 min: Leigh Creek's canyon, whose quickest route had crossed Leigh Lake on foot. 48 drops changed, at most
-39 min. With summer access (no road closures) the modelled routes come within about 10% of the Park Service's trail
-distances, a little short because a 10 m grid cuts switchbacks: Taggart Lake 1.3 mi (NPS 1.5), Amphitheater Lake
-4.5 mi (NPS 4.9). In November the Teton Park Road is closed, so the map's approaches to the Grand Teton lakes start
-at Moose and ride it. Times are a fit hiker's without stops (Tobler); the Jenny Lake shuttle boat isn't modelled.
+**Walking.** Making lakes impassable mostly makes routes quicker: a reach mapped through a lake now counts as reached
+at the shore. Few got slower, and only where the quickest route had crossed a lake on foot (Jackson: Leigh Creek's
+canyon by Leigh Lake, up to 37 min). Summer routes in Jackson, without road closures, run within about 10% of the Park
+Service's trail distances (Taggart Lake 1.3 mi against 1.5, Amphitheater Lake 4.5 against 4.9), a little short
+because a 10 m grid cuts switchbacks. Times are a fit hiker's without stops (Tobler); boats aren't modelled.
 
 ## Validation (mapped falls from OSM + NHD matched by a detected drop within 200 m)
 All eight ranges, from `data/validate.py` (run from `scripts/`):

@@ -31,12 +31,13 @@ from rasterio import features
 from rasterio.windows import from_bounds
 from shapely.geometry import box
 from config import AREA, REGIONS, CRS, EPSG, NATIONAL, SHARED, SHARED_DERIVED, has, raw_dir, out_dir
+from units import ft        # the notes the map popups show are in feet (units.py); the columns stay metric
 
 # Areas with lakes, and the size from which an unlisted pond is kept. An area goes into BUILT once its lakes have been
 # checked, because any build of it (run_mid.sh) then puts them on its map. A PLANNED area can be built into a file of
 # one's choosing to check it first: LAKES_OUT=/some/where/lakes.gpkg AREA=<area> 05d_lakes.py
-BUILT = {"jackson": 0.5, "ne_ct": 1.0}
-PLANNED = {"central_vt": 1.0, "lexington_va": 0.5, "n_georgia": 2.0, "la": 1.0}   # North Georgia: 1,835 farm ponds of 0.5-2 ha
+BUILT = {"jackson": 0.5, "ne_ct": 1.0, "central_vt": 1.0, "lexington_va": 0.5, "n_georgia": 2.0, "la": 1.0}
+PLANNED = {}   # North Georgia: 1,835 farm ponds of 0.5-2 ha
 if AREA not in BUILT and not (AREA in PLANNED and os.environ.get("LAKES_OUT")):
     print(f"lakes: not built for {AREA} yet (areas: {', '.join(sorted(BUILT))}); nothing to do")   # not an error
     raise SystemExit(0)
@@ -73,7 +74,8 @@ wb["geometry"] = shapely.make_valid(wb.geometry.force_2d().values)
 wb = wb.explode(index_parts=False)
 wb = wb[wb.geom_type == "Polygon"].reset_index(drop=True)
 
-# pieces of one lake: polygons that touch and don't carry two different names
+# pieces of one lake: polygons that touch and don't carry two different names, and pieces of one name within 30 m
+# (NHD splits Beach Pond at the Connecticut / Rhode Island line, 20 m apart)
 par = list(range(len(wb)))
 def root(i):
     while par[i] != i:
@@ -81,9 +83,13 @@ def root(i):
         i = par[i]
     return i
 nm = wb.gnis_name.tolist()
-a_, b_ = wb.sindex.query(wb.geometry.buffer(1.0), predicate="intersects")
+a_, b_ = wb.sindex.query(wb.geometry.buffer(30.0), predicate="intersects")
 for i, j in zip(a_, b_):
-    if i < j and (not isinstance(nm[i], str) or not isinstance(nm[j], str) or nm[i] == nm[j]):
+    if i >= j:
+        continue
+    named_same = isinstance(nm[i], str) and nm[i] == nm[j]
+    touch = wb.geometry.iat[i].distance(wb.geometry.iat[j]) <= 1.0
+    if named_same or (touch and (not isinstance(nm[i], str) or not isinstance(nm[j], str))):
         par[root(i)] = root(j)
 wb["grp"] = [root(i) for i in range(len(wb))]
 wb["m2"] = wb.area
@@ -258,6 +264,17 @@ lk["dem_cells"] = [len(v) for v in vals]
 lk["elev_m"] = [round(float(np.median(v)), 1) if len(v) else np.nan for v in vals]
 lk["level_share"] = [round(float(np.mean(np.abs(np.asarray(v) - np.median(v)) <= LEVEL_TOL_M)), 2) if len(v) >= 10 else np.nan
                      for v in vals]
+# NHD's stage elevation is in metres in some places (Jackson: Jenny Lake 2,067.46) and in feet in others, lake by
+# lake (NE Connecticut: Pachaug Pond 159 against a 48 m surface, Lake Chaubunagungamaug in metres): each is read in
+# the unit that agrees with the DEM, and dropped where neither does. Read as metres, the feet made 161 Connecticut
+# lakes look drawn down by 100 m and more
+_st = lk.nhd_elev_m.astype(float)
+_ft = _st * 0.3048
+_use_ft = _st.notna() & lk.elev_m.notna() & ((lk.elev_m - _ft).abs() < (lk.elev_m - _st).abs()) & ((lk.elev_m - _ft).abs() < 15)
+lk.loc[_use_ft, "nhd_elev_m"] = _ft[_use_ft].round(2)
+_bad = _st.notna() & lk.elev_m.notna() & ~_use_ft & ((lk.elev_m - lk.nhd_elev_m).abs() > 30)
+lk.loc[_bad, "nhd_elev_m"] = np.nan
+print(f"NHD stage elevations: {int(_st.notna().sum())}; read as feet {int(_use_ft.sum())}; matching neither, dropped {int(_bad.sum())}")
 d_el = (lk.elev_m - lk.nhd_elev_m)
 print(f"surface elevation: {lk.elev_m.notna().sum()} lakes; DEM minus NHD stage elevation, where NHD has one "
       f"({d_el.notna().sum()}): " + "; ".join(f"{n} {d:+.1f} m" for n, d in zip(lk.name[d_el.notna()], d_el[d_el.notna()])))
@@ -275,8 +292,8 @@ print(f"lakes whose 10 m DEM surface isn't level (under half the outline within 
 # that day: then NHD's full-pool outline stays and the popup says how low it was.
 import lakelidar
 from concurrent.futures import ThreadPoolExecutor
-LIDAR_MAX_HA = 600      # bigger lakes keep the NHD outline (Jackson Lake, Palisades: regulated, mostly off the map)
-DRAWN_DOWN_M = 1.5      # a lidar level this far below NHD's stage: the lake was low that day
+LIDAR_MAX_HA = 600      # bigger lakes keep the NHD outline (Jackson Lake, Palisades: regulated, their level swings by metres)
+DRAWN_DOWN_M = 2.0      # a regulated lake's lidar level this far below NHD's stage: it was low that day
 L1 = f"{CACHE}/lake_dem1m"
 os.makedirs(L1, exist_ok=True)
 cat = lakelidar.catalog(tuple(boxes.buffer(3000).to_crs(4326).total_bounds), CACHE)
@@ -309,6 +326,13 @@ def _lidar_one(g, ck, mine):
     return res
 
 
+def flown(u):
+    """When a lidar work unit was flown: its month, or its first to last month (one can take a year: VA_West_Chesapeake
+    _B1_2017 ran from April 2017 to May 2018, so no single month is the day a lake was seen)."""
+    s, e = u["start"][:7], u["end"][:7]
+    return s if s == e else f"{s} to {e}"
+
+
 def ckey(i):
     return re.sub(r"\W", "_", str(lk.nhd_id.iat[i] if isinstance(lk.nhd_id.iat[i], str) else lk.agency_id.iat[i]))
 
@@ -319,16 +343,37 @@ with ThreadPoolExecutor(6) as ex:
                                                     set(str(lk.nhd_ids.iat[i] or "").split(","))), todo)))
 nhd_g = lk.geometry.copy()                       # kept for the inlet / outlet test (NHD's lines end on its shore)
 lk["nhd_ha"] = lk.ha
+# Regulated lakes: reservoirs, and lakes with a dam on the shore (OSM dams; NHD dam / weir lines). Only their level
+# goes up and down by metres. NHD's "normal level" comes from old topographic maps and can be off by a few metres, or
+# by 12 (Table Mountain Lake), so a natural lake whose lidar level sits under it wasn't drawn down: NHD is wrong.
+_dams = []
+for r in REGIONS:
+    if os.path.exists(f"{raw_dir(r)}/osm_dams.gpkg"):
+        _dams.append(gpd.read_file(f"{raw_dir(r)}/osm_dams.gpkg").to_crs(CRS).geometry)
+for hu in sorted({h for v in REGIONS.values() for h in v["hu4"]}):
+    try:
+        _l = gpd.read_file(f"{NATIONAL}/NHD_H_{hu}_HU4_GPKG.gpkg", layer="NHDLine", bbox=(W, S, E, N), columns=["ftype"])
+        _dams.append(_l[_l.ftype == 343].to_crs(CRS).geometry)
+    except Exception:
+        pass
+_dams = gpd.GeoSeries(pd.concat(_dams, ignore_index=True) if _dams else [], crs=CRS)
+_dams = _dams[_dams.notna() & ~_dams.is_empty]
+lk["regulated"] = lk.ftype.eq("reservoir")
+if len(_dams):
+    _near = set(lk.sindex.query(_dams.buffer(100).values, predicate="intersects")[1])
+    lk.loc[lk.index.isin(list(_near)), "regulated"] = True
+print(f"regulated (reservoir or a dam on the shore): {int(lk.regulated.sum())} of {len(lk)} lakes")
 for c in ("lidar_survey", "lidar_dates", "lidar_ql", "lidar_kind", "water_note", "outline_note"):
     lk[c] = None
-for c in ("water_level_m", "lidar_share", "lidar_ha", "lidar_iou"):
+for c in ("water_level_m", "lidar_share", "lidar_ha", "lidar_iou", "normal_m"):
     lk[c] = np.nan
+lk["normal_src"] = None     # a lake the lidar caught low: its normal level, for its elevation (set below)
 n_used = 0
 for i, res in got.items():
     if res is None:
-        lk.loc[i, "water_note"] = "no 1 m lidar covers it"
+        lk.loc[i, "water_note"] = "no 3 ft lidar covers it"
         continue
-    lev, share, poly, edge, u, (med, w15, iqr) = res
+    lev, share, poly, edge, u, (med, w15, iqr, shore) = res
     lk.loc[i, ["lidar_survey", "lidar_dates", "lidar_ql", "lidar_share"]] = [
         u["workunit"], f"{u['start']} to {u['end']}", u["ql"], round(share, 2) if np.isfinite(share) else np.nan]
     if not np.isfinite(lev) or poly is None:
@@ -342,30 +387,55 @@ for i, res in got.items():
             # a bed below its own or a neighbouring lake's normal level (NHD stage) fills and drains with that lake: the
             # unnamed 15 ha lake 214 m from Jackson Lake lay drained in the fall 2022 flight, under the reservoir's level
             near_ = [j for j in lk.sindex.query(lk.geometry.iat[i].buffer(500), predicate="intersects")
-                     if np.isfinite(lk.nhd_elev_m.iat[j])]
+                     if np.isfinite(lk.nhd_elev_m.iat[j]) and lk.regulated.iat[j]]
             top = max(near_, key=lambda j: lk.nhd_elev_m.iat[j]) if near_ else None
-            if top is not None and np.isfinite(med) and lk.nhd_elev_m.iat[top] - med > 1.0:
+            # Its own level only where the lidar's shore also stands over the bed (NHD's level can be metres off); a
+            # neighbour's only where this lake's own shore lies at that level, one water at normal pool (the lake by
+            # Jackson Lake: 0.5 m under it). A pond below a neighbour's dam sits metres under its level (Cochrans Lake
+            # North, 9.7 m under Cochrans Lake South) and fills on its own.
+            _stg = lk.nhd_elev_m.iat[top] if top is not None else np.nan
+            if (top is not None and np.isfinite(med) and _stg - med > 1.0 and np.isfinite(shore)
+                    and (shore - med > 1.0 if top == i else abs(shore - _stg) <= 1.5)):
                 whose = ("its own normal water level" if top == i else
                          f"the normal level of {lk.name.iat[top] or 'the lake beside it'}")
-                lk.loc[i, "water_note"] = (f"most of its bed lies below {whose} ({lk.nhd_elev_m.iat[top]:,.0f} m in NHD): "
-                                           f"the lidar of {u['start'][:7]} caught it drawn down")
+                lk.loc[i, "water_note"] = (f"most of its bed lies below {whose} ({ft(lk.nhd_elev_m.iat[top])} in NHD): "
+                                           f"the lidar of {flown(u)} caught it drawn down")
+                if top == i:
+                    lk.loc[i, ["normal_m", "normal_src"]] = [lk.nhd_elev_m.iat[i], "normal level (NHD)"]
+            elif lk.regulated.iat[i] and np.isfinite(med) and np.isfinite(shore) and shore - med > 1.0:
+                # a dammed lake NHD gives no normal level: its bed against its own shore, by the same lidar (Cave
+                # Mountain Lake, a Forest Service swimming lake full on today's imagery, lay drained in the 2017-18 flight)
+                lk.loc[i, "water_note"] = (f"most of its bed lies {ft(shore - med)} below its shoreline: the lidar of "
+                                           f"{flown(u)} caught it drained or drawn down")
+                lk.loc[i, ["normal_m", "normal_src"]] = [shore, "its shoreline, by lidar"]
             else:
-                lk.loc[i, "water_note"] = (f"little level water in the lidar of {u['start'][:7]}: only {w15:.0%} of the outline "
-                                           f"lies within 15 cm of one level; it was largely dry, marsh or overgrown then")
+                lk.loc[i, "water_note"] = (f"little level water in the lidar of {flown(u)}: only {w15:.0%} of the outline "
+                                           f"lies within 6 inches of one level; it was largely dry, marsh or overgrown then")
         continue
     lk.loc[i, "lidar_kind"] = "flattened" 
     lk.loc[i, ["water_level_m", "lidar_ha", "lidar_iou"]] = [
         round(lev, 2), round(poly.area / 1e4, 2), round(poly.intersection(nhd_g.iat[i]).area / poly.union(nhd_g.iat[i]).area, 2)]
     stage = lk.nhd_elev_m.iat[i]
-    if np.isfinite(stage) and stage - lev > DRAWN_DOWN_M:
-        lk.loc[i, "water_note"] = f"{stage - lev:.1f} m below its normal level when the lidar was flown ({u['start'][:7]})"
-    if lk.ftype.iat[i] == "reservoir" or (np.isfinite(stage) and stage - lev > DRAWN_DOWN_M) or edge:
+    # drawn down: the lidar's level well under NHD's normal level, and the normal shore (NHD's outline) standing clear
+    # of the water in the same lidar. NHD's level alone isn't enough: at 50 dammed North Georgia lakes it sits 2-28 m
+    # over water whose shore the lidar shows at the water's edge (Teague Lake, Etowah Number 32 Lake): NHD is wrong
+    # there, the lakes were full. Lynchburg Reservoir's shore stood 3.2 m clear in the 2017-18 flight
+    drawn = (bool(lk.regulated.iat[i]) and np.isfinite(stage) and stage - lev > DRAWN_DOWN_M
+             and np.isfinite(shore) and shore - lev > 1.0)
+    if drawn:
+        if abs(stage - shore) <= 2.0:      # NHD's level and the lidar's shore agree: NHD's is the normal level
+            lk.loc[i, "water_note"] = f"{ft(stage - lev, 1)} below its normal level when the lidar was flown ({flown(u)})"
+            lk.loc[i, ["normal_m", "normal_src"]] = [stage, "normal level (NHD)"]
+        else:
+            lk.loc[i, "water_note"] = f"{ft(shore - lev, 1)} below its shoreline when the lidar was flown ({flown(u)})"
+            lk.loc[i, ["normal_m", "normal_src"]] = [shore, "its shoreline, by lidar"]
+    if lk.ftype.iat[i] == "reservoir" or drawn or edge:
         lk.loc[i, "outline_note"] = "NHD outline kept: " + ("reservoir" if lk.ftype.iat[i] == "reservoir" else
                                                             "drawn down on the survey date" if not edge else
                                                             "level water runs on past the lake (a river at its level)")
         continue
     lk.loc[i, "geometry"] = poly
-    lk.loc[i, "src_outline"] = f"lidar 1 m, {u['workunit']} ({u['start'][:7]})"
+    lk.loc[i, "src_outline"] = f"lidar 3 ft, {u['workunit']} ({flown(u)})"    # maplakes.py reads the "lidar" start
     n_used += 1
 lk = gpd.GeoDataFrame(lk, geometry="geometry", crs=CRS)
 r_ = lk.lidar_ha / lk.nhd_ha
@@ -399,6 +469,7 @@ op = [(dict(e.get("tags", {}), osm_id=e.get("id")), shapely.Polygon([(p["lon"], 
       if e.get("geometry") and len(e["geometry"]) >= 4 and e["geometry"][0] == e["geometry"][-1]
       and e.get("tags", {}).get("water") not in NOT_LAKE]
 osm = gpd.GeoDataFrame([t for t, _ in op], geometry=[g for _, g in op], crs=4326).to_crs(CRS) if op else None
+osm_all = osm          # all of it, for names (3d)
 added = []
 if osm is not None and len(osm):
     osm = osm[osm.is_valid & (osm.area >= MIN_HA * 1e4) & osm.intersects(U)]
@@ -422,7 +493,7 @@ if osm is not None and len(osm):
             u = res[4]
             added.append(dict(gnis_name=None, osm_id=t.get("osm_id"), name=t.get("name"), name_src="OpenStreetMap" if t.get("name") else None,
                               ftype="reservoir" if t.get("water") == "reservoir" or t.get("landuse") == "reservoir" else "lake / pond",
-                              intermittent=t.get("intermittent") == "yes", src_outline=f"lidar 1 m, {u['workunit']} ({u['start'][:7]})",
+                              intermittent=t.get("intermittent") == "yes", src_outline=f"lidar 3 ft, {u['workunit']} ({flown(u)})",
                               outline_note="not in NHD: found in OpenStreetMap, confirmed by lidar",
                               lidar_survey=u["workunit"], lidar_dates=f"{u['start']} to {u['end']}", lidar_ql=u["ql"],
                               water_level_m=round(res[0], 2), lidar_share=round(res[1], 2), lidar_ha=round(res[2].area / 1e4, 2),
@@ -432,6 +503,42 @@ if added:
     lk = gpd.GeoDataFrame(pd.concat([lk, gpd.GeoDataFrame(added, crs=CRS)], ignore_index=True), geometry="geometry", crs=CRS)
     nhd_g = pd.concat([nhd_g, gpd.GeoSeries([a["geometry"] for a in added], crs=CRS)], ignore_index=True)
 print(f"lakes added from OpenStreetMap + lidar: {len(added)}")
+# the lakes added from OpenStreetMap get the same test as the rest (a reservoir, or a dam within 100 m of the shore);
+# without it the column held True, False and empty, and was written to the GeoPackage as text ("False" reads true)
+_new = np.flatnonzero(lk.regulated.isna().values)
+if len(_new):
+    _sub = lk.iloc[_new].reset_index(drop=True)
+    _reg = _sub.ftype.eq("reservoir").values
+    if len(_dams):
+        _reg = _reg | np.isin(np.arange(len(_sub)), _sub.sindex.query(_dams.buffer(100).values, predicate="intersects")[1])
+    lk.iloc[_new, lk.columns.get_loc("regulated")] = _reg
+lk["regulated"] = lk.regulated.astype(bool)
+
+# ---- 3d. names NHD doesn't have: OpenStreetMap's, where one named OpenStreetMap outline and the lake cover at least
+# half of each other, and no lake within 2 km has that name already (Lexington: OpenStreetMap and GNIS put "Walace
+# Lake" on two ponds 700 m apart on Poor Creek). Virginia's public fishing lake layer is not used for names: it calls
+# the 189-acre Mill Creek Reservoir "Mill Reservoir" (DWR's own page and OpenStreetMap: Mill Creek Reservoir) ----
+n_osm = []
+if osm_all is not None and "name" in osm_all:
+    on = osm_all[osm_all.is_valid & osm_all["name"].notna()].reset_index(drop=True)
+    for i in np.flatnonzero(lk["name"].isna().values):
+        g = lk.geometry.iat[i]
+        hits = set()
+        for j in on.sindex.query(g, predicate="intersects"):
+            a = g.intersection(on.geometry.iat[j]).area
+            if a >= 0.5 * g.area and a >= 0.5 * on.geometry.iat[j].area:
+                hits.add(on["name"].iat[j].strip())
+        if len(hits) != 1:
+            continue
+        nm = hits.pop()
+        near_ = lk["name"].iloc[lk.sindex.query(g.buffer(2000), predicate="intersects")]
+        # a name ending in "Dam" is the dam's, put on its pond (Cyril Dam, Wells Brook Dam in Connecticut): left out
+        if not nm or re.search(r"\bDam$", nm) or near_.fillna("").str.lower().eq(nm.lower()).any():
+            continue
+        lk.iloc[i, lk.columns.get_loc("name")] = nm
+        lk.iloc[i, lk.columns.get_loc("name_src")] = "OpenStreetMap"
+        n_osm.append(nm)
+print(f"named from OpenStreetMap where NHD has no name: {len(n_osm)}" + (f" ({', '.join(n_osm[:12])}{', …' if len(n_osm) > 12 else ''})" if n_osm else ""))
 
 # final size, shore and elevation: the lidar's where it measured the lake
 lk["ha"] = (lk.area / 1e4).round(2)
@@ -440,6 +547,11 @@ lk["shore_km"] = (lk.geometry.boundary.length / 1000).round(2)
 lk["islands"] = [sum(len(p.interiors) for p in getattr(g, "geoms", [g])) for g in lk.geometry]
 lk["elev_src"] = np.where(lk.lidar_kind.eq("flattened"), "lidar water level", np.where(lk.water_level_m.notna(), "lidar water surface (not flattened)", np.where(lk.elev_m.notna(), "10 m DEM", None)))
 lk["elev_m"] = lk.water_level_m.round(1).where(lk.water_level_m.notna(), lk.elev_m)
+# a lake the lidar caught drawn down or drained: its normal level, not that day's (Lynchburg Reservoir lay 14.8 ft low
+# in the 2017-18 flight; Cave Mountain Lake's bed was dry)
+_lo = lk.normal_m.notna()
+lk.loc[_lo, "elev_m"] = lk.normal_m[_lo].round(1)
+lk.loc[_lo, "elev_src"] = lk.normal_src[_lo]
 
 # ---- 4. inlets and outlets (NHD HR flowlines are drawn downstream) ----
 # An outlet is a stream line that starts at the shore and ends outside the lake; an inlet one that ends at the shore
@@ -558,10 +670,7 @@ print(f"fish records (GBIF) usable at lake level: {len(ev)} of the area's record
 
 # cross-check: records of fish at a lake the agency lists as having no game fish, and the reverse
 GAME = r"Trout|Cutthroat|Char|Grayling|Salmon|Kokanee|Splake|Whitefish"
-SCI = {"Oncorhynchus clarkii": "cutthroat trout", "Salvelinus fontinalis": "brook trout", "Salvelinus namaycush": "lake trout",
-       "Salmo trutta": "brown trout", "Oncorhynchus mykiss": "rainbow trout", "Thymallus arcticus": "Arctic grayling",
-       "Prosopium williamsoni": "mountain whitefish", "Oncorhynchus nerka": "kokanee salmon",
-       "Oncorhynchus aguabonita": "golden trout"}
+SCI = lakedata.SALMONIDS
 conf = []
 for i, r in lk.iterrows():
     rr = json.loads(r.records)
@@ -577,7 +686,7 @@ for i, r in lk.iterrows():
 print(f"lakes where the agency's 'no game fish' meets a fish record: {len(conf)}" + ("".join(f"\n  {c}" for c in conf) if conf else ""))
 # species recorded at the lake since 2000 that the agency's list doesn't have (a stocking change, a mix-up, or a fish
 # that moved in): shown beside the list, not merged into it
-KEYWORD = {"Oncorhynchus clarkii": "Cutthroat", "Salvelinus fontinalis": "Brook Trout", "Salvelinus namaycush": "Lake Trout",
+KEYWORD = {"Oncorhynchus clarkii": "Cutthroat", "Oncorhynchus virginalis": "Cutthroat", "Oncorhynchus kisutch": "Coho", "Salvelinus fontinalis": "Brook Trout", "Salvelinus namaycush": "Lake Trout",
            "Salmo trutta": "Brown Trout", "Oncorhynchus mykiss": "Rainbow Trout", "Thymallus arcticus": "Grayling",
            "Prosopium williamsoni": "Whitefish", "Oncorhynchus nerka": "Kokanee", "Oncorhynchus aguabonita": "Golden"}
 lk["also_recorded"] = None
@@ -647,20 +756,22 @@ for i, ds in meas.items():
     notes = []
     if best is not None:
         lk.loc[i, ["depth_max_m", "depth_src"]] = [best["max_m"], f"{best['src']}, {best['date']}"]
+        if best.get("note"):
+            notes.append(best["note"])
         if best.get("mean_m") is not None:
             lk.loc[i, "depth_mean_m"] = best["mean_m"]
         elif pd.notna(lk.depth_mean_m.iat[i]):
-            notes.append(f"mean {lk.depth_mean_m.iat[i]:.0f} m from the Wyoming Game & Fish fishing guide")
+            notes.append(f"mean {ft(lk.depth_mean_m.iat[i])} from the Wyoming Game & Fish fishing guide")
         others = [(d["max_m"], f"{d['src']}, {d['date']}") for d in ds if d is not best and not d.get("reservoir_index")]
-        notes += [f"at least {d['max_m']:g} m at EPA's index site ({d['date']})" for d in ds if d.get("reservoir_index")]
+        notes += [f"at least {ft(d['max_m'])} at EPA's index site ({d['date']})" for d in ds if d.get("reservoir_index")]
         if np.isfinite(agency):
             others.append((agency, "Wyoming Game & Fish fishing guide"))
         for v, src in others:
             off = abs(v - best["max_m"]) > 2 and abs(v - best["max_m"]) / max(v, best["max_m"]) > 0.2
-            notes.append(("conflicts: " if off else "also ") + f"{v:g} m ({v / 0.3048:.0f} ft) by {src}")
+            notes.append(("conflicts: " if off else "also ") + f"{ft(v)} by {src}")
     else:                                          # only an EPA index site on a reservoir: a lower bound
         for d in ds:
-            notes.append(f"at least {d['max_m']:g} m at EPA's index site ({d['date']})")
+            notes.append(f"at least {ft(d['max_m'])} at EPA's index site ({d['date']})")
     lk.loc[i, "depth_note"] = "; ".join(notes) or None
 for sv in lakedata.SURVEYS.get(AREA, []):
     i = match(sv["lake"], sv["at"])
@@ -719,7 +830,7 @@ if len(pad):
     pad = gpd.GeoDataFrame(pad, crs=4326).to_crs(CRS)
     pad = pad[pad.geometry.notna() & ~pad.geometry.is_empty]
     pad["geometry"] = shapely.make_valid(pad.geometry.values)
-    # a point of the lake inside the study area (Jackson Lake lies mostly north of it, where PAD-US wasn't fetched)
+    # a point of the lake inside the study area (a lake can reach past it)
     rp = [(g.intersection(U) if not g.intersection(U).is_empty else g).representative_point() for g in lk.geometry]
     for i, p_ in enumerate(rp):
         hit = pad.iloc[pad.sindex.query(p_, predicate="intersects")]
@@ -760,7 +871,7 @@ src_key = [f"nhd:{n}" if isinstance(n, str) else f"wgfd:{a}" if isinstance(a, st
 lk["lid"] = ["L" + hashlib.md5(k.encode()).hexdigest()[:8] for k in src_key]
 assert not lk.lid.duplicated().any(), "two lakes with one id"
 cols = ["lid", "name", "name_src", "gnis_name", "agency_name", "nhd_id", "osm_id", "nhd_ids", "reachcodes", "src_outline",
-        "outline_note", "ftype", "nhd_type", "intermittent", "ha", "nhd_ha", "lidar_ha", "lidar_iou", "lidar_kind", "shore_km",
+        "outline_note", "ftype", "nhd_type", "regulated", "intermittent", "ha", "nhd_ha", "lidar_ha", "lidar_iou", "lidar_kind", "shore_km",
         "islands", "in_area", "elev_m", "elev_src", "water_level_m", "nhd_elev_m", "agency_elev_m", "lidar_survey",
         "lidar_dates", "lidar_ql", "lidar_share", "level_share", "dem_cells", "water_note", "agency", "agency_id",
         "lake_type", "game_fish", "common_fish", "private_shore", "regs_area", "depth_max_m", "depth_mean_m",

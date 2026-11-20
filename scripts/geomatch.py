@@ -53,9 +53,12 @@ def esri(url, bbox, fields, where="1=1"):
 def wilderness_path():
     """The Forest Service's wilderness areas over all study areas (data/raw/<area>/_shared/wilderness.gpkg, the area's UTM CRS),
     downloaded when missing or when the study areas have outgrown the box it was downloaded for. Shared by
-    02d_trails.py, 02e_access.py, 08_hike.py and 11_context.py, so whichever runs first fetches it."""
+    02d_trails.py, 02e_access.py, 08_hike.py and 11_context.py, so whichever runs first fetches it.
+    In the Adirondacks (source nys_forest_preserve) the state's Forest Preserve units classed Wilderness, Primitive or
+    Canoe Area are added (NYSDEC's lands layer): the State Land Master Plan keeps bicycles out of them as out of a
+    federal wilderness, which is what the layer stands for in these scripts."""
     import json
-    from config import REGIONS, CRS, SHARED
+    from config import REGIONS, CRS, SHARED, has
     path = f"{SHARED}/wilderness.gpkg"
     b = np.array([v["bbox"] for v in REGIONS.values()])
     env = gpd.GeoSeries([shapely.box(b[:, 0].min(), b[:, 1].min(), b[:, 2].max(), b[:, 3].max())],
@@ -68,7 +71,18 @@ def wilderness_path():
                           headers=UA, timeout=300, params=dict(
                               where="1=1", geometry=",".join(map(str, env)), geometryType="esriGeometryEnvelope",
                               inSR=4326, outSR=EPSG, outFields="WILDERNESSNAME", f="geojson")).json()
-        gpd.GeoDataFrame.from_features(js["features"], crs=CRS).to_file(path + ".tmp.gpkg", driver="GPKG")
+        w = gpd.GeoDataFrame.from_features(js["features"], crs=CRS)
+        if has("nys_forest_preserve"):
+            ny = esri("https://services6.arcgis.com/DZHaqZm9cxOD4CWM/ArcGIS/rest/services/NYS_DEC_Lands/FeatureServer/0",
+                      env, "FACILITY,CLASS", where="CLASS IN ('WILDERNESS','PRIMITIVE','CANOE AREA')")
+            if len(ny):
+                ny = ny.to_crs(CRS)
+                ny["geometry"] = shapely.make_valid(ny.geometry.values)
+                ny = ny.dissolve(by="FACILITY", as_index=False)
+                ny = gpd.GeoDataFrame(dict(WILDERNESSNAME=ny.FACILITY.str.replace("Primtive", "Primitive")),
+                                      geometry=ny.geometry.values, crs=CRS)
+                w = gpd.GeoDataFrame(pd.concat([w, ny], ignore_index=True), crs=CRS)
+        w.to_file(path + ".tmp.gpkg", driver="GPKG")
         os.replace(path + ".tmp.gpkg", path)
         json.dump([float(v) for v in env], open(ext_path, "w"))
     return path

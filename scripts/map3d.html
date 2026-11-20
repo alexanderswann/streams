@@ -97,6 +97,10 @@
   const D = window.MAP3D;
   if (D.lbl && D.lbl.title) { document.title = D.lbl.title + " · 3D"; document.getElementById("ttl").textContent = D.lbl.title + " · 3D"; }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation and drops in m)
+  const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
+    return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
+  const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const mix = (h, t) => "#" + rgb(h).map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0")).join("");
   const dark = (h, t) => "#" + rgb(h).map(v => Math.round(v * (1 - t)).toString(16).padStart(2, "0")).join("");
@@ -166,7 +170,7 @@
   window.map3d = map;   // handy from the browser console
   map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-left");
   map.addControl(new maplibregl.FullscreenControl(), "top-left");
-  map.addControl(new maplibregl.ScaleControl({unit: "metric"}), "bottom-right");
+  map.addControl(new maplibregl.ScaleControl({unit: "imperial"}), "bottom-right");
 
   let mode = "d", focus = null;
   const focusMul = () => focus ? ["case", ["==", ["get", "d"], focus], 1, 0.1] : 1;
@@ -259,7 +263,7 @@
     map.addLayer({id: "streams", type: "line", source: "streams",
       layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
       paint: {"line-color": ["get", "cd"], "line-width": zw("wd", HOVER(3)), "line-opacity": ["get", "od"]}});
-    ov.unshift(["streams", "Streams (≥1 km² drainage)", "<span style='color:#1864ab'>━</span>", ["halo", "streams"], true],
+    ov.unshift(["streams", "Streams (≥0.4 sq mi drainage)", "<span style='color:#1864ab'>━</span>", ["halo", "streams"], true],
                ["basins", "Drainage outlines &amp; names", "<span style='color:#3d4651'>▭</span>",
                 ["fork-fill", "fork-line", "divide", "dlab", "flab"], true]);
 
@@ -509,9 +513,9 @@
       key.innerHTML = `<div class="dm hint">Click a drainage to fly to it${focus ? ` · <a href="#" class="clr">show all</a>` : ""}</div><div class="dl">` +
         Object.entries(byReg).map(([reg, ds]) => (reg !== "Other" ? `<div class="rg">${esc(reg)}</div>` : "") + ds.map(d =>
           `<div class="di${focus === d.name ? " on" : ""}${focus && focus !== d.name ? " off" : ""}" data-d="${esc(d.name)}">` +
-          `<i style="background:${d.color}"></i><span>${esc(d.name)}</span>${d.km2 ? `<em>${d.km2} km²</em>` : ""}</div>` +
+          `<i style="background:${d.color}"></i><span>${esc(d.name)}</span>${d.km2 ? `<em>${SQMI(d.km2)}</em>` : ""}</div>` +
           (focus === d.name && d.forks && d.forks.length > 1 ? d.forks.map(f =>
-            `<div class="fk"><i style="background:${f.color}"></i>${esc(f.name)}<em>${f.km2} km²</em></div>`).join("") : "")
+            `<div class="fk"><i style="background:${f.color}"></i>${esc(f.name)}<em>${SQMI(f.km2)}</em></div>`).join("") : "")
         ).join("")).join("") + "</div>";
       key.querySelectorAll(".di").forEach(el => el.onclick = () => {
         const d = D.drains.find(x => x.name === el.dataset.d);
@@ -566,8 +570,8 @@
     const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
                      : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
-      `<tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr><tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
-      `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${p.el ?? "?"} m · ${p.gr}%</td></tr>` +
+      `<tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr><tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
+      `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` + (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
       (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
@@ -580,8 +584,8 @@
                       "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i)]
       .filter(id => map.getLayer(id));
     const tipHtml = (id, p) => {
-      if (id === "streams") return `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>Order ${p.o} · ${p.a} km² · ${esc(p.fl)} · fish ${p.fs}`;
-      if (id.startsWith("drop")) return `${p.h.toFixed(0)} m drop · ${esc(p.s)}`;
+      if (id === "streams") return `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}`;
+      if (id.startsWith("drop")) return `${FEET(p.h)} drop · ${esc(p.s)}`;
       if (id === "falls") return `${esc(p.name)} (${esc(p.src)})` + (p.note ? `<br><span class="dm">${esc(p.note)}</span>` : "");
       if (id === "trout" || id === "springs") return esc(p.tip);
       if (id === "closures") return `<b>${esc(p.road)}</b> · ${esc(p.severity)}<br>${esc(p.when)} ${esc(p.reason)}`;
@@ -644,8 +648,10 @@
     map.on("mousemove", e => { if (!pending) requestAnimationFrame(onMove); pending = e; });
     map.getCanvas().addEventListener("mouseleave", () => { tip.remove(); setHover(null); });
     map.on("click", e => {
-      const f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
+      let f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
       if (!f) return;
+      // a depth contour opens its lake's popup when the lakes are shown: over a deep lake the lines cover much of it
+      if (f.layer.id === "lake-depth") f = map.queryRenderedFeatures(e.point, {layers: ["lakes"]})[0] || f;
       const p = f.properties, id = f.layer.id;
       // drop and gauge popups are HTML built by 06_map.py from our own data
       const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html

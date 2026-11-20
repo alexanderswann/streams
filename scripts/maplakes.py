@@ -8,10 +8,12 @@ Fill: blue where the fisheries agency lists game fish or a dated survey or sight
 the agency lists none, pale blue where there's no record either way. A dashed edge marks a lake whose lidar showed no
 level water (it may be dry or marsh part of the year).
 """
-import os, json, numpy as np, pandas as pd, geopandas as gpd, shapely, folium
+import os, re, json, numpy as np, pandas as pd, geopandas as gpd, shapely, folium
 from html import escape as hesc
+from branca.element import MacroElement, Template
 from urllib.parse import quote
 from config import REGIONS, MAP_OUT, SHARED_DERIVED, HOME
+from units import ft, mi, acres     # what the maps show is imperial (units.py)
 
 FILL = {"fish": "#1c7ed6", "none": "#adb5bd", "unknown": "#a5d8ff"}
 EDGE = {"fish": "#0b4f8a", "none": "#5c636a", "unknown": "#4a90c2"}
@@ -20,12 +22,30 @@ FT = 3.28084
 KIND = {"Alpine Lakes": "alpine lake (Game & Fish class)", "Lowland Lakes": "lowland lake (Game & Fish class)",
         "Lowland Reservoirs": "lowland reservoir (Game & Fish class)", "Trout Farm Ponds": "trout farm pond",
         "Unsuitable Standing Waters": "standing water Game & Fish rates unsuitable for fish"}
-SCI = {"Oncorhynchus clarkii": "cutthroat trout", "Oncorhynchus clarkii bouvieri": "Yellowstone cutthroat trout",
-       "Oncorhynchus clarkii behnkei": "Snake River cutthroat trout", "Oncorhynchus clarkii utah": "Bonneville cutthroat trout",
-       "Salvelinus fontinalis": "brook trout", "Salvelinus namaycush": "lake trout", "Salmo trutta": "brown trout",
-       "Oncorhynchus mykiss": "rainbow trout", "Thymallus arcticus": "Arctic grayling",
-       "Prosopium williamsoni": "mountain whitefish", "Oncorhynchus nerka": "kokanee salmon",
-       "Oncorhynchus aguabonita": "golden trout", "Salvelinus confluentus": "bull trout"}
+from lakedata import SALMONIDS as SCI     # the trout family's names, as the popups say them
+
+
+def _flown(d):
+    """A lidar survey's dates, '2017-04-14 to 2018-05-25', as months: '2017-04 to 2018-05', or one month."""
+    s, e = (d.split(" to ") + [d])[:2]
+    return s[:7] if s[:7] == e[:7] else f"{s[:7]} to {e[:7]}"
+
+
+class ContourClick(MacroElement):
+    """A click on a depth contour opens its lake's popup: over a deep lake the lines cover much of the water."""
+    _template = Template("""{% macro script(this, kwargs) %}
+{{ this.contours }}.on('click', function (e) {
+  var lid = e.layer && e.layer.feature && e.layer.feature.properties.lid;
+  if (!lid) return;
+  {{ this.lakes }}.eachLayer(function (l) {
+    if (l.feature && l.feature.properties.lid === lid) l.fire('click', {latlng: e.latlng}, true);
+  });
+});
+{% endmacro %}""")
+
+    def __init__(self, contours, lakes):
+        super().__init__()
+        self.contours, self.lakes = contours, lakes
 
 
 def load(done):
@@ -58,29 +78,44 @@ def load(done):
             if len(hit):
                 lk.loc[i, "wilderness"] = hit.loc[hit.geometry.intersection(g).area.idxmax(), "wilderness"]
     # the state agency's stocking and survey records at the lake (11_context.py's trout evidence; iNaturalist comes
-    # through GBIF already): a record within 150 m of the shore, or one naming the lake within 2 km
+    # through GBIF already): a lake record within 150 m of the shore, or one naming the lake within 2 km
     lk["agency_recs"], lk["agency_trout"] = None, False
     tp = f"{MAP_OUT}/context/trout_evidence.gpkg"
     if os.path.exists(tp):
         te = gpd.read_file(tp).to_crs(lk.crs)
         te = te[te.kind != "iNaturalist"]
         key = lambda v: "".join(ch for ch in str(v).lower() if ch.isalnum()) if isinstance(v, str) else ""
+        # the same name in another word order or with a filler word: "Gregory Lake" is Lake Gregory, "Hansen Dam
+        # Lake" is Hansen Dam Recreation Lake
+        words = lambda v: frozenset(re.findall(r"[a-z0-9]+", v.lower())) - {"the", "recreation", "area"} if isinstance(v, str) else frozenset()
         names = [{key(n) for n in (r.name, r.gnis_name, r.agency_name) if isinstance(n, str)} for r in lk.itertuples()]
-        got = {}
+        wsets = [{words(n) for n in (r.name, r.gnis_name, r.agency_name) if isinstance(n, str)} for r in lk.itertuples()]
+        got, named_by = {}, {}
         for e in te.itertuples():
             near = [i for i in lk.sindex.query(e.geometry.buffer(2000), predicate="intersects")]
             if not near:
                 continue
-            named = [i for i in near if key(e.water) and key(e.water) in names[i]]
-            close = [i for i in near if lk.geometry.iat[i].distance(e.geometry) <= 150]
+            named = [i for i in near if key(e.water) and (key(e.water) in names[i] or words(e.water) in wsets[i])]
+            # by position only a lake's own record: a stream's stocking or survey point beside a pond is the stream's
+            # (the Blue Ridge tailwater's stocking point lies in a 5 ha pool of the Toccoa; CT DEEP's stream surveys
+            # sit at the inlets and outlets of 44 Connecticut ponds)
+            lake_rec = getattr(e, "lake", False)
+            lake_rec = bool(lake_rec) if pd.notna(lake_rec) else False
+            close = [i for i in near if lk.geometry.iat[i].distance(e.geometry) <= 150] if lake_rec else []
             pick = named or close
             if pick:
                 i = min(pick, key=lambda i: lk.geometry.iat[i].distance(e.geometry))
                 got.setdefault(i, []).append((e.year if pd.notna(e.year) else 0, str(e.label), bool(e.trout)))
+                if lake_rec and isinstance(e.water, str) and not named:
+                    named_by.setdefault(i, set()).add(e.water.strip())
         for i, v in got.items():
             v = sorted(set(v), reverse=True)
             lk.loc[lk.index[i], "agency_recs"] = json.dumps([l for _, l, _ in v][:6])
             lk.loc[lk.index[i], "agency_trout"] = any(t for _, _, t in v)
+        # a lake without a name takes the one its own stocking or survey record gives it (Yucaipa Lake, CDFW)
+        for i, w in named_by.items():
+            if not isinstance(lk.name.iat[i], str) and len(w) == 1:
+                lk.loc[lk.index[i], ["name", "name_src"]] = [w.pop(), "agency list"]
     pt = lk.geometry.representative_point().to_crs(4326)
     lk["lat"], lk["lon"] = pt.y.round(6).values, pt.x.round(6).values
     return lk
@@ -110,14 +145,14 @@ def _fish(r):
 
 
 def _size(ha):
-    return f"{ha:,.1f} ha ({ha * 2.47105:,.0f} acres)" if ha >= 1 else f"{ha:.2f} ha ({ha * 2.47105:.1f} acres)"
+    return acres(ha)
 
 
 def _depth(r):
     if pd.notna(r.depth_max_m):
-        s = f"max {r.depth_max_m:.0f} m ({r.depth_max_m * FT:.0f} ft)"
+        s = f"max {ft(r.depth_max_m)}"
         if pd.notna(r.depth_mean_m):
-            s += f", mean {r.depth_mean_m:.0f} m ({r.depth_mean_m * FT:.0f} ft)"
+            s += f", mean {ft(r.depth_mean_m)}"
         return s + f" · {r.depth_src}" + (f" · {r.depth_note}" if isinstance(r.depth_note, str) and r.depth_note else "")
     if isinstance(r.depth_note, str) and r.depth_note:
         return r.depth_note
@@ -129,10 +164,11 @@ def popup(r, approach):
     nm = r.name if isinstance(r.name, str) else "Unnamed lake"
     alt = r.agency_name if isinstance(r.agency_name, str) and r.agency_name != nm else None
     kind = " / ".join(KIND.get(t, t) for t in r.lake_type.split(" / ")) if isinstance(r.lake_type, str) and r.lake_type else r.ftype
-    el = (f"{r.elev_m:,.0f} m ({r.elev_m * FT:,.0f} ft)" if pd.notna(r.elev_m) else "?") + (
-        f" · water level by lidar, {r.lidar_dates[:7]}" if r.elev_src == "lidar water level" and isinstance(r.lidar_dates, str) else
-        f" · lidar water surface (not flattened), {r.lidar_dates[:7]}" if str(r.elev_src).startswith("lidar water surface")
-        and isinstance(r.lidar_dates, str) else "")
+    el = ft(r.elev_m) + (
+        f" · water level by lidar, {_flown(r.lidar_dates)}" if r.elev_src == "lidar water level" and isinstance(r.lidar_dates, str) else
+        f" · lidar water surface (not flattened), {_flown(r.lidar_dates)}" if str(r.elev_src).startswith("lidar water surface")
+        and isinstance(r.lidar_dates, str) else
+        f" · {r.elev_src}" if str(r.elev_src).startswith(("normal level", "its shoreline")) else "")
     conn = []
     if isinstance(r.outlet_name, str):
         conn.append(f"outlet {r.outlet_name}")
@@ -143,7 +179,7 @@ def popup(r, approach):
     elif r.inlets:
         conn.append(f"{r.inlets} unnamed inlet{'s' if r.inlets > 1 else ''}")
     gm = f"https://www.google.com/maps/@?api=1&map_action=map&center={r.lat:.5f},{r.lon:.5f}&zoom=16&basemap=satellite"
-    acc = approach(r) + (f" · route about {r.route_km:.1f} km" if pd.notna(r.route_km) else "")
+    acc = approach(r) + (f" · route about {mi(r.route_km)}" if pd.notna(r.route_km) else "")
     rows = [("Type", hesc(f"{kind} · {_size(r.ha)}")), ("Elevation", hesc(el)),
             ("Fish", f"<b>{hesc(fish)}</b>" + ("<br>" + "<br>".join(hesc(x) for x in recs[:5]) if recs else "")
              + (f"<br>{hesc(r.survey)}" if isinstance(getattr(r, "survey", None), str) else "")
@@ -167,8 +203,10 @@ def popup(r, approach):
             + ("".join(f"<div class='warn'>{hesc(x)}</div>" if x in (r.conflict, r.water_note, r.private_shore) else
                        f"<div class='dw'>{hesc(x)}</div>" for x in note))
             + f"<div class='dm'>Outline: {hesc(str(r.src_outline))}"
-            + (f" (NHD {r.nhd_ha:.1f} ha)" if pd.notna(r.nhd_ha) and str(r.src_outline).startswith("lidar") else "")
-            + (f"; {hesc(r.outline_note)}" if isinstance(r.outline_note, str) else "") + "</div>"
+            + (f" (NHD {acres(r.nhd_ha)})" if pd.notna(r.nhd_ha) and str(r.src_outline).startswith("lidar") else "")
+            + (f"; {hesc(r.outline_note)}" if isinstance(r.outline_note, str) else "")
+            + {"OpenStreetMap": " · name from OpenStreetMap", "survey": " · name from the depth survey",
+               "agency list": " · name from the state's stocking or survey list"}.get(r.name_src, "") + "</div>"
             + f"<a href='{gm}' target='_blank'>Satellite view</a>"
             + (f" · <a href='profiles.html#q={quote(r.outlet_name.split(', ')[0])}' target='_blank'>Outlet creek profile ↗</a>"
                if isinstance(r.outlet_name, str) else "")
@@ -176,9 +214,16 @@ def popup(r, approach):
                if r.agency == "Wyoming Game & Fish" else "")
             + "".join(f" · <a href='{hesc(u)}' target='_blank'>Agency page ↗</a>"
                       for u in (str(getattr(r, "links", "") or "").split("; ")[:2]) if u.startswith("http")) + "</div>")
-    short = fish.split(" (")[0] if cls == "fish" and isinstance(r.game_fish, str) and r.game_fish != "None" else \
-        {"fish": "fish recorded", "none": "no game fish listed", "unknown": "no fish record"}[cls]
-    tip = f"{nm} · {_size(r.ha).split(' (')[0]} · {short}" + (
+    # Wyoming lists every lake's game fish ("None" too); elsewhere the agencies list stocking and samples, so a lake
+    # without a trout among them has "no trout record", not "no fish record" (Pachaug Pond: 12 species, no trout)
+    wy = r.agency == "Wyoming Game & Fish"
+    if cls == "fish":
+        short = fish.split(" (")[0] if wy and isinstance(r.game_fish, str) and r.game_fish != "None" else "trout stocked or recorded"
+    elif cls == "none":
+        short = "no game fish listed"
+    else:
+        short = "no fish record" if wy else "no trout record"
+    tip = f"{nm} · {_size(r.ha)} · {short}" + (
         f" · {r.approach_min:.0f} min in" if pd.notna(r.approach_min) else "")
     return cls, html, tip, short
 
@@ -201,7 +246,7 @@ def add(m, X3D, done, approach):
              ("<span style='color:#1c7ed6'>■</span> trout stocked or recorded <span style='color:#a5d8ff'>■</span> no trout record")
     name = "<span style='color:#1c7ed6'>■</span> Lakes: " + legend
     X3D["lake_legend"] = "Lakes: " + legend
-    folium.GeoJson(js, name=name, show=False,
+    lakes_layer = folium.GeoJson(js, name=name, show=False,
                    style_function=lambda f: {"color": f["properties"]["e"], "weight": 1.2, "fillColor": f["properties"]["c"],
                                              "fillOpacity": 0.55, "dashArray": "4 3" if f["properties"]["dry"] else None},
                    highlight_function=lambda f: {"weight": 2.5, "fillOpacity": 0.7},
@@ -215,14 +260,15 @@ def add(m, X3D, done, approach):
         if len(dc):
             dc = dc.to_crs(4326)
             ft_ = dc.depth_ft if "depth_ft" in dc else dc.depth_m / 0.3048
-            dc["tip"] = [f"{f:g} ft ({m:g} m) deep · {s}" for f, m, s in zip(ft_.round(0), dc.depth_m, dc.src)]
+            dc["tip"] = [f"{f:g} ft deep · {s}" for f, s in zip(ft_.round(0), dc.src)]
             dc["major"] = dc.major.astype(bool) if "major" in dc else (dc.depth_m % 10 == 0)
-            dj = json.loads(dc[["depth_m", "major", "tip", "geometry"]].assign(
+            dj = json.loads(dc[["lid", "depth_m", "major", "tip", "geometry"]].assign(
                 geometry=shapely.set_precision(dc.geometry.values, 1e-6)).to_json(drop_id=True))
-            folium.GeoJson(dj, name="<span style='color:#1864ab'>〰</span> Lake depth contours (measured surveys)", show=False,
-                           style_function=lambda f: {"color": "#1864ab", "weight": 1.6 if f["properties"]["major"] else 0.8,
-                                                     "opacity": 0.85},
-                           tooltip=folium.GeoJsonTooltip(["tip"], labels=False)).add_to(m)
+            dl = folium.GeoJson(dj, name="<span style='color:#1864ab'>〰</span> Lake depth contours (measured surveys)", show=False,
+                                style_function=lambda f: {"color": "#1864ab", "weight": 1.6 if f["properties"]["major"] else 0.8,
+                                                          "opacity": 0.85},
+                                tooltip=folium.GeoJsonTooltip(["tip"], labels=False)).add_to(m)
+            m.add_child(ContourClick(dl.get_name(), lakes_layer.get_name()))
             X3D["lake_depth"] = dj
     # table and GPX
     tab = lk.assign(acres=(lk.ha * 2.47105).round(1))

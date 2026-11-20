@@ -14,6 +14,7 @@ from scipy.spatial import cKDTree
 from shapely.geometry import LineString
 from shapely.ops import linemerge, unary_union
 from config import REGIONS, CRS, ROOT, MAP_OUT, RES, raw_dir, derived_dir
+from units import ft, sqmi, imperial_text   # the labels and notes profiles.html shows are imperial; the profile data stay metric
 
 MIN_KM = 2.0          # skip shorter creeks
 STEP_M = 40           # spacing along the profile
@@ -175,10 +176,10 @@ for region, meta in REGIONS.items():
                           # depression the DEM fill raised more than 2 m (dam, culvert, bridge deck, bad pixels)
                           why=None if r_.status != "likely DEM artifact" else
                               "road crossing" if str(r_.road_crossing) == "True" else
-                              f"filled depression ({r_.fill_max_m:g} m)")
+                              f"filled depression ({ft(r_.fill_max_m)})")
                      for kk, r_ in sorted(zip(km[on], d_reg[on].itertuples()), key=lambda t: t[0])]
             fd, fkm = snap(kf.geometry.x.values, kf.geometry.y.values)
-            falls = [dict(km=round(kk, 3), name=n if isinstance(n, str) else "mapped waterfall")
+            falls = [dict(km=round(kk, 3), name=imperial_text(n) if isinstance(n, str) else "mapped waterfall")
                      for kk, n, d in zip(fkm, kf.name, fd) if d < SNAP_FALL]
             gd, gkm = snap(gauges.geometry.x.values, gauges.geometry.y.values)
             gs = [dict(km=round(kk, 3), name=g.name, cfs=g.cfs, status=g.status, url=g.url)
@@ -205,7 +206,7 @@ for region, meta in REGIONS.items():
     for name, ps in by_name.items():
         for p in ps:
             p["label"] = f"{name} ({meta['label'].replace(' Mountains', '')}"
-            p["label"] += f", {p['area_km2']:g} km²)" if len(ps) > 1 else ")"
+            p["label"] += f", {sqmi(p['area_km2'])})" if len(ps) > 1 else ")"
         profiles += ps
     print(f"{meta['label']}: {sum(len(v) for v in by_name.values())} creek profiles")
 

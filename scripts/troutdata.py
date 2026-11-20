@@ -25,6 +25,20 @@ Which sources an area has is in config.py (`sources`); all were checked against 
              species) and stocked lakes. PFBC publishes no survey layer with species per site
   de_trout   Delaware DNREC (checked 2026-11-19): the designated trout streams of New Castle County, stocked each spring,
              and their fly-fishing-only sections
+  nc_trout   North Carolina WRC (checked 2026-11-19): Public Mountain Trout Waters, streams and impoundments, by class
+             (Hatchery Supported and Delayed Harvest, which NCWRC stocks; catch-and-release; named Wild Trout Waters;
+             Mountain Heritage town reaches). Not the game lands' blanket "Wild Trout Waters unless otherwise noted",
+             which is drawn on every creek there. No dated stocking or survey layer is published
+  tn_trout   Tennessee WRA (checked 2026-11-19): its trout stocking sites (current program, no dates), its wadeable-stream
+             electrofishing samples (species per sample, 1996-2022) and the 2016 brook trout genetics collections
+  grsm_trout Great Smoky Mountains National Park's trout distribution (species per stream segment; the park's
+             "No Fish" code marks unsampled streams and is not used; "Internal NPS Only" segments are left out)
+  ebci_trout the Eastern Band of Cherokee Indians' fishing zones: the Raven Fork trophy section and the Enterprise Waters
+  ny_trout   New York DEC (checked 2026-11-19): its categorized trout stream reaches (Wild-Quality, Stocked, Stocked-Extended,
+             with the species and yearly number stocked), the waters classed for trout (T) or trout spawning (TS) in the
+             state's water quality standards (6 NYCRR 701), and public fishing access along trout streams (DEC's fishing
+             rights easements and other agencies'). DEC publishes no survey layer with species per site, and its stocking
+             list for lakes and ponds (data.ny.gov) has towns, not coordinates
   tu_brook_trout  Trout Unlimited's latest brook trout portfolio (the EBTJV wild brook trout patches), CT to GA
 A "no trout" record is only made from an electrofishing sample that lists other species and no trout (CT). Nothing
 else here lowers a score: when unsure, a possible trout stream stays in.
@@ -326,6 +340,194 @@ def _de():
     return ev, wa
 
 
+def _try(key, url, **kw):
+    """fetch(), but a source that doesn't answer is left out with a note instead of stopping the step (the
+    Smokies sources are many and some are yearly services that get renamed)."""
+    try:
+        return fetch(key, url, **kw)
+    except (RuntimeError, requests.RequestException, KeyError, ValueError) as e:
+        print(f"NOTE: trout source {key} not read ({e})")
+        return _EMPTY
+
+
+# ---- North Carolina ----
+NCWRC = "https://services1.arcgis.com/YfqBAUM5nWR3yhGP/arcgis/rest/services"
+
+
+def _ncwrc_newest(kind):
+    """(year, service) of the newest of NCWRC's yearly Public Mountain Trout Waters services (PMTW_Streams_2026,
+    PMTW_Impoundments_2026, ...); 2026's if the list can't be read."""
+    try:
+        names = [s["name"].split("/")[-1] for s in requests.get(f"{NCWRC}?f=json", headers=UA, timeout=60).json()["services"]]
+    except (requests.RequestException, ValueError, KeyError):
+        names = []
+    yrs = {int(m.group(1)): n for n in names if (m := re.fullmatch(rf"PMTW_{kind}_(\d{{4}})", n))}
+    return (max(yrs), yrs[max(yrs)]) if yrs else (2026, f"PMTW_{kind}_2026")
+
+
+def _nc():
+    ev, wa = [], []
+    yr, svc = _ncwrc_newest("Streams")
+    s = _try(f"nc_pmtw_streams_{yr}", f"{NCWRC}/{svc}/FeatureServer/0",
+             fields="Displ_Name,FIRST_Reg_Name,FIRST_Reg_Descri,FIRST_WRC_CLASS,FIRST_MHTW_City")
+    if len(s):
+        # Every water on the Nantahala, Pisgah and other game lands is "Wild Trout Waters unless otherwise noted": a rule
+        # drawn on every mapped creek there (85% of the km in the Smokies' boxes), not a record of trout. Left out
+        s = s[~s.FIRST_Reg_Descri.fillna("").str.contains("unless otherwise noted", case=False)]
+        cls = s.FIRST_WRC_CLASS.fillna("").str.replace(r"\s*Trout Waters$", "", regex=True).str.strip()
+        name = s.Displ_Name.where(s.Displ_Name.fillna("").str.strip().ne(""), s.FIRST_Reg_Name).fillna("")
+        town = s.FIRST_MHTW_City.fillna("").str.strip()
+        wa.append(_waters(s, name, [f"{c} trout water" + (f", Mountain Heritage Trout Water ({t})" if t else "") + " (NCWRC)"
+                                    for c, t in zip(cls, town)]))
+        stocked = cls.str.contains("Hatchery Supported|Delayed Harvest", case=False)    # the classes NCWRC stocks
+        if stocked.any():
+            ev.append(_ev(s[stocked], "NCWRC stocking", name[stocked], THIS_YEAR, True,
+                          [f"{c.lower()} trout water: NCWRC stocks it each season" for c in cls[stocked]], lake=False))
+    yr, svc = _ncwrc_newest("Impoundments")
+    k = _try(f"nc_pmtw_lakes_{yr}", f"{NCWRC}/{svc}/FeatureServer/0", fields="WRC_Class,DISPL_NAME,Reg_Descri")
+    if len(k):
+        k = k[~k.Reg_Descri.fillna("").str.contains("unless otherwise noted", case=False) & k.DISPL_NAME.fillna("").str.strip().ne("")]
+        cls = k.WRC_Class.fillna("").str.replace(r"\s*Trout Waters$", "", regex=True).str.strip()
+        if len(k):
+            wa.append(_waters(k, k.DISPL_NAME, cls + " trout water (NCWRC)"))
+            st = cls.str.contains("Hatchery Supported|Delayed Harvest", case=False)
+            if st.any():
+                ev.append(_ev(k[st], "NCWRC stocking", k.DISPL_NAME[st], THIS_YEAR, True,
+                              "hatchery-supported trout water: NCWRC stocks it each season", lake=True))
+    return ev, wa
+
+
+# ---- Tennessee ----
+TWRA = "https://services3.arcgis.com/PWXNAH2YKmZY7lBq/arcgis/rest/services"
+
+
+def _tn():
+    ev, wa = [], []
+    # the stocking sites of TWRA's current program (its fishing map's layer; no dates in it)
+    s = _try("tn_stocking", f"{TWRA}/TWRA_Trout_Stocking_Locations/FeatureServer/0",
+             fields="StreamName,StockingProgram,WaterClass,Species,DelayedHarvestSeason,DailyPermitRequired")
+    if len(s):
+        s = s[s.StreamName.fillna("").str.strip().ne("")]
+        sp = s.Species.fillna("").str.split("_").map(lambda v: " and ".join([", ".join(v[:-1]), v[-1]] if len(v) > 2 else v))
+        none = lambda v: str(v).strip() in ("", "None", "No", "nan")
+        label = [f"on TWRA's trout stocking list ({str(p).lower()} program" + (f", {x} trout" if x else "") + ")"
+                 + ("" if none(d) else f"; {d}") + ("" if none(m) else f"; {'daily permit required' if m == 'Yes' else m}")
+                 for p, x, d, m in zip(s.StockingProgram, sp, s.DelayedHarvestSeason, s.DailyPermitRequired)]
+        lake = (s.WaterClass.fillna("").str.contains("lake|reservoir", case=False) | s.StockingProgram.eq("Reservoir")).values
+        ev.append(_ev(s, "TWRA stocking", s.StreamName.str.strip(), THIS_YEAR, True, label, lake=lake))
+    # TWRA's wadeable-stream electrofishing samples (one row per species per sample, 1996-2022). A sample of 2+ other
+    # species and no trout is a no-trout record, as Connecticut's are
+    f = _try("tn_surveys", f"{TWRA}/TADS_WadeSites2022/FeatureServer/0", fields="SITECODE,WATERNAME,YEAR_1,Common_Name,NUM_FISH")
+    if len(f):
+        f["sp"] = f.Common_Name.fillna("").str.strip()
+        f["is_trout"] = f.sp.str.contains("trout", case=False)
+        rows = []
+        for (st, yr), g in f.groupby(["SITECODE", "YEAR_1"]):
+            t = g[g.is_trout]
+            if len(t):
+                q = t.groupby(t.sp.str.lower()).NUM_FISH.sum()       # 0 = present, not counted
+                rows.append((g.index[0], yr, True, f"TWRA electrofishing sample {int(yr)}: "
+                             + ", ".join(sp_ + (f" ({int(n)})" if pd.notna(n) and n > 0 else "") for sp_, n in q.items())))
+            elif g.sp.str.lower().nunique() >= 2:
+                rows.append((g.index[0], yr, False, f"TWRA electrofishing sample {int(yr)}: no trout ({g.sp.str.lower().nunique()} other species)"))
+        if rows:
+            r = pd.DataFrame(rows, columns=["i", "year", "trout", "label"]).set_index("i")
+            keep = r.assign(st=f.loc[r.index, "SITECODE"].values).sort_values("year").groupby(["st", "trout"]).tail(1)
+            g = f.loc[keep.index]
+            ev.append(_ev(g, "TWRA survey", g.WATERNAME.fillna("").str.title(), keep.year.values, keep.trout.values,
+                          keep.label.values, lake=False))
+    # brook trout collected for TWRA's genetics study
+    b = _try("tn_brook_genetics", f"{TWRA}/Brook_Trout_Genetics_ArcFormat_2025/FeatureServer/0",
+             fields="Waterbody,Date,Genotyped_Samples__trimmed_")
+    if len(b):
+        yr = pd.to_datetime(b.Date, errors="coerce").dt.year
+        n = pd.to_numeric(b.Genotyped_Samples__trimmed_, errors="coerce")
+        ev.append(_ev(b, "TWRA survey", b.Waterbody, yr.values, True,
+                      [f"TWRA brook trout genetics collection{f' {int(y)}' if pd.notna(y) else ''}"
+                       + (f": {int(k)} brook trout" if pd.notna(k) else ": brook trout") for y, k in zip(yr, n)], lake=False))
+    return ev, wa
+
+
+# ---- Great Smoky Mountains National Park ----
+GRSM_TROUT = "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRSM_TROUT_DISTRIBUTION/FeatureServer/0"
+
+
+def _grsm():
+    """The park's trout distribution map (its fisheries crew's sampling, mostly 2014 and 2018). Species codes 1-7
+    only: code 8 ("No Fish") and blanks are streams not yet sampled, nearly all marked Raw or Invalid, not findings.
+    Segments the park marks "Internal NPS Only" are left out, though the service hands them out."""
+    t = _try("grsm_trout", GRSM_TROUT, where="DATAACCESS = 'Unrestricted' AND SPECIESCOMP IN ('1','2','3','4','5','6','7')",
+             fields="STREAMNAME,SPECIESCOMP,VALID_RESULT,SOURCEDATE")
+    if not len(t):
+        return [], []
+    t = t[t.VALID_RESULT.fillna("").ne("Invalid")]
+    comp = {"1": "rainbow trout", "2": "brook trout", "3": "brown trout", "4": "rainbow and brown trout",
+            "5": "rainbow and brook trout", "6": "brook and brown trout", "7": "rainbow, brook and brown trout"}
+    yr = _ms(t.SOURCEDATE).dt.year
+    return [], [_waters(t, t.STREAMNAME, [f"Trout stream: {comp.get(str(c).strip(), 'trout')} (GRSM fish distribution"
+                                          + (f", {int(y)})" if pd.notna(y) else ")") for c, y in zip(t.SPECIESCOMP, yr)])]
+
+
+# ---- Eastern Band of Cherokee Indians (the Qualla Boundary) ----
+EBCI = "https://services.arcgis.com/IT5YbezrAr6F9SXt/arcgis/rest/services"
+
+
+def _ebci():
+    """The tribe's fishing zones as its licensing map draws them: the Raven Fork trophy section and the stocked
+    Enterprise Waters (both need a tribal fishing permit; the other Qualla Boundary waters are for enrolled members)."""
+    wa = []
+    for key, lyr, des in (("ebci_trophy", "Fish_Zone_Fly_Fishing_CR",
+                           "Cherokee trophy water: fly fishing only, catch and release; tribal permit and special-use permit (EBCI)"),
+                          ("ebci_enterprise", "Fish_Zone_Public_Fishing_Waters",
+                           "Cherokee Enterprise Waters: stocked; tribal fishing permit (EBCI)")):
+        z = _try(key, f"{EBCI}/{lyr}/FeatureServer/0", fields="Stream_Name,Zone")
+        if len(z):
+            wa.append(_waters(z, z.Stream_Name, des))
+    return [], wa
+
+
+# ---- New York ----
+NYDEC = "https://services6.arcgis.com/DZHaqZm9cxOD4CWM/ArcGIS/rest/services"
+
+
+def _ny():
+    ev, wa = [], []
+    # DEC's categorized trout stream reaches (the 2020 statewide trout stream management plan): Wild-Quality, Stocked
+    # and Stocked-Extended (a longer season), with the species stocked, when, and how many a year
+    t = _try("ny_trout_streams", f"{NYDEC}/Inland_Trout_Stream_Fishing/FeatureServer/0",
+             fields="WATER,MGMTCAT,HARVESTREG,STOCKEDSPECIES,SCHEDULE,TOTALTROUT")
+    if len(t):
+        cat = t.MGMTCAT.fillna("").str.strip()
+        spp = t.STOCKEDSPECIES.fillna("").str.replace(r",\s*$", "", regex=True).str.strip().str.lower()
+        cr = t.HARVESTREG.fillna("").str.contains("Catch and Release", case=False)
+        kind = np.select([cat.eq("Wild-Quality"), cat.eq("Stocked-Extended"), cat.str.startswith("Stocked")],
+                         ["Wild quality trout stream", "Stocked trout stream, extended season", "Stocked trout stream"],
+                         "Trout stream")
+        wa.append(_waters(t, t.WATER, [k + (f" ({s})" if s else "") + (", catch and release all year" if r else "")
+                                       + " (NYSDEC)" for k, s, r in zip(kind, spp, cr)]))
+        st = t[cat.str.startswith("Stocked").values & spp.ne("").values]
+        if len(st):
+            n = pd.to_numeric(st.TOTALTROUT, errors="coerce")
+            ev.append(_ev(st, "NYSDEC stocking", st.WATER, THIS_YEAR, True,
+                          [f"on New York's trout stocking list: {s}" + (f", {int(k):,} a year" if pd.notna(k) and k > 0 else "")
+                           + (f" ({w.strip()})" if isinstance(w, str) and w.strip() else "")
+                           for s, k, w in zip(spp[st.index], n, st.SCHEDULE)], lake=False))
+    # waters classed for trout (T) or trout spawning (TS) in the water quality standards: DEC gives a water that class
+    # where it holds trout, so it is the state's record of trout water. Stream lines only; lakes are left out
+    c = _try("ny_wq_trout", f"{NYDEC}/Water_Quality_Classifications/FeatureServer/1", where="STANDARD LIKE '%(T%'",
+             fields="STANDARD")
+    if len(c):
+        std = c.STANDARD.fillna("").str.strip()
+        wa.append(_waters(c, "", [("Trout spawning water" if "(TS)" in s_ else "Trout water") + f", NY class {s_} (NYSDEC)"
+                                  for s_ in std]))
+    # public fishing access along trout streams: DEC's fishing rights easements (usually 33 ft of bank), and other
+    # agencies' banks open to anglers
+    p = _try("ny_pfr", f"{NYDEC}/Trout_Stream_Fishing_Access/FeatureServer/1", fields="WATER,AGENCY")
+    if len(p):
+        wa.append(_waters(p, p.WATER, "Public fishing access on a trout stream (" + p.AGENCY.fillna("NYS DEC").str.strip() + ")"))
+    return ev, wa
+
+
 # ---- eastern brook trout patches ----
 TU = ("https://services1.arcgis.com/754BERmVIq3RqSf8/arcgis/rest/services/"
       "Most_Recent_Brook_Trout_Portolio_Assessment_Results/FeatureServer/0")
@@ -333,17 +535,30 @@ def _tu():
     p = fetch("tu_brook", TU, fields="Trout_community,Portfolio_category")
     if not len(p):
         return [], []
+    # New York's patches (the only ones seen with these values, 2026-11-19) also cover catchments with no trout on
+    # record and ones where brook trout are only predicted by a model: neither is a record of trout, so they are left
+    # out (no trout-water label; nothing here lowers a score either). Brown-only and rainbow-only catchments have trout
+    # but no brook trout
+    raw = p.Trout_community.fillna("").str.strip()
+    keep = ~raw.isin(["No trout documented", "Brook trout predicted"]).values
+    p, raw = p[keep], raw[keep]
+    if not len(p):
+        return [], []
     # (Pennsylvania's patches say only "Allopatric" / "Sympatric": alone, or with other trout species not named)
-    com = p.Trout_community.fillna("").replace({"Allopatric EBT": "brook trout only", "Sympatric EBT & BNT": "brook and brown trout",
-                                                "Sympatric EBT, BNT, & RBT": "brook, brown and rainbow trout",
-                                                "Sympatric EBT & RBT": "brook and rainbow trout", "Allopatric": "brook trout only",
-                                                "Sympatric": "brook trout with other trout",
-                                                "Sympatric brook trout": "brook trout with other trout"})
-    return [], [_waters(p, com, "Wild brook trout patch (EBTJV / Trout Unlimited)")]
+    com = raw.replace({"Allopatric EBT": "brook trout only", "Sympatric EBT & BNT": "brook and brown trout",
+                       "Sympatric EBT, BNT, & RBT": "brook, brown and rainbow trout",
+                       "Sympatric EBT & RBT": "brook and rainbow trout", "Allopatric": "brook trout only",
+                       "Allopatric brook trout": "brook trout only", "Sympatric": "brook trout with other trout",
+                       "Sympatric brook trout": "brook trout with other trout",
+                       "Brown trout only": "brown trout, no brook trout", "Rainbow trout only": "rainbow trout, no brook trout"})
+    other = raw.isin(["Brown trout only", "Rainbow trout only"]).values
+    return [], [_waters(p, com, np.where(other, "Wild trout patch (EBTJV / Trout Unlimited)",
+                                         "Wild brook trout patch (EBTJV / Trout Unlimited)"))]
 
 
 _BY_SOURCE = (("ct_trout", _ct), ("vt_trout", _vt), ("va_trout", _va), ("ga_trout", _ga), ("wy_trout", _wy),
-              ("id_trout", _id), ("pa_trout", _pa), ("de_trout", _de), ("tu_brook_trout", _tu))       # state designations first: a reach's label is the first that covers it
+              ("id_trout", _id), ("pa_trout", _pa), ("de_trout", _de), ("ebci_trout", _ebci), ("nc_trout", _nc),
+              ("tn_trout", _tn), ("grsm_trout", _grsm), ("ny_trout", _ny), ("tu_brook_trout", _tu))       # state designations first: a reach's label is the first that covers it
 _done = None
 def _load():
     global _done

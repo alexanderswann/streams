@@ -79,14 +79,19 @@ for m in group_runs(flag, down):
         area_km2=round(float(area[top]), 2), elev_m=round(float(z[top]), 0),
         fill_max_m=round(float(fill[m].max()), 1), pool_depth_m=round(float(pool), 1)))
 
-df = pd.DataFrame(rows)
+# the columns named, so a box with no candidate at all (the small Buffalo Fork box, 2026-11-19) still writes its file
+df = pd.DataFrame(rows, columns=["top_idx", "base_idx", "drop_m", "excess_drop_m", "run_m", "step_slope", "max_slope",
+                                 "slope_above", "slope_below", "knick_ratio", "area_km2", "elev_m", "fill_max_m",
+                                 "pool_depth_m"])
+# numbers even when empty: an empty column is text to pandas, and the file's text fields made the box's drops text
+df = df.astype({c: ("int64" if c.endswith("_idx") else "float64") for c in df.columns})
 T = src.transform
 def xy(idx):
     rr, cc = np.divmod(idx, W)
     return T * (cc + 0.5, rr + 0.5)
-df["geometry"] = [Point(xy(i)) for i in df.top_idx]
-df["pool_x"], df["pool_y"] = zip(*[xy(i) for i in df.base_idx])
-g = gpd.GeoDataFrame(df, crs=CRS)
+pools = [xy(i) for i in df.base_idx]
+df["pool_x"], df["pool_y"] = [p[0] for p in pools], [p[1] for p in pools]
+g = gpd.GeoDataFrame(df, geometry=[Point(xy(i)) for i in df.top_idx], crs=CRS)
 g["kind"] = "short fall / pool (big creek)"
 g["pass"] = 2
 # A fill-raised step *at* the drop (not in the pool below) may be a dam, bridge deck or DEM seam's. The fill is about

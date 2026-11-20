@@ -130,8 +130,8 @@ _TAILWATERS = {
     # into the bypassed reach below the dam (the river is at 848 m just below it on the 10 m DEM; the lake at 917 m)
     "smokies": {"Nantahala Lake": ("Nantahala River", 850)},
 }
-# Jackson: Jackson Lake Dam is just north of the area's boxes, and the Snake below it is cold water all the way
-# anyway. Vermont, Connecticut, Lexington: none known.
+# Jackson: the Snake below Jackson Lake Dam and Palisades Dam (both on the map since 2026-11-19) is cold water anyway
+# (13.1 C measured below Palisades at Irwin, 7 readings). Vermont, Connecticut, Lexington: none known.
 TAILWATERS = _TAILWATERS.get(watertemp.AREA, {})
 
 
@@ -201,7 +201,11 @@ def score(s):
     north = np.clip((s.northness.fillna(0) + 0.15) / 0.30, 0, 1)
     tw = tailwater(s)
     wt = pd.Series(watertemp.estimate(num(s, "air_aug"), s.elev_m, num(s, "area_full_km2").fillna(s.area_km2)), index=s.index)
-    cool = np.clip((WATER_ZERO - wt) / (WATER_ZERO - WATER_FULL), 0, 1).fillna(0.5)   # no estimate: neutral
+    # no estimate: where the area's fit has no skill, its measured sites' mean stands for every creek (the model the
+    # skill test compares with: a cold area stays cold); with no measured sites at all, neutral
+    avg = watertemp.area_mean()
+    no_est = float(np.clip((WATER_ZERO - avg) / (WATER_ZERO - WATER_FULL), 0, 1)) if np.isfinite(avg) else 0.5
+    cool = np.clip((WATER_ZERO - wt) / (WATER_ZERO - WATER_FULL), 0, 1).fillna(no_est)
     thermal = 0.5 * np.where(tw.ne(""), 1.0, cool) + 0.35 * shade + 0.15 * north
     grad = band(s.gradient_pct, 1, 8, 10)
     ridden = num(s, "bike_med_min").fillna(0)          # 08_hike.py: the minutes of the typical approach ridden

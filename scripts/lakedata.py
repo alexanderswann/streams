@@ -17,6 +17,20 @@ at (lon, lat or UTM 12N easting, northing of the sounding or the lake, to match 
 index site on a reservoir, a lower bound, not the maximum).
 """
 
+# GBIF's species names for the trout family, as the maps say them. GBIF follows the 2023 AFS list, which splits
+# cutthroat trout: the inland ones (Yellowstone, Snake River fine-spotted, Bonneville, Colorado River, Rio Grande) are
+# Oncorhynchus virginalis, Rocky Mountain cutthroat trout.
+SALMONIDS = {
+    "Oncorhynchus clarkii": "cutthroat trout", "Oncorhynchus virginalis": "cutthroat trout",
+    "Oncorhynchus clarkii bouvieri": "Yellowstone cutthroat trout", "Oncorhynchus clarkii behnkei": "Snake River cutthroat trout",
+    "Oncorhynchus clarkii utah": "Bonneville cutthroat trout", "Oncorhynchus lewisi": "westslope cutthroat trout",
+    "Oncorhynchus henshawi": "Lahontan cutthroat trout", "Oncorhynchus mykiss": "rainbow trout",
+    "Oncorhynchus aguabonita": "golden trout", "Oncorhynchus nerka": "kokanee salmon", "Oncorhynchus kisutch": "coho salmon",
+    "Oncorhynchus tshawytscha": "Chinook salmon", "Salmo trutta": "brown trout", "Salmo salar": "Atlantic salmon",
+    "Salvelinus fontinalis": "brook trout", "Salvelinus namaycush": "lake trout", "Salvelinus confluentus": "bull trout",
+    "Salvelinus alpinus": "Arctic char", "Thymallus arcticus": "Arctic grayling", "Prosopium williamsoni": "mountain whitefish",
+    "Prosopium cylindraceum": "round whitefish", "Coregonus clupeaformis": "lake whitefish", "Coregonus artedi": "cisco"}
+
 SG2005 = ("Stephens & Gipson 2005, Inventory of fish in alpine lakes in Grand Teton National Park (Wyoming Game & "
           "Fish for the NPS Greater Yellowstone Network), Appendix A; https://irma.nps.gov/DataStore/DownloadFile/151582")
 NLA = "EPA National Lakes Assessment, sonar depth at the index site (for a natural lake, the deepest spot the crew found)"
@@ -49,6 +63,25 @@ DEPTHS = {"jackson": [
 
 # Gill-net surveys of the same report (Appendix B; fish found: Yellowstone cutthroat trout in three lakes; Arrowhead
 # Pool was too shallow to net, 4 ft; Timberline Lake's net wasn't set for ice, its minnow trap caught nothing).
+# Measured depths from reports elsewhere (each read in its source, 2026-11-20). "note" goes with the depth in the popup.
+DEPTHS["la"] = [
+    dict(lake="Lake Arrowhead", max_m=46.2, mean_m=18.6, rank=1, date="2008-09",
+         method="echo sounder with RTK GPS on lines 100 ft apart; area-capacity table at 1 ft steps",
+         src="Bureau of Reclamation 2009 (sonar survey; depth below full pool)", at=(-117.1858, 34.2593),
+         note="bottom at 4,955 ft, full pool 5,106.7 ft (lake datum); mean = 46,855 acre-feet over 767 acres",
+         ref="Bureau of Reclamation 2009, Lake Arrowhead 2008 bathymetric survey report: area-capacity table from 4,955.0 ft "
+             "(0 acres) to full pool 5,106.7 ft (767 acres, 46,855 acre-feet), Arrowhead Lake Association datum (11.2 ft "
+             "below NAVD88); https://data.usbr.gov/rise/content-rise-public/rise/catalog-item/binary/"
+             "Lake%20Arrowhead_Bathymetric%20Survey%20Report%202009_508.pdf"),
+]
+DEPTHS["lexington_va"] = [
+    dict(lake="Lake Robertson", max_m=13.7, mean_m=None, rank=3, date="undated", method="depth contours at 5 ft",
+         src="Virginia DWR lake map (5 ft contours)", at=(-79.6084, 37.8044),
+         note="deepest contour 45 ft: the bottom is a little deeper",
+         ref="Virginia DWR, Lake A. Willis Robertson, Rockbridge County, 31 acres, 5 ft contour intervals; "
+             "https://dwr.virginia.gov/wp-content/uploads/Lake_A_Willis_Robertson.pdf"),
+]
+
 SURVEYS = {"jackson": [
     dict(lake=n, date=d, fish=f, at=(e, n_), src="Wyoming Game & Fish / NPS gill nets", ref=SG2005)
     for n, d, f, e, n_ in [

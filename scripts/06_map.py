@@ -12,14 +12,17 @@ from folium.plugins import MeasureControl, MousePosition, Fullscreen
 import matplotlib
 from matplotlib import colors
 from config import REGIONS, MAP_OUT, HOME, SHARED, EPSG, AREA_LABEL, MINOR, LONG_TRAIL, AREA, AREAS, has
+from units import ft, mi, sqmi, degf, degf_diff, imperial_text, FT_PER_M   # what the maps show is imperial (units.py)
 # Layer names and credits that depend on the area's data sources (config.py); both maps read them (window.LBL, D.lbl)
 CA = has("cdfw_trout")
 LBL = dict(
     title="LA mountain streams" if AREA_LABEL == "LA mountains" else f"{AREA_LABEL} streams",
     long_trail=LONG_TRAIL[0] if LONG_TRAIL else None,
     # for the "go to another area" menu in both maps (every area's map sits in output/<key>/; ../index.html is the
-    # map of all areas, 13_overview.py)
-    area=AREA, areas=[dict(k=k_, t=v_["label"]) for k_, v_ in AREAS.items()],
+    # map of all areas, 13_overview.py). Only areas whose map has been built: an area just added to config.py (the
+    # Smokies, 2026-11-19) was otherwise listed everywhere as a dead link until its first build and publish.
+    area=AREA, areas=[dict(k=k_, t=v_["label"]) for k_, v_ in AREAS.items()
+                      if k_ == AREA or os.path.exists(f"{os.path.dirname(MAP_OUT)}/{k_}/stream_map.html")],
     flow="TNC Natural Flows model" if has("tnc_flows") else "NHDPlus mean flow × this area's gauge records",
     falls="Known waterfalls &amp; swimming holes (OSM, USGS, " + ("CDFW surveys, " if has("cdfw_pad") else "")
           + "guidebooks)",
@@ -414,12 +417,12 @@ def ctx(n):
     return g if g is not None and len(g) else None
 
 def approach(r):
-    """'Drive 95 min (117 km) → park at X → bike 12 min → hike 40 min' for a reach or drop row."""
+    """'Drive 95 min (73 mi) → park at X → bike 12 min → hike 40 min' for a reach or drop row."""
     if pd.isna(getattr(r, "approach_min", np.nan)):
         return "No route from an open road"
     bits = []
     if pd.notna(r.drive_min):
-        bits.append(f"Drive {r.drive_min:.0f} min ({r.drive_km:.0f} km) from {HOME['label']}")
+        bits.append(f"Drive {r.drive_min:.0f} min ({mi(r.drive_km)}) from {HOME['label']}")
     if isinstance(r.th_road, str):
         bits.append(f"park at {r.th_road}")
     if r.bike_min >= 1:
@@ -459,16 +462,17 @@ with open(f"{MAP_OUT}/waterfall_candidates.gpx", "w", encoding="utf-8") as f:
             '<gpx version="1.1" creator="la-stream-analysis" xmlns="http://www.topografix.com/GPX/1/1">\n')
     for i, r in enumerate(good.itertuples()):
         tag = "WF" if r.status.startswith("matches") else "SF" if r.status.endswith("(big creek)") else "DROP"
-        nm = f"{tag}{i+1:03d} {r.drop_m:.0f}m"
+        nm = f"{tag}{i+1:03d} {r.drop_m * FT_PER_M:.0f}ft"
         stream = r.stream if isinstance(r.stream, str) and r.stream else "unnamed"   # a missing name is NaN, not None
-        desc = hesc(f"{r.region}; {stream}; {r.drop_m} m over {r.run_m:.0f} m; {r.flow}; {approach(r)}", quote=False)
+        desc = hesc(f"{r.region}; {stream}; {ft(r.drop_m)} over {ft(r.run_m)}; {r.flow}; {approach(r)}", quote=False)
         f.write(f'<wpt lat="{r.lat}" lon="{r.lon}"><name>{nm}</name><desc>{desc}</desc></wpt>\n')
         f.write(f'<wpt lat="{r.pool_lat}" lon="{r.pool_lon}"><name>{nm} pool</name></wpt>\n')
     f.write("</gpx>\n")
 
 # ---- map ----
 b = s_ll.total_bounds
-m = folium.Map(location=[(b[1] + b[3]) / 2, (b[0] + b[2]) / 2], zoom_start=9, tiles=None, control_scale=True,
+# (no scale bar from folium: its scale shows metres too; map_drainages.js adds one in feet and miles)
+m = folium.Map(location=[(b[1] + b[3]) / 2, (b[0] + b[2]) / 2], zoom_start=9, tiles=None, control_scale=False,
                prefer_canvas=True)
 # Default basemap is deliberately quiet (light gray + gray terrain shading + muted labels) so the analysis colors
 # read clearly; the busier topo/satellite maps, which draw their own streams, are one click away.
@@ -485,7 +489,7 @@ folium.TileLayer(f"{ESRI}/Elevation/World_Hillshade/MapServer/tile/{{z}}/{{y}}/{
                  name="Terrain shading", opacity=0.45, max_zoom=16).add_to(m)
 folium.TileLayer(f"{ESRI}/Canvas/World_Light_Gray_Reference/MapServer/tile/{{z}}/{{y}}/{{x}}", attr="Esri",
                  overlay=True, name="Place & road labels", max_zoom=16, opacity=0.55).add_to(m)
-hs_group = folium.FeatureGroup(name="DEM color relief (10 m 3DEP)", show=False)
+hs_group = folium.FeatureGroup(name="DEM color relief (USGS 3DEP, 33 ft cells)", show=False)
 for r in done:
     hb = json.load(open(f"{MAP_OUT}/{r}/hillshade_bounds.json"))
     ov = folium.raster_layers.ImageOverlay("https://example.invalid/x.png", opacity=0.75,
@@ -572,7 +576,7 @@ def sev_label(v):
 import watertemp
 _wt = watertemp.fit_record() or {}
 WT_HOW = ("estimated from " + " and ".join({"air": "air temperature", "elev_km": "elevation", "log_area": "stream size"}[t]
-                                           for t in _wt.get("terms", [])) + f", ± {_wt.get('rmse_loo', 3):.0f} °C") if _wt.get("ok") else ""
+                                           for t in _wt.get("terms", [])) + f", ± {degf_diff(_wt.get('rmse_loo', 3))}") if _wt.get("ok") else ""
 # the hottest creek with a trout record (11_context.py), for the heat gate's popup line
 tev = ctx("trout_evidence")
 HOT = (tev[tev.trout.astype(bool) & ~tev.lake.astype(bool)].air_aug.max()
@@ -582,8 +586,8 @@ HOT = (tev[tev.trout.astype(bool) & ~tev.lake.astype(bool)].air_aug.max()
 def heat_line(air, f):
     if not (pd.notna(f) and f < 1):
         return ""
-    rec = f" (at most {HOT:.1f} °C)" if pd.notna(HOT) else ""
-    return (f"August air averages {air:.1f} °C here (PRISM 1991–2020 normal), hotter than any creek in these ranges "
+    rec = f" (at most {degf(HOT, 1)})" if pd.notna(HOT) else ""
+    return (f"August air averages {degf(air, 1)} here (PRISM 1991–2020 normal), hotter than any creek in these ranges "
             f"where trout have been recorded{rec} · fish score × {f:.2f}")
 s_show = s_ll.assign(geometry=shapely.set_precision(s_ll.geometry.simplify(0.00008).values, 1e-5))
 mid_ll = s_show.geometry.interpolate(0.5, normalized=True)
@@ -595,14 +599,16 @@ props = pd.DataFrame({
     "fs": s_show.fish_score.round(0).astype(int),
     "fl": [f"summer: {c}" if isinstance(c, str) and c != "no data" else f"NHD {f}" for c, f in zip(s_show.water_class, s_show.flow)],
     "dq": [summer_flow(r) for r in s_show.itertuples()],
-    "a": s_show.area_full_km2.fillna(s_show.area_km2).astype(float).round(1), "el": [nz(v) for v in s_show.elev_m], "gr": s_show.gradient_pct.astype(float).round(1),
+    # drainage (km2, to 0.01 so the popups' square miles keep two places) and elevation (m): the pages show them in
+    # square miles and feet
+    "a": s_show.area_full_km2.fillna(s_show.area_km2).astype(float).round(2), "el": [nz(v) for v in s_show.elev_m], "gr": s_show.gradient_pct.astype(float).round(1),
     "acc": [approach(r) for r in s_show.itertuples()],
     "sun": [" · ".join(x for x in (
                 f"{h:.1f} h direct sun mid-July ({p:.0f}% shaded by terrain)" if pd.notna(h) else "",
                 f"tree canopy {cv:.0f}%" if pd.notna(cv) else "",
                 f"slope faces {'north' if n > 0.04 else 'south' if n < -0.04 else 'east/west or mixed'}" if pd.notna(n) else "",
-                f"August air averages {a:.0f} °C" if pd.notna(a) else "",
-                f"summer water about {w:.0f} °C ({WT_HOW})"
+                f"August air averages {degf(a)}" if pd.notna(a) else "",
+                f"summer water about {degf(w)} ({WT_HOW})"
                 if pd.notna(w) and not isinstance(tw, str) else "",
                 f"tailwater below {tw}: the dam releases cold water from the bottom of the reservoir" if isinstance(tw, str) else "")
                        if x)
@@ -645,12 +651,13 @@ d_json = json.loads(dpoly[["drainage", "geometry"]].to_crs(4326).assign(
     geometry=lambda g: shapely.set_precision(g.geometry.boundary.simplify(0.0002).values, 1e-5)).to_json())
 region_of = s_ll.groupby("drainage").region.agg(lambda r: r.mode().iloc[0])
 dbounds = dpoly.to_crs(4326).bounds
-drains = [dict(name=d, color=dcol[d], dark=shade(dcol[d], -0.12), region=region_of.get(d, ""), km2=round(k),
+# km2 to 0.1 (the legends show square miles; their label rules compare km2)
+drains = [dict(name=d, color=dcol[d], dark=shade(dcol[d], -0.12), region=region_of.get(d, ""), km2=round(k, 1),
                lab=[round(p.y, 5), round(p.x, 5)], b=[[r.miny, r.minx], [r.maxy, r.maxx]])
           for d, k, p, r in zip(dpoly.drainage, dpoly.km2, dl_pts, dbounds.itertuples())]
 for e in drains:  # forks of each drainage, biggest first
     sel = fpoly.drainage == e["name"]
-    e["forks"] = sorted([dict(name=f, color=c, km2=round(a / 1e6), lab=[round(p.y, 5), round(p.x, 5)])
+    e["forks"] = sorted([dict(name=f, color=c, km2=round(a / 1e6, 1), lab=[round(p.y, 5), round(p.x, 5)])
                          for f, c, a, p in zip(fpoly.fork[sel], fpoly.c[sel], fpoly.area[sel], fl_pts[sel])],
                         key=lambda x: -x["km2"])
 drains.append(dict(name=MINOR, color=MINOR_COL, dark="#5c6b7a", region="", km2=None, lab=None, b=None, forks=[]))
@@ -881,14 +888,14 @@ groups = {k: folium.FeatureGroup(name=f"<span style='color:{color[k]}'>●</span
 for r in kp_ll.rename(columns={"pass": "pass_n"}).itertuples():   # "pass" is a keyword: itertuples would rename it
     gm = f"https://www.google.com/maps/@?api=1&map_action=map&center={r.lat},{r.lon}&zoom=18&basemap=satellite"
     html = (f"<b>{r.stream if isinstance(r.stream, str) and r.stream else 'unnamed drainage'}</b> · {r.region}<br>{r.status}<br>"
-            f"{r.kind}<br>Drop <b>{r.drop_m:.0f} m</b> over {r.run_m:.0f} m (max slope {r.max_slope:.2f})<br>"
+            f"{r.kind}<br>Drop <b>{ft(r.drop_m)}</b> over {ft(r.run_m)} (max slope {r.max_slope:.2f})<br>"
             f"Channel slope above {r.slope_above} / below {r.slope_below} · knick ×{r.knick_ratio}<br>"
-            + (f"Excess drop over creek trend <b>{r.excess_drop_m} m</b> · DEM pool depth {r.pool_depth_m} m<br>"
+            + (f"Excess drop over creek trend <b>{ft(r.excess_drop_m)}</b> · DEM pool depth {ft(r.pool_depth_m)}<br>"
                if r.pass_n == 2 else "") +
-            f"Drainage {r.area_km2} km² · "
+            f"Drainage {sqmi(r.area_km2)} · "
             + (f"summer: {r.water_class}" + (f" (about {cfs(r.dry_cfs)} cfs typical low flow)" if pd.notna(r.dry_cfs) else "")
                if isinstance(r.water_class, str) and r.water_class != "no data" else f"NHD {r.flow}")
-            + f" · elev {r.elev_m:.0f} m<br>"
+            + f" · elev {ft(r.elev_m)}<br>"
             f"<b>Access:</b> {approach(r)}<br>"
             + (f"Shade: {r.sun_hours:.1f} h direct sun mid-July ({r.shade_pct:.0f}% shaded)<br>" if pd.notna(r.sun_hours) else "")
             + (f"<span style='color:#a61e4d'>Burned: {r.burn_fire} fire {r.burn_year:.0f}</span><br>" if pd.notna(r.burn_year) else "")
@@ -900,7 +907,7 @@ for r in kp_ll.rename(columns={"pass": "pass_n"}).itertuples():   # "pass" is a 
             + (f"<i>Bike legs use closed roads, fire roads, bike paths and bike-legal trails; some closure orders ban "
                f"all entry, check first.</i><br>"
                if pd.notna(r.bike_min) and r.bike_min >= 1 else "")
-            + (f"<span style='color:#c92a2a'>⚠ Road closure {r.closure_m / 1000:.1f} km away: {r.closure_road}</span><br>"
+            + (f"<span style='color:#c92a2a'>⚠ Road closure {mi(r.closure_m / 1000)} away: {r.closure_road}</span><br>"
                if isinstance(r._asdict().get("closure_road"), str) else "") +
             f"Top {r.lat}, {r.lon}<br>Pool/base {r.pool_lat}, {r.pool_lon}<br>"
             f"<a href='{gm}' target='_blank'>Satellite view</a>"
@@ -908,7 +915,7 @@ for r in kp_ll.rename(columns={"pass": "pass_n"}).itertuples():   # "pass" is a 
                if isinstance(r.stream, str) else ""))
     folium.CircleMarker([r.lat, r.lon], radius=3 + min(r.drop_m, 80) / 8, color=color[r.status], weight=1.5,
                         fill=True, fill_opacity=0.7, popup=folium.Popup(html, max_width=300),
-                        tooltip=f"{r.drop_m:.0f} m drop").add_to(groups[r.status])
+                        tooltip=f"{ft(r.drop_m)} drop").add_to(groups[r.status])
     drops3d.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [r.lon, r.lat]},
                     "properties": {"s": r.status, "c": color[r.status], "h": round(float(r.drop_m), 1), "html": html,
                                    "pool": [r.pool_lon, r.pool_lat] if r.status in SHOW else None}})
@@ -929,6 +936,10 @@ svg_icon = lambda html, w, h: folium.DivIcon(html=html, icon_size=(w, h), icon_a
 for c in ("note", "kind", "url"):     # ranges scored before 02f_known_falls.py have only name, src (and note)
     if c not in known_falls:
         known_falls[c] = None
+# names and notes quoted from the sources keep their words, with feet (or miles) in brackets after each metric figure:
+# CDFW's surveyors write "2.5 meters [8.2 ft] wide by 2.5 feet high" (units.py)
+known_falls["name"] = known_falls.name.map(imperial_text)
+known_falls["note"] = known_falls.note.map(imperial_text)
 def fall_html(r):
     """The known fall's popup, shared by the 2D, 3D and one-file maps: name, kind, sources, note, the source's page."""
     nm_ = r.name if isinstance(r.name, str) and r.name else "waterfall"
@@ -1074,13 +1085,13 @@ tg = folium.FeatureGroup(name=f"<span style='color:#e0a800'>●</span> Approach 
 for r in used.itertuples():
     folium.CircleMarker([r.th_lat, r.th_lon], radius=4, color="#212529", weight=1, fill=True, fill_color="#ffd43b",
                         fill_opacity=1, tooltip=f"P · {r.th_road if isinstance(r.th_road, str) else 'road end'} · "
-                        + (f"{r.drive_min:.0f} min / {r.drive_km:.0f} km drive" if pd.notna(r.drive_min) else "no drive route")
+                        + (f"{r.drive_min:.0f} min / {mi(r.drive_km)} drive" if pd.notna(r.drive_min) else "no drive route")
                         ).add_to(tg)
 tg.add_to(m)
 X3D["trailheads"] = {"type": "FeatureCollection", "features": [
     {"type": "Feature", "geometry": {"type": "Point", "coordinates": [r.th_lon, r.th_lat]},
      "properties": {"tip": f"P · {r.th_road if isinstance(r.th_road, str) else 'road end'} · "
-                           + (f"{r.drive_min:.0f} min / {r.drive_km:.0f} km drive" if pd.notna(r.drive_min) else "no drive route")}}
+                           + (f"{r.drive_min:.0f} min / {mi(r.drive_km)} drive" if pd.notna(r.drive_min) else "no drive route")}}
     for r in used.itertuples()]}
 folium.Marker([HOME["lat"], HOME["lon"]], tooltip=f"Start: {HOME['label']}",
               icon=folium.Icon(color="darkblue", icon="home")).add_to(m)
@@ -1089,7 +1100,8 @@ folium.Marker([HOME["lat"], HOME["lon"]], tooltip=f"Start: {HOME['label']}",
 # initDrainageMap in map_drainages.js, which runs once the map and layer control exist.
 lc = folium.LayerControl(collapsed=True, position="topright")
 lc.add_to(m)
-MeasureControl(primary_length_unit="meters", position="bottomright").add_to(m)
+MeasureControl(primary_length_unit="miles", secondary_length_unit="feet", primary_area_unit="acres",
+               secondary_area_unit="sqmiles", position="bottomright").add_to(m)
 Fullscreen(position="topleft").add_to(m)
 
 class InitDrainages(MacroElement):
@@ -1116,7 +1128,7 @@ def simplify_together(geoms, tol):
     out[simp.index.values] = simp.geometry.values
     return out
 ov_d = dpoly[["drainage", "km2", "geometry"]].assign(geometry=simplify_together(dpoly.geometry.values, 120)).to_crs(4326)
-ov_d = ov_d.assign(c=[dcol[d_] for d_ in ov_d.drainage], km2=ov_d.km2.round(0),
+ov_d = ov_d.assign(c=[dcol[d_] for d_ in ov_d.drainage], km2=ov_d.km2.round(1),
                    geometry=shapely.set_precision(shapely.make_valid(ov_d.geometry.values), 1e-5))
 ov_s = s_ll[s_ll.strahler >= 4][["name", "drainage", "strahler", "fish_score", "geometry"]]
 ov_s = ov_s.assign(c=[dcol.get(d_, MINOR_COL) for d_ in ov_s.drainage],

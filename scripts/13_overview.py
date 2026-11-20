@@ -68,9 +68,12 @@ const topo = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/U
 const shade = L.tileLayer(ESRI + "/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, opacity: .45}).addTo(map);
 const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, pane: "shadowPane"}).addTo(map);
 L.control.layers({"Light gray": gray, "USGS topo": topo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
-L.control.scale().addTo(map);
+L.control.scale({metric: false}).addTo(map);
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD");
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+// imperial units for everything shown (units.py; the data stay metric: drainage in km²)
+const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
+  return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
 const inside = (a, ll) => ll.lat >= a.bounds[0][0] && ll.lat <= a.bounds[1][0] && ll.lng >= a.bounds[0][1] && ll.lng <= a.bounds[1][1];
 const areaAt = ll => AREAS.find(a => inside(a, ll));
 const link = (a, page, ll, z) => `${a.key}/${page}#${ll.lat.toFixed(5)},${ll.lng.toFixed(5)},${z}`;
@@ -88,7 +91,7 @@ AREAS.forEach(a => {
   const b = L.latLngBounds(a.bounds);
   L.rectangle(b, {color: "#0b3d91", weight: 1, dashArray: "4 4", fill: false, interactive: false}).addTo(map);
   L.geoJSON(a.basins, {style: f => ({color: f.properties.c, weight: 1, opacity: .7, fillColor: f.properties.c, fillOpacity: .13}),
-    onEachFeature: (f, l) => l.bindTooltip(`<b>${esc(f.properties.drainage)}</b> · ${Math.round(f.properties.km2)} km²<br>${esc(a.label)}`, {sticky: true})}).addTo(map);
+    onEachFeature: (f, l) => l.bindTooltip(`<b>${esc(f.properties.drainage)}</b> · ${SQMI(f.properties.km2)}<br>${esc(a.label)}`, {sticky: true})}).addTo(map);
   L.geoJSON(a.streams, {style: f => ({color: f.properties.c, weight: Math.max(1, (f.properties.strahler - 3) * 1.1), opacity: .95}),
     onEachFeature: (f, l) => l.bindTooltip(`<b>${esc(f.properties.name || "Unnamed creek")}</b><br>${esc(f.properties.drainage)} · fish score ${f.properties.fish_score}`, {sticky: true})}).addTo(map);
   if (a.trail) {                                   // the area's long trail: a dark dashed line on a soft yellow band

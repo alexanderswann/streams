@@ -61,6 +61,11 @@ function initDrainageMap(map, ctrl) {
   let mode = "drainage", focus = null;
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation in m)
+  const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
+    return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
+  const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
+  L.control.scale({metric: false}).addTo(map);
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const mix = (h, t) => "#" + rgb(h).map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0")).join("");
   const ramp = fs => fs < LOW ? LOWCOL
@@ -98,15 +103,15 @@ function initDrainageMap(map, ctrl) {
     return `${esc(p.k)} <span class="dm">· ${esc(p.d)}</span>`;
   }
   const tip = p => `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
-    `Order ${p.o} · ${p.a} km² · ${esc(p.fl)} · fish ${p.fs}`;
+    `Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}`;
   function pop(p) {
     const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
                      : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
       `<table><tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr>` +
-      `<tr><td>Order / drainage</td><td>${p.o} · ${p.a} km²</td></tr>` +
+      `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
-      `<tr><td>Elev / gradient</td><td>${p.el ?? "?"} m · ${p.gr}%</td></tr>` +
+      `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` +
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
@@ -490,7 +495,7 @@ function initDrainageMap(map, ctrl) {
     "OpenStreetMap</a> contributors · " + ((window.LBL || {}).credits ||
     "USGS National Digital Trails · USFS · CDFW · iNaturalist · CAL FIRE · NIFC WFIGS · " +
     "USGS gauges &amp; debris-flow hazard · CDEC · TNC Natural Flows · PRISM Group, Oregon State University"))
-  ctrl.addOverlay(streams, "<span style='color:#1864ab'>━</span> Streams (≥1 km² drainage)");
+  ctrl.addOverlay(streams, "<span style='color:#1864ab'>━</span> Streams (≥0.4 sq mi drainage)");
   ctrl.addOverlay(basinLayer, "<span style='color:#3d4651'>▭</span> Drainage outlines &amp; names");
   if (window.PCT) ctrl.addOverlay(pctGroup, "<span class='pctsym'>━</span> <b>" + LONGTRAIL + "</b>");
   if (window.TRAILS) ctrl.addOverlay(trailGroup, "<span class='trsym'>┅</span> Trails &amp; fire roads");
@@ -576,9 +581,9 @@ function initDrainageMap(map, ctrl) {
         (reg !== "Other" ? `<div class="rg">${esc(reg)}</div>` : "") + ds.map(d =>
           `<div class="di${focus === d.name ? " on" : ""}${focus && focus !== d.name ? " off" : ""}" data-d="${esc(d.name)}">` +
           `<i style="background:${d.color}"></i><span>${esc(d.name)}</span>` +
-          (d.km2 ? `<em>${d.km2} km²</em>` : "") + `</div>` +
+          (d.km2 ? `<em>${SQMI(d.km2)}</em>` : "") + `</div>` +
           (focus === d.name && d.forks && d.forks.length > 1 ? d.forks.map(f =>
-            `<div class="fk"><i style="background:${f.color}"></i>${esc(f.name)}<em>${f.km2} km²</em></div>`).join("") : "")
+            `<div class="fk"><i style="background:${f.color}"></i>${esc(f.name)}<em>${SQMI(f.km2)}</em></div>`).join("") : "")
         ).join("")).join("") + `</div>`;
     key.querySelectorAll(".di").forEach(el => el.onclick = () => {
       const d = DR.find(x => x.name === el.dataset.d);

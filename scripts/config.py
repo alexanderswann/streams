@@ -26,6 +26,9 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 #   ct_trout, vt_trout, va_trout, ga_trout, wy_trout, pa_trout, de_trout   each state's surveys, stocking and trout
 #              waters (troutdata.py)
 #   id_trout   Idaho Fish & Game's Yellowstone cutthroat trout streams, as StreamNet serves them (troutdata.py)
+#   nc_trout, tn_trout   North Carolina WRC's mountain trout waters; Tennessee WRA's stocking sites and fish samples
+#   grsm_trout, ebci_trout   Great Smoky Mountains NP's trout distribution; the Cherokee tribal fishing zones
+#   grsm_falls   Great Smoky Mountains NP's waterfalls layer (02f_known_falls.py)
 #   tu_brook_trout   Trout Unlimited / EBTJV wild brook trout patches, Connecticut to Georgia (troutdata.py)
 #   grte_roads, teton_county, gdot_511, ne_compass, vdot_511, blri_roads, id_511   current road closures (07_road_closures.py)
 #   ncdot_tims, tdot_smartway, grsm_roads, cherokee_nf   the same for North Carolina DOT, Tennessee DOT, Great Smoky
@@ -77,42 +80,57 @@ AREAS = {
 
     # ---- New areas: boxes from lon/lat extents; HU4 codes checked against the national WBD on 2026-11-18.
     # Home points: the user's ZIPs, at the town centre (rural ZIPs span whole valleys).
-    # Grown on 2026-11-19 (user: "expand the wyoming map to include all of GTNP, driggs, and alpine") by three boxes
-    # beside the first three, which keep their edges. Grand Teton NP's boundary (NPS) spans x 504.2-546.4 km and
-    # y 4820.6-4881.2 km; the old north edge (y 4856) ran through Jackson Lake, and Driggs (x 491.1) and Palisades
-    # Reservoir lay west of x 495. Outer edges sit where no lake of 8+ ha is cut and no named creek crosses more than once:
+    # Grown on 2026-11-19 (user: "expand the wyoming map to include all of GTNP, driggs, and alpine"). Grand Teton NP's
+    # boundary (NPS) spans x 504.2-546.4 km and y 4820.6-4881.2 km; Driggs is at x 491.1 and Palisades Reservoir lies
+    # west of Alpine. Outer edges sit where no lake of 8+ ha is cut and no named creek crosses more than once:
     # Yellowstone's boundary (y 4886.6) cuts Grassy Lake Reservoir, Winegar and Tanager lakes and runs along Calf and
     # Harebell creeks, so the top is y 4885 (1.6 km short of it, past Flagg Ranch and Huckleberry Hot Springs); x 548
     # clears the park's east side (Pacific Creek crosses once); x 476 crosses the Teton River and the Snake once each; the
     # Teton Valley box reaches y 4878 because Bitch Creek crosses x 495 at y 4870.0, the corner an edge there would make.
+    # No big lake may lie across an edge between two boxes either (03b_stitch.py warns): each box's conditioning drains
+    # the flat water its own way and the lake's water never reaches its dam. The first layout kept the old boxes' edges
+    # (y 4856 and x 528 through Jackson Lake, x 495 through Palisades Reservoir), and the Snake below both dams started
+    # again near nothing, so the boxes were laid out again: Jackson Lake, Jenny, String and Leigh lakes in one box down to
+    # y 4842 (Jenny Lake ends at 4844.0, Bradley Lake at 4840.3), Palisades Reservoir in one box east to x 506. Not 503:
+    # the Palisades box fills the reservoir's basin to its spill level (1,716.6 m), a flat that reaches up the Snake to
+    # x 503.8, while the Hoback box, which can't see the dam, leaves those cells as they are; the river met the edge at
+    # x 503 2 m lower on one side and ended there (3,619 km2). An edge must lie outside every such filled flat.
+    # x 506 crosses no creek twice.
     "jackson": dict(
         label="Jackson Hole, Grand Teton & Teton Valley", crs=26912,
         sources=("wy_trout", "id_trout", "grte_roads", "teton_county", "id_511"),
         home=dict(label="83001 Jackson (town square; the ZIP spans the valley)", lon=-110.7624, lat=43.4799),
         ranges={
             "teton_snake": dict(label="Tetons & Snake River", hu4=("1704",),
-                                # Teton east slope, Jackson Hole, Teton Pass / north Snake River Range
-                                bbox=(495000, 4800000, 528000, 4856000)),
+                                # the Teton east slope south of Jenny Lake (Phelps, Taggart, Bradley lakes, Death and
+                                # Granite canyons), Jackson Hole from Moose to Jackson, Teton Pass, the north Snake River Range
+                                bbox=(495000, 4800000, 528000, 4842000)),
             "gros_ventre": dict(label="Gros Ventre", hu4=("1704",),
                                 # Gros Ventre River and range, Slide Lake, Flat Creek headwaters
-                                bbox=(528000, 4800000, 558000, 4856000)),
+                                bbox=(528000, 4800000, 558000, 4842000)),
             "hoback": dict(label="Hoback & Snake River Canyon", hu4=("1704", "1404"),
-                           # Hoback River (Granite, Cliff, Shoal creeks), Hoback Range, Snake River Canyon to Alpine
-                           bbox=(495000, 4766000, 558000, 4800000)),
-            "jackson_lake": dict(label="Jackson Lake, the northern Tetons & Flagg Ranch", hu4=("1704",),
-                                 # the north of Grand Teton NP: Jackson Lake and its dam, Colter Bay, Moran, Two Ocean and
-                                 # Emma Matilda lakes, Pacific Creek's lower course, the northern Tetons (Webb Canyon,
-                                 # Owl and Berry creeks, Bitch Creek's head), the Rockefeller Parkway, Polecat Creek
-                                 bbox=(495000, 4856000, 548000, 4885000)),
+                           # Hoback River (Granite, Cliff, Shoal creeks), Hoback Range, Snake River Canyon down to
+                           # 4 km above Alpine, the lower Greys River
+                           bbox=(506000, 4766000, 558000, 4800000)),
+            "jackson_lake": dict(label="Jackson Lake, Jenny Lake & the northern Tetons", hu4=("1704",),
+                                 # the north of Grand Teton NP: Jenny, String and Leigh lakes, Cascade Canyon, Jackson Lake
+                                 # and its dam, Colter Bay, Signal Mountain, Moran, Oxbow Bend, Two Ocean and Emma Matilda
+                                 # lakes, Pacific Creek's lower course, the northern Tetons (Webb Canyon, Owl and Berry
+                                 # creeks, Bitch Creek's head), the Rockefeller Parkway, Polecat Creek
+                                 bbox=(495000, 4842000, 548000, 4885000)),
+            "buffalo_fork": dict(label="Buffalo Fork valley", hu4=("1704",),
+                                 # the Buffalo Fork east of Moran, between the Jackson Lake box (whose east edge stays at
+                                 # x 548) and the Gros Ventre box
+                                 bbox=(548000, 4842000, 558000, 4856000)),
             "teton_valley": dict(label="Teton Valley, Idaho: Driggs, Victor & the Teton River", hu4=("1704",),
                                  # the Tetons' west slope in Idaho (Teton, Darby, Fox, Moose and Trail creeks), the Teton
                                  # River from Victor past Driggs and Tetonia to Badger and Bitch creeks, the Big Holes'
                                  # east side, Pine Creek Pass, Palisades Creek and the Snake below Palisades Dam to Irwin
                                  bbox=(476000, 4800000, 495000, 4878000)),
             "palisades": dict(label="Palisades Reservoir & Alpine", hu4=("1704",),
-                              # the reservoir from Alpine to the dam, the Salt River's mouth, McCoy, Bear, Big Elk and
-                              # Little Elk creeks
-                              bbox=(476000, 4767000, 495000, 4800000)),
+                              # the reservoir from Alpine to the dam, Alpine, the mouths of the Greys and Salt rivers,
+                              # McCoy, Bear, Big Elk and Little Elk creeks
+                              bbox=(476000, 4767000, 506000, 4800000)),
         }),
     "n_georgia": dict(
         label="North Georgia mountains", crs=26917,   # the west boxes reach ~1 degree past zone 17; error < 0.2%
@@ -199,7 +217,8 @@ AREAS = {
     # lower half of Citico Creek); its dam is 30 km outside the map in any case.
     "smokies": dict(
         label="Great Smoky Mountains", crs=26917,
-        sources=("tu_brook_trout", "blri_roads", "ncdot_tims", "tdot_smartway", "grsm_roads", "cherokee_nf"),
+        sources=("nc_trout", "tn_trout", "grsm_trout", "ebci_trout", "tu_brook_trout", "grsm_falls",
+                 "blri_roads", "ncdot_tims", "tdot_smartway", "grsm_roads", "cherokee_nf"),
         long_trail=("Appalachian Trail", "AT", r"Appalachian (National Scenic )?Trail"),
         home=dict(label="30305 Atlanta (Buckhead)", lon=-84.3850, lat=33.8317),
         ranges={
@@ -227,6 +246,92 @@ AREAS = {
                                # Bryson City's south side east through Dillsboro and Sylva to Cullowhee and Caney Fork;
                                # the east edge stops just short of Cedar Cliff Lake
                                bbox=(272000, 3898000, 308700, 3922000)),
+        }),
+    # ---- The Adirondack Park, added 2026-11-19 ("add in the adirondacks park as a new location too"): the whole park
+    # inside the Blue Line (OSM relation 1695394 from the Adirondack Park Agency: 23,560 km2, x 474.2-635.8 km,
+    # y 4766.7-4970.1 km in zone 18N). One map of it would be about 150 MB (over GitHub's 100 MB file limit and too
+    # heavy for a phone), so it is four areas, one map each, linked by the "Go to" menus. Each map's hydrology ends at
+    # its edge, so the lines between them (and the outer edges) were placed to cut no lake of 1 km2 or more and to cross
+    # each river and named creek once (a lake cut there drains out through the edge; a creek that leaves and comes back
+    # starts again from nothing): Long Lake, the Raquette from Long Lake past its bend at Axton to Tupper Lake,
+    # Stillwater, Raquette and Blue Mountain lakes are in the northwest map, the Saranac lakes in the High Peaks map,
+    # Indian Lake and the Hudson below Newcomb in the southeast, the Black River from Forestport to Lyons Falls in the
+    # southwest. Left as they are: Round Pond (0.9 km2, by Long Lake) and Square Pond (0.9 km2, St. Regis Canoe Area)
+    # lie across a line between maps, and a few creeks leave and come back near outer edges outside the park (the
+    # Salmon at Plattsburgh, the Little River, Halfway Brook, Kennyetto Creek). Boxes inside one map may cut lakes:
+    # 03b routes them as one surface. The scripts that placed the lines are described in MULTI_AREA_LOG.md.
+    # Drive times start from 05753 Middlebury, the user's nearest home (Central Vermont's), as the Smokies start from
+    # Atlanta. Sources: NYSDEC trout streams, trout (T) / (TS) water classes and fishing access (ny_trout), the brook
+    # trout patches, and the Forest Preserve's wilderness, primitive and canoe areas, where bikes aren't allowed
+    # (nys_forest_preserve). Long trail: the Northville-Placid Trail. Road closures: 511NY needs a key, so none.
+    "adk_high_peaks": dict(
+        label="Adirondacks: High Peaks & Lake Placid", crs=26918,
+        min_relief=50,     # the Champlain valley and the northern plains are gentle; the peaks pass any test
+        sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
+        long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
+        home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
+        ranges={
+            "high_peaks": dict(label="High Peaks, Keene Valley, Newcomb & the Cold River", hu4=("0202", "0429", "0430"),
+                               bbox=(556800, 4866100, 610500, 4898000)),
+            "boquet": dict(label="Boquet, Elizabethtown, Moriah & Port Henry", hu4=("0202", "0430"),
+                           bbox=(610500, 4866100, 637500, 4898000)),
+            "saranac": dict(label="Saranac Lakes, Lake Placid, Keene & Jay", hu4=("0429", "0430"),
+                            bbox=(550400, 4898000, 609400, 4914000)),
+            "wilmington": dict(label="St. Regis Lakes, Whiteface, Wilmington & Au Sable Forks", hu4=("0429", "0430"),
+                               bbox=(544400, 4914000, 609400, 4938000)),
+            "champlain": dict(label="Ausable Chasm, Keeseville, Willsboro & Westport", hu4=("0430",),
+                              bbox=(609400, 4898000, 637500, 4944700)),
+            "chateaugay": dict(label="Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake", hu4=("0429", "0430"),
+                               bbox=(544400, 4938000, 609400, 4971500)),
+        }),
+    "adk_northwest": dict(
+        label="Adirondacks: Long Lake, Tupper & Cranberry", crs=26918, min_relief=50,
+        sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
+        long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
+        home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
+        ranges={
+            "beaver": dict(label="Stillwater, Beaver River, Cranberry Lake & Five Ponds", hu4=("0414", "0429"),
+                           bbox=(471600, 4850200, 522000, 4898000)),
+            "long_lake": dict(label="Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper",
+                              hu4=("0202", "0414", "0429", "0430"), bbox=(522000, 4848800, 556800, 4898000)),
+            "tupper": dict(label="Tupper Lake's north side, Piercefield, Massawepie & Newton Falls", hu4=("0429", "0430"),
+                           bbox=(481000, 4898000, 550400, 4914000)),
+            "st_regis": dict(label="Carry Falls, the Raquette reservoirs & the St. Regis", hu4=("0429",),
+                             bbox=(491000, 4914000, 544400, 4934000)),
+            "lake_ozonia": dict(label="Lake Ozonia, the Deer and Little Salmon rivers", hu4=("0429",),
+                                bbox=(505600, 4934000, 544400, 4960000)),
+        }),
+    "adk_southwest": dict(
+        label="Adirondacks: Old Forge & West Canada Lakes", crs=26918, min_relief=50,
+        sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
+        long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
+        home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
+        ranges={
+            "moose": dict(label="Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls",
+                          hu4=("0202", "0414", "0429"), bbox=(463000, 4812700, 522000, 4850200)),
+            "west_canada_lakes": dict(label="West Canada Lakes, Cedar Lakes & Sagamore", hu4=("0202", "0414", "0429"),
+                                      bbox=(522000, 4818000, 539300, 4848800)),
+            "west_canada": dict(label="West Canada Creek, Hinckley & Forestport", hu4=("0202", "0414"),
+                                bbox=(479800, 4775500, 522000, 4812700)),
+            "speculator": dict(label="Piseco, Speculator, Caroga & the West Branch Sacandaga", hu4=("0202", "0414"),
+                               bbox=(522000, 4765000, 556400, 4818000)),
+        }),
+    "adk_southeast": dict(
+        label="Adirondacks: Hudson, Indian Lake & Lake George", crs=26918, min_relief=50,
+        sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
+        long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
+        home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
+        ranges={
+            "indian_lake": dict(label="Indian Lake, Cedar River, North Creek & Gore Mountain", hu4=("0202", "0429"),
+                                bbox=(539300, 4818000, 594000, 4848800)),
+            "minerva": dict(label="Hudson Gorge, Minerva & the Essex Chain", hu4=("0202",),
+                            bbox=(556800, 4848800, 594000, 4866100)),
+            "siamese": dict(label="Siamese Ponds, Wells & Stony Creek", hu4=("0202",),
+                            bbox=(556400, 4800000, 594000, 4818000)),
+            "sacandaga": dict(label="Great Sacandaga Lake, Northville & Lake Luzerne", hu4=("0202", "0430"),
+                              bbox=(556400, 4766800, 605000, 4800000)),
+            "lake_george": dict(label="Lake George, Schroon Lake, Brant Lake & Pharaoh", hu4=("0202", "0430"),
+                                bbox=(594000, 4800000, 640500, 4866100)),
         }),
 }
 

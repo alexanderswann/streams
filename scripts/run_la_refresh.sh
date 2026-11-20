@@ -14,7 +14,8 @@ run() {   # run <range or ""> <script>
 echo "== START $(date '+%m-%d %H:%M:%S')" >> $LOG
 for r in $STALE; do run $r 02_download_vectors; run $r 05_score; done
 run "" 07_road_closures
-for r in $ALL; do run $r 05c_drainages; run $r 05b_flow; done
+for r in $ALL; do run $r 05c_drainages; done      # every range's drainages before any range's flow (run_mid.sh)
+for r in $ALL; do run $r 05b_flow; done
 export REFRESH=1      # the trail and access-road caches date from before the outage too
 run "" 02d_trails
 run "" 02e_access

@@ -87,19 +87,21 @@ def curve(ax, x, y, col, **kw):
     ax.plot(x, y, color=col, lw=2.2, solid_capstyle="round", **kw)
 
 
+# The score works in km2 and °C (scoring.py); the panels show square miles and °F (units.py), like the maps
+SQMI, F = 0.386102, (lambda c: c * 9 / 5 + 32)
 ax = fig.add_subplot(gs[2, 0])
-a = np.logspace(-0.5, 2.5, 300)
-curve(ax, a, np.clip(np.log10(a) / np.log10(50), 0, 1), C["size"])
-ax.set_xscale("log"); ax.set_xticks([0.3, 1, 5, 50, 300]); ax.set_xticklabels(["0.3", "1", "5", "50", "300"])
-ax.set_xlabel("drainage area (km², log)"); ax.set_ylim(-0.03, 1.05)
-panel(ax, "S  size", "1 km² → 0,  50+ km² → 1", C["size"])
+a = np.logspace(-0.5, 2.5, 300)                      # km2
+curve(ax, a * SQMI, np.clip(np.log10(a) / np.log10(50), 0, 1), C["size"])
+ax.set_xscale("log"); ax.set_xticks([0.1, 0.39, 2, 19.3, 100]); ax.set_xticklabels(["0.1", "0.39", "2", "19", "100"])
+ax.set_xlabel("drainage area (sq mi, log)"); ax.set_ylim(-0.03, 1.05)
+panel(ax, "S  size", "0.39 sq mi → 0,  19+ sq mi → 1", C["size"])
 
 ax = fig.add_subplot(gs[2, 1])
-e = np.linspace(10, 28, 400)
-curve(ax, e, np.clip((25 - e) / 5, 0, 1), C["thermal"])
-ax.axvspan(10, 20, color=C["thermal"], alpha=0.07, lw=0)
-ax.set_xlabel("estimated summer water temperature (°C)"); ax.set_ylim(-0.03, 1.05)
-panel(ax, "T · water temperature  (×0.5)", "full ≤ 20 °C, none ≥ 25 °C; tailwaters always 1", C["thermal"])
+e = np.linspace(10, 28, 400)                         # °C
+curve(ax, F(e), np.clip((25 - e) / 5, 0, 1), C["thermal"])
+ax.axvspan(F(10), F(20), color=C["thermal"], alpha=0.07, lw=0)
+ax.set_xlabel("estimated summer water temperature (°F)"); ax.set_ylim(-0.03, 1.05)
+panel(ax, "T · water temperature  (×0.5)", "full ≤ 68 °F, none ≥ 77 °F; tailwaters always 1", C["thermal"])
 
 ax = fig.add_subplot(gs[2, 2])
 sh = np.linspace(0, 80, 200)
@@ -177,13 +179,13 @@ ax.axhline(1, color=MUTED, lw=0.8, ls=":")
 panel(ax, "F  trout evidence", "last 10 years; score still capped at 100", MULT)
 
 ax = fig.add_subplot(gs[3, 5])
-t = np.linspace(26, 32, 300)
-curve(ax, t, np.clip(1 - (t - 29) / 1.5 * 0.8, 0.2, 1), MULT)
-ax.axvline(26.7, color=MUTED, lw=0.8, ls=":")
-ax.text(26.85, 0.32, "warmest creek\nwith a trout\nrecord, 26.7 °C", fontsize=7.8, color=INK2)
-ax.text(26.85, 0.64, "off where trout\nare known, or\nbelow a dam", fontsize=7.8, color=INK2, ha="left", va="center")
-ax.set_xlabel("August mean air temp (°C, PRISM)"); ax.set_ylim(-0.03, 1.08)
-panel(ax, "H  heat gate", "1 up to 29 °C, down to 0.2 at 30.5 °C+", MULT)
+t = np.linspace(26, 32, 300)                         # °C
+curve(ax, F(t), np.clip(1 - (t - 29) / 1.5 * 0.8, 0.2, 1), MULT)
+ax.axvline(F(26.7), color=MUTED, lw=0.8, ls=":")
+ax.text(F(26.85), 0.32, "warmest creek\nwith a trout\nrecord, 80.1 °F", fontsize=7.8, color=INK2)
+ax.text(F(26.85), 0.64, "off where trout\nare known, or\nbelow a dam", fontsize=7.8, color=INK2, ha="left", va="center")
+ax.set_xlabel("August mean air temp (°F, PRISM)"); ax.set_ylim(-0.03, 1.08)
+panel(ax, "H  heat gate", "1 up to 84 °F, down to 0.2 at 87 °F+", MULT)
 
 fig.savefig(OUT)
 print("saved", OUT)

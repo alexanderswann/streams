@@ -53,6 +53,10 @@ NAME_FIX = {("santa_monica", "Garapito Creek"): "Topanga Creek",
             # the Toccoa is the Ocoee once it is over the Tennessee line, where NHD's name won the vote in the box
             # that holds its last few kilometres; it is the Toccoa to anyone fishing it in Georgia
             ("cohutta", "Ocoee River"): "Toccoa River",
+            # the Little Tennessee's arm of Fontana Lake in the Smokies' le_conte box: the lake's centreline carries no
+            # river name there, so the one named creek in the basin, Fishtrap Branch, won the vote, and 06_map.py
+            # passed the name up the Little Tennessee, Alarka, Burningtown and Tellico creeks across the box edges
+            ("le_conte", "Fishtrap Branch"): "Little Tennessee River",
             # the box reaches the desert floor, where the creek is mapped as a wash
             ("san_gabriel", "Big Rock Wash"): "Big Rock Creek",
             # Bouquet Canyon's stretch through the box's north-west corner, on its way from the Sierra Pelona to the
@@ -68,6 +72,8 @@ FORK_FIX = {("san_gabriel", "San Gabriel River", "Iron Fork"): "East Fork San Ga
             # Saugus; its channel has no NHD name. Joins the stretch upstream in the San Gabriel box (NAME_FIX)
             ("piru", "Santa Clara River", "Santa Clara River, unnamed fork"): "Bouquet Canyon",
             ("san_bernardino", "Mojave River", "Mojave River"): "Deep Creek",
+            # the Little Tennessee's own stretch through Fontana Lake in the le_conte box (NAME_FIX above)
+            ("le_conte", "Little Tennessee River", "Fishtrap Branch"): "Little Tennessee River",
             ("san_bernardino", "Mojave River", "Deep Creek"): "Upper Deep Creek"}
 def tidy(n):
     """'San Antonio Creek Channel' -> 'San Antonio Creek', 'Lytle Creek Wash' -> 'Lytle Creek'."""

@@ -14,7 +14,9 @@ leave-one-out error among the sets whose coefficients have the physical sign:
             warms in the sun and the mill ponds, whatever the air does
 In the LA ranges air + elevation wins (the mountains span 2,000 m); in northeastern Connecticut, where the air only
 spans 2 C, it is elevation + drainage area. A fit that can't beat "every creek is the average" by 10 % is not used
-(SKILL): the thermal term stays neutral there.
+for single reaches (SKILL); every creek then takes that average, the measured sites' mean (area_mean(), used by
+scoring.py), so a cold area stays cold rather than unknown. (Jackson since its 2026-11-19 expansion: 145 sites, mean
+13.4 C, the fit 3.37 C off against a 3.72 C spread.)
 Left out of a fit: sites with a median above GEOTHERMAL_C (hot-spring creeks: Warm Creek in San Bernardino reads
 32-37 C), and sites far off the first fit (OUTLIER_MADS; e.g. two Connecticut logger records reading 9-10 C in
 midsummer on lowland rivers).
@@ -214,7 +216,8 @@ def fit(write=True):
     if best is not None and "log_area" in best[0]:
         d = d[d.da_km2.notna()]
     sd = float(d.w.std(ddof=1))
-    rec = dict(area=AREA, sites=int(len(d)), sd_sites=round(sd, 2), left_out_over_30c=int(len(hot)),
+    rec = dict(area=AREA, sites=int(len(d)), sd_sites=round(sd, 2), mean_sites=round(float(d.w.mean()), 2),
+               left_out_over_30c=int(len(hot)),
                left_out_outliers=int(len(out)), fitted=dt.date.today().isoformat(), ok=False)
     if best is not None:
         terms, coef, rmse = best
@@ -227,6 +230,15 @@ def fit(write=True):
         with open(FIT, "w") as f:
             json.dump(rec, f, indent=1)
     return rec, d, pd.concat([hot, out])
+
+
+def area_mean():
+    """The measured sites' mean July-August water temperature (C) where the area's fit has no skill, else NaN: no
+    better than "every creek is the average", so that average stands for every creek."""
+    rec = fit_record()
+    if rec is None or rec.get("ok") or "mean_sites" not in rec:
+        return float("nan")
+    return float(rec["mean_sites"])
 
 
 _fit = None
