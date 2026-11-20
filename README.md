@@ -38,10 +38,14 @@ carry the maps:
   `scripts/run_drainage_refresh.sh <area> ...` redoes 05c per range, the map and the profiles; then
   `13_overview.py`, `14_portable.py` and `phone_sync.sh`. The scores don't change.
 - **The website** (`scripts/publish_site.sh`): copies the map of all areas and every area's maps into
-  `publish/alexanderswann.github.io/streams/` (a local copy of the GitHub Pages site, about 420 MB) and commits
+  `publish/alexanderswann.github.io/streams/` (a local copy of the GitHub Pages site; `streams/` was 605 MB on
+  2026-11-20, and GitHub Pages refuses a site over 1 GB) and commits
   there; `scripts/publish_site.sh push` also pushes, which puts it live at
   `https://alexanderswann.github.io/streams/` (published 2026-11-19; the login is a token for that one repository
-  in the Mac's keychain). It adds the `streams/` folder and nothing else: the site already
+  in the Mac's keychain). A push goes up area by area, through a temporary branch `publish-upload`, then `master`
+  once, so the site builds once: in a single push git sends most files whole, 85–134 MB for a full republish instead
+  of a few MB (2026-11-20). Afterwards it rebuilds the phone copies (`14_portable.py`, `phone_sync.sh`) from the same
+  maps. It adds the `streams/` folder and nothing else: the site already
   there is not changed, and the script stops if its commit would touch anything outside `streams/`. The maps
   show the start ZIPs; that was the owner's choice.
 
@@ -124,8 +128,9 @@ each metric one (`units.imperial_text`: CDFW's surveyors write "2.5 meters [8.2 
 
 | File | What |
 |---|---|
-| `stream_map.html` | Combined interactive map. Keep it next to the region folders, which hold the hillshade PNGs |
-| `stream_map_3d.html` | The same map in 3D (tilt, rotate, real terrain). Keep it next to `map3d_data.js`. Needs internet for MapLibre and the terrain tiles |
+| `stream_map.html` | Combined interactive map. It loads `map3d_data.js`; keep it next to that file and the region folders, which hold the hillshade PNGs |
+| `map3d_data.js` | The layers both maps draw (streams, drainage fills and divides, the long trail, trails, roads, parking and their labels), loaded by both pages: one copy instead of two since 2026-11-20 (the website's 1 GB limit). The 2D page points its `window.STREAMS` etc. at its entries |
+| `stream_map_3d.html` | The same map in 3D (tilt, rotate, real terrain), with the layers only it draws inside the page (after `Object.assign(window.MAP3D, `); the rest comes from `map3d_data.js`. Keep it next to that file. Needs internet for MapLibre and the terrain tiles |
 | `stream_reaches_ranked.csv` | Every DEM stream link (≥1 km² drainage), all ranges, ranked by fish score |
 | `waterfall_candidates.csv` | All detected drops with height, run, slope above/below, plunge-pool coordinates |
 | `waterfall_candidates.gpx` | Waterfall-like steps, cascades and their pools. Import into Gaia, CalTopo or onX |
@@ -215,7 +220,14 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
 6. `05c_drainages.py`: drainage basins. Every DEM cell is traced down the D8 flow directions to where it leaves the
    study area or ends in a sink (dams). Basins ≥25 km² are named drainages, named after their natural trunk creek
    (canals and aqueducts are skipped; a few NHD gaps are fixed by hand in `NAME_FIX` / `FORK_FIX`). Drainages
-   ≥120 km² are split into forks: tributaries ≥35 km² that join the trunk. Everything smaller is grouped as
+   ≥120 km² are split into forks: tributaries ≥35 km² that join the trunk. At a confluence the bigger arm continues
+   the trunk, except where NHDPlus continues the river up the smaller arm (its level path, `flowlib.level_paths()`):
+   each arm and the river below matched 300 m from the confluence, NHDPlus's own junction of the two branches where
+   ours is, and the detailed NHD lines not naming that arm something else. Since 2026-11-20; before, the upper
+   Conasauga was a fork "Jigger Creek", the upper Chestatee "Dicks Creek", upper Piru Creek "Mutau Creek" (33
+   confluences on 11 maps changed; reaches whose label is their own name 484 -> 1,122). The map shows one level of
+   forks, so a tributary of an arm that becomes a fork is grouped under it (Bear Creek under the West Fork San
+   Gabriel). Everything smaller is grouped as
    "Minor front-range drainages". A tributary of 100+ km² that flows straight into a big river (2,000+ km² where
    it leaves the map, followed down the NHDPlus network along its own course) is a drainage of its own, with its
    own colour and forks, and the big river keeps what is left: Piru and Castaic creeks beside the Santa Clara; the
@@ -244,7 +256,14 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
      ends to the cell below its dam where the water goes on, found by walking down the NHDPlus flowlines leaving the
      lake (Morris 533 km², Pyramid 514, Castaic Lagoon 412, Big Tujunga 212, Littlerock 165, Lake Hemet 143, Big Bear
      137, Matilija 132). Lakes with no outflow (Baldwin Lake) and dead ends away from lakes (desert fans, the sea)
-     stay closed. Drainages still end at dams; only areas use this.
+     stay closed. Drainages still end at dams; only areas use this. NHDPlus (1:100,000) has no flowline for most small
+     ponds, and below them a brook's drainage started again from nothing (293 ponds over the 12 areas, 2026-11-20:
+     7,751 reaches too small for a stretch, the Soquee 390 km2 at the Chattahoochee where NHDPlus has 414): where
+     NHDPlus has no line in the lake (or its lines find no way on), the box's detailed NHD stream line leaving the lake
+     gives the cell below its outlet. Those links carry the reaches' areas (`area_full_km2`) but not the forks and
+     drainage names: on them near-equal arms tipped the other way and the trunk left the named river (the upper
+     Chattahoochee came out as a fork "Chickamauga Creek"), so `05c` picks forks on the area without them (and its
+     trunks follow NHDPlus's main path, below).
    - Each reach's corrected areas go to `area_streams.csv`, added where `05_score.py` measured `area_km2`:
      `area_edge_km2` (with what flows in from other boxes; `05b_flow.py` uses it) and `area_full_km2` (also past dams;
      the fish score's creek size, and the area popups show).
@@ -264,8 +283,17 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    whole drainage but little of the flow: NHDPlus's own minor-path flags (divergence 2, streamcalc 0) where the flow is
    NHDPlus's (every area but LA; each table was fetched again with the flags on 2026-11-19), and a pair rule for the
    rest. LA's Natural Flows model gives a minor path the natural flow of its whole drainage, so there only the pair
-   rule applies. Reaches off the model network take
-   the unit-area flow of the first modelled segment downstream ("scaled"). Where a creek has none below it in its own
+   rule applies. Two lines the same distance from a reach (it lies nearest to the node they share) go to the closer
+   drainage, then the lower comid: the sort was unstable until 2026-11-20, so a change anywhere else could flip such a
+   tie. Reaches off the model network take
+   the unit-area flow of the first modelled segment downstream ("scaled"); the way down is the D8 walk from the reach's
+   end, on through a lake from the cell below its outlet (crossbox's links), with each line vertex rounded to its cell
+   (a vertex is a cell corner; until 2026-11-20 truncation put about half of them one row or column off, and walks
+   that ought to stop in a lake slipped past it beside the channel). A segment found down a way that went through a
+   lake may raise a creek's estimate but never lower it below NHD's class, as for one found in another box: a brook
+   running into a pond inherits the river below it, which is no evidence that the brook dries.
+   `data/check_flow_drops.py` is the standing check for sudden flow drops (a reach under a quarter of the flow per
+   km2 of both the reach above it and the one below it on the same creek). Where a creek has none below it in its own
    box (by either area) and its way leaves the box, the search goes on in the box it runs into: `03b_stitch.py` routes
    an area's boxes as one surface, but each box's reaches end at its rim, so until 2026-11-20 such creeks read "no
    data" (10 % of Jackson's reaches within 1.5 km of an edge between boxes; 569 reaches over the 12 areas). That box's
@@ -274,7 +302,10 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    estimate, never lower it below NHD's class (possible trout water stays in). Reaches in or below a reservoir are flagged,
    since releases set their flow. A reach lying at least half inside an NHD lake or reservoir with no model segment of
    its own is a reservoir reach too (until 2026-11-19 such reaches read "no data" or took the flow of the river below
-   the dam, and were scored as streams: Fontana Lake's arms at fish 83). So are reaches below the seven diversions where a USGS gauge on the creek below shows
+   the dam, and were scored as streams: Fontana Lake's arms at fish 83), and since 2026-11-20 so is one with a segment
+   of its own, where the lake holds water (`03b`'s level test puts a pit at its outlet): a reach matched to the creek's
+   line above the lake had read as that creek (a reach all inside String Lake scored 100; 397 such reaches over the 12
+   areas). One in a lake with no level water (a marsh or meadow NHD maps as a pond) keeps its own evidence. So are reaches below the seven diversions where a USGS gauge on the creek below shows
    it often dry (`DIVERSIONS` in `flowlib.py`): the Santa Ana River No. 1 dam, two Mill Creek intakes, and the Lytle,
    Plunge, City Creek and San Jacinto River diversions. The model can't see water leave in a canal. Their popups
    quote the gauge's share of summers flowing. Writes `flow_streams.csv` / `flow_drops.csv`: typical and drought-year low flow,
@@ -594,7 +625,11 @@ water hotter than every place trout are recorded. `data/validate_heat.py` (run f
 **The water-temperature estimate (thermal term).** `watertemp.py` fits the measured sites' July–August daytime
 medians on PRISM August air temperature and elevation, per study area, and stores the fit in
 `data/raw/<area>/_shared/water_temp_fit.json` (run `../.venv/bin/python watertemp.py` to refit; `06_map.py` only
-reads it). In the LA ranges: water = 10.5 + 0.56 × August air (°C) − 4.17 × elevation (km), on 65 sites, with a
+reads it). Since 2026-11-20 each site is weighted by how well its median is known, 1 / (τ² + σ²/n): σ is the spread
+of single readings around their site's median (1.3-3.9 °C by area), n the site's number of readings, τ² what the
+predictors miss on a well-measured site; a single grab sample counts for less than a logger's summer. The skill test
+and the area mean are weighted the same way. Jackson's fit has skill since (0.887 of the spread against 0.906), so
+its reaches carry an estimate; elsewhere scores moved by 2 points at most. In the LA ranges: water = 10.5 + 0.56 × August air (°C) − 4.17 × elevation (km), on 65 sites, with a
 leave-one-out RMSE of 3.2 °C (air alone 3.45, elevation alone 3.3). Three sites with medians over 30 °C are left out
 (two on Warm Creek in San Bernardino, which is fed by hot springs, and one August afternoon reading in Chino
 Canyon). The estimate is held at the edge of the fitted sites' range (air 17.2–28.7 °C, elevation 142–2,120 m), and

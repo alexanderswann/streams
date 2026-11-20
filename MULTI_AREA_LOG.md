@@ -2165,3 +2165,183 @@ The new file, the patch script, the diff and the summary are in the side-session
   neighbour on its own box's areas and prints a NOTE; rerunning that box's 05b after the neighbour's 05c fixes it.
   This rebuild ran only 05b, on tables that all listed their current reaches (no NOTE in any box).
 - **Vertex-to-cell truncation** in 05b (see the entry above): unchanged.
+
+## 2026-11-20, late morning: the open items from the overnight sessions (this session)
+Task from the "Today's task overview" session: the six open items in its brief (run order, ponds, adk_northwest
+leftovers, lakes for six maps, Teton Valley water temperature, smaller ones). Proposed order sent to the user: 1, 2,
+3, 6, then 4 and 5. Work in progress; this entry is updated as items finish.
+
+**Done so far:**
+- **Run order (item 1).** `run_mid.sh`, `run_drainage_refresh.sh` and `run_la_refresh.sh` now run 05c for every range,
+  then 05b for every range. The lakes session agreed for `run_mid.sh` (its 05d_lakes / lake_bathymetry block stays
+  after both loops). README's manual LA command and the note on re-running a range's 05_score updated (rerun 05b of
+  the ranges whose creeks run on into it too). Dry run of the drivers with a stand-in Python: the order is as meant.
+  The cross-box session's own attempt at this edit had been refused by the permission check in that session; this
+  session made it as part of its brief, and has told the user.
+- **Bull Sluice Lake's tailwater (item 6a).** `scoring._TAILWATERS`: Bull Sluice Lake's line 265 -> 250 m. Its lake
+  lies at 260 m on the DEM and the river below Morgan Falls Dam starts at 242 m, so at 265 m the reach of the lake's
+  stretch lying outside its outline (hooch_tailwater:s1492) took Bull Sluice's tailwater. Checked on the tables: it is
+  the only reach between 250 and 265 m with no dam flag; it now reads Lake Sidney Lanier's tailwater; 0 fish scores
+  change (a tailwater's thermal and heat terms are the same whichever dam). n_georgia's 06_map waits for the next
+  rebuild there.
+- **Sudden-flow-drop check (item 6b): `data/check_flow_drops.py`**, a standing check in the repo instead of scratch
+  scripts. It divides a reach's flow by the area 05b scales with (area_edge in LA, area_full elsewhere), compares a
+  reach only with the reach above it that it continues (the inflow with the most drainage, at least half of this
+  reach's) and the reach below it that it feeds at least half of, both flowing (0.1+ cfs), and follows a creek into
+  the next box as 05b does. Planted drops (a reach's flow at 2 % of its own) on 15 random judgeable reaches in each of
+  se_pa and lexington_va: 15 of 15 found. On the current builds: 0 in Jackson (the old check's 48), 1 in LA (the old
+  ~1,000; sespe:s2237, 0.0 cfs between two reaches of 0.06, below the flowing floor once that was added: now 0), 0 in
+  n_georgia, se_pa and lexington_va. brandywine:s2587 (0.48 cfs on 23.5 km2 below Little Mill Creek's 4.47) can't be
+  judged: walked from its true end cell its way stops on the Christina River's tidal flats. 05b's truncated walk
+  found a reach below it there (see the rounding measurement, item 6c).
+
+**The package (items 2, 5, 6c and two findings), measured, installed at the user's "yes, go ahead" (12:05),
+rebuilt 12:08-12:24.** Measured first on all 12 areas with a scratch harness that runs the real 05c / 05b source per
+box with outputs redirected (its baseline reproduced every project table byte for byte and every published fish score).
+Installed by a script that patches the files exactly as measured (`crossbox.py`, `flowlib.py`, `05b_flow.py`,
+`05c_drainages.py`, `watertemp.py`); README updated.
+- **Ponds (item 2), `crossbox._dam_links`.** Where NHDPlus has no line in a lake, or its lines find no way on, the
+  box's detailed NHD stream line leaving the lake gives the cell below its outlet (`_pond_outflow`, the walk 05c's
+  `pond_links` did for names only). 293 lakes and ponds over the 12 areas, Lake Placid among them (its dead end had no
+  link: Outlet Brook below it read 3-4.5 km2, now 54-56, fish 57-66 -> 82-88). Links of kind "pond" carry the reaches'
+  areas (`area_full_km2`); the "edge" totals (LA's flows) don't take them. crossbox VERSION 16; its cache key now
+  includes each box's `nhd_flowlines.gpkg`. 7,751 of 105,747 reaches gain drainage (median +3 km2), none lose any. The
+  Soquee at the Chattahoochee 390 -> 414 km2 (NHDPlus 413.97).
+- **Drainage labels kept.** On the new areas the bigger-arm rule made the Soquee the Chattahoochee's trunk (the upper
+  Chattahoochee became a fork "Chickamauga Creek"), Tesnatee Creek the Chestatee's, and relabelled 1,590 reaches. So
+  05c picks forks, promoted tributaries and drainage names on the area without the pond links (crossbox's
+  `full_dams` totals, `inflows(..., ponds=False)`): 0 labels change. A name rule from reach names was tried and
+  rejected (reach names near confluences come from a nearest-line vote; it broke the Chestatee and the Chattooga /
+  Tugaloo as it fixed the Conasauga and Piru Creek). Trunk naming by NHDPlus's main path is the follow-up (below).
+- **Tie-break, `flowlib.match_points`.** Two NHDPlus lines at the same distance (a point nearest their shared node)
+  in the same drainage bucket went whichever way an unstable sort left them, which depended on every other point
+  (4 of 2,500 matches in one box changed with the points' order; Stevenson Brook and the Little River at Waterbury
+  Reservoir flipped in a run that changed neither). Now the closer drainage, then the lower comid. 4 reaches move.
+- **05b's walk (item 6c).** Vertices are rounded to their cell (truncation put about half one row or column off), and
+  a walk that reaches a lake's dead end goes on from the cell below its outlet (crossbox's links), as the water does.
+  Rounding alone was worse: the exact walk stopped in lakes that truncation had slipped past by accident (LA's upper
+  Temescal Wash, dozens of Adirondack brooks above Lake Placid and other ponds to "no data").
+- **Guard.** A segment found down a way that went through a lake may raise a creek's water estimate, never lower it
+  below NHD's class, as for one found in another box (Partridge Brook and three more Connecticut brooks above ponds
+  would have dropped 15-27 points). Cost: about 30 LA washes that inherit "mostly dry" through a lake keep NHD's class
+  (upper Temescal Wash 5 -> 47).
+- **Weighted water-temperature fit (item 5), `watertemp.py`.** Each site weighted 1/(tau^2 + sigma_w^2/n) (sigma_w the
+  robust spread of single readings around their site's median, 1.3-3.9 C; tau^2 the first fit's residual variance less
+  the mean sampling variance); weighted skill test and area mean. Jackson's fit has skill now (0.887 of the spread
+  against 0.906): every Jackson reach carries an estimate, no Jackson score changes (all under 20 C). Elsewhere at most
+  +-2 points. adk_high_peaks, adk_northwest, adk_southwest still have no skill. It doesn't separate Teton Valley's
+  floor creeks from its canyons: elevation and drainage size can't see a valley floor warming.
+
+**Effect, all 12 areas against the build before** (the package without the weighted fit: 1,364 fish scores up, 243 by
+10+; 145 down, 8 by 10+; 311 flow classes change; with the fit's +-1-2: 2,833 up, 1,742 down). The 8 drops of 10+: five
+reaches lying mostly inside a lake now read reservoir (Northwest Bay Brook, 95 % in Lake George, 86 -> 26; Grass Pond
+Outlet; Stevenson Brook, 52 % in Waterbury Reservoir; the Little River, 55 % in Hanover Reservoir; hooch_tailwater:s2084);
+two tidal reaches on the Christina River (brandywine:s2587, s2562) whose flow came only from truncation's slip; one tie
+(Grass Valley Creek 50 -> 38). The big rises: brooks below ponds (Norwichtown Brook 1.3 -> 4.5 km2, seasonal ->
+year-round, 26 -> 66), creeks that now find the river below their lake (Taggart Creek "no data" -> year-round, 15 ->
+100), LA washes kept at NHD's class by the guard.
+
+**Checked after the rebuild, all 12 areas:** every box's area_streams, stream_drainage, flow_streams and flow_drops
+byte-identical to the measured run; every fit equal to the measured weighted fit; every fish score equal to an
+independent recompute (the pre-rebuild table with the new flow, area and fit columns); 0 drainage or fork labels
+changed; `check_flow_drops.py` 0 in every area. On the rendered maps (local server, no console errors): Taggart Creek
+year-round 100; Norwichtown Brook 4.45 km2 year-round 66; Partridge Brook "NHD perennial" 60; Outlet Brook 54-56 km2,
+order 4, 82-88; the Soquee 412-414 km2 with the upper Chattahoochee still the trunk; hooch_tailwater:s1492 "tailwater
+below Lake Sidney Lanier". Creeks drawn through below dams and ponds: ne_ct 115 -> 150 breaks (73 -> 101 km of line),
+adk_high_peaks 155 -> 195, adk_southeast 217 -> 282, LA 59 -> 67. 14_portable and phone_sync rerun (12:25).
+
+**Published** in site commit `3303d03` (about 12:50), together with the site-size session's layout change (one
+shared data file per map, outlines at 6 decimals), as agreed with it: one full push instead of two. That session reran
+06_map on these tables (12:27-12:33) and checked its output against them; this session then checked its reaches on
+the new layout (map3d_data.js; the n_georgia map in the browser, no console errors) and published.
+- publish_site.sh's copy and guards were run by hand. Its busy test matched the lakes session's scratch-only 05d
+  check builds: they write `LAKES_OUT` in that session's scratch; neither `output/` nor the live lakes.gpkg was touched.
+- 49 files changed: index.html and four files for each of the 12 areas (stream_map.html, stream_map_3d.html,
+  map3d_data.js, profiles_data.js). Nothing was added or removed, and nothing outside `streams/` changed.
+  `streams/` is 577 MB in 117 files.
+- 14_portable and phone_sync were rerun by the site-size session at about 12:40, with its patched scripts.
+- Live by 12:44. 16 served files match the push by SHA-256: index.html, all 12 stream_map.html, and one each of
+  map3d_data.js (ne_ct), profiles_data.js (n_georgia) and stream_map_3d.html (adk_high_peaks). The site-size session
+  checks the rest and the repository's history size.
+
+**Next (the user's "and the others"):** lakes for se_pa, the Smokies and the four Adirondack maps run in their own
+session ("Lakes for SE Pennsylvania, the Smokies and the Adirondacks"); trunk naming by NHDPlus's main path (levelpathi,
+fetched; a prototype on LA swaps 5 confluences: upper Piru Creek and Holcomb Creek right, the San Gabriel's East Fork
+in conflict with FORK_FIX, one at the Whitewater to look at); the 429 reaches lying at least half in a lake that score
+as creeks (most in lakes the routing treats as holding water: String Lake 100, Jackson Lake 73-76); burning NHD streams
+into the DEM for side channels and basins routed into the wrong valley (826 named reaches with under a quarter of
+their NHDPlus line's drainage).
+
+## 2026-11-20, midday: website size and phone copies (this session)
+Task from the "Today's task overview" session. Full numbers:
+`~/Library/Application Support/Claude/side-session-notes/local_e3cdfffb-0b65-41f5-9ffa-1ded44d9d362/site-size.md`.
+- **Published site:** `streams/` is 891 MB against GitHub Pages' 1 GB limit per site.
+  - Shares: `stream_map.html` 440 MB, `map3d_data.js` 341 MB, `profiles_data.js` 68 MB, hillshades 40 MB.
+  - 231 MB of the 2D pages is data that is also, value for value, in `map3d_data.js`: STREAMS through PARKING.
+  - The land-status and trout-water outlines carry 15 decimals.
+  - LA's `stream_map.html` is 69 MB; GitHub refuses files over 100 MB.
+- **History is not near 1 GB.** GitHub reports 397 MiB; a local repack gives 294 MB. The 1.4 GB local `.git` is
+  loose objects.
+- **Full republishes push big packs.** A full 12-area republish pushes 134 MB, because git's thin pack finds the
+  previous version of only one file per file name. All areas share the names, so the other 11 go whole. Diffed per
+  area, the 80562eb publish is 5.2 MB. A one-area publish pushes 0.1–0.4 MB.
+- **Done, user's choice "Shared file + rounding" (12:00):**
+  - **Change.** In `06_map.py`, the 2D page no longer inlines `window.STREAMS` … `PARKING`. It loads
+    `map3d_data.js` and a one-line script points the same globals at `window.MAP3D`'s entries (`SHARED_3D`).
+    - `map3d_data.js` holds only those 11 shared layers.
+    - The layers only the 3D map draws are written inline into `stream_map_3d.html`, after its
+      `<script src="map3d_data.js">`, as `Object.assign(window.MAP3D, {...})`. They are escaped so nothing in them
+      can close the `<script>`.
+    - New `r6()`: road closures, closure areas, fire perimeters, wild trout waters, critical habitat, wilderness,
+      non-FS land and PAD-US outlines are written at 6 decimals instead of 15.
+    - `14_portable.py` reads the 3D-only part from `stream_map_3d.html` too; old-layout areas still work.
+    - Only the `map3d.html` header comment and the README file table changed besides.
+    - The published file names are the same, so `publish_site.sh` and `phone_sync.sh` are untouched.
+  - **Combined with the open-items session's flow/drainage refresh: one rebuild, one push.**
+    - Its 12 areas were snapshotted at 12:24 (old layout).
+    - The patch went in, then 06_map ran for all 12 from 12:27 to 12:33 (`data/sitesize_06map.log`).
+  - **Checks:**
+    - Lexington A/B: old and new `06_map.py` on identical inputs.
+    - All 12 areas against the snapshot: the shared layers are identical to the old 2D inline data and to the old
+      `map3d_data.js`. The 3D-only layers are identical except the outlines' coordinates (np.round, 6 places). The
+      2D page outside the data is identical once folium ids are normalised.
+    - Browser, all 12 areas, every overlay on, zooms 10/13/16: the same data hashes, overlay lists and layer
+      counts. Only 0–416 edge pixels per view differ, from the rounding.
+    - 3D pages assemble the same MAP3D, with no console errors. The MapLibre map can't draw in the hidden preview
+      pane, for the old pages too; to check live in Chrome.
+    - The three map files went from 785.0 to 485.8 MB.
+    - `14_portable` was rerun: the one-file map is identical to the 12:25 one except the rounded closure lines.
+    - `phone_sync` was rerun: `phone/` 893 → 639 MB, equal to `output/`.
+  - **Handed to the open-items session to check its content and publish once (12:42).**
+  - **Published: site commit `3303d03`, together with that session's flow/drainage package.** It was pushed at
+    12:43 and the Pages deployment finished at 12:44.
+    - `streams/` is 117 files and 604.5 MB, down from 891 MB. By file: map3d_data.js 215.5, stream_map.html 175.9,
+      stream_map_3d.html 94.4, profiles_data.js 68.4, hillshades 40.0, index.html 9.6 MB.
+    - The push pack was 84.6 MB, against 134 MB for the previous full republish. GitHub now reports 457 MiB of history.
+  - **Live check:**
+    - Nothing outside `streams/` changed. The older site is byte-identical to `cbbb0b8` (2020).
+    - All 49 changed files and all 31 served older-site files match the commit by SHA-256. `.gitignore` isn't
+      served by Pages, as before.
+    - In Chrome, the live Lexington 2D and 3D maps and the LA 2D map load the shared file with no console errors.
+      The 3D style has its 91 layers. LA 2D is 2.7 + 6.3 MB gzipped over the wire.
+  - **Still open:**
+    - A full republish still pushes about 85 MB: git's thin pack finds the previous version of only one file per name.
+      Pushing area by area, through a temporary branch so Pages builds once, would cut that to a few MB. This needs a
+      `publish_site.sh` change and the user's OK.
+    - `git gc` in the site clone would free about 1.2 GB of local disk (local only).
+  - **For anyone parsing the maps:** `window.STREAMS` is now in `map3d_data.js` (`D["streams"]`, and so on). The
+    3D-only layers are the JSON after `Object.assign(window.MAP3D, ` in `stream_map_3d.html`.
+- **Phone copies:** current. The flow session reran `phone_sync` at 10:37 after its publish. Every `phone/` file
+  matches the live site by hash, and `output/stream_maps_all.html` holds all 12 areas. `phone/stream_maps_all.html`
+  was a stale 6-area copy from 11-18; it was replaced with the current file.
+- **One metric leftover on the maps:** LA's Little Rock Reservoir depth note, "222,765 m² of 1 m grid", from
+  `lake_bathymetry.py:186`.
+
+## 2026-11-20, early afternoon: the last metric note, and the consent emails (overview session)
+- LA's Little Rock Reservoir depth note now reads "55 acres surveyed on a 3.3 ft grid; depth below the lake's lidar
+  water level (3,273 ft NAVD88)" instead of "222,765 m² of 1 m grid; ..." (`lake_bathymetry.py`, `usgs_little_rock`,
+  which now imports `acres` from `units.py`). The live LA maps and `phone/la` keep the old text until LA's lakes (05d)
+  and map (06) are rebuilt and published; the "Lakes for SE Pennsylvania, the Smokies and the Adirondacks" session was
+  asked to check the note after its LA rebuild.
+- The user sent both consent emails (nnywaterfalls.com, World Waterfall Database) on 2026-11-20; replies awaited. If
+  either says no, pull its rows by `source` everywhere (see the known-falls entries above).

@@ -10,7 +10,8 @@ and downhill helpers to give a basin cut by an edge the drainage it continues in
 pysheds can't route water across a big flat lake surface either, so every large reservoir ends its D8 paths in pits
 and the creek below the dam starts again near nothing (San Gabriel Reservoir, Castaic, Pyramid, Big Tujunga, Lake
 Hemet...). With through_dams, inflows() also carries a reservoir's area to the cell below its dam where the water
-goes on, found on the NHDPlus flowlines leaving the lake. Drainages still end at dams; only areas use this.
+goes on, found on the NHDPlus flowlines leaving the lake, or for a pond NHDPlus has no flowline for, on the detailed
+NHD stream line leaving it. Drainages still end at dams; only areas use this.
 
 A river that enters from outside every box (the Maury above Goshen Pass, Otter Creek, the Chattahoochee below Lake
 Lanier, the Snake) started with nothing too. Where an NHDPlus V2 river crosses the outer boundary flowing in, its
@@ -20,11 +21,11 @@ only brushes the boundary adds nothing) is carried in the same way ("outside"), 
 import json, os
 from collections import defaultdict
 import numpy as np, pandas as pd, geopandas as gpd, rasterio, rasterio.windows, shapely, shapely.ops
-from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_dir
+from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_dir, raw_dir
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 15
+VERSION = 16
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 OUTSIDE_MIN_KM2 = 10   # a river entering from outside every box brings at least this much, or it isn't carried
 
@@ -200,18 +201,75 @@ def walk(fd, r, c):
 
 def _key(regions):
     from flowlib import FLOW
-    files = [fdir_path(r) for r in regions] + [f"{FLOW}/reservoirs.gpkg", f"{FLOW}/nhdplus_v2.gpkg",
-                                               f"{SHARED_DERIVED}/stitched.json"]
+    files = [fdir_path(r) for r in regions] + [f"{raw_dir(r)}/nhd_flowlines.gpkg" for r in regions] + [
+        f"{FLOW}/reservoirs.gpkg", f"{FLOW}/nhdplus_v2.gpkg", f"{SHARED_DERIVED}/stitched.json"]
     return {"version": VERSION, **{f: [os.path.getmtime(f), os.path.getsize(f)] for f in files if os.path.exists(f)}}
 
 
-def _dam_links(fd, T, sinks, lakes, v2, by_seq):
+def _outflow_lines(region):
+    """The box's detailed NHD stream lines (NHD High Resolution, 1:24,000 or better; 02_download_vectors.py), merged
+    into single lines, with an index and the lines starting at each point: (lines, tree, begins), or None. Pipelines,
+    tunnels, canals and ditches don't count."""
+    p = f"{raw_dir(region)}/nhd_flowlines.gpkg"
+    if not os.path.exists(p):
+        return None
+    fl = gpd.read_file(p).to_crs(CRS)
+    fl = fl[fl.ftype.isin([460, 558, 334]) & fl.geometry.notna()]
+    lines = []
+    for g in shapely.line_merge(fl.geometry.force_2d().values):
+        lines += [q for q in getattr(g, "geoms", [g]) if q.geom_type == "LineString" and q.length > 1]
+    if not lines:
+        return None
+    begins = defaultdict(list)
+    for i, g in enumerate(lines):
+        begins[(round(g.coords[0][0]), round(g.coords[0][1]))].append(i)
+    return lines, shapely.STRtree(lines), begins
+
+
+def _pond_outflow(fd, T, lake, dead, detailed):
+    """(row, col) where the water of a lake NHDPlus has no flowline for goes on, from the detailed NHD stream lines:
+    a line that starts in the lake and ends outside it is its outflow (they are drawn downstream). Walk down it and the
+    lines it runs into, 25 m at a time for up to 3 km, to the first cell whose D8 path doesn't lead back into the
+    lake's dead ends; None where no line leaves the lake, or each one leaves the box first."""
+    lines, tree, begins = detailed
+    H, W = fd.shape
+    lk = lake.buffer(30)
+    for i in tree.query(lk, predicate="intersects"):
+        g = lines[i]
+        if not lk.contains(shapely.Point(g.coords[0])) or lk.contains(shapely.Point(g.coords[-1])):
+            continue
+        length, seen = 0.0, {i}
+        while g is not None and length < 3000:
+            for d in np.arange(0, g.length, 25.0):
+                p = g.interpolate(d)
+                if lk.contains(p):
+                    continue
+                c, r = ~T * (p.x, p.y)
+                r, c = int(np.floor(r)), int(np.floor(c))
+                if not (0 <= r < H and 0 <= c < W):
+                    length = 1e9                    # this brook leaves the box first
+                    break
+                if walk(fd, r, c) not in dead:
+                    return r, c
+            length += g.length
+            nx = [j for j in begins.get((round(g.coords[-1][0]), round(g.coords[-1][1])), []) if j not in seen]
+            g = lines[nx[0]] if nx else None
+            seen.update(nx[:1])
+    return None
+
+
+def _dam_links(fd, T, sinks, lakes, v2, by_seq, detailed=None, ponds=None, pond_dead=None):
     """{sink outlet: (row, col)} for dead ends inside a reservoir: the cell below its dam where the water goes on.
     NHDPlus says whether the lake has an outflow and where: its outlet flowline (the most drainage inside the lake)
     and the flowlines below it. Walk down them from where the outlet flowline leaves the lake, 50 m at a time for up to
     3 km, to the first cell whose D8 path doesn't lead back into the lake's dead ends. A dead end counts for a lake
     within 400 m (Lake Mathews' is 338 m outside its outline). Lakes with no outflow (Baldwin Lake) and dead ends
-    away from lakes (desert fans, gravel pits, the sea) stay closed."""
+    away from lakes (desert fans, gravel pits, the sea) stay closed.
+    NHDPlus (1:100,000) doesn't have the brooks most small ponds sit on, and below such a pond the brook's drainage
+    started again from nothing (66 ponds over six areas on 2026-11-19, 35 of them in north-east Connecticut), so its
+    size and flow were low for a stretch. Where NHDPlus has no flowline in the lake, or its lines find no way on, the
+    box's detailed NHD stream lines (`detailed`, from _outflow_lines) give it: _pond_outflow(). A lake whose NHDPlus
+    outflow leaves the box first stays closed. 05c_drainages.py used these lines for the drainage names only."""
     if not sinks:
         return {}
     pts = gpd.GeoDataFrame({"o": list(sinks)}, geometry=gpd.points_from_xy(*zip(*sinks.values())), crs=CRS)
@@ -224,25 +282,25 @@ def _dam_links(fd, T, sinks, lakes, v2, by_seq):
     out = {}
     for li, grp in hit.groupby("index_right"):
         lake = lakes.geometry.iloc[li]
-        ins = v2[v2.intersects(lake)]
-        ins = ins[ins.geometry.intersection(lake).length >= 0.25 * ins.length]   # silted-up Matilija: 49 %
-        if not len(ins):
-            continue
-        fl = ins.loc[ins.totdasqkm.idxmax()]
-        g = shapely.line_merge(fl.geometry)
-        if g.geom_type != "LineString":                 # NHDPlus stores flowlines as (usually one-part) multilines
-            g = shapely.LineString([c for part in g.geoms for c in part.coords])
-        inside = g.intersection(lake)
-        t_end = max(g.project(shapely.Point(c)) for p in getattr(inside, "geoms", [inside]) for c in p.coords)
-        lines = [shapely.ops.substring(g, t_end, g.length)]
-        seq, length = fl.dnhydroseq, 0.0
-        while seq in by_seq.index and length < 3000:
-            below = by_seq.loc[seq]
-            lines.append(below.geometry)
-            length += below.geometry.length
-            seq = below.dnhydroseq
         dead = set(grp.o)
         entry, done = None, False
+        ins = v2[v2.intersects(lake)]
+        ins = ins[ins.geometry.intersection(lake).length >= 0.25 * ins.length]   # silted-up Matilija: 49 %
+        lines = []
+        if len(ins):
+            fl = ins.loc[ins.totdasqkm.idxmax()]
+            g = shapely.line_merge(fl.geometry)
+            if g.geom_type != "LineString":             # NHDPlus stores flowlines as (usually one-part) multilines
+                g = shapely.LineString([c for part in g.geoms for c in part.coords])
+            inside = g.intersection(lake)
+            t_end = max(g.project(shapely.Point(c)) for p in getattr(inside, "geoms", [inside]) for c in p.coords)
+            lines = [shapely.ops.substring(g, t_end, g.length)]
+            seq, length = fl.dnhydroseq, 0.0
+            while seq in by_seq.index and length < 3000:
+                below = by_seq.loc[seq]
+                lines.append(below.geometry)
+                length += below.geometry.length
+                seq = below.dnhydroseq
         for ln in lines:
             for part in getattr(ln, "geoms", [ln]):
                 if part.is_empty or part.geom_type != "LineString":
@@ -263,6 +321,11 @@ def _dam_links(fd, T, sinks, lakes, v2, by_seq):
                     break
             if done:
                 break
+        if entry is None and not done and detailed is not None:    # no NHDPlus way on, and none that leaves the box
+            entry = _pond_outflow(fd, T, lake, dead, detailed)
+            if entry and ponds is not None:
+                ponds.append(entry)
+                pond_dead.update(dead)
         if entry:
             out.update({o: entry for o in dead})
     return out
@@ -282,6 +345,7 @@ def _build(regions):
     by_seq = v2.drop_duplicates("hydroseq").set_index("hydroseq")
     edges = shared_edges(regions)
     fds, exits, own, links = {}, {}, {}, []      # own: (region, outlet) -> its basin km2; links: (src, region, row, col, kind)
+    ponds, pond_dead = [], set()                  # the cells below the ponds whose way on comes from the detailed lines
     for r in regions:
         with rasterio.open(fdir_path(r)) as src:
             fds[r] = (src.read(1), src.transform)
@@ -307,8 +371,8 @@ def _build(regions):
         own.update({(r, int(o)): float(a) for o, a in zip(uo[sink], km2[sink])})
         own.update({(r, int(o)): (0.0 if r in stitched() else float(a)) for o, a in zip(uo[exit_ & ~sink], km2[exit_ & ~sink])})
         sinks = {int(o): T * (c + 0.5, rr + 0.5) for o, rr, c in zip(uo[sink], orow[sink], ocol[sink])}
-        for o, (row, col) in _dam_links(fd, T, sinks, lakes, v2, by_seq).items():
-            links.append(((r, o), r, row, col, "dam"))
+        for o, (row, col) in _dam_links(fd, T, sinks, lakes, v2, by_seq, _outflow_lines(r), ponds, pond_dead).items():
+            links.append(((r, o), r, row, col, "pond" if o in pond_dead else "dam"))
     # each exit -> the cell in the neighbouring box where its creek heads away from the edge
     for r in regions:
         for o, (x, y) in exits[r].items():
@@ -466,8 +530,11 @@ def _build(regions):
         print("crossbox: rivers entering from outside the boxes (km2 carried in):",
               ", ".join(f"{n} -> {b} {a}" for _, (n, b, a) in found[:14]) + (f" ... {len(found)} in all" if len(found) > 14 else ""))
     out = {}
-    for variant in ("edge", "full"):
-        use = [l for l in links if variant == "full" or l[4] in ("edge", "outside")]
+    # edge: across edges and in from outside; full: also past dams and ponds; full_dams: past dams but not the ponds
+    # NHDPlus has no flowline for (05c_drainages.py picks forks and drainage names on it, as before those were carried)
+    for variant in ("edge", "full", "full_dams"):
+        use = [l for l in links if variant == "full" or (variant == "full_dams" and l[4] != "pond")
+               or l[4] in ("edge", "outside")]
         into = defaultdict(list)
         for src, b, row, col, _ in use:
             into[(b, walk(fds[b][0], row, col))].append(src)
@@ -487,21 +554,23 @@ def _build(regions):
             # cell it goes on from in the next one (or below the dam, or inside the outer boundary) and what it carries
             out["cross"] = [[src[0], *(exits.get(src[0], {}).get(src[1], (None, None)) if kind == "edge" else (None, None)),
                              b, int(row), int(col), round(tot(src), 3), kind] for src, b, row, col, kind in use]
-    dams = [l for l in links if l[4] == "dam"]
+    dams = [l for l in links if l[4] in ("dam", "pond")]
     print(f"crossbox: {sum(l[4] == 'edge' for l in links)} edge links, {len(dams)} reservoir dead ends carried past "
-          f"their dams")
+          f"their dams ({len(ponds)} ponds NHDPlus has no flowline for, by the detailed NHD stream line leaving them)")
     # the dead ends themselves, for dam_links(): {region: [[dead-end cell, row, col of the cell below the dam]]}
     out["dams"] = {r: [[int(src[1]), int(row), int(col)] for src, b, row, col, kind in dams
                        if b == r and src[0] == r] for r in regions}
     return out
 
 
-def inflows(region, through_dams=False):
+def inflows(region, through_dams=False, ponds=True):
     """[(row, col, km2, from_region, kind)]: where water from elsewhere enters `region`'s grid and how much drainage
     area it brings: from neighbouring boxes ("edge"), and with through_dams also from above a reservoir ("dam").
-    The edge-only totals leave out any water that came over a dam. Built for every box at once and cached until a
-    flowdir.tif, the reservoir list or the NHDPlus network changes."""
-    return [tuple(e) for e in _data()["full" if through_dams else "edge"].get(region, [])]
+    The edge-only totals leave out any water that came over a dam; ponds=False leaves out what came past a pond NHDPlus
+    has no flowline for (the detailed NHD stream line's way on). Built for every box at once and cached until a
+    flowdir.tif, the reservoir list, the NHDPlus network or a box's NHD stream lines change."""
+    key = "edge" if not through_dams else "full" if ponds else "full_dams"
+    return [tuple(e) for e in _data()[key].get(region, [])]
 
 
 def dam_links(region):

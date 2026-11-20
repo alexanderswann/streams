@@ -63,11 +63,9 @@ NAME_FIX = {("santa_monica", "Garapito Creek"): "Topanga Creek",
             # Santa Clara; its channel has no NHD name, so the tributary Texas Canyon won the vote
             ("san_gabriel", "Texas Canyon"): "Bouquet Canyon"}
 # forks NHD names oddly: the East Fork is just "San Gabriel River"; the Mojave trunk here is Deep Creek's canyon
-FORK_FIX = {("san_gabriel", "San Gabriel River", "Iron Fork"): "East Fork San Gabriel River",
-            # the same fork since 05_score names a river's reaches by their neighbours (2026-11-19): the one reach that
-            # carried "East Fork San Gabriel River" is "San Gabriel River" like the rest of the stem, and the fork's
-            # next name is its headwater, Prairie Fork
-            ("san_gabriel", "San Gabriel River", "Prairie Fork"): "East Fork San Gabriel River",
+FORK_FIX = {
+            # (the East Fork San Gabriel was a fork named after Iron Fork and then Prairie Fork, and renamed here; since the
+            # trunk follows NHDPlus's main path, 2026-11-20, the East Fork is the San Gabriel's trunk, as NHD names it)
             # lower Bouquet Canyon (with Haskell Canyon), from where it enters the Piru box to the Santa Clara at
             # Saugus; its channel has no NHD name. Joins the stretch upstream in the San Gabriel box (NAME_FIX)
             ("piru", "Santa Clara River", "Santa Clara River, unnamed fork"): "Bouquet Canyon",
@@ -126,6 +124,12 @@ a += extra_edge
 # The same plus the area above any reservoir upstream, carried past its dam: the routing ends every path in a big
 # flat lake, so the creek below a dam started again near nothing. For the reaches' areas (area_streams.csv) only.
 extra_full = along(inflows(REGION, through_dams=True))
+# The forks, the promoted tributaries and the drainage names are picked on the area carried past dams but not past the
+# ponds NHDPlus has no flowline for (crossbox carries those since 2026-11-20, for the reaches' areas): with them, near-equal
+# arms tipped the other way and the trunk left the named river (the Soquee, 414 km2, over the upper Chattahoochee,
+# 402, which came out as a fork named "Chickamauga Creek"). Which arm a drainage's trunk follows is decided by names
+# another day; until then the drainages and forks stay as they were.
+extra_lab = along(inflows(REGION, through_dams=True, ponds=False))
 if inflow:
     print(f"inflow from neighbouring boxes: {len(inflow)} creeks, {sum(e[2] for e in inflow):.0f} km2")
 basin_km2 = basin_km2[~sea[basin_km2.index.values]]       # a sea cell is no basin (the area raster runs on across it)
@@ -138,10 +142,148 @@ major = basin_km2[(basin_km2 >= MAJOR_KM2) | (mouth[basin_km2.index.values] & (b
 # The arms are compared on the full drainage, with the water from above dams: below a dam the river's own count
 # starts again (drainages end at dams), and on that count the Chattahoochee below Buford Dam was the smaller arm at
 # its first side creek.
-a_full = a - extra_edge + extra_full
+a_full = a - extra_edge + extra_lab
 ends = (a_full[nxt] - a_full) > a_full
 big_basins = major.index[major >= SPLIT_KM2].values
 cand = np.flatnonzero(ends & (a_full >= FORK_KM2) & np.isin(outlet, big_basins))
+
+
+def main_path_trunk(cand):
+    """The fork candidates with the trunk following NHDPlus's main path. At a confluence the bigger arm continued the
+    trunk; NHDPlus V2 records which arm the river below continues (its level path, set from the names and the size),
+    and where the smaller arm is the one the river's path follows, that arm continues and the bigger one is the fork.
+    By drainage the Soquee (414 km2) is the Chattahoochee's bigger arm where they meet (402), so with the drainage
+    carried past ponds (2026-11-20) the upper Chattahoochee came out as a fork named after a creek in it; the same
+    rule had named the upper Conasauga "Jigger Creek", the upper Chestatee "Dicks Creek" and upper Piru Creek "Mutau
+    Creek". Each arm, and the river below, is matched to NHDPlus 300 m from the confluence (along its biggest arm
+    upstream, down the river below), by distance and drainage. A confluence keeps the bigger arm where any of the
+    three doesn't match; where the arms' lines don't both run into the line below within a few lines, or NHDPlus's
+    own junction of the two branches isn't between the points; or where the detailed NHD lines name the river's arm
+    something else (NHDPlus runs the Moosup River up a 50 km2 arm the detailed lines call Quanduck Brook). Measured
+    2026-11-20: 33 confluences on 11 maps; reaches whose label is their own name 484 -> 1,122."""
+    from flowlib import FLOW as FLOW_, match_points as match_, level_paths
+    if not len(cand):
+        return cand
+    paths_ = level_paths().drop_duplicates("comid").set_index("comid")
+    if not len(paths_):
+        return cand
+    lp = paths_.levelpathi
+    v2_ = gpd.read_file(f"{FLOW_}/nhdplus_v2.gpkg").to_crs(CRS)        # all columns: match_points leaves out side arms
+    gnis = v2_.drop_duplicates("comid").set_index("comid").gnis_name
+    # the reaches' own names (05_score.py, from the detailed NHD lines) on their line cells: a vertex is the top-left
+    # corner of its cell, every vertex but the last (the confluence cell) on its reach
+    st_ = gpd.read_file(f"{OUT}/streams_scored.gpkg")[["name", "geometry"]].to_crs(CRS)
+    lc_, li_ = [], []
+    for i_, g_ in enumerate(st_.geometry.values):
+        xy_ = np.asarray(g_.coords if g_.geom_type == "LineString" else max(g_.geoms, key=lambda q: q.length).coords)[:, :2]
+        cc_, rr_ = ~T * (xy_[:, 0], xy_[:, 1])
+        k_ = np.clip(np.rint(rr_).astype(int), 0, H - 1) * W + np.clip(np.rint(cc_).astype(int), 0, W - 1)
+        lc_.append(k_[:-1])
+        li_.append(np.full(len(k_) - 1, i_))
+    lc_, li_ = np.concatenate(lc_)[::-1], np.concatenate(li_)[::-1]
+    ucell_, first__ = np.unique(lc_, return_index=True)
+    uname_ = st_.name.values[li_[first__]]
+
+    def reach_name(cell):
+        k_ = np.searchsorted(ucell_, cell)
+        return uname_[k_] if k_ < len(ucell_) and ucell_[k_] == cell and isinstance(uname_[k_], str) else None
+
+    def ups(cell):
+        r0, c0 = divmod(int(cell), W)
+        return [(r0 + dr) * W + c0 + dc for dr in (-1, 0, 1) for dc in (-1, 0, 1)
+                if (dr or dc) and 0 <= r0 + dr < H and 0 <= c0 + dc < W and nxt[(r0 + dr) * W + c0 + dc] == cell]
+
+    def up(cell, k=30):
+        for _ in range(k):
+            u = ups(cell)
+            if not u:
+                break
+            cell = max(u, key=lambda q: a_full[q])
+        return cell
+
+    def down(cell, k=30):
+        for _ in range(k):
+            if nxt[cell] == cell:
+                break
+            cell = int(nxt[cell])
+        return cell
+
+    trip, up_s = [], {}
+    for s_ in cand:
+        c_ = int(nxt[s_])
+        arms = [q for q in ups(c_) if q != s_]
+        if not arms:
+            continue
+        b_ = max(arms, key=lambda q: a_full[q])
+        trip.append((int(s_), b_, up(int(s_)), up(b_), down(c_)))
+        up_s[int(s_)] = trip[-1][2]
+    if not trip:
+        return cand
+    cells_ = np.array([t[k] for t in trip for k in (2, 3, 4)])
+    xs, ys = T * (cells_ % W + 0.5, cells_ // W + 0.5)
+    com = match_(gpd.GeoSeries(gpd.points_from_xy(xs, ys), crs=CRS), a_full[cells_], v2_, max_dist=150, lo=0.5, hi=2.0).values
+    lev = np.array([lp.get(int(c), np.nan) if np.isfinite(c) else np.nan for c in com]).reshape(-1, 3)
+    com = com.reshape(-1, 3)
+    # the arms' lines must be NHDPlus's arms of this confluence: each runs into the line matched below it within a few
+    # lines on NHDPlus's own network, and the two arms are different lines (a point up one arm can match the other
+    # arm's line where they run close: at the San Gorgonio and Smith Creek a Smith Creek point took the river's line)
+    seq = paths_
+    by_seq = seq.reset_index().set_index("hydroseq")
+
+    def flows_into(c_from, c_to, k=8):
+        if c_from not in seq.index or c_to not in seq.index:
+            return False
+        h, target = seq.hydroseq[c_from], seq.hydroseq[c_to]
+        for _ in range(k):
+            if h == target:
+                return True
+            if h not in by_seq.index:
+                return False
+            h = by_seq.dnhydroseq[h]
+        return h == target
+    def join_point(c_from, lp_to, k=40):
+        """hydroseq of the first line on level path lp_to down from line c_from, or None."""
+        if c_from not in seq.index:
+            return None
+        h = seq.hydroseq[c_from]
+        for _ in range(k):
+            if h not in by_seq.index:
+                return None
+            row = by_seq.loc[h]
+            if row.levelpathi == lp_to:
+                return h
+            h = row.dnhydroseq
+        return None
+
+    swap, swaps = {}, []
+    for (s_, b_, *_), (l_s, l_b, l_c), (c_s, c_b, c_c) in zip(trip, lev, com):
+        if not np.isfinite([l_s, l_b, l_c, c_s, c_b, c_c]).all() or c_s == c_b:
+            continue
+        if not (flows_into(int(c_s), int(c_c)) and flows_into(int(c_b), int(c_c))):
+            continue
+        # and NHDPlus's own junction of the two branches lies where ours does: between the point up the river's arm and
+        # the point below (hydroseq falls downstream). On a big river every tributary within a few lines flows into
+        # the line below; one joining above the river arm's point isn't this confluence's other arm (the Moosup
+        # River above Quanduck Brook took Roaring Brook's place that way)
+        j_ = join_point(int(c_b), l_c)
+        if j_ is None or not (seq.hydroseq[int(c_c)] <= j_ < seq.hydroseq[int(c_s)]):
+            continue
+        # and the detailed NHD agrees: the reach up the river's arm carries NHDPlus's name for that arm. Where the two
+        # disagree on which arm is the river (the Moosup River: NHDPlus follows a 50 km2 arm, the detailed lines name
+        # the bigger arm Moosup), the bigger arm stays the trunk
+        nm_, gn_ = reach_name(int(up_s[s_])), gnis.get(int(c_s))
+        if isinstance(nm_, str) and nm_ != gn_:          # the detailed lines name this arm something else
+            continue
+        if l_s == l_c and l_b != l_c:
+            swap[s_] = b_
+            swaps.append((round(float(a_full[s_]), 1), round(float(a_full[b_]), 1)))
+    if swaps:
+        print(f"trunk follows NHDPlus's main path where the bigger arm is a tributary: {len(swaps)} confluences "
+              f"(river arm / bigger arm km2: {', '.join(f'{a}/{b}' for a, b in swaps[:10])})")
+    return np.unique(np.array([swap.get(int(s_), int(s_)) for s_ in cand], dtype=cand.dtype))
+
+
+cand = main_path_trunk(cand)
 stop = np.zeros(N, bool)
 stop[cand] = True
 stop |= nxt == idx

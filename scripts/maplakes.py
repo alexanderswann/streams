@@ -81,8 +81,11 @@ def load(done):
     # through GBIF already): a lake record within 150 m of the shore, or one naming the lake within 2 km
     lk["agency_recs"], lk["agency_trout"] = None, False
     tp = f"{MAP_OUT}/context/trout_evidence.gpkg"
-    if os.path.exists(tp):
-        te = gpd.read_file(tp).to_crs(lk.crs)
+    # and the lake-only records 05d_lakes.py writes beside the lakes (New York: DEC's stocking list and lake fishing list)
+    rp = f"{SHARED_DERIVED}/lake_records.gpkg"
+    tparts = [gpd.read_file(p_).to_crs(lk.crs) for p_ in (tp, rp) if os.path.exists(p_)]
+    if tparts:
+        te = gpd.GeoDataFrame(pd.concat(tparts, ignore_index=True), crs=lk.crs)
         te = te[te.kind != "iNaturalist"]
         key = lambda v: "".join(ch for ch in str(v).lower() if ch.isalnum()) if isinstance(v, str) else ""
         # the same name in another word order or with a filler word: "Gregory Lake" is Lake Gregory, "Hansen Dam
@@ -198,7 +201,9 @@ def popup(r, approach):
                         f"{r.wilderness} (no bikes)" if isinstance(r.wilderness, str) else None,
                         f"{r.drainage} · {r.fork}" if isinstance(r.drainage, str) and r.fork != r.drainage else r.drainage)
             if isinstance(x, str) and x]
-    html = (f"<div class='pp'><b>{hesc(nm)}</b>" + (f" <span class='dm'>(Game &amp; Fish: {hesc(alt)})</span>" if alt else "")
+    # the agency's own name for it, where it differs (Wyoming Game & Fish; NCWRC's "Calderwood Reservoir")
+    who = {"Wyoming Game & Fish": "Game & Fish"}.get(r.agency, r.agency) if isinstance(r.agency, str) else "agency"
+    html = (f"<div class='pp'><b>{hesc(nm)}</b>" + (f" <span class='dm'>({hesc(who)}: {hesc(alt)})</span>" if alt else "")
             + "<table>" + "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in rows) + "</table>"
             + ("".join(f"<div class='warn'>{hesc(x)}</div>" if x in (r.conflict, r.water_note, r.private_shore) else
                        f"<div class='dw'>{hesc(x)}</div>" for x in note))

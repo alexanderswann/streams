@@ -119,9 +119,13 @@ def match_points(points, areas, v2, max_dist=150, lo=0.3, hi=1.6):
     ratio = j.a / j.totdasqkm.replace(0, np.nan)
     ok = j.a.isna() | ratio.between(lo, hi)
     j = j[ok].assign(miss=np.abs(np.log(ratio[ok].fillna(1.0))))
-    # prefer close area agreement, then distance
+    # prefer close area agreement, then distance; a tie (two lines at the same distance: the point is nearest to the
+    # node they share) goes to the closer drainage, then the lower comid. The sort was unstable before (2026-11-20), so
+    # a tie went whichever way the other points' values happened to leave it: an unrelated change elsewhere could flip
+    # a reach between the line above a lake and the one through it (Stevenson Brook and the Little River at Waterbury
+    # Reservoir), and the same points in another order matched differently (4 of 2,500 in one box)
     j["rank"] = j.miss.round(1) * 1000 + j.dist
-    best = j.sort_values("rank").drop_duplicates("pid").set_index("pid").comid
+    best = j.sort_values(["rank", "miss", "comid"], kind="stable").drop_duplicates("pid").set_index("pid").comid
     out = best.reindex(np.arange(len(pts))).astype(float)
     out.index = getattr(points, "index", out.index)
     return out
@@ -173,6 +177,40 @@ def reservoirs():
     os.replace(path + ".tmp.gpkg", path)
     json.dump(sorted(REGIONS), open(meta, "w"))
     return wb
+
+
+def level_paths():
+    """NHDPlus V2's main paths for the area's flowlines: comid, hydroseq, dnhydroseq, uphydroseq (the main line above),
+    levelpathi (the path the line's river follows), uplevelpat, dnlevelpat. From the USGS service 02b_download_flow.py
+    reads the flowlines from, for the same boxes (each range's box and 2 km around it). 05c_drainages.py uses it to keep
+    a river's trunk on the arm NHDPlus continues it up. Cached in FLOW; fetched again when ranges are added."""
+    import requests, time
+    path, meta = f"{FLOW}/nhdplus_v2_paths.csv", f"{FLOW}/nhdplus_v2_paths.csv.regions.json"
+    if os.path.exists(path) and os.path.exists(meta) and set(json.load(open(meta))) == set(REGIONS):
+        return pd.read_csv(path)
+    os.makedirs(FLOW, exist_ok=True)
+    area = gpd.GeoSeries([box(*v["bbox"]).buffer(2000) for v in REGIONS.values()], crs=CRS)
+    rows = []
+    for w, s, e, n in area.to_crs(4326).bounds.values:
+        for k in range(4):
+            try:
+                r = requests.get("https://api.water.usgs.gov/geoserver/wmadata/ows", timeout=300, params=dict(
+                    service="WFS", version="1.0.0", request="GetFeature", typeName="wmadata:nhdflowline_network",
+                    outputFormat="application/json", srsName="EPSG:4326", bbox=f"{w},{s},{e},{n},EPSG:4326",
+                    propertyName="comid,levelpathi,uplevelpat,dnlevelpat,uphydroseq,hydroseq,dnhydroseq"),
+                    headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+                r.raise_for_status()
+                rows += [f["properties"] for f in r.json()["features"]]
+                break
+            except Exception:
+                if k == 3:
+                    raise
+                time.sleep(10 * (k + 1))
+    t = pd.DataFrame(rows).drop_duplicates("comid")
+    t.to_csv(path + ".tmp", index=False)
+    os.replace(path + ".tmp", path)
+    json.dump(sorted(REGIONS), open(meta, "w"))
+    return t
 
 
 def below_dam_comids(v2, share=0.5):

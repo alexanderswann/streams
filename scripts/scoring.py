@@ -122,8 +122,10 @@ _TAILWATERS = {
     "la": {"Cogswell Reservoir": ("West Fork San Gabriel River", 715), "Pyramid Lake": ("Piru Creek", 700)},
     # Buford Dam releases from the bottom of Lake Lanier: the Chattahoochee is trout water for 48 miles below it,
     # through Bull Sluice Lake (Morgan Falls Dam, a small run-of-river pool) to Peachtree Creek in Atlanta. Blue
-    # Ridge Dam does the same for the Toccoa down to the Tennessee line.
-    "n_georgia": {"Lake Sidney Lanier": ("Chattahoochee River", 285), "Bull Sluice Lake": ("Chattahoochee River", 265),
+    # Ridge Dam does the same for the Toccoa down to the Tennessee line. Bull Sluice Lake's line sits under its own
+    # water (260 m on the DEM) and over the river below Morgan Falls Dam (242 m): at 265 m a reach of the lake's stretch
+    # lying outside its outline (hooch_tailwater:s1492) was named Bull Sluice Lake's tailwater, though above the dam
+    "n_georgia": {"Lake Sidney Lanier": ("Chattahoochee River", 285), "Bull Sluice Lake": ("Chattahoochee River", 250),
                   "Blue Ridge Lake": ("Toccoa River", 475)},
     # Nantahala Lake's water reaches the river from the bottom of the lake: through the tunnel to the powerhouse at
     # Beechertown, where the cold tailwater starts that runs through the gorge to Fontana Lake, and as the minimum flow

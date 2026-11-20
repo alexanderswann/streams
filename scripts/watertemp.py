@@ -13,7 +13,13 @@ leave-one-out error among the sets whose coefficients have the physical sign:
   log_area  drainage area (NHDPlus V2): in the East a small brook stays near groundwater temperature and a river
             warms in the sun and the mill ponds, whatever the air does
 In the LA ranges air + elevation wins (the mountains span 2,000 m); in northeastern Connecticut, where the air only
-spans 2 C, it is elevation + drainage area. A fit that can't beat "every creek is the average" by 10 % is not used
+spans 2 C, it is drainage area.
+Sites are weighted by how well their median is known (since 2026-11-20): a site's median of n readings misses its
+typical temperature by about sigma_w^2 / n (sigma_w: the spread of single readings around their site's median, robust,
+over sites with 3+ readings, 1.3-3.9 C by area), and the predictors miss even a well-measured site by tau^2 (the first,
+unweighted fit's residual variance less the mean of those sampling variances). Weight 1 / (tau^2 + sigma_w^2 / n): a
+single grab sample counts for less than a logger's summer of readings. The skill test and the area mean are weighted the
+same way. It gave Jackson's fit its skill (leave-one-out 0.887 of the spread, 0.906 unweighted). A fit that can't beat "every creek is the average" by 10 % is not used
 for single reaches (SKILL); every creek then takes that average, the measured sites' mean (area_mean(), used by
 scoring.py), so a cold area stays cold rather than unknown. (Jackson since its 2026-11-19 expansion: 145 sites, mean
 13.4 C, the fit 3.37 C off against a 3.72 C spread.)
@@ -130,7 +136,15 @@ def measured_sites():
     pts = gpd.GeoDataFrame(site, geometry=gpd.points_from_xy(site.lon, site.lat), crs=4326).to_crs(CRS)
     pts = pts[pts.intersects(area.union_all())].copy()
     pts["air"], pts["elev"] = air_at(pts), elev_at(pts)
+    # the spread of single readings around their site's median (robust, sites with 3+ readings): fit()'s weights
+    global SIGMA_W2
+    dev = summer.v - summer.groupby("key").v.transform("median")
+    many = summer.groupby("key").v.transform("size") >= 3
+    SIGMA_W2 = float((1.4826 * np.median(np.abs(dev[many]))) ** 2) if many.any() else float("nan")
     return pts
+
+
+SIGMA_W2 = float("nan")
 
 
 # predictors a fit may use, with the sign physics allows: warmer air -> warmer water, higher -> cooler,
@@ -158,9 +172,16 @@ def _cols(air, elev, area):
             "log_area": np.log10(np.clip(np.asarray(area, float), 0.5, None))}
 
 
-def loo_rmse(X, y):
-    err = [y[i] - X[i] @ np.linalg.lstsq(np.delete(X, i, 0), np.delete(y, i), rcond=None)[0] for i in range(len(y))]
-    return float(np.sqrt(np.mean(np.square(err))))
+def wls(X, y, w):
+    """Weighted least squares."""
+    s_ = np.sqrt(w)
+    return np.linalg.lstsq(X * s_[:, None], y * s_, rcond=None)[0]
+
+
+def loo_rmse(X, y, w=None):
+    w = np.ones(len(y)) if w is None else w
+    err = np.array([y[i] - X[i] @ wls(np.delete(X, i, 0), np.delete(y, i), np.delete(w, i)) for i in range(len(y))])
+    return float(np.sqrt(np.sum(w * err * err) / np.sum(w)))
 
 
 def _best(d):
@@ -178,13 +199,14 @@ def _best(d):
 def _pick(d, sets=None):
     c = _cols(d.air, d.elev, d.da_km2)
     y, out = d.w.values, []
+    w = d.wt.values if "wt" in d else np.ones(len(d))
     for terms in sets or SETS:
         if any(np.isnan(c[t]).any() for t in terms):
             continue
         X = np.c_[np.ones(len(d))] if not terms else np.c_[np.ones(len(d)), np.column_stack([c[t] for t in terms])]
-        coef = np.linalg.lstsq(X, y, rcond=None)[0]
+        coef = wls(X, y, w)
         if all(np.sign(coef[i + 1]) == TERMS[t] for i, t in enumerate(terms)):
-            out.append((terms, coef, loo_rmse(X, y)))
+            out.append((terms, coef, loo_rmse(X, y, w)))
     if not out:
         return None
     low = min(o[2] for o in out)
@@ -201,6 +223,16 @@ def fit(write=True):
     d = d[d.w <= GEOTHERMAL_C]
     if len(d) < MIN_SITES:
         raise SystemExit(f"{AREA}: only {len(d)} measured sites (need {MIN_SITES}); no water-temperature fit written")
+    # weights: tau^2 from the unweighted first fit, then each site 1 / (tau^2 + sigma_w^2 / n)
+    d = d.assign(wt=1.0)
+    first, tau2 = _best(d), 0.1
+    if first is not None and np.isfinite(SIGMA_W2):
+        terms, coef, _ = first
+        dd = d[d.da_km2.notna()] if "log_area" in terms else d
+        c = _cols(dd.air, dd.elev, dd.da_km2)
+        r = dd.w.values - (coef[0] + sum(coef[i + 1] * c[t] for i, t in enumerate(terms)))
+        tau2 = max(float(np.var(r)) - float(np.mean(SIGMA_W2 / dd.n.values)), 0.1)
+        d["wt"] = 1 / (tau2 + SIGMA_W2 / d.n.values.astype(float))
     first = _best(d)
     out = d.iloc[:0]
     if first is not None:          # one pass of outlier removal: a site far off the first fit is a bad record
@@ -215,10 +247,13 @@ def fit(write=True):
     best = _best(d)
     if best is not None and "log_area" in best[0]:
         d = d[d.da_km2.notna()]
-    sd = float(d.w.std(ddof=1))
-    rec = dict(area=AREA, sites=int(len(d)), sd_sites=round(sd, 2), mean_sites=round(float(d.w.mean()), 2),
+    w = d.wt.values
+    mu = float(np.sum(w * d.w.values) / np.sum(w))
+    sd = float(np.sqrt(np.sum(w * (d.w.values - mu) ** 2) / np.sum(w) * len(d) / (len(d) - 1)))
+    rec = dict(area=AREA, sites=int(len(d)), sd_sites=round(sd, 2), mean_sites=round(mu, 2),
                left_out_over_30c=int(len(hot)),
-               left_out_outliers=int(len(out)), fitted=dt.date.today().isoformat(), ok=False)
+               left_out_outliers=int(len(out)), fitted=dt.date.today().isoformat(), ok=False,
+               weights=dict(sigma_w=round(SIGMA_W2 ** 0.5, 2) if np.isfinite(SIGMA_W2) else None, tau=round(tau2 ** 0.5, 2)))
     if best is not None:
         terms, coef, rmse = best
         c = _cols(d.air, d.elev, d.da_km2)

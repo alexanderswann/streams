@@ -8,6 +8,8 @@ Surveys, by area (checked 2026-11-19):
   central_vt  Vermont ANR bathymetric soundings (BiobaseLakeBathymetry, compiled 2020-08-12): 2.4 million sonar
               points in 66 lakes, depth in feet below the water level of the survey. 15 lakes in the area. Each lake's
               points are gridded (5 m, linear, the shore at 0) into contours, its mean depth and its deepest sounding.
+  se_pa       DCNR's state park lake depth bands (PA Geological Survey maps: Marsh Creek, Jan 2005; Hopewell and Scotts Run,
+              Apr 2017), and USGS's sonar survey of Chambers Lake (Sept 2014: 150,779 soundings and a 1.6 ft grid)
   la          USGS multibeam survey of Little Rock Reservoir (8-9 Feb 2022, doi:10.5066/P9BQW35E): a 1 m grid of bed
               elevation. California DWR's multibeam surveys of Castaic, Pyramid and Silverwood are not public.
   jackson     none published (see lakedata.py)
@@ -18,7 +20,7 @@ import os, re, json, requests, numpy as np, pandas as pd, geopandas as gpd, shap
 from rasterio import features
 from rasterio.transform import from_origin
 from config import AREA, REGIONS, CRS, SHARED, SHARED_DERIVED
-from units import ft        # the depth notes the map popups show are in feet (units.py)
+from units import ft, acres  # the depth notes the map popups show are in feet and acres (units.py)
 from shapely.geometry import box
 
 FT = 0.3048
@@ -183,12 +185,113 @@ def usgs_little_rock(lk, bounds_ll):
         for r, geo in zip(rows, g):
             r["geometry"] = geo
     facts = {lid: dict(max_ft=dmax, mean_ft=float(np.nanmean(d)), src=src,
-                       note=f"{int(np.isfinite(d).sum()):,} m² of 1 m grid; depth below the lake's lidar water level "
-                            f"({level_ft:,.0f} ft NAVD88)")}
+                       note=f"{acres(np.isfinite(d).sum() / 1e4)} surveyed on a {ft(1, 1)} grid; depth "
+                            f"below the lake's lidar water level ({level_ft:,.0f} ft NAVD88)")}
     return rows, facts
 
 
-ADAPTERS = {"ne_ct": [ct_contours], "central_vt": [vt_soundings], "la": [usgs_little_rock]}
+DCNR_BANDS = "https://www.gis.dcnr.pa.gov/agsprod/rest/services/Parks/StateParkLakesBathymetryPolygons/MapServer/0"
+DCNR_SURVEY = {"Marsh Creek State Park": "DCNR / PA Geological Survey depth bands (survey of January 2005)",
+               "French Creek State Park": "DCNR / PA Geological Survey depth bands (survey of April 2017)"}
+
+
+def dcnr_bands(lk, bounds_ll):
+    """(contour rows, {lid: depth facts}) from DCNR's state park lake depth bands (the PA Geological Survey's water-depth
+    maps, feet below normal pool; Marsh Creek, Hopewell and Scotts Run lakes in SE Pennsylvania). A band of depth d
+    covers d to the next band, so the line at depth d is the edge of the bands of d and deeper. The deepest point each
+    map gives is typed in (lakedata.py); the bands' own deepest value is a lower bound."""
+    from geomatch import esri
+    g = esri(DCNR_BANDS, bounds_ll, "Depth,PARK_NAME")
+    if not len(g):
+        return [], {}
+    g = gpd.GeoDataFrame(g, crs=4326).to_crs(CRS)
+    g["Depth"] = pd.to_numeric(g.Depth, errors="coerce")
+    g = g[g.Depth.notna() & g.geometry.notna()].copy()
+    g["geometry"] = shapely.make_valid(g.geometry.values)
+    pts = g.assign(geometry=g.geometry.representative_point())
+    j = gpd.sjoin(pts, lk[["lid", "geometry"]].assign(geometry=lk.buffer(60)), predicate="within", how="inner")
+    rows, facts = [], {}
+    for lid, d in j.groupby("lid"):
+        bands = g.loc[d.index.unique()]
+        levels = sorted(float(v) for v in bands.Depth.unique() if v > 0)
+        if not levels:
+            continue
+        step = min(np.diff([0.0] + levels))
+        src = DCNR_SURVEY.get(bands.PARK_NAME.mode().iat[0], "DCNR / PA Geological Survey depth bands")
+        for lv in levels:
+            edge = shapely.simplify(shapely.union_all(bands.geometry[bands.Depth >= lv].values).boundary, 1.0)
+            for part in getattr(edge, "geoms", [edge]):
+                if part.length >= 20:
+                    rows.append(dict(lid=lid, depth_ft=lv, depth_m=round(lv * FT, 1), major=bool(lv % (2 * step) == 0),
+                                     src=src, geometry=part))
+        facts[lid] = dict(max_ft=max(levels), mean_ft=None, src=src,
+                          note=f"depth bands every {step:g} ft below normal pool (the deepest band from {max(levels):g} ft)")
+    return rows, facts
+
+
+CH_URL = "https://pubs.usgs.gov/sim/3346/sim3346_spatial_data.zip"
+CH_DIR = f"{SHARED}/bathymetry/chambers"
+CH_POOL_FT = 579.2      # Chambers Lake's normal pool, ft NAVD 88 (USGS SIM 3346); the survey's grid ends at it
+
+
+def usgs_chambers(lk, bounds_ll):
+    """(contour rows, {lid: depth facts}) from USGS's survey of Chambers Lake (Gyves 2015, SIM 3346, doi:10.3133/sim3346):
+    150,779 soundings by a 5-beam acoustic Doppler profiler with RTK GPS, 8-12 September 2014, and the bathymetric
+    surface made from them (1.6 ft grid, ft NAVD 88, PA State Plane South). Depth below normal pool (579.2 ft). The
+    grid agrees with the 3DEP lidar: along the lidar's shoreline it reads 576.6 ft where the lidar's water lay at 575.7."""
+    import rasterio, zipfile
+    tif, xyz = f"{CH_DIR}/SIM3346/sim3346_bathymetric_surface.tif", f"{CH_DIR}/SIM3346/sim3346_XYZ.csv"
+    if not os.path.exists(tif):
+        os.makedirs(CH_DIR, exist_ok=True)
+        zp = f"{CH_DIR}/sim3346_spatial_data.zip"
+        if not os.path.exists(zp):
+            r = requests.get(CH_URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+            r.raise_for_status()
+            with open(zp + ".part", "wb") as f:
+                f.write(r.content)
+            os.replace(zp + ".part", zp)
+        with zipfile.ZipFile(zp) as z_:
+            z_.extractall(CH_DIR, [m for m in z_.namelist() if m.startswith("SIM3346/sim3346_bathymetric_surface") or m.endswith("_XYZ.csv")])
+    with rasterio.open(tif) as src_:
+        z = src_.read(1, masked=True).astype("float64").filled(np.nan)
+        T, gcrs = src_.transform, src_.crs
+    lkg = lk.to_crs(gcrs)
+    hit = lkg[lkg.intersects(shapely.box(*rasterio.transform.array_bounds(*z.shape, T)))]
+    if not len(hit):
+        print("  Chambers survey: no lake in its extent")
+        return [], {}
+    i = hit.geometry.area.idxmax()
+    lid = lk.lid.at[i]
+    d = np.clip(CH_POOL_FT - z, 0, None)                # the whole survey: the lake at normal pool
+    low = float(pd.read_csv(xyz, usecols=["Z"]).Z.min()) if os.path.exists(xyz) else float(np.nanmin(z))
+    dmax = CH_POOL_FT - low                               # the deepest sounding (the grid smooths it a little)
+    step = step_ft(dmax)
+    import contourpy
+    from scipy.ndimage import gaussian_filter
+    w = np.isfinite(d)
+    ds = gaussian_filter(np.where(w, d, 0.0), 2.0) / np.maximum(gaussian_filter(w.astype(float), 2.0), 1e-9)
+    gen = contourpy.contour_generator(z=np.where(w, ds, np.nan), name="serial")
+    src = "USGS sonar survey (Sept 2014)"
+    rows = []
+    for lv in np.arange(step, dmax, step):
+        for ln in gen.lines(lv):
+            if len(ln) >= 3:
+                xs, ys = rasterio.transform.xy(T, ln[:, 1], ln[:, 0])
+                geo = shapely.simplify(shapely.LineString(np.column_stack([xs, ys])), 4.0)     # feet
+                if geo.length >= 150:
+                    rows.append(dict(lid=lid, depth_ft=float(lv), depth_m=round(lv * FT, 1), major=bool(lv % (step * 2) == 0),
+                                     src=src, geometry=geo))
+    if rows:
+        g = gpd.GeoSeries([r["geometry"] for r in rows], crs=gcrs).to_crs(CRS)
+        for r, geo in zip(rows, g):
+            r["geometry"] = geo
+    facts = {lid: dict(max_ft=dmax, mean_ft=float(np.nanmean(d)), src=src,
+                       note=f"150,779 soundings (acoustic profiler, RTK GPS); depth below normal pool ({CH_POOL_FT:g} ft NAVD 88)")}
+    return rows, facts
+
+
+ADAPTERS = {"ne_ct": [ct_contours], "central_vt": [vt_soundings], "la": [usgs_little_rock],
+            "se_pa": [dcnr_bands, usgs_chambers]}
 
 
 def main():
@@ -226,8 +329,9 @@ def main():
         new = round(f["max_ft"] * FT, 1)
         old, old_src = lk.depth_max_m.iat[i], lk.depth_src.iat[i]
         note = f["note"]
+        same = isinstance(old_src, str) and old_src.split()[0] == f["src"].split()[0]   # e.g. DCNR's map and its bands
         if pd.notna(old) and old > new + 0.5:          # a deeper sounding already on record stays the maximum
-            note += f"; {ft(old)} by {old_src} is deeper"
+            note += "" if same else f"; {ft(old)} by {old_src} is deeper"
         else:
             if pd.notna(old) and isinstance(old_src, str):
                 note += f"; also {ft(old)} by {old_src}"

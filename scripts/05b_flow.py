@@ -25,6 +25,7 @@ Writes output/<region>/flow_streams.csv and flow_drops.csv:
 import os, shapely, numpy as np, pandas as pd, geopandas as gpd, rasterio
 from config import *
 from flowpath import CODES as D8
+from crossbox import dam_links
 from flowlib import (FLOW, DIVERSIONS, match_points, below_dam_comids, below_diversion_comids, gauge_summers, water_term,
                      FLOWING_CFS, reservoirs)
 
@@ -67,6 +68,7 @@ mid = s.geometry.interpolate(0.5, normalized=True)
 wb_ = reservoirs()
 wb_ = wb_.assign(geometry=shapely.make_valid(wb_.geometry.values))
 lake_name, lake_share = pd.Series(None, index=s.index, dtype=object), pd.Series(0.0, index=s.index)
+lake_of = pd.Series(-1, index=s.index)
 if len(wb_):
     j_ = gpd.sjoin(s[["geometry"]], wb_[["gnis_name", "geometry"]], predicate="intersects")
     if len(j_):
@@ -75,7 +77,18 @@ if len(wb_):
         j_ = j_.assign(share=share).sort_values("share", ascending=False)
         j_ = j_[~j_.index.duplicated()]
         lake_name[j_.index], lake_share[j_.index] = j_.gnis_name.fillna("unnamed reservoir").values, j_.share.values
+        lake_of[j_.index] = j_.index_right.values
 in_lake = (lake_share >= 0.5).values
+# Which of those lakes hold water: 03b_stitch.py ends paths at the outlet of every lake with 2+ ha of its outline at
+# one level in the DEM (a pit, fdir 254); one without (a marsh or meadow NHD maps as a pond, a dry basin) has none
+with rasterio.open(f"{DERIVED}/flowdir.tif") as src:
+    rr_, cc_ = np.nonzero(src.read(1) == 254)
+    xs_, ys_ = src.transform * (cc_ + 0.5, rr_ + 0.5)
+wet_lakes = set()
+if len(wb_) and len(rr_):
+    pits_ = gpd.GeoDataFrame(geometry=gpd.points_from_xy(xs_, ys_), crs=CRS)
+    wet_lakes = set(gpd.sjoin(pits_, wb_[["geometry"]], predicate="within").index_right.tolist())
+in_wet_lake = in_lake & lake_of.isin(wet_lakes).values
 v2_line = v2.drop_duplicates("comid").set_index("comid").geometry
 _lake_end = {}
 
@@ -104,34 +117,44 @@ class Walk:
     """A box's reaches and the D8 walk from each one's end to the next reach downstream, one reach at a time (so a
     box that a creek only runs on into costs just the reaches it passes)."""
 
-    def __init__(self, geoms, fdir, transform):
+    def __init__(self, geoms, fdir, transform, box=None):
         self.fdir, self.T, self.inv = fdir, transform, ~transform
         H, W = fdir.shape
+        # a lake's dead end and the cell below its outlet where its water goes on (crossbox.dam_links)
+        self.dams = {int(o): int(r_) * W + int(c_) for o, (r_, c_) in dam_links(box).items()} if box else {}
         cells, ids = [], []
         self.end, self.last = np.zeros(len(geoms), dtype=np.int64), np.zeros((len(geoms), 2))
         for i, g in enumerate(geoms):
             xy = np.asarray(g.coords)[:, :2]
             c, r = self.inv * (xy[:, 0], xy[:, 1])
-            idx = np.clip(r.astype(int), 0, H - 1) * W + np.clip(c.astype(int), 0, W - 1)
+            # a vertex is the top-left corner of its cell, +-3e-10 m after the trip through EPSG:4326: rounded, not
+            # truncated (truncation put about half of them one row or column off, 2026-11-20)
+            idx = np.clip(np.rint(r).astype(int), 0, H - 1) * W + np.clip(np.rint(c).astype(int), 0, W - 1)
             cells.append(idx[:-1])          # the last vertex is the confluence cell: it belongs to the next reach
             ids.append(np.full(len(idx) - 1, i))
             self.end[i], self.last[i] = idx[-1], xy[-1]
         cells, ids = np.concatenate(cells)[::-1], np.concatenate(ids)[::-1]
         self.cells, first = np.unique(cells, return_index=True)      # a cell two reaches share is the later one's
         self.ids = ids[first]
-        self.next_, self.own = {}, {}
+        self.next_, self.own, self.jumps, self._jumped = {}, {}, {}, False
 
     def walk(self, cell, skip=-1):
         """Down from `cell` to the first line cell of a reach other than `skip`, over up to 4 km of unmapped channel
         (drainage < 1 km2 gaps don't exist downstream): (reach, None); where the way stops first (a pit or flat, or
         the box's rim), (-1, that cell); (-1, None) past 4 km."""
         H, W = self.fdir.shape
+        seen = set()
         for _ in range(400):
             k = np.searchsorted(self.cells, cell)
             if k < len(self.cells) and self.cells[k] == cell and self.ids[k] != skip:
                 return int(self.ids[k]), None
             st = D8.get(int(self.fdir.flat[cell]))
             r, c = divmod(cell, W)
+            if st is None and cell in self.dams and cell not in seen:     # through the lake, on below its outlet
+                seen.add(cell)
+                cell = self.dams[cell]
+                self._jumped = True
+                continue
             if st is None or not (0 <= r + st[0] < H and 0 <= c + st[1] < W):
                 return -1, cell
             cell = (r + st[0]) * W + c + st[1]
@@ -139,7 +162,9 @@ class Walk:
 
     def next(self, i):
         if i not in self.next_:
+            self._jumped = False
             self.next_[i] = self.walk(int(self.end[i]), skip=i)
+            self.jumps[i] = self._jumped          # the way to the next reach went through a lake
         return self.next_[i]
 
     def onward(self, i=None, cell=None):
@@ -192,7 +217,7 @@ def walk_of(b):
     if b not in _WALK:
         g = gpd.read_file(f"{out_dir(b)}/streams_scored.gpkg")[["sid", "area_km2", "geometry"]].to_crs(CRS)
         with rasterio.open(f"{derived_dir(b)}/flowdir.tif") as src:
-            w = Walk(g.geometry.values, src.read(1), src.transform)
+            w = Walk(g.geometry.values, src.read(1), src.transform, b)
         w.mid, w.area = g.geometry.interpolate(0.5, normalized=True), {False: g.area_km2, True: g.area_km2}
         p = f"{out_dir(b)}/area_streams.csv"
         t = pd.read_csv(p) if os.path.exists(p) else None
@@ -269,10 +294,12 @@ def beyond(k, edge):
 
 
 with rasterio.open(f"{DERIVED}/flowdir.tif") as src:
-    here = Walk(s.geometry.values, src.read(1), src.transform)
+    here = Walk(s.geometry.values, src.read(1), src.transform, REGION)
 here.mid, here.area = mid, {False: area_box, True: area_edge}
 _WALK[REGION] = here
 nxt = np.array([here.next(i)[0] for i in range(len(s))], dtype=np.int64)
+jump = np.array([here.jumps.get(i, False) for i in range(len(s))])
+VIA = {}            # per area kind: the reaches whose segment was found down a way that went through a lake
 
 
 def in_box(area, edge):
@@ -284,14 +311,17 @@ def in_box(area, edge):
     here.own[edge] = comid.copy()
     src_ = np.where(~np.isnan(comid), "model", None).astype(object)
     last = np.full(len(s), -1)
+    via = np.zeros(len(s), bool)
     for i in np.flatnonzero(np.isnan(comid)):
-        k, j, hops = i, nxt[i], 0
+        k, j, hops, lk_ = i, nxt[i], 0, bool(jump[i])
         while j >= 0 and np.isnan(comid[j]) and hops < 60:
-            k, j, hops = j, nxt[j], hops + 1
+            k, j, hops, lk_ = j, nxt[j], hops + 1, lk_ or bool(jump[j])
         if j >= 0 and not np.isnan(comid[j]):
             comid[i], src_[i] = comid[j], "scaled"
+            via[i] = lk_
         elif j < 0:
             last[i] = k
+    VIA[edge] = via
     return comid, src_, last
 
 
@@ -393,6 +423,7 @@ if (area_edge != area_box).any():
         ev_edge[c_] = ev_edge[c_].where(~keep, ev[c_])
     ev = ev_edge
     across = np.where(keep, ACROSS[False], ACROSS[True])
+    via_final = np.where(keep, VIA[False], VIA.get(True, VIA[False]))
 # A segment found in the box a creek runs on into may raise its water estimate, never lower it below what the map had
 # for it (NHD's class, as "no data"): as with the area from other boxes above, a side creek inheriting a segment further
 # down is no evidence that it dries. In ne_ct (2026-11-19) Smith and Skinner brooks, trout water NHD calls perennial,
@@ -407,6 +438,14 @@ if far.notna().any() or lower.any():
     print(f"creeks whose way leaves this box with no modelled reach below them here, scaled from one in the box they "
           f"run on into: {int(far.notna().sum())} ({', '.join(f'{b} {n}' for b, n in far.value_counts().items())}); "
           f"{int(lower.sum())} more keep NHD's class, which that segment would lower")
+# The same for a segment found down a way that went through a lake (on from the cell below its outlet): a creek running
+# into a pond inherits the river below it, which is no evidence that the creek itself dries (Partridge Brook and three
+# more brooks above ponds in north-east Connecticut, 2026-11-20). Possible trout water stays in.
+via_final = globals().get("via_final", VIA[False])
+lk2 = (pd.Series(via_final, index=s.index) & ev.flow_src.eq("scaled") & (eff(ev) < nhd - 1e-9)).values
+if lk2.any():
+    ev.loc[lk2] = evidence(box_df.assign(comid=np.nan, flow_src="none"), box_div).loc[lk2]
+print(f"creeks scaled from a segment found through a lake that keep NHD's class, which it would lower: {int(lk2.sum())}")
 for b in sorted(STALE):
     print(f"NOTE: {out_dir(b)}/area_streams.csv doesn't list {b}'s current reaches, so creeks running on into {b} were "
           f"matched there on that box's own drainage areas: run 05b_flow.py for {REGION} again after 05c_drainages.py "
@@ -418,7 +457,11 @@ for b in sorted(STALE):
 # water can lie far from NHDPlus's line, so no segment of its own matches it. The test the model segments get
 # (flowlib.below_dam_comids: half the length inside the water) now makes such a reach "reservoir" too. A reach
 # matched to a segment of its own keeps that segment's evidence.
-lk_ = ev.flow_src.fillna("none").ne("model").values & in_lake
+# ... and a reach lying in a lake that holds water is a reservoir reach whatever it matched: one matched to a
+# segment of its own outside the water (the creek's line above the lake) read as that creek (a reach all inside
+# String Lake scored 100, Jackson Lake's 73-76; 404 such reaches over the 12 areas, 2026-11-20). One in a lake with
+# no level water keeps its own evidence: water runs through it.
+lk_ = (ev.flow_src.fillna("none").ne("model").values & in_lake) | in_wet_lake
 if lk_.any():
     ev.loc[lk_, "below_dam"] = "in:" + lake_name[lk_]
     ev.loc[lk_, "water"], ev.loc[lk_, "water_class"] = 0.3, "reservoir"

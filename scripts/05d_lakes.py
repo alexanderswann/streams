@@ -36,8 +36,12 @@ from units import ft        # the notes the map popups show are in feet (units.p
 # Areas with lakes, and the size from which an unlisted pond is kept. An area goes into BUILT once its lakes have been
 # checked, because any build of it (run_mid.sh) then puts them on its map. A PLANNED area can be built into a file of
 # one's choosing to check it first: LAKES_OUT=/some/where/lakes.gpkg AREA=<area> 05d_lakes.py
-BUILT = {"jackson": 0.5, "ne_ct": 1.0, "central_vt": 1.0, "lexington_va": 0.5, "n_georgia": 2.0, "la": 1.0}
-PLANNED = {}   # North Georgia: 1,835 farm ponds of 0.5-2 ha
+BUILT = {"jackson": 0.5, "ne_ct": 1.0, "central_vt": 1.0, "lexington_va": 0.5, "n_georgia": 2.0, "la": 1.0,
+         "se_pa": 1.0, "smokies": 0.5, "adk_high_peaks": 1.0, "adk_northwest": 1.0, "adk_southwest": 1.0, "adk_southeast": 1.0}
+# North Georgia: 1,835 farm ponds of 0.5-2 ha. SE Pennsylvania: 450 suburban and farm ponds of 0.5-2 ha, few named. The
+# Smokies: mountains with few ponds (178 NHD lakes of 0.5 ha or more), as Lexington. The Adirondacks: natural ponds, as
+# central Vermont; 1 ha keeps the small brook trout ponds (2.5 acres and up)
+PLANNED = {}
 if AREA not in BUILT and not (AREA in PLANNED and os.environ.get("LAKES_OUT")):
     print(f"lakes: not built for {AREA} yet (areas: {', '.join(sorted(BUILT))}); nothing to do")   # not an error
     raise SystemExit(0)
@@ -49,6 +53,7 @@ EV_MAX_UNCERT_M = 250    # ... unless its stated coordinate uncertainty is large
 DROP = r"Treatment|Sewage|Settling|Evaporat|Tailings|Cooling|Disposal|Filtration|Covered|Nonearthen"
 FTYPE = {390: "lake / pond", 436: "reservoir"}
 UA = {"User-Agent": "stream-analysis/0.1 (personal GIS project)"}
+THIS_YEAR = time.localtime().tm_year
 CACHE = f"{SHARED}/cache"
 OUT = os.environ.get("LAKES_OUT", f"{SHARED_DERIVED}/lakes.gpkg")    # LAKES_OUT: write elsewhere (to check first)
 os.makedirs(CACHE, exist_ok=True)
@@ -65,11 +70,34 @@ for hu in sorted({h for v in REGIONS.values() for h in v["hu4"]}):
                                "fcode", "fcode_description"])
     parts.append(g.to_crs(CRS))
 wb = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS).drop_duplicates("permanent_identifier")
+est = wb.geometry[wb.ftype.eq(493)]       # estuaries (for the river areas below)
 wb = wb[wb.ftype.isin(list(FTYPE)) & wb.intersects(U)]
 dropped = wb.fcode_description.fillna("").str.contains(DROP)
 print(f"NHD lakes / reservoirs touching the area: {len(wb)}; left out as treatment, settling or storage: "
       f"{int(dropped.sum())} ({', '.join(sorted(set(wb.fcode_description[dropped])))})")
+# kept aside: OpenStreetMap water they cover is not a lake NHD misses (step 3c). Without them, old NHD treatment ponds
+# imported into OpenStreetMap (FCode 43624, by the Delaware) and Philadelphia's concrete water basins came back as lakes
+wb_dropped = gpd.GeoSeries(shapely.make_valid(wb.geometry[dropped].force_2d().values), crs=CRS)
 wb = wb[~dropped].copy()
+# NHD's river and canal areas (NHDArea: stream / river, canal / ditch, complex channels) and estuaries. Level water that
+# runs on from a lake into one is a river at the lake's level, not the lake (a 2.3 ha pond by the Schuylkill took in
+# 7 ha of river); OpenStreetMap water inside one is a river (the tidal creeks by the Delaware, flattened at sea level)
+_rv = [est]
+for hu in sorted({h for v in REGIONS.values() for h in v["hu4"]}):
+    try:
+        _a = gpd.read_file(f"{NATIONAL}/NHD_H_{hu}_HU4_GPKG.gpkg", layer="NHDArea", bbox=(W, S, E, N), columns=["ftype"])
+        _rv.append(_a[_a.ftype.isin([460, 336, 537])].to_crs(CRS).geometry)
+    except Exception as ex:
+        print(f"  NHD areas of {hu} not read: {str(ex)[:80]}")
+RIV = gpd.GeoSeries(pd.concat(_rv, ignore_index=True), crs=CRS)
+RIV = gpd.GeoSeries(shapely.make_valid(RIV[RIV.notna() & ~RIV.is_empty].force_2d().values), crs=CRS)
+
+
+def river_m2(g):
+    """Square metres of g inside NHD's river, canal and estuary areas."""
+    if g is None or g.is_empty or not len(RIV):
+        return 0.0
+    return float(sum(g.intersection(RIV.iat[j]).area for j in RIV.sindex.query(g, predicate="intersects")))
 wb["geometry"] = shapely.make_valid(wb.geometry.force_2d().values)
 wb = wb.explode(index_parts=False)
 wb = wb[wb.geom_type == "Polygon"].reset_index(drop=True)
@@ -202,6 +230,112 @@ if has("wy_trout"):
     if bad:
         print(f"  names that differ (NHD / GNIS vs Game & Fish), {len(bad)}: " + "; ".join(f"{a} / {b}" for a, b in bad))
 
+# ---- 2b. other states' own lists of trout lakes, as outlines (lakesources.agency_lakes: NCWRC's Public Mountain Trout
+# Waters impoundments, PFBC's stocked lakes), with Wyoming's rules: a listed lake is kept whatever its size (Max Patch
+# Pond, 0.5 ha), joined to the NHD lake it overlaps most (half of the smaller), and a listed lake NHD has no lake for
+# keeps the agency's outline (Cheoah Reservoir, 240 ha, which NHD draws as river). Their classes and rules come with
+# the state's other lake facts (step 6c) ----
+import lakesources
+_al = lakesources.agency_lakes(AREA, tuple(boxes.buffer(3000).to_crs(4326).total_bounds))
+if len(_al):
+    _al = _al.to_crs(CRS)
+    _al["geometry"] = shapely.make_valid(_al.geometry.values)
+    _al = _al[_al.intersects(U)]
+    n_join, n_own = 0, 0
+    for r in _al.itertuples():
+        ov = [(lk.geometry.iat[c].intersection(r.geometry).area / min(lk.geometry.iat[c].area, r.geometry.area), c)
+              for c in lk.sindex.query(r.geometry, predicate="intersects")]
+        ov = [x for x in ov if x[0] >= 0.5]
+        if ov:
+            i = max(ov)[1]
+            if isinstance(lk.agency.iat[i], str):              # two listed parts of one lake: both names
+                lk.loc[i, ["agency_id", "agency_name"]] = [f"{lk.agency_id.iat[i]},{r.agency_id}",
+                                                            f"{lk.agency_name.iat[i]} / {r.agency_name}"]
+            else:
+                lk.loc[i, ["agency", "agency_id", "agency_name", "match"]] = [r.agency, r.agency_id, r.agency_name, "overlap"]
+            n_join += 1
+        else:
+            lk = pd.concat([lk, gpd.GeoDataFrame(dict(
+                nhd_id=[None], gnis_name=[None], ftype=["reservoir" if re.search(r"(?i)reservoir", r.agency_name) else "lake / pond"],
+                intermittent=[False], src_outline=[f"{r.agency} (no NHD lake)"], agency=[r.agency], agency_id=[r.agency_id],
+                agency_name=[r.agency_name], match=["own outline"], geometry=[r.geometry]), crs=CRS)], ignore_index=True)
+            n_own += 1
+            print(f"  {r.agency} lake with no NHD lake, its own outline kept: {r.agency_name} {r.geometry.area / 1e4:.1f} ha")
+    lk = gpd.GeoDataFrame(lk, geometry="geometry", crs=CRS)
+    print(f"the state's list of trout lakes: {len(_al)} in the area; joined to NHD lakes {n_join}, own outline {n_own}")
+
+# ---- 2c. New York's lake lists without outlines (lakesources.py, data.ny.gov): DEC's stocking list since 2011 (water
+# names by town; no coordinates) and its lake fishing list (points). A listed lake is kept whatever its size, as in 2b.
+# Each year's stocking and the fish DEC lists become lake records (lake_records.gpkg beside lakes.gpkg), which
+# maplakes.py reads with the state's other stocking and survey records ----
+lake_recs = []
+if AREA.startswith("adk_"):
+    TROUT_SP = r"(?i)trout|splake|salmon|steelhead|chinook|coho"
+    _bb = tuple(boxes.buffer(3000).to_crs(4326).total_bounds)
+    _ab = {"pd": "pond", "lk": "lake", "mt": "mount", "mtn": "mountain", "st": "saint", "res": "reservoir"}
+
+    def wkey(v):
+        """A water's name as a set of words, word order and abbreviations aside ("Lake Colby" is "Colby Lake")."""
+        return frozenset(_ab.get(x, x) for x in re.findall(r"[a-z0-9]+", (norm(v) or "").lower()))
+    lkw = [wkey(n) for n in lk.gnis_name]
+    _rp = lk.geometry.representative_point()
+
+    def mark(i, name, aid, how):
+        if not isinstance(lk.agency.iat[i], str):
+            lk.loc[i, ["agency", "agency_id", "agency_name", "match"]] = ["NYSDEC", aid, name, how]
+    st, towns = lakesources.ny_stocking(_bb)
+    if len(st):
+        towns = towns.to_crs(CRS)
+        tw_ = {(c, str(t).lower()): g for c, t, g in zip(towns.county, towns.town, towns.geometry)}
+        cty_ = {c: shapely.union_all(towns.geometry[towns.county == c].values) for c in set(towns.county)}
+        n_ok = n_amb = n_none = 0
+        for (cty, town, wname), g in st[st.waterbody.notna()].groupby(["county", "town", "waterbody"]):
+            k = wkey(wname)
+            tg = tw_.get((cty, str(town).strip().lower()))
+            cand = [i for i in lk.sindex.query(tg.buffer(300), predicate="intersects") if lkw[i] == k] if tg is not None else []
+            if len(cand) > 1:          # two of the name by the town: the one lying in it
+                inside = [i for i in cand if lk.geometry.iat[i].intersection(tg).area >= 0.5 * lk.geometry.iat[i].area]
+                cand = inside if len(inside) == 1 else cand
+            if not cand and cty in cty_:   # a village's or a misspelt town: the only one of the name in the county
+                cand = [i for i in lk.sindex.query(cty_[cty], predicate="intersects") if lkw[i] == k]
+            if len(cand) != 1:
+                n_amb += len(cand) > 1
+                n_none += not cand
+                continue
+            i = cand[0]
+            n_ok += 1
+            mark(i, wname, f"NYSDEC:{cty}:{town}:{wname}", "name and town")
+            num = lambda v: pd.to_numeric(v, errors="coerce")
+            for yr, gy in g.groupby("year"):
+                sp = gy.assign(n=num(gy.number), sz=num(gy.size_inches)).groupby("species").agg(n=("n", "sum"), sz=("sz", "median"))
+                txt = ", ".join(f"{s_.lower()} {int(r_.n):,}" + (f" ({r_.sz:.1f} in)" if pd.notna(r_.sz) else "")
+                                for s_, r_ in sp.iterrows())
+                lake_recs.append(dict(kind="NYSDEC stocking", water=wname, year=int(yr), lake=True, url=None,
+                                      trout=bool(re.search(TROUT_SP, " ".join(sp.index))),
+                                      label=f"stocked {yr}: {txt} (NYSDEC)", geometry=_rp.iat[i]))
+        print(f"New York's stocking list: {n_ok} waters found among the NHD lakes by name and town; {n_amb} names "
+              f"ambiguous, {n_none} not found (streams, and lakes off the map)")
+    gd = lakesources.ny_guide(_bb)
+    if len(gd):
+        gd = gd.to_crs(CRS)
+        n_g = 0
+        for r in gd.itertuples():
+            near = list(lk.sindex.query(r.geometry.buffer(1000), predicate="intersects"))
+            named = [i for i in near if lkw[i] == wkey(r.water)]
+            if not near:
+                continue
+            i = min(named or near, key=lambda i: lk.geometry.iat[i].distance(r.geometry))
+            if not named and lk.geometry.iat[i].distance(r.geometry) > 150:
+                continue
+            n_g += 1
+            mark(i, r.water, f"NYSDEC:list:{r.water}", "DEC lake fishing list")
+            sp = ", ".join(x.strip().lower().replace("ll salmon", "landlocked salmon")
+                           for x in str(r.fish_speci or "").split(" - ") if x.strip())
+            lake_recs.append(dict(kind="NYSDEC lake list", water=r.water, year=THIS_YEAR, lake=True, trout=bool(re.search(TROUT_SP, sp)),
+                                  label=f"DEC lake fishing list: {sp}" if sp else "on DEC's lake fishing list",
+                                  url=r.weblink if isinstance(r.weblink, str) else None, geometry=_rp.iat[i]))
+        print(f"DEC's lake fishing list: {len(gd)} waters in the area, {n_g} found among the NHD lakes")
+
 # A lake's name: the official GNIS name (NHD), else the agency's (it numbers unnamed lakes: "Granite Basin Lake 2").
 # The agency's name wins where GNIS names only a group ("Basin Lakes" for Two Island and Mirror lakes, "Toppings
 # Lakes") or the agency adds a qualifier to it ("Green Lake" -> "Lower Green Lake").
@@ -310,20 +444,36 @@ def lidar_one(g, ck, mine):
 
 
 def _lidar_one(g, ck, mine):
-    """(level, share, shoreline, runs off, work unit) for one outline; the window widens while the water runs off it."""
+    """(level, share, shoreline, runs off, work unit, surface stats, other levels, (m2 of river area outside the outline,
+    m2 of river area in all)) for one outline; the window widens while the water runs off it."""
     res = None
     for pad in (60, 240, 720):
         w = lakelidar.window(g, CRS, cat, pad, f"{L1}/{ck}_{pad}.tif")
-        if w is None:
-            return None
+        if w is None:      # no survey covers the wider window: the narrower one's result stands, its water running off
+            if res is None:
+                return None
+            break
         a, T, u = w
         bb = box(*g.buffer(pad).bounds)
+        # the other mapped lakes nearby, the ones touching this one too: where NHD splits a chain of lakes at a narrows
+        # (Spitfire Lake and Upper St. Regis, the Fish Creek Ponds), the lidar's water at the shared level would
+        # otherwise run on into the neighbour (Figure Eight Pond 5.6 times its size). One overlapping it by a fifth of
+        # the smaller is the same water (a small NHD pond inside a bigger OpenStreetMap one), not a neighbour
         others = [wb.geometry.iat[j] for j in wb.sindex.query(bb, predicate="intersects")
-                  if wb.permanent_identifier.iat[j] not in mine and not wb.geometry.iat[j].intersects(g)]
-        res = (*lakelidar.water(a, T, g, others), u, lakelidar.surface_stats(a, T, g))
+                  if wb.permanent_identifier.iat[j] not in mine
+                  and not wb.geometry.iat[j].intersection(g).area > 0.2 * min(wb.geometry.iat[j].area, g.area)]
+        lev_, share_, poly_, edge_, steps_ = lakelidar.water(a, T, g, others)
+        res = (lev_, share_, poly_, edge_, u, lakelidar.surface_stats(a, T, g), steps_)
         if not res[3]:
             break
-    return res
+    poly_ = res[2]
+    riv = (river_m2(poly_.difference(g.buffer(10))), river_m2(poly_)) if poly_ is not None else (0.0, 0.0)
+    return (*res, riv)
+
+
+def runs_into_river(poly, riv):
+    """The lidar's water at the lake's level runs on into NHD river area: more than 2,000 m2 and a tenth of it."""
+    return poly is not None and riv > max(2000.0, 0.1 * poly.area)
 
 
 def flown(u):
@@ -368,12 +518,13 @@ for c in ("lidar_survey", "lidar_dates", "lidar_ql", "lidar_kind", "water_note",
 for c in ("water_level_m", "lidar_share", "lidar_ha", "lidar_iou", "normal_m"):
     lk[c] = np.nan
 lk["normal_src"] = None     # a lake the lidar caught low: its normal level, for its elevation (set below)
-n_used = 0
+n_used = n_steps = 0
 for i, res in got.items():
     if res is None:
         lk.loc[i, "water_note"] = "no 3 ft lidar covers it"
         continue
-    lev, share, poly, edge, u, (med, w15, iqr, shore) = res
+    lev, share, poly, edge, u, (med, w15, iqr, shore), steps, (riv_out, _riv_all) = res
+    edge = edge or runs_into_river(poly, riv_out)     # level water that runs on into a river is the river's
     lk.loc[i, ["lidar_survey", "lidar_dates", "lidar_ql", "lidar_share"]] = [
         u["workunit"], f"{u['start']} to {u['end']}", u["ql"], round(share, 2) if np.isfinite(share) else np.nan]
     if not np.isfinite(lev) or poly is None:
@@ -436,11 +587,24 @@ for i, res in got.items():
         continue
     lk.loc[i, "geometry"] = poly
     lk.loc[i, "src_outline"] = f"lidar 3 ft, {u['workunit']} ({flown(u)})"    # maplakes.py reads the "lidar" start
+    if steps:   # water flattened at more than one level (lakelidar.water): the level shown is the commonest one
+        n_steps += 1
+        # (Toccoa Reservoir: two pools, 372.80 and 376.23 m, on either side of a causeway 2 m above the upper one.)
+        # Said in the popup where the levels lie 0.3 ft or more apart, as a range where there are more than two
+        _f = sorted({round(x * 3.28084, 1) for x in [lev] + [s_ for s_, _ in steps]})
+        if _f[-1] - _f[0] >= 0.3:
+            _nd = 1 if _f[-1] - _f[0] < 3 else 0
+            _t = (" and ".join(f"{v:,.{_nd}f} ft" for v in _f) if len(_f) == 2 else
+                  f"{len(_f)} levels from {_f[0]:,.{_nd}f} to {_f[-1]:,.{_nd}f} ft")
+            lk.loc[i, "outline_note"] = f"the lidar flattened its water at {_t} (pools at different levels, or flown on more than one day)"
     n_used += 1
 lk = gpd.GeoDataFrame(lk, geometry="geometry", crs=CRS)
 r_ = lk.lidar_ha / lk.nhd_ha
-print(f"1 m lidar: {len(got)} lakes tried, level water at {lk.water_level_m.notna().sum()}, shoreline used for {n_used}; "
-      f"surveys: {lk.lidar_survey.value_counts().to_dict()}")
+print(f"1 m lidar: {len(got)} lakes tried, level water at {lk.water_level_m.notna().sum()}, shoreline used for {n_used} "
+      f"({n_steps} flattened at more than one level); surveys: {lk.lidar_survey.value_counts().to_dict()}")
+print("  water at the lake's level running on into NHD river area (NHD outline kept): " + "; ".join(
+    f"{lk.name.iat[i] or 'unnamed'} {r_[7][0] / 1e4:.1f} ha" for i, r_ in got.items()
+    if r_ is not None and runs_into_river(r_[2], r_[7][0]) and not r_[3]))
 print(f"  lidar vs NHD outline: median overlap (IoU) {lk.lidar_iou.median():.2f}; area ratio lidar/NHD "
       f"p10 {r_.quantile(0.1):.2f}, median {r_.median():.2f}, p90 {r_.quantile(0.9):.2f}")
 for i in np.where((r_ > 1.5) | (r_ < 0.6))[0]:
@@ -473,25 +637,41 @@ osm_all = osm          # all of it, for names (3d)
 added = []
 if osm is not None and len(osm):
     osm = osm[osm.is_valid & (osm.area >= MIN_HA * 1e4) & osm.intersects(U)]
-    have = pd.concat([lk.geometry, wb.geometry], ignore_index=True)
+    # NHD's dropped treatment and storage ponds count as covered too: they are in NHD, as what they are
+    have = pd.concat([lk.geometry, wb.geometry, wb_dropped], ignore_index=True)
     hv = gpd.GeoDataFrame(geometry=have, crs=CRS)
     cov = [sum(hv.geometry.iat[j].intersection(g).area for j in hv.sindex.query(g, predicate="intersects")) / g.area
            for g in osm.geometry]
     cand = osm[np.asarray(cov) < 0.2]
+    import glob
+
+    def osm_key(g):
+        """The window cache's name: the outline's centroid (caches made before 2026-11-20 also carry its place in the
+        candidate list, which moves when the list changes: those are found by their centroid)."""
+        x, y = int(g.centroid.x), int(g.centroid.y)
+        old = glob.glob(f"{L1}/osm_*_{x}_{y}_60.tif")
+        return os.path.basename(old[0])[:-len("_60.tif")] if old else f"osm_{x}_{y}"
     for k, (t, g) in enumerate(zip(cand.drop(columns="geometry").to_dict("records"), cand.geometry)):
-        res = lidar_one(g, f"osm_{k}_{int(g.centroid.x)}_{int(g.centroid.y)}", set())
+        res = lidar_one(g, osm_key(g), set())
         ok = res is not None and np.isfinite(res[0]) and res[2] is not None and not res[3] and res[2].area >= MIN_HA * 1e4
+        nm_ = t.get("name").strip() if isinstance(t.get("name"), str) and t.get("name").strip() else None  # NaN: no name
+        why = "no level lidar water, left out"
+        # water NHD maps as a river, canal or estuary (or that runs on into one at its level) isn't a lake NHD misses:
+        # the tidal creeks by the Delaware, flattened at sea level. OpenStreetMap's reservoirs stay (Crum Creek
+        # Reservoir, an impoundment NHD draws as river)
+        resv = t.get("water") == "reservoir" or t.get("landuse") == "reservoir"
+        if ok and not resv and (runs_into_river(res[2], res[7][1]) or river_m2(g) > max(2000.0, 0.1 * g.area)):
+            ok, why = False, "NHD maps it as river, canal or estuary, left out"
         if ok:   # a lake already in the list (or added from another OSM piece of the same pond) isn't added again
             taken = [x["geometry"] for x in added] + [lk.geometry.iat[j] for j in lk.sindex.query(res[2], predicate="intersects")]
             if sum(res[2].intersection(t_).area for t_ in taken) > 0.3 * res[2].area:
                 print(f"  (the same water as a lake already in the list: skipped)")
                 ok = False
-        print(f"  OpenStreetMap water missing from NHD: {t.get('name') or 'unnamed'} {g.area / 1e4:.1f} ha -> "
-              + (f"level water {res[0]:.2f} m on {res[1]:.0%}, kept ({res[2].area / 1e4:.2f} ha)" if ok else
-                 "no level lidar water, left out"))
+        print(f"  OpenStreetMap water missing from NHD: {nm_ or 'unnamed'} {g.area / 1e4:.1f} ha -> "
+              + (f"level water {res[0]:.2f} m on {res[1]:.0%}, kept ({res[2].area / 1e4:.2f} ha)" if ok else why))
         if ok:
             u = res[4]
-            added.append(dict(gnis_name=None, osm_id=t.get("osm_id"), name=t.get("name"), name_src="OpenStreetMap" if t.get("name") else None,
+            added.append(dict(gnis_name=None, osm_id=t.get("osm_id"), name=nm_, name_src="OpenStreetMap" if nm_ else None,
                               ftype="reservoir" if t.get("water") == "reservoir" or t.get("landuse") == "reservoir" else "lake / pond",
                               intermittent=t.get("intermittent") == "yes", src_outline=f"lidar 3 ft, {u['workunit']} ({flown(u)})",
                               outline_note="not in NHD: found in OpenStreetMap, confirmed by lidar",
@@ -518,7 +698,7 @@ lk["regulated"] = lk.regulated.astype(bool)
 # half of each other, and no lake within 2 km has that name already (Lexington: OpenStreetMap and GNIS put "Walace
 # Lake" on two ponds 700 m apart on Poor Creek). Virginia's public fishing lake layer is not used for names: it calls
 # the 189-acre Mill Creek Reservoir "Mill Reservoir" (DWR's own page and OpenStreetMap: Mill Creek Reservoir) ----
-n_osm = []
+n_osm, ww = [], []
 if osm_all is not None and "name" in osm_all:
     on = osm_all[osm_all.is_valid & osm_all["name"].notna()].reset_index(drop=True)
     for i in np.flatnonzero(lk["name"].isna().values):
@@ -531,6 +711,11 @@ if osm_all is not None and "name" in osm_all:
         if len(hits) != 1:
             continue
         nm = hits.pop()
+        # OpenStreetMap names it a wastewater works: a treatment pond NHD typed as a lake, left out as NHD's own are
+        # (SE Pennsylvania's "WWT": a lined lagoon with a ring road and an inflow)
+        if re.search(r"(?i)\b(?:WWTP?|waste ?water|sewage)\b", nm):
+            ww.append(i)
+            continue
         near_ = lk["name"].iloc[lk.sindex.query(g.buffer(2000), predicate="intersects")]
         # a name ending in "Dam" is the dam's, put on its pond (Cyril Dam, Wells Brook Dam in Connecticut): left out
         if not nm or re.search(r"\bDam$", nm) or near_.fillna("").str.lower().eq(nm.lower()).any():
@@ -539,10 +724,23 @@ if osm_all is not None and "name" in osm_all:
         lk.iloc[i, lk.columns.get_loc("name_src")] = "OpenStreetMap"
         n_osm.append(nm)
 print(f"named from OpenStreetMap where NHD has no name: {len(n_osm)}" + (f" ({', '.join(n_osm[:12])}{', …' if len(n_osm) > 12 else ''})" if n_osm else ""))
+if ww:
+    print(f"left out as wastewater ponds (OpenStreetMap's name): {len(ww)} ({', '.join(f'{lk.ha.iat[i]:.1f} ha' for i in ww)})")
+    lk = lk.drop(index=lk.index[ww]).reset_index(drop=True)
+    nhd_g = nhd_g.drop(index=nhd_g.index[ww]).reset_index(drop=True)
 
 # final size, shore and elevation: the lidar's where it measured the lake
 lk["ha"] = (lk.area / 1e4).round(2)
 lk["in_area"] = (lk.geometry.intersection(U).area / lk.area).round(3)
+# a lake that only touches the map's edge (mostly outside it, with less than the area's smallest lake size inside) is
+# not on the map: Fort Loudoun Lake (5,579 ha) touches the Smokies' Tellico box along its edge, Pascoag Reservoir
+# (137 ha, Rhode Island) NE Connecticut's
+_out = np.flatnonzero(((lk.in_area < 0.5) & (lk.ha * lk.in_area < MIN_HA)).values)
+if len(_out):
+    _nm = [f"{lk.name.iat[i] if isinstance(lk.name.iat[i], str) else 'unnamed'} {lk.ha.iat[i]:.1f} ha" for i in _out]
+    print(f"left out as lying outside the map (touching its edge): {len(_out)} ({'; '.join(_nm[:12])})")
+    lk = lk.drop(index=lk.index[_out]).reset_index(drop=True)
+    nhd_g = nhd_g.drop(index=nhd_g.index[_out]).reset_index(drop=True)
 lk["shore_km"] = (lk.geometry.boundary.length / 1000).round(2)
 lk["islands"] = [sum(len(p.interiors) for p in getattr(g, "geoms", [g])) for g in lk.geometry]
 lk["elev_src"] = np.where(lk.lidar_kind.eq("flattened"), "lidar water level", np.where(lk.water_level_m.notna(), "lidar water surface (not flattened)", np.where(lk.elev_m.notna(), "10 m DEM", None)))
@@ -735,7 +933,10 @@ meas, miss = {}, []
 # EPA National Lakes Assessment soundings (lakesources.py), matched to the lake they were taken in; on a reservoir
 # the index site is mid-lake, a lower bound
 import lakesources
-_nla = lakesources.nla_depths(tuple(boxes.buffer(3000).to_crs(4326).total_bounds)).to_crs(CRS)
+# over the lakes' whole extent: a lake reaching past the map is sounded where it is deep (Lake Champlain's site in the
+# southeast Adirondack box is its shallow south arm, 19 ft; 97 m further north)
+_nla = lakesources.nla_depths(tuple(gpd.GeoSeries([box(*boxes.total_bounds), box(*lk.total_bounds)], crs=CRS)
+                                    .to_crs(4326).total_bounds)).to_crs(CRS)
 nla_recs = []
 for r in _nla.itertuples():
     j = [i for i in lk.sindex.query(r.geometry.buffer(100), predicate="intersects")]
@@ -778,7 +979,8 @@ for sv in lakedata.SURVEYS.get(AREA, []):
     if i is None:
         miss.append(sv["lake"] + " (survey)")
         continue
-    lk.loc[i, "survey"] = f"Gill-net survey {sv['date']} ({sv['src'].replace(' gill nets', '')}): " + (sv["fish"] or "no fish caught")
+    lk.loc[i, "survey"] = (f"{sv.get('gear', 'Gill-net')} survey {sv['date']} ({re.sub(' (?:gill|trap) nets$', '', sv['src'])}): "
+                           + (sv["fish"] or "no fish caught"))
     gf = lk.game_fish.iat[i]
     if sv["fish"] is None and isinstance(gf, str) and gf != "None":
         lk.loc[i, "conflict"] = "; ".join(x for x in (lk.conflict.iat[i], f"the {sv['date'][:4]} gill-net survey caught no fish; "
@@ -881,8 +1083,25 @@ for c in cols:
     if c not in lk:
         lk[c] = None
 lk = lk[cols]
+# a lake reaching far past the map is stored to 2 km past its boxes (its size, shore, depth and facts stay the whole
+# lake's): Lake Champlain's outline runs to Canada, 30,000 points on two maps of which 4% lie in the boxes. 08_hike's
+# grid is the boxes, so its routes don't change
+_far = lk.in_area < 0.999
+if _far.any():
+    _clip = U.buffer(2000)
+    lk.loc[_far, "geometry"] = [shapely.make_valid(g.intersection(_clip)) for g in lk.geometry[_far]]
+    lk["geometry"] = [shapely.MultiPolygon([p for q in g.geoms for p in getattr(q, "geoms", [q]) if p.geom_type == "Polygon"])
+                      if g.geom_type == "GeometryCollection" else g for g in lk.geometry]
+    print(f"stored to 2 km past the map: {int(_far.sum())} lakes that reach past it")
 lk.to_file(OUT + ".tmp", driver="GPKG")
 os.replace(OUT + ".tmp", OUT)
+RECS = os.path.join(os.path.dirname(OUT), "lake_records.gpkg")      # New York's stocking and lake list (step 2c)
+if lake_recs:
+    gpd.GeoDataFrame(lake_recs, geometry="geometry", crs=CRS).to_file(RECS + ".tmp", driver="GPKG")
+    os.replace(RECS + ".tmp", RECS)
+    print(f"wrote {RECS}: {len(lake_recs)} lake records")
+elif os.path.exists(RECS):
+    os.remove(RECS)
 print(f"wrote {OUT}: {len(lk)} lakes, {lk.ha.sum():,.0f} ha; agency-listed {lk.agency.notna().sum()} "
       f"(with game fish {(lk.game_fish.notna() & (lk.game_fish != 'None')).sum()}, none {(lk.game_fish == 'None').sum()}); "
       f"surveyed depth {lk.depth_max_m.notna().sum()}")

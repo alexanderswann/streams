@@ -31,6 +31,7 @@ WU = "https://index.nationalmap.gov/arcgis/rest/services/3DEPElevationIndex/MapS
 UA = {"User-Agent": "stream-analysis/0.1 (personal GIS project)"}
 FLAT_TOL = 0.005      # m: a hydro-flattened surface is one value; this only absorbs float rounding
 MIN_PART_M2 = 25      # flattened specks and pinholes smaller than this are dropped (a few lidar cells)
+MIN_STEP_M2 = 200     # a flat patch at another level this big (1 m cells), mostly inside the outline, is the same lake
 NODATA = -9999.0
 
 
@@ -163,14 +164,15 @@ def _clean(poly):
 
 
 def water(a, T, lake, others=()):
-    """(level, share, shoreline polygon or None, runs off the window) from a hydro-flattened DEM window."""
+    """(level, share, shoreline polygon or None, runs off the window, other levels) from a hydro-flattened DEM window.
+    Other levels: [(level, m2)] of the flat patches at other levels taken into the shoreline (see below)."""
     valid = a != NODATA
     core = lake.buffer(-3)
     core = core if not core.is_empty and core.area >= 0.3 * lake.area else lake
     inner = features.geometry_mask([core], out_shape=a.shape, transform=T, invert=True)
     v = a[inner & valid]
     if len(v) < 20:
-        return np.nan, np.nan, None, False
+        return np.nan, np.nan, None, False, []
     vals, cnt = np.unique(np.round(v, 3), return_counts=True)
     level, share = float(vals[np.argmax(cnt)]), float(cnt.max() / len(v))
     if share < 0.5:
@@ -179,29 +181,63 @@ def water(a, T, lake, others=()):
         zone = features.geometry_mask([lake.buffer(30)], out_shape=a.shape, transform=T, invert=True)
         zv, zc = np.unique(np.round(a[zone & valid], 3), return_counts=True)
         if not len(zc) or zc.max() < 200:
-            return np.nan, share, None, False
+            return np.nan, share, None, False, []
         lev2 = float(zv[np.argmax(zc)])
         flat2 = valid & (np.abs(a - lev2) <= FLAT_TOL)
         lab2, _ = ndimage.label(flat2, structure=np.ones((3, 3), bool))
+        # flattened water is one patch of 200 m2 or more; a level surface the survey didn't flatten has its commonest
+        # value in scattered cells (a 2.7 ha Adirondack pond's specks made a 0.08 ha "shoreline")
         ids2 = np.unique(lab2[zone & flat2])
-        reg2 = np.isin(lab2, ids2[ids2 > 0])
+        ids2 = ids2[ids2 > 0]
+        ids2 = ids2[np.bincount(lab2.ravel())[ids2] >= MIN_STEP_M2]
+        reg2 = np.isin(lab2, ids2)
         me = features.geometry_mask([lake], out_shape=a.shape, transform=T, invert=True)
         ov = int((reg2 & me).sum())
         if ov < 0.3 * min(me.sum(), reg2.sum()) or reg2.sum() < 0.3 * me.sum():
-            return np.nan, share, None, False      # no flattened water here: no measured level or shoreline
+            return np.nan, share, None, False, []  # no flattened water here: no measured level or shoreline
         level, share, inner = lev2, ov / max(int(me.sum()), 1), zone
     flat = valid & (np.abs(a - level) <= FLAT_TOL)
     lab, _ = ndimage.label(flat, structure=np.ones((3, 3), bool))
     ids = np.unique(lab[inner & flat])
     reg = np.isin(lab, ids[ids > 0])
+    # A lake flown on more than one day, or flattened in steps as a river is, lies flat at more than one level: Tugaloo
+    # Lake at 271.20 and 269.96 m, Seed Lake at 533.33 and 533.53 m, Toccoa Reservoir at 372.80 and 376.23 m (a straight
+    # edge across the water). With only the commonest level, half of each was left out. Flat patches at the other levels
+    # (200 m2 or more, at least half inside the outline) are the same water
+    me = features.geometry_mask([lake], out_shape=a.shape, transform=T, invert=True)
+    steps, seen = [], [level]
+    rest = a[me & valid & ~reg]
+    if len(rest):
+        lv_, c_ = np.unique(np.round(rest, 3), return_counts=True)
+        for k in np.argsort(-c_)[:20]:
+            if c_[k] < MIN_STEP_M2:
+                break
+            lv = float(lv_[k])
+            if any(abs(lv - x) <= FLAT_TOL for x in seen):
+                continue
+            seen.append(lv)
+            f2 = valid & (np.abs(a - lv) <= FLAT_TOL) & ~reg
+            l2, n2 = ndimage.label(f2, structure=np.ones((3, 3), bool))
+            if not n2:
+                continue
+            size = np.bincount(l2.ravel(), minlength=n2 + 1)
+            inside = np.bincount(l2[me].ravel(), minlength=n2 + 1)
+            take = np.flatnonzero((size >= MIN_STEP_M2) & (inside >= 0.5 * size))
+            take = take[take > 0]
+            if len(take):
+                add = np.isin(l2, take)
+                reg |= add
+                steps.append((round(lv, 2), int(add.sum())))
+    if steps:   # where two levels meet along a tile's edge, a seam a cell or two wide (Unicoi Lake) is water too; a
+        # causeway between two pools (Toccoa Reservoir's, 13 m) is not
+        reg |= ndimage.binary_closing(reg, structure=np.ones((3, 3), bool)) & me
     if len(others):   # another mapped lake joined to this one at the same level (String and Leigh): nearer outline
-        me = features.geometry_mask([lake], out_shape=a.shape, transform=T, invert=True)
         ot = features.geometry_mask(list(others), out_shape=a.shape, transform=T, invert=True)
         if ot.any() and (reg & ot).any():
             reg &= ndimage.distance_transform_edt(~me) <= ndimage.distance_transform_edt(~ot)
     edge = bool(reg[0].any() or reg[-1].any() or reg[:, 0].any() or reg[:, -1].any())
     polys = [shape(s) for s, val in features.shapes(reg.astype(np.uint8), mask=reg, transform=T, connectivity=8) if val == 1]
-    return level, share, (_clean(shapely.union_all(polys)) if polys else None), edge
+    return level, share, (_clean(shapely.union_all(polys)) if polys else None), edge, steps
 
 
 def surface_stats(a, T, lake):

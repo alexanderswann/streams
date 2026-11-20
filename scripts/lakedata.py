@@ -82,6 +82,31 @@ DEPTHS["lexington_va"] = [
              "https://dwr.virginia.gov/wp-content/uploads/Lake_A_Willis_Robertson.pdf"),
 ]
 
+# SE Pennsylvania (each read in its source, 2026-11-20). DCNR / PA Geological Survey water-depth maps of state park lakes:
+# the deepest point each plate gives, below normal pool (the depth bands themselves are drawn by lake_bathymetry.py)
+OFMI_MC = ("Behr & Moore 2015, Water depth of Marsh Creek Lake, Marsh Creek State Park, DCNR Open-File Miscellaneous "
+           "Investigation OFMI 15-18.0 (data collected January 2005 by USGS and PA Geological Survey; 5 ft contours; normal "
+           "pool 359.5 ft); https://maps.dcnr.pa.gov/publications/Default.aspx?id=842")
+OFMI_FC = ("Behr 2017, Water depth of Hopewell and Scotts Run lakes, French Creek State Park, DCNR OFMI 17-02.0 (data "
+           "collected April 18, 2017 by PA Geological Survey and Bureau of State Parks; 2 ft contours; normal pool 505 ft "
+           "(Hopewell), 592 ft (Scotts Run)); https://maps.dcnr.pa.gov/publications/Default.aspx?id=963")
+DEPTHS["se_pa"] = [
+    dict(lake="Marsh Creek Reservoir", max_m=round(78.5 * 0.3048, 1), mean_m=None, rank=1, date="2005-01",
+         method="depth survey (instrument not named), 5 ft contours", src="DCNR / PA Geological Survey depth map OFMI 15-18.0",
+         at=(-75.72439, 40.07016), note="deepest point on the survey's map, below normal pool (359.5 ft)", ref=OFMI_MC),
+    dict(lake="Hopewell Lake", max_m=round(20 * 0.3048, 1), mean_m=None, rank=1, date="2017-04-18",
+         method="depth survey (instrument not named), 2 ft contours", src="DCNR / PA Geological Survey depth map OFMI 17-02.0",
+         at=(-75.78302, 40.20198), note="deepest point on the survey's map, below normal pool (505 ft)", ref=OFMI_FC),
+    dict(lake="Scotts Run Lake", max_m=round(22 * 0.3048, 1), mean_m=None, rank=1, date="2017-04-18",
+         method="depth survey (instrument not named), 2 ft contours", src="DCNR / PA Geological Survey depth map OFMI 17-02.0",
+         at=(-75.79952, 40.21092), note="deepest point on the survey's map, below normal pool (592 ft)", ref=OFMI_FC),
+    # the agency's own figure, method not given: below EPA's sonar (rank 2), shown beside it
+    dict(lake="Struble Lake", max_m=round(19 * 0.3048, 1), mean_m=None, rank=4, date="2020", method="not stated",
+         src="PFBC biologist report ('approximately 19 feet')", at=(-75.86524, 40.11227),
+         ref="PFBC 2020 trap net survey of Struble Lake; https://www.pa.gov/content/dam/copapwp-pagov/en/fishandboat/"
+             "documents/fishing/where-to-fish/biologist-reports/6x03-22-strublelake.pdf"),
+]
+
 SURVEYS = {"jackson": [
     dict(lake=n, date=d, fish=f, at=(e, n_), src="Wyoming Game & Fish / NPS gill nets", ref=SG2005)
     for n, d, f, e, n_ in [
@@ -99,4 +124,12 @@ SURVEYS = {"jackson": [
         ("Mink Lake", "2003-10-02", None, 512550, 4850650), ("Pass Lake", "2003-09-05", None, 507450, 4832100),
         ("Ramshead Lake", "2002-09-11", None, 519050, 4846880), ("Snowdrift Lake", "2002-08-29", None, 514000, 4839350),
         ("Surprise Lake", "2002-08-07", None, 518000, 4841550)]],
+    # PFBC's 2021 trap-net survey of Scotts Run Lake (Table 1 of the report; all trout of hatchery origin: PFBC stocks it
+    # spring and fall). gear: what the popup calls the survey (Gill-net where not given)
+    "se_pa": [dict(lake="Scotts Run Lake", date="2021", gear="Trap-net", at=(-75.79952, 40.21092), src="PFBC trap nets",
+                   fish="stocked trout: rainbow (17), brown (12) and brook (11), 8-16 in; with bluegill, pumpkinseed, "
+                        "chain pickerel, largemouth bass, yellow perch and bullheads",
+                   ref="PFBC 2021 trap net and night boat electrofishing survey of Scotts Run Lake; https://www.pa.gov/"
+                       "content/dam/copapwp-pagov/en/fishandboat/documents/fishing/where-to-fish/biologist-reports/"
+                       "6x2021scottsrunlake-trapnet.pdf")],
 }

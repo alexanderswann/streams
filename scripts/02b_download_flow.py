@@ -86,6 +86,8 @@ if not os.path.exists(v2_path) or not os.path.exists(v2_meta) or set(json.load(o
     json.dump(sorted(REGIONS), open(v2_meta, "w"))
 v2 = gpd.read_file(v2_path)
 print("NHDPlus V2 flowlines", len(v2))
+from flowlib import level_paths            # NHDPlus's main paths, for 05c_drainages.py's trunks (cached in FLOW)
+print("NHDPlus V2 main paths", len(level_paths()))
 
 # ---- Natural Flows (TNC; California) ----
 comids = sorted(v2.comid.astype(int))

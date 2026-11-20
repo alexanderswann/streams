@@ -851,18 +851,21 @@ if os.path.exists(f"{SHARED}/parking_trailheads.gpkg"):
     print("parking / trailheads", len(pk), "|", pk.kind.value_counts().to_dict())
 print("trails", len(t_feat), "ways |", t_feat.groupby("rk").size().to_dict(), "| labels per zoom band:",
       pd.Series([l["z"] for l in trail_labels], dtype=int).value_counts().sort_index().to_dict())
+# The layers both maps draw (streams, drainage fills and divides, the long trail, trails, roads, parking, their labels)
+# are written once, to map3d_data.js at the end of this script: this page loads that file and points the globals
+# map_drainages.js reads at its entries. They used to be inlined here as well, a second copy of the same data (231 MB
+# over the 12 areas, 2026-11-20); the published site has a 1 GB limit.
+SHARED_3D = {"STREAMS": "streams", "FORKS": "forks", "DIVIDES": "divides", "DRAINS": "drains", "LBL": "lbl",
+             "PCT": "pct", "PCT_LABEL_LINES": "pct_labels", "TRAILS": "trails", "TRAIL_LABEL_LINES": "trail_labels",
+             "ROADS": "roads", "PARKING": "parking"}
 m.get_root().header.add_child(folium.Element(
-    "<script>window.STREAMS=" + s_feat.to_json(na="null", drop_id=True) + ";\nwindow.FORKS=" + json.dumps(f_json)
-    + ";\nwindow.DIVIDES=" + json.dumps(d_json) + ";\nwindow.DRAINS=" + json.dumps(drains)
-    + ";\nwindow.LBL=" + json.dumps(LBL) + ";\nwindow.PCT=" + json.dumps(pct_json) + ";\nwindow.PCT_LABEL_LINES=" + json.dumps(pct_labels)
-    + ";\nwindow.TRAILS=" + t_feat.to_json(na="drop", drop_id=True) + ";\nwindow.TRAIL_LABEL_LINES="
-    + json.dumps(trail_labels) + ";\nwindow.ROADS=" + json.dumps(roads_json) + ";\nwindow.PARKING="
-    + json.dumps(park_json) + ";</script>"))
+    '<script src="map3d_data.js"></script>\n<script>(function (D) {'
+    + " ".join(f"window.{g} = D.{k};" for g, k in SHARED_3D.items()) + "})(window.MAP3D || {});</script>"))
 m.get_root().header.add_child(folium.Element(
     "<style>" + open(os.path.join(os.path.dirname(__file__), "map_style.css")).read() + "</style>\n<script>"
     + open(os.path.join(os.path.dirname(__file__), "map_drainages.js")).read() + "</script>"))
 
-# every layer is also exported for the 3D map (stream_map_3d.html reads map3d_data.js)
+# every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
        "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))
@@ -957,9 +960,17 @@ for r in known_falls.itertuples():
 kf.add_to(m)
 X3D["falls"] = gj(known_falls[["name", "src", "note", "kind", "html", "geometry"]].assign(name=known_falls.name.fillna("waterfall")))
 
+def r6(gs):
+    """Outlines from other sources (road closures, PAD-US, USFS land status, state trout waters, critical habitat,
+    wilderness, fire perimeters) come with 15 decimals. 6 (10 cm) draws them the same and takes a third of the space
+    (67 MB over the 12 areas, 2026-11-20); the rest of the map is written at 5 (set_precision 1e-5)."""
+    return gpd.GeoSeries(shapely.transform(np.asarray(gs.values), lambda c: np.round(c, 6)), index=gs.index, crs=gs.crs)
+
+
 if closures is not None and len(closures):
     fetched = closures.fetched.iloc[0]
-    c_show = closures.assign(**{c: closures[c].fillna("") for c in ("road", "from", "to", "reason", "start", "end", "when")})
+    c_show = closures.assign(**{c: closures[c].fillna("") for c in ("road", "from", "to", "reason", "start", "end", "when")},
+                             geometry=r6(closures.geometry))
     folium.GeoJson(c_show[["source", "road", "from", "to", "severity", "reason", "when", "start", "end", "geometry"]].to_json(),
                    name=f"<span style='color:#c92a2a'>▬</span> Road closures (fetched {fetched})", show=False,
                    style_function=lambda f: {
@@ -981,6 +992,7 @@ if gated is not None and len(gated) and roads_json is None:   # older runs: the 
 # ---- fire closure areas (LA County's Eaton Fire closures, via 02d_trails.py) ----
 if os.path.exists(f"{SHARED}/closure_areas.gpkg"):
     ca_ = gpd.read_file(f"{SHARED}/closure_areas.gpkg")
+    ca_ = ca_.assign(geometry=r6(ca_.geometry))
     folium.GeoJson(ca_.to_json(), name="<span style='color:#c92a2a'>▧</span> Fire closure areas (Eaton Fire)", show=False,
                    style_function=lambda f: {"color": "#c92a2a", "weight": 2, "dashArray": "6 4", "fillColor": "#c92a2a",
                                              "fillOpacity": 0.1},
@@ -998,13 +1010,13 @@ if fires is not None:
         fires["src"] = LBL["fire_src"]
     fcm = matplotlib.colormaps["YlOrRd"]
     yr0, yr1 = fires.year.min(), fires.year.max()
-    folium.GeoJson(fires.assign(geometry=fires.geometry.simplify(0.0003)).to_json(), name=LBL["fires"],
+    fires = fires.assign(geometry=r6(fires.geometry.simplify(0.0003)))
+    folium.GeoJson(fires.to_json(), name=LBL["fires"],
                    show=False, style_function=lambda f: {
                        "color": colors.to_hex(fcm(0.3 + 0.7 * (f["properties"]["year"] - yr0) / max(yr1 - yr0, 1))),
                        "weight": 1, "fillOpacity": 0.25},
                    tooltip=folium.GeoJsonTooltip(["fire", "year", "acres", "src"], aliases=["Fire", "Year", "Acres", "Perimeter"])).add_to(m)
     X3D["fires"] = gj(fires[["fire", "year", "acres", "src", "geometry"]].assign(
-        geometry=fires.geometry.simplify(0.0003),
         c=[colors.to_hex(fcm(0.3 + 0.7 * (y - yr0) / max(yr1 - yr0, 1))) for y in fires.year]))
 for name, label, style, fields in [
         ("wild_trout_waters", LBL["trout_waters"],
@@ -1021,7 +1033,7 @@ for name, label, style, fields in [
          (["ACCESS_TYP", "UNIT_NAME", "MNG_AGNCY"], ["Access", "Unit", "Manager"]))]:
     g = ctx(name)
     if g is not None and len(g):
-        g = g.assign(geometry=g.geometry.simplify(0.0002))
+        g = g.assign(geometry=r6(g.geometry.simplify(0.0002)))
         folium.GeoJson(g[fields[0] + ["geometry"]].to_json(), name=label, show=False,
                        style_function=lambda f, st=style: st,
                        tooltip=folium.GeoJsonTooltip(fields[0], aliases=fields[1])).add_to(m)
@@ -1146,11 +1158,20 @@ with open(f"{MAP_OUT}/overview.json", "w") as f:
                    reaches=int(len(s_ll)) - N_DRAWN_EXTRA, trail=ov_t, trail_name=LONG_TRAIL[0] if LONG_TRAIL else None, drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
                                                     for e in drains if e["name"] != MINOR],
                    basins=json.loads(ov_d.to_json(drop_id=True)), streams=json.loads(ov_s.to_json(na="null", drop_id=True))), f)
-# 3D map: static page + data file (a <script>, so it also works opened straight from disk)
+# 3D map: map3d_data.js holds the layers both maps draw (SHARED_3D; the 2D page loads it too). The layers only the 3D
+# map draws go into its page (map3d.html), right after its <script src="map3d_data.js">. Plain <script>s, so both maps
+# also work opened straight from disk. 14_portable.py reads both parts.
 with open(f"{MAP_OUT}/map3d_data.js", "w") as f:
-    f.write("window.MAP3D=" + json.dumps(X3D, separators=(",", ":"), default=str) + ";\n")
-import shutil
-shutil.copy(os.path.join(os.path.dirname(__file__), "map3d.html"), f"{MAP_OUT}/stream_map_3d.html")
+    f.write("window.MAP3D=" + json.dumps({k: X3D[k] for k in SHARED_3D.values() if k in X3D}, separators=(",", ":"),
+                                         default=str) + ";\n")
+only3d = json.dumps({k: v for k, v in X3D.items() if k not in SHARED_3D.values()}, separators=(",", ":"), default=str)
+only3d = only3d.replace("</", "<\\/").replace("<!--", "<\\u0021--")     # nothing in it can end or upset the <script>
+page3d = open(os.path.join(os.path.dirname(__file__), "map3d.html")).read()
+tag3d = '<script src="map3d_data.js"></script>'
+assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
+with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
+    f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
+                           + ");</script>"))
 
 print("streams", len(s_ll), "| drops", len(kp_ll))
 print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string())
