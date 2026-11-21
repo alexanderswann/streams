@@ -3037,3 +3037,46 @@ which publishes.
   - Checked on the rendered Jackson map: Donoho Point shows no stubs, nothing is drawn inside Taggart Lake, and the line below the lake reads Taggart Creek, 13.4 km2. Cottonwood Creek starts at the confluence.
 - **Not fixed at the root:** creeks below lakes still have no reaches of their own. The drawn piece borrows the values of the creek above the lake (Taggart: fish 99). A root fix would continue the D8 network below lakes (03/03b), which means rebuilding every area's hydrology.
 - **Open:** the user asked whether to draw streams whole and let opaque lakes cover them instead. That would replace the shore cut and the STREAMS_LAKE copy, but not the stub rule or the lake-creek fix. Not decided.
+
+## 2026-11-21: a lake reach's pieces past the lake drawn as the river they continue (overview session)
+- **Reported by the user:** at Jackson Lake's outlet, a short brown line before the Snake River read "Unnamed creek,
+  Pilgrim Creek, order 7, 805 sq mi, summer: reservoir, fish 23".
+- **Cause:** the routing can't cross the lake's flat water. It ends the Snake and the lake's other inflows in a pit in
+  the lake, and the dam link puts their 1,957 km2 back in at the cell below the dam. The only path it runs across the
+  lake to the dam is Pilgrim Creek's: through Willow Flats (the stretch the name vote calls Second Creek) and the
+  southeast arm. So the last reach (jackson_lake:s1476, 886 m, 83 % in the lake) has:
+  - Pilgrim Creek's drainage label (05c labels from the creeks routed into a reach);
+  - the lake's values (05b's "in:Jackson Lake": reservoir, fish 23);
+  - the Snake's full area.
+  Since the shore cut (2026-11-20 evening), its 147 m past the lake's outline, through the dam, was drawn with those
+  values. Before that, the whole reach was hidden while Lakes was on, which left a gap at the dam.
+- **The same on every map** (a check on the drawn data, before the fix):
+  - 122 lake-reach pieces led from a lake's shore into a river (17.7 km);
+  - 653 came from a river into a lake (186.5 km);
+  - 162 of these also carried another name or drainage label than the river they continue.
+- **Fixes (`06_map.py`):**
+  - A lake reach's piece past the lake's outline, at the reach's own end or start, takes the values of the reach below
+    (an outlet) or of the biggest reach above (an inlet). The values stay the lake's when that reach is itself a lake
+    reach: a creek joining the river inside a lake doesn't lend the river its values (Tent Creek at Lower Slide Lake
+    had at first).
+  - Where a lake reach's line stops in a pit beside the lake and the dam block joins it to the line below the dam,
+    its piece takes that line's values: Jenny Lake's outlet into Cottonwood Creek (36 m had read reservoir, fish 33),
+    and a pond on Pacific Creek.
+- **Final pass, 2026-11-21, 01:40–01:51 ET (06_map.py only, all 12 maps):**
+  - 761 pieces are now drawn as the river they continue: 63 below an outlet, 640 above an inlet, and 58 from a lake to
+    a pit by its dam.
+  - Below / above / pit by map: la 7/44/0, jackson 3/36/2, n_georgia 2/64/2, central_vt 3/27/0, ne_ct 9/45/1,
+    lexington_va 0/3/0, se_pa 2/10/0, smokies 1/33/1, adk_high_peaks 10/71/7, adk_northwest 10/119/15,
+    adk_southwest 5/70/14, adk_southeast 11/118/16.
+  - The same check of the drawn data afterwards finds 2 pieces left, slivers of 4 m and 5 m (Saint Regis River, Chase
+    Lake Outlet) that already carry the river's name and drainage.
+- **Checked on the rendered maps** (localhost, no console errors):
+  - Jackson Lake's dam reads Snake River, order 7, 805 sq mi, year-round, fish 75, from the lake's edge;
+  - Jenny Lake's outlet reads Cottonwood Creek, year-round, fish 100;
+  - the Snake's last stretch into Jackson Lake's north end reads Snake River, 528 sq mi, year-round, fish 100;
+  - the Gros Ventre at Lower Slide Lake keeps its lake values;
+  - Rogers Brook's last 940 m before Schroon Lake (adk_southeast) reads Rogers Brook, year-round, fish 79. It had
+    been unnamed, reservoir, fish 22.
+- **Left:** with Lakes off, the whole reach across Jackson Lake still reads Pilgrim Creek, as Trout Creek does across
+  Palisades. The root fix is for 03b to split a reach where a dam link puts a river's water back in, so the stretch
+  below the dam is a reach of its own. That needs every area's routing rebuilt.
