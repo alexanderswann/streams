@@ -299,7 +299,10 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    (a vertex is a cell corner; until 2026-11-20 truncation put about half of them one row or column off, and walks
    that ought to stop in a lake slipped past it beside the channel). A segment found down a way that went through a
    lake may raise a creek's estimate but never lower it below NHD's class, as for one found in another box: a brook
-   running into a pond inherits the river below it, which is no evidence that the brook dries.
+   running into a pond inherits the river below it, which is no evidence that the brook dries. A way that ends in a
+   lake draining off the map (`03b`'s `lakes_off_map.gpkg`, which carries no reaches) takes that lake's NHDPlus line
+   nearest where the way enters the water, under the same rule, applied in each of the two passes (own area, and with
+   the water from other boxes) before they are weighed (since 2026-11-20).
    `data/check_flow_drops.py` is the standing check for sudden flow drops (a reach under a quarter of the flow per
    km2 of both the reach above it and the one below it on the same creek). Where a creek has none below it in its own
    box (by either area) and its way leaves the box, the search goes on in the box it runs into: `03b_stitch.py` routes
@@ -449,6 +452,14 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   reaches over the 12 maps; about 170 at lake edges, where the two outlines differ, stay with the other streams. The
   map of all areas draws no lakes, so its main rivers keep the whole reaches. Their data stays: scores, ranks,
   profiles, `stream_reaches_ranked.csv`.
+- Rivers leaving a lake over a dam start at its shore (since 2026-11-20, late): the routing ends a river in a pit in
+  or beside the lake and starts it again in the cell below the dam (`crossbox.py`'s dam and pond links, which
+  `draw_through` in `06_map.py` draws on from), so the line below a dam began a median 21-35 m from the shore. A short
+  straight line joins it to the nearest point of the shore, or to the end of the river's own line where that stops in
+  a pit beside the lake and is nearer; where the river's own line ends inside the lake, a second one joins that end to
+  the same point of the shore in the layer shown while Lakes is off. Left out: joins over 150 m, ones that would cross
+  another line, ones to a creek coming in by the dam, and where the line below the dam already runs by the shore. 290
+  of the 393 cells below a dam on the eight shown maps, 1,048 of 1,436 over all 12 (median 28-57 m). Drawing only.
 
 `07_road_closures.py` (no REGION needed) fetches **current road closures**. Run it, then `06_map.py`, whenever you
 want fresh closures on the map; the layer name shows when they were fetched. Sources:

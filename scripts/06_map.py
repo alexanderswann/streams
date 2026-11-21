@@ -175,8 +175,32 @@ def draw_through(s_ll):
             seen.add(out[0])
         return out
     # 3. draw: on the end of the reach above where there is one; else on the front of the reach it leads into; else,
-    # where it runs into the middle of a reach, as a piece of its own with that reach's values
-    coords, extra, used, n_up, n_head, n_own, metres = {}, [], set(), 0, 0, 0, 0.0
+    # where it runs into the middle of a reach, as a piece of its own with that reach's values.
+    # A path below a lake that runs into a stream carrying much more water (over 1.5 times what leaves the lake) is the
+    # lake's own creek joining it, not the head of that stream: Taggart Creek's 2.1 km from Taggart Lake to Cottonwood
+    # Creek were drawn on Cottonwood Creek's reach, with its name, 174 km2 and score (about 170 such paths, 140 km, over
+    # the 12 maps on 2026-11-20). It is drawn as a piece of its own with the values of the lake's creek: the reach that
+    # ends where the path starts, followed up through the reaches lying in the lake to the first one that doesn't, and
+    # the drainage the path carries.
+    km2_ = (s_ll.area_full_km2 if "area_full_km2" in s_ll else s_ll.area_km2).fillna(s_ll.area_km2).to_numpy(float)
+    bd_ = s_ll.below_dam.fillna("").astype(str).to_numpy() if "below_dam" in s_ll else np.full(len(s_ll), "")
+    k1 = lambda p: (round(p[0], 1), round(p[1], 1))
+    ends_at = {}
+    for i in pos:
+        ends_at.setdefault(k1(sm[i].coords[-1]), []).append(i)
+    def lake_creek(r):
+        p0 = shapely.Point(r["pts"][0])
+        cand = [pos[j] for j in ends.query(p0, predicate="dwithin", distance=80) if pos[j] != r["hit"]]
+        if not cand:
+            return None
+        i = min(cand, key=lambda i: shapely.Point(sm[i].coords[-1][:2]).distance(p0))
+        for _ in range(30):
+            donors = ends_at.get(k1(sm[i].coords[0]), [])
+            if not bd_[i].startswith("in:") or not donors:
+                break
+            i = max(donors, key=lambda j: km2_[j])
+        return i
+    coords, extra, used, n_up, n_head, n_own, n_creek, metres = {}, [], set(), 0, 0, 0, 0, 0.0
     def xy(i):
         if i not in coords:
             coords[i] = [c_[:2] for c_ in sm[i].coords]
@@ -199,11 +223,15 @@ def draw_through(s_ll):
             if len(new) < 2:
                 continue
             used.update(ch)
-            if shapely.Point(sm[r["hit"]].coords[0][:2]).distance(shapely.Point(new[-1])) <= 15:
+            own = lake_creek(r) if r["kind"] in ("dam", "pond") and km2_[r["hit"]] > 1.5 * r["km2"] else None
+            if own is not None:
+                extra.append((own, shapely.LineString(new), r["km2"]))
+                n_creek += 1
+            elif shapely.Point(sm[r["hit"]].coords[0][:2]).distance(shapely.Point(new[-1])) <= 15:
                 coords[r["hit"]] = new[:-1] + xy(r["hit"])
                 n_head += 1
             else:
-                extra.append((r["hit"], shapely.LineString(new)))
+                extra.append((r["hit"], shapely.LineString(new), None))
                 n_own += 1
         else:
             continue                                        # loose: a later crossing may carry it on
@@ -216,13 +244,17 @@ def draw_through(s_ll):
         geom[idx_] = new
         s_ll = s_ll.set_geometry(gpd.GeoSeries(geom, index=s_ll.index, crs=s_ll.crs))
     if extra:
-        add = s_ll.iloc[[h for h, _ in extra]].copy()
+        add = s_ll.iloc[[h for h, _, _ in extra]].copy()
         add["sid"] = [f"{sid}+{n_}" for n_, sid in enumerate(add.sid.values, 1)]
-        add = add.set_geometry(gpd.GeoSeries([g for _, g in extra], index=add.index, crs=EPSG).to_crs(4326))
+        add = add.set_geometry(gpd.GeoSeries([g for _, g, _ in extra], index=add.index, crs=EPSG).to_crs(4326))
+        carried = np.array([np.nan if k_ is None else k_ for _, _, k_ in extra], float)
+        if "area_full_km2" in add:                       # a lake's creek: the drainage the path carries
+            add["area_full_km2"] = np.where(np.isnan(carried), add.area_full_km2.to_numpy(float), np.round(carried, 2))
         s_ll = pd.concat([s_ll, add], ignore_index=True)
     s_ll.attrs["drawn_extra"] = len(extra)
-    print(f"creeks drawn through {n_head + n_own + n_up} breaks below dams and at the outer boundary "
-          f"({metres / 1000:.1f} km of line; {len(left)} met no drawn reach)")
+    print(f"creeks drawn through {n_head + n_own + n_up + n_creek} breaks below dams and at the outer boundary "
+          f"({metres / 1000:.1f} km of line; {n_creek} as a lake's own creek joining a bigger stream; "
+          f"{len(left)} met no drawn reach)")
     return s_ll
 s_ll = draw_through(s_ll)
 N_DRAWN_EXTRA = s_ll.attrs.get("drawn_extra", 0)      # pieces added for drawing: not reaches of their own
@@ -629,12 +661,15 @@ def heat_line(air, f):
 # of all areas keeps the whole reaches in its main rivers: it draws no lakes. Its data stays: ranks, profiles, the CSV.
 s_ll["in_lake_drawn"] = False
 from config import SHARED_DERIVED as SD_
-if os.path.exists(f"{SD_}/lakes.gpkg") and "below_dam" in s_ll:
+lw_ = None
+if os.path.exists(f"{SD_}/lakes.gpkg"):
+    lw_ = gpd.read_file(f"{SD_}/lakes.gpkg").to_crs(EPSG)
+    lw_ = gpd.GeoDataFrame(geometry=list(shapely.get_parts(shapely.union_all(shapely.make_valid(lw_.geometry.values)))),
+                           crs=EPSG)
+    lw_ = lw_[lw_.geom_type.isin(["Polygon", "MultiPolygon"]).values].reset_index(drop=True)
+if lw_ is not None and len(lw_) and "below_dam" in s_ll:
     cand_ = s_ll.below_dam.fillna("").astype(str).str.startswith("in:").values
     if cand_.any():
-        lw_ = gpd.read_file(f"{SD_}/lakes.gpkg").to_crs(EPSG)
-        lw_ = gpd.GeoDataFrame(geometry=list(shapely.get_parts(shapely.union_all(shapely.make_valid(lw_.geometry.values)))),
-                               crs=EPSG)
         sc_ = s_ll[cand_][["geometry"]].to_crs(EPSG)
         j_ = gpd.sjoin(sc_, lw_, predicate="intersects")
         if len(j_):
@@ -645,24 +680,150 @@ if os.path.exists(f"{SD_}/lakes.gpkg") and "below_dam" in s_ll:
     print(f"reaches lying in a lake, drawn whole only while Lakes is off: {int(s_ll.in_lake_drawn.sum())}")
 # ... but their stretch outside the lake is drawn, so a river runs on to the shore and into the lake. Left off whole, a
 # reach mostly in the lake took its approach with it and the line stopped short (around Jackson Lake 18.9 km of river,
-# a 2.5 km gap above one inlet). A stretch under 20 m is left off (a sliver of land the line crosses inside the lake)
-# unless it carries on a line drawn whole: then it is a river's last few metres to the shore (5 around Jackson Lake).
+# a 2.5 km gap above one inlet). Since 2026-11-20 evening this goes for every reach that runs into a lake the Lakes
+# layer draws, not only those lying mostly in one: a reach under half in a lake was drawn whole, on into the water
+# (Taggart Creek's inlet reach ran 0.6 km into Taggart Lake). Of the pieces outside the lakes, two kinds are left off:
+# - a piece of a reach lying mostly in a lake, with both ends on the shore of one lake, that never gets 40 m from
+#   it: the routing's straight path over the flat water clipping the shore or a headland (the four stubs of the Snake
+#   by Donoho Point on Jackson Lake; about 980 over the 12 maps). A creek running along a shore keeps its pieces;
+# - a piece under 20 m that meets no line drawn whole and no longer piece (a sliver of land the line crosses inside
+#   the lake). One that does is a river's last few metres to the shore.
+# The whole reaches go once more, marked lk_, into the layer shown while Lakes is off (STREAMS_LAKE below).
 s_show = s_ll.assign(lk_=False)
-if s_ll.in_lake_drawn.any():
-    il_ = s_ll.in_lake_drawn.values
-    out_ = s_ll[il_].to_crs(EPSG)
-    out_ = out_.assign(geometry=shapely.difference(out_.geometry.values, shapely.union_all(lw_.geometry.values)))
-    out_ = out_[~out_.geometry.is_empty].explode(index_parts=False)          # one line per stretch, as every reach is
-    out_ = out_[(out_.geom_type == "LineString").values]
-    on_ = np.zeros(len(out_), bool)                                          # meets a line drawn whole
-    on_[shapely.STRtree(s_ll[~il_].to_crs(EPSG).geometry.values).query(out_.geometry.values, predicate="dwithin",
-                                                                        distance=0.5)[0]] = True
-    out_ = out_[(out_.length >= 20).values | on_].to_crs(s_ll.crs)
-    # ... and the whole reaches once more, marked lk_, for the layer shown while Lakes is off (STREAMS_LAKE below)
-    s_show = gpd.GeoDataFrame(pd.concat([s_ll[~il_].assign(lk_=False), out_.assign(lk_=False),
-                                         s_ll[il_].assign(lk_=True)]), crs=s_ll.crs).reset_index(drop=True)
-    print(f"  of them drawn up to the shore: {out_.index.nunique()} ({out_.to_crs(EPSG).length.sum() / 1000:,.1f} km "
-          f"of line outside the lakes, in {len(out_)} pieces)")
+if lw_ is not None and len(lw_):
+    sm_ = s_ll.geometry.to_crs(EPSG).values
+    lakes_ = lw_.geometry.values
+    lt_ = shapely.STRtree(lakes_)
+    ri_, li_ = lt_.query(sm_, predicate="intersects")
+    cut_ = np.zeros(len(s_ll), bool)
+    cut_[ri_] = True
+    cut_ |= s_ll.in_lake_drawn.values
+    by_ = pd.Series(li_).groupby(ri_).agg(list)
+    rows_, geo_, inside_ = [], [], {}
+    for i in np.flatnonzero(cut_):
+        g_ = sm_[i]
+        if g_ is None or g_.is_empty:
+            continue
+        ls_ = by_.get(i, [])
+        d_ = shapely.difference(g_, shapely.union_all(lakes_[ls_])) if len(ls_) else g_
+        inside_[i] = 1 - d_.length / g_.length if g_.length else 0.0
+        for p_ in shapely.get_parts(d_):
+            if p_.geom_type == "LineString" and p_.length > 0:
+                rows_.append(i)
+                geo_.append(p_)
+    n_stub = 0
+    if rows_:
+        out_ = gpd.GeoDataFrame(s_ll.iloc[rows_].drop(columns="geometry").reset_index(drop=True), geometry=geo_, crs=EPSG)
+        def lake_at(pt):
+            h_ = lt_.query(pt, predicate="dwithin", distance=1.0)
+            return int(h_[0]) if len(h_) else -1
+        a_ = np.array([lake_at(shapely.Point(g_.coords[0])) for g_ in out_.geometry])
+        b_ = np.array([lake_at(shapely.Point(g_.coords[-1])) for g_ in out_.geometry])
+        hug_ = np.zeros(len(out_), bool)
+        mostly_in_ = np.array([inside_.get(i, 0.0) >= 0.5 for i in rows_])   # a path over the water, not a lakeside creek
+        for k_ in np.flatnonzero((a_ >= 0) & (a_ == b_) & mostly_in_):
+            pts_ = shapely.points(shapely.get_coordinates(shapely.segmentize(out_.geometry.values[k_], 5.0)))
+            hug_[k_] = shapely.distance(pts_, lakes_[a_[k_]]).max() < 40
+        n_stub = int(hug_.sum())
+        out_ = out_[~hug_].reset_index(drop=True)
+        long_ = (out_.length >= 20).values
+        whole_ = [g_ for g_ in sm_[~cut_] if g_ is not None and not g_.is_empty]
+        on_ = np.zeros(len(out_), bool)
+        on_[shapely.STRtree(np.concatenate([np.array(whole_, dtype=object), out_.geometry.values[long_]])).query(
+            out_.geometry.values, predicate="dwithin", distance=0.5)[0]] = True
+        out_ = out_[long_ | on_].to_crs(s_ll.crs)
+    else:
+        out_ = s_ll.iloc[0:0]
+    s_show = gpd.GeoDataFrame(pd.concat([s_ll[~cut_].assign(lk_=False), out_.assign(lk_=False),
+                                         s_ll[cut_].assign(lk_=True)]), crs=s_ll.crs).reset_index(drop=True)
+    print(f"reaches running into a lake, drawn up to its shore while Lakes is on: {int(cut_.sum())} "
+          f"({len(out_)} pieces, {out_.to_crs(EPSG).length.sum() / 1000:,.1f} km outside the lakes; "
+          f"{n_stub} stubs along a shore left off)")
+# Rivers leaving a lake over a dam. pysheds can't route water across a lake's flat surface, so the routing ends a river
+# in a pit in or beside the lake and starts it again in the cell below the dam (crossbox's "dam" and "pond" links, which
+# draw_through above draws on from). Nothing was drawn across the dam: the line below it started 20-150 m from the
+# shore at some 335 outlets over the eight shown maps (Jenny Lake, Indian Boundary Lake, Lower Slide Lake...). A short
+# straight line now joins the line below the dam to the nearest point of the lake's shore, or to the end of the river's
+# own line where that stops in a pit beside the lake and is nearer (the river's line: a reach end nothing goes on from,
+# within 300 m, carrying at least half of what the link carries). It takes the values of the line below the dam. Where
+# the river's own line ends inside the lake, a second line joins that end to the same point of the shore, in the layer
+# shown while Lakes is off. A lake the line below the dam runs on into isn't the one it leaves. A join that would cross
+# another line is left out, and so is one to a line running past the cell below the dam that runs into the lake rather
+# than away from it (a creek coming in by the dam: about 5 of the 335); none is drawn where the line below the dam runs
+# by the lake's shore itself within 80 m (a creek passing a pond's tip), which a join would only double. Drawing only.
+DAM_TOL, TRUNK_TOL = 150, 300            # m: the farthest a shore or pit is joined from; the river's line looked for
+dm_cr = [c_ for c_ in crossbox.crossings() if c_[7] in ("dam", "pond") and c_[6] >= 0.25 and c_[3] in done]
+if dm_cr and lw_ is not None and len(lw_):
+    dm_lp = lw_.geometry.values
+    dm_U, dm_lt = shapely.union_all(dm_lp), shapely.STRtree(dm_lp)
+    dm_below, dm_tf = {}, {}             # each cell below a dam once (a lake's several pits all go on from it)
+    for dm_c in dm_cr:
+        dm_b, dm_row, dm_col, dm_km2 = dm_c[3], int(dm_c[4]), int(dm_c[5]), dm_c[6]
+        if dm_b not in dm_tf:
+            with rasterio.open(crossbox.fdir_path(dm_b)) as f_:
+                dm_tf[dm_b] = f_.transform
+        dm_k = (dm_b, dm_row, dm_col)
+        dm_below[dm_k] = (dm_tf[dm_b] * (dm_col + 0.5, dm_row + 0.5), max(dm_km2, dm_below.get(dm_k, (None, 0.0))[1]))
+    dm_g = s_ll.geometry.to_crs(EPSG).values
+    dm_ar = s_ll.area_full_km2.fillna(s_ll.area_km2).fillna(0).values
+    dm_bx = s_ll.sid.astype(str).str.split(":").str[0].values
+    dm_il = s_ll.in_lake_drawn.values
+    dm_tree = shapely.STRtree(dm_g)
+    dm_S, dm_E = shapely.get_point(dm_g, 0), shapely.get_point(dm_g, -1)
+    dm_i, dm_j = dm_tree.query(dm_E, predicate="dwithin", distance=1)
+    dm_dang = np.setdiff1d(np.arange(len(dm_g)), dm_i[dm_j != dm_i])  # reach ends nothing goes on from
+    dm_con = []                                                     # (row whose values it takes, line, Lakes-off layer)
+    for (dm_b, dm_row, dm_col), (dm_xy, dm_km2) in dm_below.items():
+        dm_p = shapely.Point(dm_xy)
+        dm_d = dm_dang[(dm_bx[dm_dang] == dm_b) & (dm_ar[dm_dang] >= 0.5 * dm_km2)
+                       & (shapely.distance(dm_E[dm_dang], dm_p) <= TRUNK_TOL)]
+        dm_t = dm_d[np.argmax(dm_ar[dm_d])] if len(dm_d) else None
+        dm_D = dm_E[dm_t] if dm_t is not None else None
+        # the line the river goes on along: one starting in the cell below the dam, else one running past it
+        dm_on = [i for i in dm_tree.query(dm_p, predicate="dwithin", distance=1)
+                 if i != dm_t and dm_S[i].distance(dm_p) <= 1]
+        dm_past = not dm_on
+        if dm_past:
+            dm_on = [i for i in dm_tree.query(dm_p, predicate="dwithin", distance=10) if i != dm_t and not dm_il[i]]
+        if not dm_on:
+            continue
+        dm_jb = min(dm_on, key=lambda i: dm_g[i].distance(dm_p))
+        dm_s = dm_g[dm_jb].project(dm_p)
+        dm_p = dm_g[dm_jb].interpolate(dm_s)
+        if dm_past and dm_g[dm_jb].interpolate(dm_s + 20).distance(dm_U) <= dm_p.distance(dm_U):
+            continue                                                # a creek running into the lake, not out of it
+        dm_in = dm_D is not None and shapely.within(dm_D, dm_U)
+        if dm_in:
+            dm_L = dm_lp[dm_lt.query(dm_D, predicate="intersects")[0]]
+        else:
+            dm_L = next((dm_lp[i] for i in sorted(dm_lt.query(dm_p, predicate="dwithin", distance=DAM_TOL),
+                                                  key=lambda i: dm_lp[i].distance(dm_p))
+                         if dm_g[dm_jb].intersection(dm_lp[i]).length <= 20), None)
+        dm_Q = shapely.ops.nearest_points(dm_L.boundary, dm_p)[0] if dm_L is not None else None
+        if dm_Q is not None and dm_Q.distance(dm_p) > DAM_TOL:
+            dm_Q = None
+        if (dm_D is not None and not dm_in and dm_D.distance(dm_p) <= DAM_TOL
+                and (dm_Q is None or dm_D.distance(dm_p) < dm_Q.distance(dm_p))):
+            dm_Q = dm_D                                             # its line stops in a pit beside the lake
+        dm_by = (dm_Q is not None and dm_Q is not dm_D       # the line below the dam runs by the shore itself
+                 and shapely.ops.substring(dm_g[dm_jb], dm_s, dm_s + 80).distance(dm_L) <= 2)
+        if dm_Q is not None and dm_Q.distance(dm_p) >= 2 and not dm_by:
+            dm_x = shapely.LineString([dm_Q, dm_p])
+            dm_mid = shapely.difference(dm_x, shapely.union_all([dm_Q.buffer(3), dm_p.buffer(3)]))
+            if not dm_mid.is_empty and any(i not in (dm_jb, dm_t) for i in dm_tree.query(dm_mid, predicate="intersects")):
+                continue                                            # it would cross another line: left as it was
+            dm_con.append((dm_jb, dm_x, False))
+        if dm_Q is not None and dm_in and dm_D.distance(dm_Q) > 2:
+            dm_con.append((dm_t, shapely.LineString([dm_D, dm_Q]), True))
+    if dm_con:
+        dm_add = s_ll.iloc[[c_[0] for c_ in dm_con]].drop(columns="geometry").reset_index(drop=True)
+        dm_add = gpd.GeoDataFrame(dm_add.assign(lk_=[c_[2] for c_ in dm_con]), crs=s_ll.crs,
+                                  geometry=gpd.GeoSeries([c_[1] for c_ in dm_con], crs=EPSG).to_crs(s_ll.crs).values)
+        s_show = gpd.GeoDataFrame(pd.concat([s_show, dm_add]), crs=s_ll.crs).reset_index(drop=True)
+    dm_len = np.array([c_[1].length for c_ in dm_con if not c_[2]] or [0.0])
+    print(f"rivers drawn across dams from the lake above: {sum(not c_[2] for c_ in dm_con)} of {len(dm_below)} cells "
+          f"below a dam (median {np.median(dm_len):.0f} m, longest {dm_len.max():.0f} m); {sum(c_[2] for c_ in dm_con)} "
+          f"joined to the shore from inside the lake, shown while Lakes is off")
 s_show = s_show.assign(geometry=shapely.set_precision(s_show.geometry.simplify(0.00008).values, 1e-5))
 s_show = s_show[~s_show.geometry.is_empty & (s_show.geom_type == "LineString")]
 mid_ll = s_show.geometry.interpolate(0.5, normalized=True)

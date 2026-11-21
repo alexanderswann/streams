@@ -2405,6 +2405,11 @@ score), installed by a script that applies the measured code, and checked afterw
   and the overview session publishes.
   3D checked there by the Vermont session (jackson's final-pass map, a visible pane): the streams filter is
   ["!",["has","lk"]] with Lakes on, ["all"] with it off, and back again; no console errors.
+- **Live (site 6d1eeef, the overview session's publish of the final pass, 17:45), checked in the served files:** Cheoah's
+  reaches read "reservoir (Cheoah Reservoir)" (fish 18-31); the Salt's crossing at Palisades (2,076 km2) "reservoir
+  (Palisades Reservoir)", fish 24 (was 80); streams_lake in map3d_data.js (smokies 481, jackson 428) with the 2D and 3D
+  toggle code in the pages; the map of all areas' main rivers run through the lakes (65.7 km of them inside Jackson
+  Lake, 57.5 km inside Palisades, in the overview data the live front page was checked against).
 
 ## 2026-11-20, midday: website size and phone copies (this session)
 Task from the "Today's task overview" session. Full numbers:
@@ -2932,3 +2937,103 @@ flow and area tables).
   Wissahickon's mouth is the Schuylkill now, and two Stony Creek reaches gain their 2026 stocking record.
 
 **Not published by this session:** the overview session publishes (user's arrangement, 2026-11-20); handed over at 17:41.
+
+## 2026-11-20, late evening: creeks running into an edge lake get the lake's flow again (Vermont session)
+**User: "Yes, restore it"** (asked whether the ~15 creeks that lost a flow borrowed through an edge lake should have it
+back).
+
+**The cause.** 05b finds a creek off the model network its flow by walking down to the first reach with a model
+segment. Before the edge-lake fix that walk ran on across the lake's lines to a line matched to the lake's own
+NHDPlus line (an artificial path through it). With no lines on such a lake it stopped at the shore. Measured against
+the build before: 72 reaches over 7 areas lost a segment.
+- About 15 small creeks dropped 30-60 points.
+- North Georgia's Tallulah and Tugaloo reservoir reaches above Hartwell lost their flow figures (their scores, as lake
+  reaches, didn't move).
+- Smokies: four Little Tennessee reaches in Chilhowee Lake lost theirs; those come from the open-items session's
+  whole-lake change in 05b, not this one.
+
+**The change (05b_flow.py).**
+- Where the way from the last reach in a box runs into a lake draining off the map within 4 km (through lakes below
+  their outlets), the search takes that lake's NHDPlus line nearest where the way enters the water: a line at least
+  half inside the same lake, with flows, at any distance. Big Brook off Port Kent had taken a line 3.5-4.1 km out; a
+  first try capped at 3 km missed it.
+- It counts as found through a lake, so it can raise a creek's water estimate but never lower it below NHD's class.
+  The mark passes on to creeks that inherit the segment from the reach below them.
+- The NHD-class floor is applied in each of 05b's two passes (own area, and with the water from other boxes) before
+  they are weighed. Applied only afterwards, a low estimate from the lake made the other pass's estimate look higher
+  and win: four creeks off Ticonderoga, perennial on NHD, took the Poultney River's "usually flows" (46-59 -> 34-40).
+- Run: 05b for the 25 boxes with such a lake (three rounds while the checks found the two problems above), then 06_map,
+  12_profiles and the score diagram for all 12 areas, 23:38-23:47. That pass carries the lakes session's dam joins and
+  the open-items and overview sessions' lake-shore drawing changes. Scratch scripts: lost_flows.py,
+  restore_compare.py, score_compare.py, vs_live.py.
+
+**Checks (fish scores).**
+- Against the build before the edge-lake rebuild (data/backup_20261120-edgelakes): no reach in any area is lower
+  because of the lake work. North Georgia, Connecticut, Jackson, the Smokies, LA, adk_northwest and adk_southwest are
+  identical. The one drop left is SE Pennsylvania's Wissahickon mouth, from the names rule; see the entry above.
+- All 15 creeks are back at their old score or higher: 2 by Hartwell 38 and 34, 2 by Lake Chaubunagungamaug 46 and 57,
+  Brewster Lake 73, off Ticonderoga 62, and the High Peaks' 51, 55, 56, 50, 71, Big Brook's 52, 54, 34; one rose from 20
+  to 48.
+- Creeks that had read "no data" since before any of this, because the old search gave up after 60 hops across Lake
+  Champlain's comb, now take the lake's line and rise: High Peaks 31 (Beaver Brook 27 -> 77, Hospital and Stony brooks),
+  adk_southeast 2.
+- Against the published maps (site 6d1eeef, matched by line middles): no reach lower anywhere; 11 Vermont creeks into
+  Lake Champlain and 9 Southeast creeks rise.
+- Tallulah and Tugaloo reservoir reaches: flow figures within about 10 % of the old ones (the nearest Tugaloo-arm line,
+  not the old one); classes unchanged.
+
+**Not published by this session:** the lakes session checks its rendered maps and reports to the overview session,
+which publishes.
+
+## 2026-11-20, late evening: rivers drawn across dams, out of the lakes (lakes session)
+
+- **The user:** "Yes, look into it": the small breaks where rivers leave lakes, found while checking the rivers-into-lakes
+  publish (site 6d1eeef).
+- **Cause:** pysheds can't route water across a lake's flat surface, so the routing ends a river in a pit in or beside
+  the lake and starts it again in the cell below the dam (crossbox's "dam" and "pond" links, which `draw_through` in
+  06_map.py draws on from). Nothing was drawn across the dam itself: the line below it started a median 21-35 m (90 %:
+  52-94 m) from the shore, at 393 cells below a dam on the eight shown maps and 1,043 on the four Adirondack ones. The
+  earlier count of "about 30 breaks" missed most of them: it looked at line ends, and these are line starts.
+- **Fix (06_map.py, a block after the lake-shore cut, 23:02-23:3x):** a short straight line joins the line below the
+  dam to the nearest point of the lake's shore, or to the end of the river's own line where that stops in a pit beside
+  the lake and is nearer (the river's line: a reach end nothing goes on from, within 300 m, carrying at least half of
+  what the link carries); it takes the values of the line below the dam. Where the river's own line ends inside the
+  lake, a second line joins that end to the same point of the shore, in the layer shown while Lakes is off. Left out:
+  joins over 150 m; a lake the line below the dam runs on into (an afterbay isn't the lake it leaves); a join that
+  would cross another line; a join to a line running past the cell below the dam that runs into the lake (a creek
+  coming in by the dam); and, after the rendered check, a join where the line below the dam runs by the shore itself
+  within 80 m (it drew a "v" beside Salacoa Creek at a pond's tip in North Georgia). Drawing only: no score, rank or
+  profile changes.
+- **Measured (final pass, 23:38-23:47, the Vermont session's run of the all-12 pass):** joins across dams, of cells
+  below a dam, with the Lakes-off joins: lexington_va 8 of 9 (6), jackson 20/31 (7), ne_ct 108/147 (81), central_vt
+  41/54 (29), n_georgia 65/83 (44), la 24/35 (14), se_pa 14/20 (11), smokies 10/14 (5): 290 of 393 on the shown maps
+  (197); adk_high_peaks 141/203, adk_northwest 263/349, adk_southwest 151/222, adk_southeast 203/269: 758 of 1,043
+  (427). Median join 28-57 m, longest 147 m (Bouquet Reservoir, LA). The rest touch the shore already (under 2 m), run
+  by it, or have no lake or line near.
+- **Checked on the rendered maps** (localhost): Lexington's Lake Merriweather and Thrashers Lake (Lakes on and off),
+  Jenny Lake (Cottonwood Creek), Indian Boundary Lake (Flats Creek), the Salacoa Creek pond after the "v" fix; no
+  console errors. Tallulah Falls (dam, forebay and tunnel) stays a small tangle of the routing's own lines. Prototype
+  plots in the lakes session's scratchpad (`dam_connect.py`, `plot_con.py`).
+- **Coordination:** the final pass also carries the open-issues session's lake-shore cut (06_map.py, 22:56) and the
+  Vermont session's lake-line flow restore (05b_flow.py, 11 areas; its score check passed). The overview session
+  publishes.
+
+## 2026-11-20, evening: lake outlets drawn as their own creek; lines cut at every lake shore (overview session)
+- **Reported by the user:**
+  - bits of the Snake on Jackson Lake's shore by Donoho Point;
+  - Taggart Creek running 0.6 km into Taggart Lake;
+  - Taggart Creek's outlet labelled "Cottonwood Creek, 67.4 sq mi".
+- **Causes:**
+  - The routing runs its paths straight over a lake's flat water. Where such a path cuts across a headland, the shore step ("rivers drawn into lakes") kept the piece outside the lake if it was 20 m or longer. Those were the Snake's stubs, 34–73 m long.
+  - Only reaches lying at least half in a lake were cut at the shore. Taggart Creek's inlet reach is 28 % in the lake, so it was drawn whole, into the water.
+  - Below a lake the D8 network starts again from zero. Taggart Creek's 1.8 km below the lake never gathers 0.25 km2 before it meets Cottonwood Creek, so it has no reach of its own. `draw_through()` followed the outlet's path to the first drawn reach, which is Cottonwood Creek's starting at the confluence, and glued the path onto its front. The path was then drawn with Cottonwood's name, 174.5 km2 and score.
+- **Fixes, all in `06_map.py`:**
+  - A lake outlet's path ("dam" or "pond" break) that runs into a stream carrying over 1.5 times its water is drawn as the lake's own creek. It takes the values of the reach ending where the path starts, followed up through the in-lake reaches, and the drainage the path carries.
+  - Every reach that runs into a lake the Lakes layer draws is cut at the shore while Lakes is on. The whole reach goes into STREAMS_LAKE, shown while Lakes is off.
+  - A piece of a reach lying mostly in a lake is dropped when both its ends are on one lake's shore and it never gets 40 m from it.
+- **Final pass, 23:38–23:46 ET:**
+  - 383 outlet paths are drawn as their lake's own creek: adk_northwest 112, adk_southeast 88, adk_southwest 65, adk_high_peaks 55, ne_ct 36, central_vt 13, n_georgia 7, jackson 3, la 2, se_pa 2.
+  - 3,501 shore stubs are left off.
+  - Checked on the rendered Jackson map: Donoho Point shows no stubs, nothing is drawn inside Taggart Lake, and the line below the lake reads Taggart Creek, 13.4 km2. Cottonwood Creek starts at the confluence.
+- **Not fixed at the root:** creeks below lakes still have no reaches of their own. The drawn piece borrows the values of the creek above the lake (Taggart: fish 99). A root fix would continue the D8 network below lakes (03/03b), which means rebuilding every area's hydrology.
+- **Open:** the user asked whether to draw streams whole and let opaque lakes cover them instead. That would replace the shore cut and the STREAMS_LAKE copy, but not the stub rule or the lake-creek fix. Not decided.

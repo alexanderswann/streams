@@ -343,7 +343,63 @@ here.mid, here.area = mid, {False: area_box, True: area_edge}
 _WALK[REGION] = here
 nxt = np.array([here.next(i)[0] for i in range(len(s))], dtype=np.int64)
 jump = np.array([here.jumps.get(i, False) for i in range(len(s))])
+
+# ---- a way that ends in a lake draining off the map ----
+# 03b_stitch.py leaves no stream lines on a lake whose water leaves the map (its lakes_off_map.gpkg, 2026-11-20), so the
+# search below for the first modelled reach downstream stopped at the shore, where it used to run on across the lake's
+# lines to the lake's own NHDPlus line (the artificial path of the river or cove through it). 72 reaches over 7 areas
+# lost their flow that way and read "no data": 15 small creeks dropped 30-60 points (9 by Lake Champlain in the
+# Adirondacks, 2 by Hartwell Lake, 2 by Lake Chaubunagungamaug, 1 by Brewster Lake, 1 by Champlain off Ticonderoga), the
+# Tallulah's reservoir reaches above Hartwell lost their flow figures. Now, where the way down from the last reach in this
+# box runs into such a lake within 4 km (on through lakes below their outlets), the search takes that lake's NHDPlus line
+# nearest the cell where the way enters the water (a line at least half inside the lake, with flows; at any distance, as
+# the old search ran on across the lake's lines: off Port Kent the line Big Brook had taken is 3.5-4.1 km out), as it
+# took the lake reaches' lines before (restored at the user's word, 2026-11-20). It counts as found through a lake
+# (below): it can raise a creek's water estimate, never lower it below NHD's class.
+LAKE_LINE, LAKE_USED, wet_, lines_ = {}, set(), None, None
+if os.path.exists(f"{DERIVED}/lakes_off_map.gpkg"):
+    from rasterio import features as rio_features
+    off_l = gpd.read_file(f"{DERIVED}/lakes_off_map.gpkg").to_crs(CRS).reset_index(drop=True)
+    wet_ = rio_features.rasterize(((g, i + 1) for i, g in enumerate(off_l.geometry)), out_shape=here.fdir.shape,
+                                  transform=here.T, fill=0, dtype="int32").ravel()      # the lake's number + 1
+    water_ = shapely.union_all(off_l.geometry.values)
+    lines_ = v2[v2.comid.isin(low.index)].drop_duplicates("comid")[["comid", "geometry"]].to_crs(CRS)
+    lines_ = lines_[lines_.intersects(water_).values].reset_index(drop=True)
+    share_ = np.array([[ln.intersection(lk).length / max(ln.length, 1e-9) for lk in off_l.geometry] for ln in lines_.geometry])
+    lines_["lake"] = (share_.argmax(axis=1) + 1) if len(lines_) else []
+    lines_ = lines_[(share_.max(axis=1) >= 0.5) if len(lines_) else []]
+
+
+def lake_line(k):
+    """The comid of the line of a lake draining off the map where the way down from reach k (the last reach on its way
+    in this box) enters it within 4 km, or NaN."""
+    if k not in LAKE_LINE:
+        LAKE_LINE[k] = np.nan
+        if wet_ is not None and len(lines_):
+            H_, W_ = here.fdir.shape
+            cell, seen = int(here.end[k]), set()
+            for _ in range(400):
+                if wet_[cell]:
+                    r, c = divmod(cell, W_)
+                    own_ = lines_[lines_.lake == wet_[cell]]
+                    if len(own_):
+                        d_ = own_.distance(shapely.Point(here.T * (c + 0.5, r + 0.5)))
+                        LAKE_LINE[k] = float(own_.comid.iat[int(np.argmin(d_.values))])
+                    break
+                st = D8.get(int(here.fdir.flat[cell]))
+                r, c = divmod(cell, W_)
+                if st is None and cell in here.dams and cell not in seen:
+                    seen.add(cell)
+                    cell = here.dams[cell]
+                    continue
+                if st is None or not (0 <= r + st[0] < H_ and 0 <= c + st[1] < W_):
+                    break
+                cell = (r + st[0]) * W_ + c + st[1]
+    return LAKE_LINE[k]
+
+
 VIA = {}            # per area kind: the reaches whose segment was found down a way that went through a lake
+FROM_LAKE = {}      # per area kind: the reaches whose segment is the line of a lake draining off the map (above)
 
 
 def in_box(area, edge):
@@ -356,16 +412,22 @@ def in_box(area, edge):
     src_ = np.where(~np.isnan(comid), "model", None).astype(object)
     last = np.full(len(s), -1)
     via = np.zeros(len(s), bool)
+    from_lake = np.zeros(len(s), bool)     # the segment is a lake's line (above), here or inherited from below
     for i in np.flatnonzero(np.isnan(comid)):
         k, j, hops, lk_ = i, nxt[i], 0, bool(jump[i])
         while j >= 0 and np.isnan(comid[j]) and hops < 60:
             k, j, hops, lk_ = j, nxt[j], hops + 1, lk_ or bool(jump[j])
         if j >= 0 and not np.isnan(comid[j]):
             comid[i], src_[i] = comid[j], "scaled"
-            via[i] = lk_
+            via[i], from_lake[i] = lk_ or from_lake[j], from_lake[j]
         elif j < 0:
-            last[i] = k
-    VIA[edge] = via
+            c_ = lake_line(k)              # the way ends in a lake draining off the map (above)
+            if np.isnan(c_):
+                last[i] = k
+            else:
+                comid[i], src_[i], via[i], from_lake[i] = c_, "scaled", True, True
+                LAKE_USED.add(int(i))
+    VIA[edge], FROM_LAKE[edge] = via, from_lake
     return comid, src_, last
 
 
@@ -373,6 +435,9 @@ def in_box(area, edge):
 # them keeps the result it always had, rather than the keep rule below preferring a segment far down another box.
 OWN = {False: in_box(area_box, False)}
 OWN[True] = in_box(area_edge, True) if (area_edge != area_box).any() else OWN[False]
+if LAKE_USED:
+    print(f"reaches whose way ends in a lake draining off the map ({', '.join(off_l.gnis_name.fillna('unnamed'))}), "
+          f"given the lake's line: {len(LAKE_USED)}")
 lost = np.isnan(OWN[False][0]) & np.isnan(OWN[True][0])
 
 
@@ -444,12 +509,27 @@ ev = evidence(box_df, box_div)
 across = ACROSS[False]
 nhd = s.flow.map({"perennial": 1.0, "intermittent": 0.35, "unmapped": 0.15, "ephemeral": 0.05}).fillna(0.3)
 eff = lambda e: e.water.where(e.water_class.fillna("no data").ne("no data") & e.water.notna(), nhd)  # as scoring.py
+
+
+def lake_floor(e, edge):
+    """A lake's line (the edge-lake search above) can raise a creek's water estimate, never lower it below NHD's class:
+    where it would, the reach reads as it did with no segment, in each pass before the two are weighed below. (Applied
+    only after weighing, a low estimate from the lake made the other pass's estimate look higher and win: four creeks
+    off Ticonderoga, perennial on NHD, went from "no data" to "usually flows" from the Poultney, 46-59 -> 34-40.)"""
+    low_ = FROM_LAKE.get(edge, np.zeros(len(s), bool)) & (eff(e) < nhd - 1e-9).values
+    if low_.any():
+        e = e.copy()
+        e.loc[low_] = evidence(box_df.assign(comid=np.nan, flow_src="none"), box_div).loc[low_, e.columns]
+    return e
+
+
+ev = lake_floor(ev, False)
 if (area_edge != area_box).any():
     # With the water from other boxes. Where that would lower a reach's water estimate, keep the old one: the drop
     # comes from the model now matching a creek it didn't before, or a side creek inheriting a different segment,
     # not from evidence that the creek dries (Dry Creek by the Sespe box edge, where trout were found: perennial on
     # NHD, 38 % of summers in the model). Possible trout water stays in until the evidence is near-certain.
-    ev_edge = evidence(*segments(area_edge, edge=True))
+    ev_edge = lake_floor(evidence(*segments(area_edge, edge=True)), True)
     keep = (eff(ev_edge) < eff(ev) - 1e-9).values
     # ... but only an old estimate that is about this creek. Below a pond the box's own area starts again from
     # nothing, so the old estimate there is whatever small line happened to match it: the Pachaug River inside
