@@ -14,7 +14,8 @@
 - **Installed 2026-11-22: a lake ends at NHD's outlet** (`lake_outlet` in `scripts/03b_stitch.py`, written to
   `lake_outlets.json` and read by `scripts/crossbox.py`). One step decides where a lake drains: the two faults
   found after the maps of 2026-11-21 went out, fixed at the root. See *Both faults fixed at the root*; the gap at a
-  lake's outlet was left open on purpose, and that section says what closing it takes.
+  lake's outlet was left open on purpose, and that section says what closing it takes. All 12 maps published
+  2026-11-22 08:01 ET (site 6c72e2e).
 - **Parked: the burn into the DEM itself** (`burnlib.py`, `patch_burn.py`), measured on 2026-11-20 on two whole
   maps. The user decided then to leave it out and keep it to come back to. It doesn't fix the lake crossings: at a
   lake that drains over a dam, filling raises the burned trench back to the water's level.
@@ -382,8 +383,11 @@ from `03b` (`SKIP_03=1`), 2026-11-22 06:27 to 07:28, from commit f337bfb with no
   `flowdir`, `area_km2` and `strahler` rasters, the drops, the reaches (ids and geometry), the drainage tables and
   the flow classes; `lake_outlets.json`, the link cache, and every drawn line. Fish scores differ on three
   Adirondack maps, by the lake term of 52c2139 that the scratch builds didn't have (60+: high_peaks +15.5 mi,
-  northwest +22.2, southwest +23.8), and on one 1,200 ft piece in LA that takes its values from another neighbour
-  (34.1393, -118.4594; not traced).
+  northwest +22.2, southwest +23.8). LA's map draws the same lines with the same values as scratch's. A first
+  comparison there, which paired lines by their end points, saw a difference at 34.1393, -118.4594: the map draws
+  that 1,200 ft line twice, with two sets of values (0.45 sq mi, fish 1; 0.57 sq mi, fish 9), and the published
+  copies before this change did too. It is the only line drawn twice on the 12 maps; not from this change, not
+  traced.
 - Against the published copy (site 4315299), on what the maps draw (`checks/drawn_cmp.py`; "new" and "gone" line:
   nothing of the other version drawn within 40 m):
 

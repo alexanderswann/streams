@@ -3764,4 +3764,5 @@ site 4315299, on what the maps draw):
 - A scratch root must hold `data/known_falls_curated*.csv`, or the waterfall labels of that build are wrong. Mine
   did not, and the scratch falls table was wrong until the step was run again with the lists.
 
-**Not published by this session:** the overview session compares with the published copy and publishes.
+**Published by the overview session** after its own comparison with the published copy: site 6c72e2e, pushed
+2026-11-22 08:01 ET, all 12 maps.
