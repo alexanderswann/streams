@@ -1227,9 +1227,12 @@ SHARED_3D = {"STREAMS": "streams", "STREAMS_LAKE": "streams_lake", "FORKS": "for
 m.get_root().header.add_child(folium.Element(
     '<script src="map3d_data.js"></script>\n<script>(function (D) {'
     + " ".join(f"window.{g} = D.{k};" for g, k in SHARED_3D.items()) + "})(window.MAP3D || {});</script>"))
+# map_phone.css/.js (the one-line credits on phones and the "my location" button) are shared with 13_overview.py and
+# 14_portable.py
+_page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
 m.get_root().header.add_child(folium.Element(
-    "<style>" + open(os.path.join(os.path.dirname(__file__), "map_style.css")).read() + "</style>\n<script>"
-    + open(os.path.join(os.path.dirname(__file__), "map_drainages.js")).read() + "</script>"))
+    "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
+    + _page_file("map_phone.js") + _page_file("map_drainages.js") + "</script>"))
 
 # every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),

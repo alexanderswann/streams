@@ -28,6 +28,11 @@ and 3D map has a "Go to…" menu in the legend that jumps to any other area or b
 The full detail stays in the per-area maps because all six in one page would be over 200 MB. With the local preview
 server it is `http://localhost:8766/`; on the phone copies, `phone/index.html`.
 
+Every 2D map (the areas, this map of all areas and the one-file phone map) shares `scripts/map_phone.js` and
+`map_phone.css`: on a phone the credits fold to one line (a tap opens them), and a "my location" button under the
+zoom buttons puts the map where you are, with a blue dot that follows you (the browser asks first). The 3D maps have
+MapLibre's own location button, and their credits start folded behind the "i" (2026-11-22).
+
 `output/index.html` is only a front page: sent to a phone by itself it has nothing behind its links. Two ways to
 carry the maps:
 - **One file** (`scripts/14_portable.py` → `output/stream_maps_all.html`, about 24 MB): the same map of all areas

@@ -1,0 +1,21 @@
+/* Shared by the area maps (06_map.py), the map of all areas (13_overview.py) and the one-file phone map
+   (14_portable.py): the credits line and the "my location" button (map_phone.js). */
+
+/* phones: the credits fold to one line (a tap shows them all, another folds them again); the controls at the bottom
+   left sit just above that line instead of under the credits */
+@media (max-width: 640px) {
+  .leaflet-container .leaflet-control-attribution {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 10px);
+    box-sizing: border-box; font-size: 10px; line-height: 16px; cursor: pointer; }
+  .leaflet-container .leaflet-control-attribution.open { white-space: normal; overflow: visible; line-height: 1.35; }
+  .leaflet-bottom.leaflet-left { bottom: 16px; }
+}
+
+/* "my location": a button under the zoom buttons; blue once the browser has a fix, pulsing while it looks */
+.leaflet-bar a.locme { display: flex; align-items: center; justify-content: center; color: #343a40; }
+.leaflet-bar a.locme svg { width: 18px; height: 18px; }
+.leaflet-bar a.locme.on { color: #1c7ed6; }
+.leaflet-bar a.locme.busy svg { animation: locme-pulse 1s ease-in-out infinite; }
+@keyframes locme-pulse { 50% { opacity: .3; } }
+.locme-msg { background: rgba(255,255,255,.96); border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #c92a2a;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25); max-width: 220px; }

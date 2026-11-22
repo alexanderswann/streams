@@ -66,6 +66,7 @@ function initDrainageMap(map, ctrl) {
     return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
   const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
   L.control.scale({metric: false}).addTo(map);
+  if (window.phoneControls) phoneControls(map);     // map_phone.js: one-line credits on phones, "my location" button
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const mix = (h, t) => "#" + rgb(h).map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, "0")).join("");
   const ramp = fs => fs < LOW ? LOWCOL

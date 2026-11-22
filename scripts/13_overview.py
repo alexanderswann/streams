@@ -59,6 +59,7 @@ HTML = r"""<!doctype html>
   #open { position: absolute; z-index: 1000; left: 50%; bottom: 26px; transform: translateX(-50%); display: none; background: #0b3d91; color: #fff;
           border-radius: 22px; padding: 9px 16px; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,.35); text-decoration: none; white-space: nowrap; }
   .leaflet-popup-content a { color: #1864ab; font-weight: 600; }
+__PHONE_CSS__
 </style></head>
 <body><div id="map"></div><a id="open" href="#"></a>
 <script>
@@ -72,6 +73,8 @@ const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/
 L.control.layers({"Light gray": gray, "USGS topo": topo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
 L.control.scale({metric: false}).addTo(map);
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD");
+__PHONE_JS__
+phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 // imperial units for everything shown (units.py; the data stay metric: drainage in km²)
 const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
@@ -157,6 +160,8 @@ words = "one two three four five six seven eight nine ten eleven twelve".split()
 html = HTML.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace(
     "__NAREAS__", words[len(areas) - 1] if len(areas) <= len(words) else str(len(areas))).replace(
     "__PREVIEW_V__", str(int(os.path.getmtime(f"{OUT}/preview.jpg"))) if os.path.exists(f"{OUT}/preview.jpg") else "0")   # a new picture, a new link: apps keep the old card otherwise
+_page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f_)).read()
+html = html.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
 with open(f"{OUT}/index.html", "w", encoding="utf-8") as f:
     f.write(html)
 print(f"{OUT}/index.html: {len(areas)} areas ({', '.join(a['key'] for a in areas)}), {len(html) / 1e6:.1f} MB")

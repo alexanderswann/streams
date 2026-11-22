@@ -173,6 +173,13 @@
   window.map3d = map;   // handy from the browser console
   map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-left");
   map.addControl(new maplibregl.FullscreenControl(), "top-left");
+  // "my location", as on the 2D map: a dot that follows you once the browser has a fix
+  map.addControl(new maplibregl.GeolocateControl({positionOptions: {enableHighAccuracy: true}, trackUserLocation: true}),
+                 "top-left");
+  // the credits start folded behind their "i" button (MapLibre shows them open until the map is first dragged, which
+  // on a phone covers the corner of the map)
+  map.once("idle", () => document.querySelectorAll(".maplibregl-ctrl-attrib.maplibregl-compact-show").forEach(e => {
+    e.classList.remove("maplibregl-compact-show"); e.removeAttribute("open"); }));
   map.addControl(new maplibregl.ScaleControl({unit: "imperial"}), "bottom-right");
 
   let mode = "d", focus = null;

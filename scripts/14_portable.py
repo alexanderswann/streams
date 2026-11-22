@@ -91,6 +91,7 @@ HTML = r"""<!doctype html>
   .pp td:first-child { color: #6b7280; padding-right: 9px; white-space: nowrap; }
   .pp .dw { color: #6b7280; } .pp .warn { color: #c92a2a; }
   .leaflet-popup-content { margin: 11px 13px; } .leaflet-popup-content a { color: #1864ab; }
+__PHONE_CSS__
 </style></head>
 <body><div id="map"></div><div id="toast"></div>
 __BLOBS__
@@ -111,6 +112,8 @@ const shade = L.tileLayer(ESRI + "/Elevation/World_Hillshade/MapServer/tile/{z}/
 const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, pane: "shadowPane"}).addTo(map);
 L.control.layers({"Light gray": gray, "USGS topo": topo, "Satellite": photo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
 L.control.scale({metric: false}).addTo(map);
+__PHONE_JS__
+phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD · Trails © OpenStreetMap contributors · USFS · iNaturalist · PRISM Group, Oregon State University");
 
 const all = L.latLngBounds([]);
@@ -325,7 +328,9 @@ window.addEventListener("hashchange", go);
 sync();
 </script></body></html>
 """
-html = HTML.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace("__BLOBS__", "\n".join(blobs))
+_page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f_)).read()
+html = HTML.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
+html = html.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace("__BLOBS__", "\n".join(blobs))
 path = f"{OUT}/stream_maps_all.html"
 with open(path, "w", encoding="utf-8") as f:
     f.write(html)
