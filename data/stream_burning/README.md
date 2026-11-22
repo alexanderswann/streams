@@ -9,12 +9,15 @@
     water credit.
   - Asked for by the user ("implement and commit the nhd stream burning") after the routing let Pilgrim Creek, not
     the Snake, cross Jackson Lake to the dam. Measured on all 12 maps first: see *Lakes* below.
+  - **It needs `05_score.py`'s size floor to count carried water** (added the same evening): without it the creek
+    below a lake's outlet is no longer a reach. See *What the lake measurement missed*.
 - **Parked: the burn into the DEM itself** (`burnlib.py`, `patch_burn.py`), measured on 2026-11-20 on two whole
   maps. The user decided then to leave it out and keep it to come back to. It doesn't fix the lake crossings: at a
   lake that drains over a dam, filling raises the burned trench back to the water's level.
 - **Log entries** in `MULTI_AREA_LOG.md`:
   - "2026-11-20, afternoon: burning NHD stream lines into the routing DEM";
-  - "2026-11-21: NHD's lines through lakes".
+  - "2026-11-21: NHD's lines through lakes";
+  - "2026-11-21, evening: creeks below lake outlets".
 
 ## Lakes (installed 2026-11-21)
 Measured with `harness/measure_area.sh` (each area's scratch copy from 03b, the live 03 outputs linked) against the
@@ -40,10 +43,12 @@ copied into the copies; totals by `checks/summarize.py`:
   - 120 creeks drawn carrying a lake's water lose it: Lower Slide Lake's 1,539 km² on a 2.7 km creek, Jenny, Leigh,
     Roseland and Bailey lakes' outlets, and others.
   - Lake Mathews' 111 km² reaches Temescal Wash (113 km² below it; NHDPlus 105).
-- **The 10+ point moves:**
-  - Mostly reaches whose ends now cross the 50%-in-lake line of the "reservoir" class (the lines inside lakes follow
-    NHD's, so the reaches split differently at the shores). About 3 down for every 2 up.
-  - The creeks above (all down).
+- **The 10+ point moves** (by cause, `checks/drops.py`): of the 408 down, 276 are reaches that now read "reservoir"
+  (their ends cross the 50%-in-lake line: the lines inside lakes follow NHD's, so the reaches split differently at
+  the shores), 100 are the creeks above, which had carried a lake's water, 12 lost drainage another way, 12 changed
+  flow class and 8 are other; of the 265 up, 213 left the "reservoir" class.
+  - **Corrected 2026-11-21, evening:** the table's "reaches 105,478 → 104,999" and "km of fish 60+ 42,159 → 41,911"
+    were first read as that lake-shore churn. Part of both was creek lines that vanished: see the next section.
   - LA's flow classes: about 20 Piru Creek reaches below Pyramid Dam would have gone from year-round to seasonal.
     Their natural-flow drainage had included Pyramid Lake's own shores through a path leaking out of the lake. The
     tailwater floor restores them, and 28 that the live build already showed mostly dry or seasonal.
@@ -51,6 +56,51 @@ copied into the copies; totals by `checks/summarize.py`:
   - One San Jacinto River reach changes its NHDPlus line match at a junction and loses its gauge record.
 - **Checked by picture:** Jackson Lake, Palisades, Leigh / String / Jenny lakes, Lower Slide Lake, Roseland Lake, and
   the Indian River below its reservoir.
+
+## What the lake measurement missed (2026-11-21, evening)
+Found while breaking the 408 drops down by cause for the overview session (the user's rule: mark a stream down only
+when near-certain). The checks above compare the reaches two builds share. `checks/drops.py` also lists the lines only
+one build has, and the measured lake-routing builds lacked 197 creek reaches (286 km) of the builds before: not lake
+reaches, 200+ m outside every lake outline.
+
+- **Cause.** `05_score.py` kept a stream link when its own D8 drainage was 1 km² or more. A lake ends its paths at
+  its outlet, so the creek below starts again near nothing: its links stayed under the floor until it had gathered
+  1 km² again or met a creek that had. Where the old builds did draw that stretch, a path had leaked across the lake
+  and left it beside the outlet. `route_lake` sends every lake cell to the outlet, so those stretches went:
+  102 links, 103 km over the 12 maps (83 km of it fish 60+). North-west Adirondacks: 1.5 km of the Oswegatchie, the
+  Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet, South Pond Outlet, Cage Lake Outlet. Jackson
+  (published 19:49 with it): Emma Matilda Lake's outlet and three more, 3.4 km.
+- **The gap behind it** (`checks/outlet_gaps.py`, on the 12 lake-routing builds): stream links (`dem_streams.gpkg`)
+  under 1 km² of their own that carry 1 km² or more with the water crossbox links to them, and that no reach covers.
+
+  | map | links | km | along an NHD stream line | drawn before the lake routing |
+  |---|---|---|---|---|
+  | adk_northwest | 336 | 255.0 | 247.7 km | 35.3 km |
+  | adk_southeast | 282 | 204.4 | 194.2 km | 17.1 km |
+  | adk_southwest | 223 | 170.1 | 163.7 km | 12.2 km |
+  | adk_high_peaks | 199 | 129.7 | 125.8 km | 6.8 km |
+  | ne_ct | 139 | 95.5 | 91.5 km | 5.7 km |
+  | n_georgia | 100 | 67.2 | 55.9 km | 7.1 km |
+  | central_vt | 65 | 46.3 | 45.0 km | 4.7 km |
+  | la | 62 | 43.4 | 38.5 km | 8.7 km |
+  | jackson | 48 | 32.8 | 28.6 km | 3.4 km |
+  | se_pa | 27 | 16.7 | 15.4 km | 2.2 km |
+  | lexington_va | 18 | 13.6 | 11.1 km | 0.0 km |
+  | smokies | 21 | 12.8 | 12.0 km | 0.0 km |
+  | all 12 | 1,520 | 1,087.5 | 1,029.4 km | 103.2 km |
+
+  185 of the links carry 100 km² or more: rivers below dams, and rivers where they enter a map.
+- **Fix** (`scripts/05_score.py`, `scripts/crossbox.py`, `scripts/run_mid.sh`): the floor counts the water that
+  reaches the link from elsewhere (`crossbox.carried_km2`: every `inflows(through_dams=True)` entry's area added down
+  its D8 path, as 05c does for `area_full_km2`), sampled where the link's own area is. `run_mid.sh` runs
+  `02b_download_flow.py` before `05_score.py`, since crossbox needs the reservoir list and NHDPlus's lines.
+- **Jackson rebuilt with it** (mid and late, 20:13-20:22): 54 links, 33 km kept on carried water; none left undrawn.
+  Against the build before any of this: creek lines gone 8 → 3 (one drains 0.95 km² once the lake's cells no longer
+  pad it, one is drawn 116 m away, one is 141 m at a lake's edge), 49 new creek reaches (40 km, 26 km of it fish 60+), km of
+  fish 60+ 5,588 → 5,607, flow drops 0, mapped falls 12 of 21 as before. On the rendered map: Emma Matilda Lake's
+  outlet creek, Taggart Creek from its lake, the Snake from Palisades Dam.
+- **Lesson for the next routing change:** run `drops.py` against the build before. A reach count that falls
+  (105,478 → 104,999 here) is lines lost, whatever the matched reaches say.
 
 ## The question
 In flat ground the 10 m DEM's D8 routing can send a creek's water somewhere other than where NHD's stream network
@@ -202,6 +252,11 @@ $H/compare.sh /private/tmp/burn/r0 /private/tmp/burn/r3e adk_northwest
   - `summarize.py` (one table over the measured areas);
   - `hr_density.py` (HR km per km2 of drainage for flagged reaches);
   - `xref.py` (flagged reaches against nearby HR misses).
+  - `drops.py` (two builds of one area: the 10+ point fish-score moves by cause, and the lines only one has);
+    `outlet_gaps.py` (stream links under 05_score's floor that carry a lake's water); `drawn_lake_values.py` (stream
+    line a map draws with a lake's values outside the lakes it draws, in two versions of its `map3d_data.js`);
+    `summarize_drops.py` (their CSVs over the areas); `verify_install.py <root> hydro` compares only 03b's rasters
+    and the drops.
   - Since 2026-11-21, `lake_outlets.py` takes the reach carrying the most water within 150 m of NHDPlus's outlet
     point (the nearest one was often a side creek), and `standing.py` counts a reach that starts in the same box as
     continuing a reach end on an edge.

@@ -3131,3 +3131,38 @@ user added: "commit and deploy to the website when finished". Details, numbers a
   - At the user's "can you push the updates you have so far", Jackson went live on its own at 19:49 (site 797a30e:
     only `streams/jackson/` and the index changed; the live files equal the checked ones byte for byte). The
     rebuild of the other 11 started again at 19:49.
+
+## 2026-11-21, evening: creeks below lake outlets (stream-burning session)
+Found while breaking the lake routing's 408 fish-score drops down by cause for the overview session, which asked on
+the user's rule (mark a stream down only when near-certain). Details and the per-map table: `data/stream_burning/`
+(README, "What the lake measurement missed").
+- **What was wrong.** `05_score.py` kept a stream link when its own D8 drainage was 1 km2 or more. A lake ends its
+  paths at its outlet, so the creek below starts again near nothing, and its links stayed under the floor until it
+  had gathered 1 km2 again or met a creek that had.
+  - The old builds drew such a stretch only where a path had leaked across the lake and left it beside the outlet.
+    `route_lake` sends every lake cell to the outlet, so those stretches went: 102 links, 103 km over the 12 measured
+    builds (83 km of it fish 60+). North-west Adirondacks: 1.5 km of the Oswegatchie, the Raquette between Raquette
+    Lake and Forked Lake, Salmon Lake Outlet, South Pond Outlet. Jackson, published at 19:49: four creeks, 3.4 km,
+    Emma Matilda Lake's outlet among them.
+  - The gap behind it is ten times that: 1,520 stream links, 1,088 km, under 1 km2 of their own but 1 km2 or more
+    with the water crossbox links to them, 95 % along NHD's stream lines; 185 carry 100+ km2 (rivers below dams and
+    where they enter a map).
+- **What my first measurement missed.** It compared the reaches both builds had. I read "reaches 105,478 → 104,999"
+  and "fish 60+ 42,159 → 41,911 km" as class churn at lake shores and said so to the user; part of both was these
+  lost lines. `checks/drops.py` now lists the lines only one build has.
+- **Fix.** The floor counts the water that reaches a link from elsewhere, as 05c's `area_full_km2` does
+  (`crossbox.carried_km2`); `run_mid.sh` runs `02b_download_flow.py` before `05_score.py` for it.
+- **Stopped the 12-map rebuild** at 20:11 (ne_ct, lexington_va, se_pa done with the old floor, central_vt in its mid
+  steps) and told the overview session to keep holding all publishing.
+- **Jackson with the fix** (mid and late, 20:13-20:22): 54 links, 33 km kept on carried water, none left undrawn.
+  - Against the build before any of this: creek lines gone 8 → 3; 49 new creek reaches, 40 km; fish 60+
+    5,588 → 5,607 km; flow drops 0; mapped falls 12 of 21 as before; no reach ends dead on a box edge.
+  - Rendered map: Emma Matilda Lake's outlet creek is drawn from the lake (5.0 sq mi, fish 66), Taggart Creek from
+    its lake, the Snake from Palisades Dam (its first 0.4 mi has no name on it).
+- **New checks** in `data/stream_burning/checks/`: `drops.py`, `outlet_gaps.py`, `drawn_lake_values.py`,
+  `summarize_drops.py`.
+- **Shared with** the session "Fix the lake-routing side effects and open items", which the user started the same
+  evening: it takes 05b's in-lake rule (NHD's outline against the lakes layer's lidar outline) and cutting reaches at
+  lake shores, and rebuilds after this session has published.
+- **Rebuild:** the other 11 maps from 20:24 (ne_ct, lexington_va, se_pa, central_vt through mid and late; smokies,
+  n_georgia, la and the four Adirondack maps from 03b).

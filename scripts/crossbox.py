@@ -573,6 +573,26 @@ def inflows(region, through_dams=False, ponds=True):
     return [tuple(e) for e in _data()[key].get(region, [])]
 
 
+def carried_km2(region):
+    """Drainage area (km2) that reaches each cell of `region`'s grid from elsewhere, as a flat array: every
+    inflows(region, through_dams=True) entry's area, added all the way down its D8 path (over a dam, past a pond,
+    across a box edge, in from outside the map). 05c_drainages.py adds the same to each reach's own area
+    (area_full_km2); 05_score.py's 1 km2 floor counts it, so the creek below a lake's outlet is drawn from the outlet."""
+    with rasterio.open(fdir_path(region)) as src:
+        fd = src.read(1)
+    W = fd.shape[1]
+    nxt, _ = graph(fd)
+    ex = np.zeros(fd.size, np.float32)
+    for row, col, km2, *_ in inflows(region, through_dams=True):
+        i = row * W + col
+        while True:
+            ex[i] += km2
+            if nxt[i] == i:
+                break
+            i = nxt[i]
+    return ex
+
+
 def dam_links(region):
     """{dead-end cell (flat index): (row, col)}: for every dead end in a lake or reservoir of `region` whose water
     goes on, the cell below the dam where it does (in the same box). 05c_drainages.py uses it to give a pond's

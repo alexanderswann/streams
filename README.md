@@ -176,7 +176,8 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    Since 2026-11-21 every cell of a lake that holds water drains to its outlet along NHD HR's lines through the lake
    where they run (`route_lake`: a least-cost path over the lake's cells, a step off the lines counting five along
    them), and the way the water takes below the outlet is a stream line down to the first stream it meets
-   (`outflow_streams`). Only the path that gathered the most water used to end at the outlet. The flat water's own
+   (`outflow_streams`). That line gathers almost no ground of its own: `05_score.py` keeps it on the lake's water
+   (5.). Only the path that gathered the most water used to end at the outlet. The flat water's own
    directions let other paths cross the lake and leave it on their own: Pilgrim Creek's ran to Jackson Lake Dam beside
    the Snake's outlet, so the line across the lake and over the dam was Pilgrim Creek's, and Palisades Reservoir's
    crossing read Trout Creek. They drew 986 km of straight made-up lines across lakes over the 12 maps (now 266 km).
@@ -184,7 +185,9 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    landed on the first line it met and was counted along that whole link, a side creek's included: Lower Slide Lake's
    1,539 km² on a 2.7 km creek beside the Gros Ventre, Leigh Lake's on a creek beside String Lake (120 such creeks over
    the 12 maps). Measured on all 12 maps before it went in (`data/stream_burning/`): drops, known falls, flow drops and
-   edge dead ends unchanged or better; lake outlets reading under half of NHDPlus 45 → 39. The folder also keeps the
+   edge dead ends unchanged or better; lake outlets reading under half of NHDPlus 45 → 39. That measurement compared
+   the reaches both builds had and missed the lines that vanished below lake outlets (5., the size floor). The
+   folder also keeps the
    experiment this came from, NHD's lines burned into the DEM itself, which is not used: burned everywhere they lost
    waterfall-like steps in the mountains, burned on flat ground only they reshuffled braided rivers' arms.
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
@@ -219,7 +222,18 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    page for that fall, and `06_map.py` names any guide with 50+ falls on a map in its credits.
 5. `05_score.py`: attributes, fish score, per-range exports, hillshade. Each link is measured on its own cells:
    drainage area and gradient at its second-to-last vertex (its last vertex is the confluence cell, which would give
-   a side creek the trunk's area), Strahler order and elevation at its middle vertex. NHD name and flow class come
+   a side creek the trunk's area), Strahler order and elevation at its middle vertex. A link is kept when it drains
+   1 km² or more, counting the water that reaches it from elsewhere: over a dam, past a pond, in from outside the map
+   (`crossbox.carried_km2`, the same water `05c` adds for `area_full_km2`; `area_km2` stays the link's own area).
+   Until 2026-11-21 only its own area counted. A lake ends its paths at its outlet, so the creek below starts again
+   near nothing, and the map had no line below the outlet until the creek had gathered 1 km² again or met one that
+   had: 1,088 km of stream line on 1,520 links over the 12 maps, 95% of it along NHD's stream lines, 185 of the links
+   carrying 100 km² or more (rivers below dams, and rivers where they enter a map: the first kilometre of the Salt,
+   Greys and Hoback rivers). Where there had been a line, a path had leaked across the lake and left it beside the
+   outlet; when `03b` sent every lake cell to the outlet (3.) those 103 km went too (1.5 km of the Oswegatchie, the
+   Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet), which is how the gap was found. `run_mid.sh`
+   runs `02b_download_flow.py` before this step for it (`crossbox.py` needs the reservoir list and NHDPlus's lines).
+   NHD name and flow class come
    from the nearest NHD lines at three points along the link, each kept when two agree on the name (or the class;
    NHD splits a creek into many short segments). NHD has no name on many lines (e.g. San Antonio Creek below
    Mt. Baldy): those links take the name of OpenStreetMap's named rivers and streams the same way (cached a week in

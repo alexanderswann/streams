@@ -75,8 +75,22 @@ own_end = gpd.GeoSeries([shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g
 starts = gpd.GeoSeries([shapely.Point(g.coords[0]) for g in s.geometry], index=s.index, crs=CRS)
 mid = gpd.GeoSeries([vert(g, 0.5) for g in s.geometry], index=s.index, crs=CRS)
 s["area_km2"] = sample(area, own_end).round(2)
+# The floor counts the water that reaches a link from elsewhere, as the reaches' areas do (05c_drainages.py's
+# area_full_km2, from crossbox.py): over a dam, past a pond, in from outside the map. A lake ends its D8 paths at its
+# outlet (03b_stitch.py), so the creek below starts again near nothing, and on its own area alone its links stayed
+# under the floor until it had gathered 1 km2 again or met a creek that had: the map had no line below the outlet.
+# Where it did have one, a path had leaked across the lake and left it beside the outlet; since 2026-11-21 every lake
+# cell drains to the outlet (03b_stitch.route_lake), so those stretches went too (found the same day: 1.5 km of the
+# Oswegatchie, the Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet, Emma Matilda Lake's outlet).
+# area_km2 stays the link's own area; 05c adds the carried water where this samples it, so the two agree.
+import crossbox
+carried = sample(crossbox.carried_km2(REGION).reshape(area.shape), own_end)
 sea = np.array([np.mean(sample(dem, shapely.points(np.asarray(g.coords))) <= 0.5) for g in s.geometry])
-s = s[(s.area_km2 >= MAP_MIN_KM2) & (sea < 0.5) & areaclip.inside(s.geometry.values)].copy()
+keep = (s.area_km2 + carried >= MAP_MIN_KM2) & (sea < 0.5) & areaclip.inside(s.geometry.values)
+by_carried = keep & (s.area_km2 < MAP_MIN_KM2)
+print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reaches them from elsewhere (below a lake's "
+      f"outlet, in from outside the map): {int(by_carried.sum())}, {s.length[by_carried].sum() / 1000:.1f} km")
+s = s[keep].copy()
 mid, own_end, starts = mid[s.index], own_end[s.index], starts[s.index]
 s["order"] = sample(strahler, mid)
 s["elev_m"] = sample(dem, mid).round(0)

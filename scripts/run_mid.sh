@@ -15,8 +15,10 @@ steps() {
   local a=$1 r
   local ranges=($(AREA=$a $PY -c "import config; print(' '.join(config.REGIONS))"))
   run $a "" 02f_known_falls || return 1      # known waterfalls from every source, for 05_score's drop names
-  for r in $ranges; do run $a $r 05_score || return 1; done
+  # the flow data first: 05_score.py's size floor reads crossbox.py's links past dams, which need the reservoir list
+  # and NHDPlus's lines (2026-11-21; it ran after 05_score before, which a new area's first build would trip over)
   run $a "" 02b_download_flow || return 1
+  for r in $ranges; do run $a $r 05_score || return 1; done
   # late-summer greenness of the channels (Sentinel-2), which 05b_flow.py reads for creeks the flow model rates flowing
   # that are dry; only for areas with the late_summer_green source (it says so and does nothing elsewhere); kept once made
   run $a "" 02g_greenness || return 1

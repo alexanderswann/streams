@@ -1,9 +1,12 @@
 """After the rebuild: does the installed build equal the measured scratch build? Per box, flowdir / area_km2 /
 strahler (03b), knickpoints (04 / 04b), streams_scored (05_score: sids and geometry), area_streams (05c) and
 flow_streams' water classes (05b) of the project against the scratch root.
-AREA=<area> python verify_install.py <scratch root>"""
+AREA=<area> python verify_install.py <scratch root> [hydro]
+With `hydro`, only 03b's rasters and the drops: for a scratch root measured before a later change to the reaches
+(05_score.py's floor, 2026-11-21), whose reach tables no longer compare."""
 import sys, os
 R = sys.argv[1]
+HYDRO = len(sys.argv) > 2 and sys.argv[2] == "hydro"
 P = "/Users/mac/Fishing"
 sys.path.insert(0, f"{P}/scripts"); os.chdir(f"{P}/scripts")
 import numpy as np, pandas as pd, geopandas as gpd, rasterio, config
@@ -17,6 +20,9 @@ for b in config.REGIONS:
     for f in ("knickpoints", "knickpoints_bigcreek"):
         a = gpd.read_file(f"{P}/data/derived/{config.AREA}/{b}/{f}.gpkg"); c = gpd.read_file(f"{R}/data/derived/{config.AREA}/{b}/{f}.gpkg")
         row.append(f"{f} " + ("=" if a.drop(columns="geometry").equals(c.drop(columns="geometry")) else f"DIFF {len(a)}/{len(c)}"))
+    if HYDRO:
+        out.append(" | ".join(row))
+        continue
     a = gpd.read_file(f"{P}/output/{config.AREA}/{b}/streams_scored.gpkg"); c = gpd.read_file(f"{R}/output/{config.AREA}/{b}/streams_scored.gpkg")
     same = len(a) == len(c) and (a.sid.values == c.sid.values).all() and a.geometry.equals(c.geometry)
     row.append("reaches " + ("=" if same else f"DIFF {len(a)}/{len(c)}"))
