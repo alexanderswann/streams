@@ -508,7 +508,7 @@ for c_ in CONTEXT + FLOWC:   # older context files may lack a column
 kp_ll.drop(columns="geometry").to_csv(f"{MAP_OUT}/waterfall_candidates.csv", index=False)
 mid = s_ll.geometry.interpolate(0.5, normalized=True)
 s_ll.assign(lat=mid.y.round(6), lon=mid.x.round(6)).sort_values("fish_score", ascending=False)[
-    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "water_aug", "tailwater", "burn_factor", "trout_factor", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
+    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
      "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["lat", "lon"]
 ].to_csv(f"{MAP_OUT}/stream_reaches_ranked.csv", index=False)
 
@@ -670,7 +670,7 @@ def sev_label(v):
 import watertemp
 _wt = watertemp.fit_record() or {}
 WT_HOW = ("estimated from " + " and ".join({"air": "air temperature", "elev_km": "elevation", "log_area": "stream size",
-                                           "lake": "the lake water in it"}[t]
+                                           "lake": "how close a lake lies upstream"}[t]
                                            for t in _wt.get("terms", [])) + f", ± {degf_diff(_wt.get('rmse_loo', 3))}") if _wt.get("ok") else ""
 # the hottest creek with a trout record (11_context.py), for the heat gate's popup line
 tev = ctx("trout_evidence")
@@ -967,11 +967,14 @@ props = pd.DataFrame({
                 f"slope faces {'north' if n > 0.04 else 'south' if n < -0.04 else 'east/west or mixed'}" if pd.notna(n) else "",
                 f"August air averages {degf(a)}" if pd.notna(a) else "",
                 f"summer water about {degf(w)} ({WT_HOW})"
+                + (f"; about {degf(wo)} over its first {ft(round(om * FT_PER_M / 50) * 50 / FT_PER_M)}, just below a lake"
+                   if pd.notna(wo) and pd.notna(om) else "")      # scoring.py's water_outlet: the reach is scored as a whole
                 if pd.notna(w) and not isinstance(tw, str) else "",
                 f"tailwater below {tw}: the dam releases cold water from the bottom of the reservoir" if isinstance(tw, str) else "")
                        if x)
-            for h, p, n, cv, a, w, tw in zip(s_show.sun_hours, s_show.shade_pct, s_show.northness, pd.to_numeric(s_show.canopy_pct),
-                                             pd.to_numeric(s_show.air_aug), pd.to_numeric(s_show.water_aug), s_show.tailwater)],
+            for h, p, n, cv, a, w, tw, wo, om in zip(s_show.sun_hours, s_show.shade_pct, s_show.northness, pd.to_numeric(s_show.canopy_pct),
+                                                     pd.to_numeric(s_show.air_aug), pd.to_numeric(s_show.water_aug), s_show.tailwater,
+                                                     pd.to_numeric(s_show.water_outlet), pd.to_numeric(s_show.outlet_m))],
     "ht": [heat_line(a, f) for a, f in zip(pd.to_numeric(s_show.air_aug), s_show.heat_factor)],
     "burn": [" · ".join(x for x in (
                  f"{f} fire {y:.0f}" + (f" ({sev_label(sv)})" if pd.notna(sv) else "") if pd.notna(y) else "",

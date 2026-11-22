@@ -34,7 +34,8 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
   thermal    0.5 water temperature + 0.35 summer shade + 0.15 mountainside northness (south-facing -0.15 ->
              north-facing +0.15). Water temperature is the reach's estimated July-August daytime water temperature
              (watertemp.py: fitted per area to measured creeks; in LA on August air + elevation; in three of the
-             Adirondack maps with the share of a creek's water that comes through a lake upstream): full credit up to
+             Adirondack maps with the share of a creek's water that comes through a lake within 650 ft upstream:
+             a pond's outlet runs at the pond's surface temperature, and the warmth fades fast): full credit up to
              WATER_FULL, none from WATER_ZERO, the same cutoffs in every area because a trout's limits are water
              temperatures. No penalty for cold. Where there's no estimate the term is neutral (0.5). Shade combines
              the terrain's shade (share of mid-July daylight) with the tree canopy along the reach (USFS canopy
@@ -147,6 +148,9 @@ DAM_HELD = 0.5                 # water (4): a lake or dam holds this share of a 
 # about 20 C and can't hold out in water that stays at 25 C. On LA's trout records (1,566 reaches) this gives the same
 # mean credit as the 700-2300 m elevation band it replaced (0.91), and none of them zero
 WATER_FULL, WATER_ZERO = 20.0, 25.0
+# A reach that starts just below a lake: the maps name its warm first stretch (water_outlet, outlet_m) where that
+# stretch is estimated this much warmer than the reach as a whole and is at least this long
+OUTLET_NOTE_C, OUTLET_NOTE_M = 1.0, 50.0
 # Dams known to release cold water from the bottom of the reservoir into a trout fishery below ("tailwaters"). The
 # river below the dam, down to the next reservoir, takes the elevation part of the thermal term in full:
 # dam -> (river, highest elevation of the tailwater in m)
@@ -284,9 +288,12 @@ def score(s):
     shade = np.clip((1 - (1 - terrain) * (1 - 0.8 * canopy)) / 0.45, 0, 1)
     north = np.clip((s.northness.fillna(0) + 0.15) / 0.30, 0, 1)
     tw = tailwater(s)
-    wt = pd.Series(watertemp.estimate(num(s, "air_aug"), s.elev_m, big,
-                                      pd.Series(watertemp.lake_share(num(s, "area_edge_km2"), num(s, "area_full_km2")),
-                                                index=s.index).fillna(0.0)), index=s.index)
+    lake, lake_top, lake_m = watertemp.lake_parts(s)
+    wt = pd.Series(watertemp.estimate(num(s, "air_aug"), s.elev_m, big, lake), index=s.index)
+    # a reach that starts just below a lake is scored on its estimate as a whole (the mean along it), but its first
+    # stretch runs warmer: that stretch's own estimate and length, for the maps to say (no part in the score)
+    top = pd.Series(watertemp.estimate(num(s, "air_aug"), s.elev_m, big, lake_top), index=s.index)
+    outlet = (top - wt >= OUTLET_NOTE_C) & (lake_m >= OUTLET_NOTE_M)
     # no estimate: where the area's fit has no skill, its measured sites' mean stands for every creek (the model the
     # skill test compares with: a cold area stays cold); with no measured sites at all, neutral
     avg = watertemp.area_mean()
@@ -313,6 +320,8 @@ def score(s):
         s.loc[by_gauge, "water_class"] = np.where(gw[by_gauge] <= 0.2, "mostly dry", "seasonal")
     s["thermal"] = thermal.round(2)
     s["water_aug"] = wt.round(1)
+    s["water_outlet"] = top.round(1).where(outlet)
+    s["outlet_m"] = pd.Series(lake_m, index=s.index).round().where(outlet)
     s["water_term"] = water.round(2)
     s["burn_factor"] = np.round(burn, 2)
     s["trout_factor"] = trout

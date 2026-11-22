@@ -3380,6 +3380,7 @@ where the water-temperature effect is larger because the trout-water factor scal
 - Effect on the installed maps: in the three maps with the lake term 496 creek reaches (322 km) lose 10+ points on
   it (High Peaks 142, north-west 156, south-west 198; a median of 11 points): creeks fed almost wholly through a lake
   (median share 0.96), estimated at about 23 C. 141 km go from 60+ to under 60. The south-east map doesn't move on it.
+  (Changed 2026-11-22: the term now counts only within 650 ft below a lake. See the entry of that date.)
 - Its limits, said plainly: single sites are missed by about 3 C; the share counts any pond the water passes
   through, however small (the Salmon River near Plattsburgh below a mill pond reads 73 F); and the north-west map's
   borrowed fit passes the skill test by a small margin (0.87 of the spread on all four maps' sites, 0.85 on its
@@ -3485,3 +3486,153 @@ check, the other eleven in two streams. No failed step.
   smaller drainage (0.12 -> 0.10 cfs, at the 0.1 cfs line). Four unmapped pieces between the Beaver River's
   reservoirs read "no data" (fish 10) where their link read reservoir (20).
 - 5d waits on the two sites' replies.
+
+## 2026-11-22: the Adirondack lake term counts only just below a lake (side-effects session)
+
+**Asked:** item 5b of the entry above put a lake term into the Adirondack water-temperature fits without the
+exemption for recorded trout water. The overview session flagged it after publishing. The audit session tested the
+term against the measured sites (`audit/AUDIT_2026-11-22.md` section 2.6, `audit/scripts/lake_term_test.py`): the
+warmth is real at a pond's outlet and overstated below it. The user was given three options with the figures: the
+term only within 650 ft below a pond, creeks with a trout record exempt, or as published. They chose "Only below
+ponds" (02:16).
+
+**What the measured sites say** (the three maps with the term: 276 sites on a reach):
+
+| Site | Sites | Measured | Estimate as published | Estimate now |
+|---|---:|---:|---|---|
+| Mostly lake water, within 650 ft of the lake | 19 | 74.9 F | 3.0 F too cool | 1.0 F too cool |
+| Mostly lake water, 650 ft to 0.6 mi below | 8 | 68.4 F | 1.4 F too warm | 6.2 F too cool |
+| Mostly lake water, 0.6 to 1.9 mi below | 7 | 65.5 F | 5.0 F too warm | 3.2 F too cool |
+| Mostly lake water, further or no lake found | 11 | 66.3 F | 0.9 F too warm | 2.9 F too cool |
+| Under half lake water | 231 | 63.0 F | 0.0 F | 0.3 F too warm |
+
+- Within 650 ft, 16 of the 19 sites read 73 F or more and none 68 F or less.
+- 26 sites measure 73 F or more. The published estimate put 7 sites there, 6 of them rightly. Now 21: 16 rightly,
+  the other five measure 70.0 to 72.7 F.
+- These are the estimate at the site's own spot, which is what the fit sees. They are the figures the user chose
+  on.
+
+**What the map says at those sites** (found after the first redraw, by the audit's `watertemp_vs_sites.py` on the
+new build; not among the figures the user chose on, and told to them with this entry):
+- A reach is scored and shown on one value, the mean along it. A reach that starts at a pond and runs on for half
+  a mile is mostly past the warmth, so it reads cool even at its outlet.
+- At the 19 outlet sites the reach is a median 764 m long and its own estimate reads 66.9 F: 7.9 F too cool
+  (published: 3.0 F too cool). Limekiln Lake Outlet measures 78.8 F on 7 readings; its 2.9 km reach reads 64 F,
+  fish 83 (published 73 F, fish 72).
+- Of the 26 sites at 73 F or more, 17 sit on a reach that keeps full credit (published 8) and 6 on a reach shown
+  at 73 F or more (published 6). Reach's own estimate against measured, all 276 sites: 3.21 C (published 2.97; the
+  value at the spot 2.86).
+- The audit's check (sites with 3+ readings on a drawn line, most of them outlets), published -> first redraw:
+  error High Peaks 6.5 -> 7.8 F, north-west 5.7 -> 7.7 F, south-west 3.9 -> 6.3 F; warm sites read as full credit
+  1 -> 5, 2 -> 6, 1 -> 9; readings inside the popup's stated margin 58 -> 50 %, 60 -> 33 %, 72 -> 50 %.
+- **Done about it, in the map's wording only:** the popup of such a reach adds its first stretch's own estimate,
+  "summer water about 64 °F (...); about 75 °F over its first 650 ft, just below a lake" (`lake_parts()` in
+  `watertemp.py`; `water_outlet`, `outlet_m` from `scoring.py`, also in the ranked table; `06_map.py`). It shows
+  where that stretch is estimated 1 C or more warmer than the reach as a whole and is 50 m or longer: 1,193 of the
+  24,914 drawn creek lines (High Peaks 269, south-west 385, north-west 539). No score changes.
+- With that line the popup says 73.9 F for the water at the 19 outlet sites (1.0 F too cool; 16 of the 19 reaches
+  carry the line, the other three are short or lake reaches that read warm themselves), and 73 F or more at 16 of
+  the 26 warm sites. What the popup says for the water at a site against measured: 2.95 C.
+- **Not done:** the score of a long reach still takes none of its outlet's warmth. That needs the reach cut 200 m
+  below each lake (`05_score.py`, then every later step for every map): the user's call.
+
+**The rule (`watertemp.py`; `scoring.py` passes `lake_term()`):**
+- The term was the share of a reach's drainage that comes through a lake, however far upstream. That share now
+  counts only for the part of a reach within 200 m (650 ft) below a lake, along the channel (`LAKE_NEAR_M`).
+- `below_lake()` takes the distance from the reach tables: up the reaches that bring the lake water, to a reach
+  lying in the lake, or to where the lake's water is put in beside its outline (`flowlib.lake_water`; a pond at
+  the head of a creek has no reach inside it). No per-area setting.
+- A reach takes the term for the share of its length within the 200 m (the mean along it). A reach lying in a
+  lake takes it in full.
+- A measured site takes the value at its own spot (`lake_at()`). A site at the upper end of a lake reach, where a
+  creek comes in, takes the creek's value (Archer Creek above Arbutus Pond 63.9 F; the pond's outlet 73.5 F).
+- `LAKE_MIN_SITES` 10 -> 5: sites just below a lake are fewer than lake-fed sites (High Peaks 6, south-west 15, all
+  four maps 28).
+- Popup wording: "the lake water in it" -> "how close a lake lies upstream" (`06_map.py`).
+
+**The fits** (leave-one-out error against the sites' spread, C; published -> now):
+- High Peaks (elevation + lake), 90 sites: 3.18 -> 3.16 against 3.85.
+- South-west (lake): 3.02 against 3.50 on 123 sites -> 2.55 against 3.44 on 121. The fit's one pass of outlier
+  removal now leaves out two single readings of 25.0 C (Fourmile Brook near Morehouseville; WECASS 28014). On all
+  123 sites: 3.02 -> 2.69 against 3.50.
+- North-west (the region's fit; none on its own 63 sites): 3.13 against 3.59 on 337 sites -> 2.95 against 3.58 on
+  336 (on all 338, none left out: 3.17 -> 3.02 against 3.63). Off its own sites by 2.87 -> 2.84 against 3.36.
+- South-east: unchanged (stream size, 2.50 against 2.99; no lake term). Not redrawn.
+- A creek fed wholly through a pond reads 7.2-7.9 C warmer at the outlet (the coefficients were 6.0-7.0).
+- The other eight areas, refitted with the installed script without writing: every fit equal to its stored one
+  (Jackson has 9 sites with a term of 0.5 or more and no fit there is better for the term; SE Pennsylvania 1; the
+  others none).
+
+**The scores** (creek reaches of the three maps: 22,382 reaches, 11,871 mi), against a score with no lake term:
+
+| | 10+ points lower | Of those, with a trout record | 5 to 9 lower | Fish score 60+ |
+|---|---|---|---|---|
+| As published | 444 reaches, 173 mi | 401 reaches, 158 mi | 716 reaches, 348 mi | 79 mi less |
+| Trout-record creeks exempt (not installed) | 43 reaches, 14.5 mi | none | 111 reaches, 48 mi | 19 mi less |
+| Now: within 650 ft of the lake | 99 reaches, 8.7 mi | 85 reaches, 7.9 mi | 47 reaches, 7.6 mi | 4 mi less |
+
+- The 99 reaches are short stretches right below ponds (median 139 m), estimated at about 75 F.
+- Drawn maps, new against published (default stream layer: 24,914 lines, the same lines):
+  - 540 lines (145 mi) score 10+ higher: High Peaks 154 (48 mi), south-west 238 (61 mi), north-west 148 (36 mi).
+  - 202 lines (9.7 mi) score 3+ lower, 6 at most: 171 creek stretches at outlets (6.6 mi) and 31 pieces of lake
+    reaches still drawn outside a lake's outline (3.1 mi). None 10+ lower.
+  - Creek line with an estimate of 73 F or more: 197 -> 9 mi. Fish 60+: 8,425 -> 8,497 mi (High Peaks +19,
+    south-west +23, north-west +29). Fish 80+: +145 mi.
+  - No popup field changes but the water estimate, the score and the rank.
+  - Lines through lakes (drawn only while Lakes is off) read a median 3 to 6 F warmer and up to 6 points lower:
+    a lake reach now takes the term in full.
+
+**Rebuild** (02:18-02:22, and the three maps once more 02:40-02:43 with the popup's outlet line):
+`watertemp.py` for the four Adirondack maps, the north-west last; `06_map.py`, `12_profiles.py` and
+`fish_score_diagram.py` for adk_high_peaks, adk_southwest and adk_northwest. No routing, no reach table rewritten.
+- Each installed fit record and site table equals the scratch build measured beforehand, byte for byte; the three
+  maps' stream lines equal the scratch build's in every field.
+- The second redraw changed the popup's water wording on 1,193 creek lines and 265 lake-layer lines and nothing
+  else: every score, rank and other field equal to the first redraw's, the profiles equal but for their date.
+- Map data of the three maps 49.0 -> 49.4 MB (the longer popup wording).
+- The audit's checks (`audit/scripts/run_all.sh`'s list, tables written to scratch) on the new build against its
+  tables for the published one: every table that differs does so for these three maps only, and follows from the
+  scores (60+ on the drawn maps +72 mi; trout on record with a score under 40: 1,322 -> 1,325 reaches; the audit's
+  own recomputation of the fish score matches 99.7-99.8 % of reaches within 2 points, as before). The other nine
+  maps' tables are unchanged. Its water-temperature check is the finding above.
+
+**Checked on the rendered maps** (http://localhost:8766; no console errors on the three):
+- adk_southwest: Otter Creek's 81 m below Big Otter Lake reads "summer water about 76 °F (estimated from how close
+  a lake lies upstream, ± 5 °F)", fish 85 (published: 74 F, 89); the next reach 64 F, fish 99 (88); Limekiln Creek
+  64 F, fish 83 (72).
+- adk_high_peaks: the Osgood River below Osgood Pond 75 F, fish 68 (73); the Newcomb River's first 112 m below
+  Newcomb Lake 75 F, fish 81 (87); Silver Lake Brook 63 F, fish 81 (72); Taylor Pond Outlet 65 F, fish 83 (72);
+  the Salmon River 66 F, fish 88 (77).
+- adk_northwest: Wolf Pond Outlet 76 F, fish 69 (72); Yellow Creek 66 F, fish 83 (67); Cold Brook 65 F, fish 77
+  (63).
+- The popup's outlet line, after the second redraw: Limekiln Creek "summer water about 64 °F (estimated from how
+  close a lake lies upstream, ± 5 °F); about 75 °F over its first 650 ft, just below a lake", fish 83; Otter
+  Creek's second reach "about 75 °F over its first 400 ft" (the 81 m above it read 76 F themselves); Taylor Pond
+  Outlet 65 F with "about 76 °F over its first 650 ft"; Twin Lake Stream (north-west) 70 F with "about 75 °F".
+
+**Measured and not installed:**
+- About half the warmth kept beyond 650 ft, as the audit's own fit has it. It fits the sites a little better (under
+  0.1 C of leave-one-out error) and takes about 5 points from some 100 mi below the outlets on 15 thinly sampled
+  sites; of the 8 nearest, 3 read 68 F or less and 2 read 73 F or more. Not near-certain.
+- A longer distance. Two outlet sites lie 230 and 251 m below their lake by the routing and read 73.8 and 73.4 F;
+  a third at 256 m reads 58.3 F on one reading. 200 m is the audit's bin edge; the sites cannot place it closer.
+- The trout-record exemption on top: it would leave 14 reaches (0.8 mi). The audit found the records do not tell
+  warm outlets from cool ones (35 of the 36 lake-fed sites have one).
+
+**Its limits, said plainly:**
+- A long reach below a pond is scored as a cool creek: its warm first 650 ft are in its popup, not in its score.
+  Only the 99 short reaches are marked down. On the scores at measured warm sites this is no better than the
+  published maps were (6 of 26 on a reach shown warm, both times) and it lets more of them keep full credit (17
+  against 8).
+- Beyond 650 ft the estimate reads a lake-fed creek as a creek with no lake: 3 to 6 F too cool at the 26 measured
+  sites there. That marks no creek down; a lake-fed creek that does run warm further down keeps its credit.
+- 85 of the 99 marked-down reaches carry a trout record (New York's trout class is given to whole streams). The
+  markdown stands there on the measured warmth at outlets; the user chose it knowing the count.
+- Lake reaches take the term in full, so the few pieces of them still drawn outside a lake's outline read warmer
+  than they did: Plum Brook's piece in a lowland pond (north-west) says 81 F (was 67), fish 12 (17).
+- Any pond the routing treats as a lake counts (5 acres of level water), however small.
+- The north-west map's fit is still the region's, and has to run after the other three maps'.
+- The stream-burning session's lake-outlet rebuild is still to come. The term reads the reach tables at scoring
+  time, so it follows wherever the put-ins land; the counts here will shift a little with them.
+
+**Not published by this session:** three maps handed to the overview session.

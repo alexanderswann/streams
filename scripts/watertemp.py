@@ -12,12 +12,26 @@ leave-one-out error among the sets whose coefficients have the physical sign:
   elev_km   elevation
   log_area  drainage area (NHDPlus V2): in the East a small brook stays near groundwater temperature and a river
             warms in the sun and the mill ponds, whatever the air does
-  lake      the share of the creek's drainage that reaches it through a lake upstream (05c_drainages.py: the water
-            carried past dams and ponds over the reach's full drainage; a measured site takes the reach it sits on),
-            counted in full on creeks up to LAKE_FULL_KM2 and fading to nothing at LAKE_NONE_KM2 (lake_share()). A
-            lake's outlet runs at the temperature of its surface: in the Adirondacks, where most creeks leave a pond,
-            a creek fed wholly through one runs about 6 C warmer than one with none, and without this term three of
-            the four Adirondack maps had no fit with skill (2026-11-21).
+  lake      the share of the creek's drainage that reaches it through a lake (05c_drainages.py: the water carried
+            past dams and ponds over the reach's full drainage), where the lake lies within LAKE_NEAR_M up the
+            channel (lake_term(); a measured site takes the reach it sits on, lake_at()), counted in full on creeks
+            up to LAKE_FULL_KM2 and fading to nothing at LAKE_NONE_KM2 (lake_share()). A lake's outlet runs at the
+            temperature of its surface: in the Adirondacks, where most creeks leave a pond, the creek just below
+            one runs about 7 C warmer than one with none, and without this term three of the four Adirondack maps
+            had no fit with skill (2026-11-21).
+            Why only just below the lake (2026-11-22): the warmth is measured at the outlets and fades fast. The
+            mostly-lake-water sites of the three maps that use the term read 74.9 F within 650 ft of the lake (19
+            sites, 16 of them 73 F or more, none 68 F or less), 68.4 F from there to 0.6 mi (8 sites), 65.5 F from
+            0.6 to 1.9 mi (7), 66.3 F further down (11), against 63.0 F at the 231 sites with under half lake
+            water. The first version (the plain share, however far down) read every lake-fed reach as warm as an
+            outlet: 3.0 F too cool at the outlets, 1.4 to 5.0 F too warm below, and it took 10+ points from 444
+            reaches (173 mi), 401 of them recorded trout water, on evidence that holds for the outlets only (the
+            audit's test of the published maps). Past LAKE_NEAR_M a reach now reads as a creek with no lake: 3 to
+            6 F too cool at those 26 sites, on the side that costs no creek its credit (the score marks water down
+            only where it is near-certain). A reach takes the term for the part of its length within LAKE_NEAR_M.
+            How far below a lake a reach lies comes from the reaches themselves (below_lake()): up the reaches that
+            bring the lake water to the reach lying in the lake, or to where the lake's water is put in beside its
+            outline.
             Why it fades on rivers: a pond spills warm surface water, but a big dam may release cold water from the
             depths (a tailwater), and on a big river nearly all the water has been through some lake far upstream,
             so the share says less. The measured sites on lake-fed rivers of 200+ km2 are mixed. With the plain
@@ -28,8 +42,10 @@ leave-one-out error among the sets whose coefficients have the physical sign:
             near-certain; a cold tailwater is the standing example). The cost: with the fade those 12 sites read 2.2 C above the
             estimate on average, and warm lake-outlet rivers keep the credit they had (leave-one-out error 3.13 C
             against 3.04 C with the plain share).
-            The term enters a fit only where LAKE_MIN_SITES measured sites are mostly lake water (a term of 0.5 or
-            more): the Adirondacks have 41, Jackson 3, the others fewer, so every other area's fit stays as it was
+            The term enters a fit only where LAKE_MIN_SITES measured sites have a term of 0.5 or more (mostly lake
+            water, just below the lake): the High Peaks map has 6, the south-west map 15, the four Adirondack maps
+            together 28. Jackson has 9 and no fit there is better for the term (its dams release cold water); the
+            other areas have none or one. So every other area's fit stays as it was
 In the LA ranges air + elevation wins (the mountains span 2,000 m); in northeastern Connecticut, where the air only
 spans 2 C, it is drainage area.
 Sites are weighted by how well their median is known (since 2026-11-20): a site's median of n readings misses its
@@ -180,7 +196,11 @@ SIGMA_W2 = float("nan")
 TERMS = {"air": +1, "elev_km": -1, "log_area": +1, "lake": +1}
 LAKE_FULL_KM2, LAKE_NONE_KM2 = 50.0, 500.0   # the lake term: a creek up to this size takes its lake share in full, a
                                              # river from this size on none of it (between: by log drainage)
-LAKE_MIN_SITES = 10     # the lake term needs this many measured sites with a lake term of 0.5 or more
+LAKE_MIN_SITES = 5      # the lake term needs this many measured sites with a lake term of 0.5 or more (10 until the
+                        # term counted only just below a lake: sites at lake outlets are fewer than lake-fed sites)
+LAKE_NEAR_M = 200.0     # the lake term counts this far below a lake, along the channel (650 ft)
+LAKE_JOIN_M = 25.0      # a reach end this near a reach start runs into it (a cell and a half; the edges between boxes)
+LAKE_AT_M = 100.0       # lake water put into a channel this near a lake reach enters at the lake's outlet
 _BASE = [("air", "elev_km"), ("air",), ("elev_km",), ("log_area",), ("air", "log_area"), ("elev_km", "log_area"),
          ("air", "elev_km", "log_area")]
 SETS = _BASE + [("lake",)] + [s + ("lake",) for s in _BASE]
@@ -200,10 +220,9 @@ def area_at(pts):
 
 
 def lake_share(area_edge, area_full):
-    """The lake term of a reach: the share of its drainage that reaches it through a lake upstream (what crossbox.py
-    carries past dams and ponds, area_full_km2 less area_edge_km2 of 05c_drainages.py, over the full drainage), in
-    full where the reach drains LAKE_FULL_KM2 or less, fading with the log of its drainage to nothing at
-    LAKE_NONE_KM2."""
+    """The share of a reach's drainage that reaches it through a lake upstream (what crossbox.py carries past dams and
+    ponds, area_full_km2 less area_edge_km2 of 05c_drainages.py, over the full drainage), in full where the reach
+    drains LAKE_FULL_KM2 or less, fading with the log of its drainage to nothing at LAKE_NONE_KM2."""
     full = np.asarray(area_full, float)
     with np.errstate(invalid="ignore", divide="ignore"):
         share = np.clip(1 - np.asarray(area_edge, float) / full, 0, 1)
@@ -212,32 +231,153 @@ def lake_share(area_edge, area_full):
     return share * fade
 
 
+def below_lake(geom, carried, in_lake, lakes=None, limit=LAKE_NEAR_M):
+    """Metres from the nearest lake to each reach's start, up the channel the lake water comes down; inf where there
+    is none within `limit`. geom: the reaches' lines (upstream end first, a projected CRS); carried: the km2 of each
+    reach's drainage that came through a lake (area_full_km2 - area_edge_km2); in_lake: the reach lies in a lake
+    (05b_flow.py's "in:"); lakes: the lakes' outlines (flowlib.lake_water). Lake water enters a channel where a reach
+    lying in a lake runs into it, or where crossbox puts a lake's water in by the lake: most of the reach's lake water
+    is new there, and its start lies within LAKE_AT_M of a lake's outline or of a reach lying in one (a pond at the
+    head of a creek has no reach in it). From there the distance is carried down the reaches that bring the lake
+    water."""
+    import shapely
+    n = len(geom)
+    length = shapely.length(geom)
+    start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
+    carried = np.nan_to_num(np.asarray(carried, float), nan=0.0).clip(min=0)
+    in_lake = np.asarray(in_lake, bool)
+    donors = [[] for _ in range(n)]
+    for i, j in zip(*(a_.tolist() for a_ in shapely.STRtree(end).query(start, predicate="dwithin", distance=LAKE_JOIN_M))):
+        if i != j:
+            donors[i].append(j)
+    at_lake = np.zeros(n, bool)
+    for water in (geom[in_lake], lakes):
+        if water is not None and len(water):
+            at_lake[shapely.STRtree(water).query(start, predicate="dwithin", distance=LAKE_AT_M)[0]] = True
+    d0 = np.full(n, np.nan)
+    d0[in_lake] = 0.0
+    for i in np.flatnonzero(~in_lake):
+        if not np.isnan(d0[i]):
+            continue
+        chain, d, j = [], 0.0, i
+        while True:
+            if not np.isnan(d0[j]) and j != i and not in_lake[j]:
+                d += d0[j]
+                break
+            chain.append((j, d))
+            creek = [k for k in donors[j] if not in_lake[k] and carried[k] > 0]
+            new = carried[j] - sum(carried[k] for k in creek)
+            if any(in_lake[k] for k in donors[j]) or (carried[j] > 0 and new >= 0.5 * carried[j] and at_lake[j]):
+                break                                    # the lake water enters at this reach's start
+            if not creek:
+                d = np.inf
+                break
+            k = max(creek, key=lambda q: carried[q])
+            d += length[k]
+            if d > limit:
+                d = np.inf
+                break
+            j = k
+        for j, dj in chain:
+            d0[j] = d - dj if np.isfinite(d) and d - dj <= limit else np.inf
+    return d0
+
+
+_lakes = None
+
+
+def _lake_outlines():
+    """The area's lake outlines (flowlib.lake_water: what 05_score.py cuts the reaches at), read once."""
+    global _lakes
+    if _lakes is None:
+        import flowlib
+        _lakes = flowlib.lake_water(None)
+    return _lakes
+
+
+def _lake_frame(s):
+    """(lines in the area's CRS, lake_share, lies in a lake, metres below the lake at the start) of the reaches s."""
+    g = s.geometry if s.crs is None or s.crs == CRS else s.geometry.to_crs(CRS)
+    geom = np.array(g.values, dtype=object)
+    full = pd.to_numeric(s["area_full_km2"], errors="coerce").to_numpy(float)
+    edge = pd.to_numeric(s["area_edge_km2"], errors="coerce").to_numpy(float)
+    share = np.nan_to_num(lake_share(edge, full), nan=0.0)
+    in_lake = s["below_dam"].fillna("").astype(str).str.startswith("in:").to_numpy() if "below_dam" in s else np.zeros(len(s), bool)
+    fade = np.nan_to_num(lake_share(np.zeros(len(s)), full), nan=0.0)       # all of a lake reach's water is lake water
+    share = np.where(in_lake, fade, share)
+    return geom, share, in_lake, below_lake(geom, full - edge, in_lake, _lake_outlines())
+
+
+def lake_parts(s):
+    """(the lake term, the term at the reach's upper end, metres of the reach within LAKE_NEAR_M below a lake) of each
+    reach of s (a GeoDataFrame of an area's reaches with area_edge_km2, area_full_km2 and below_dam, as
+    scoring.attach gives them). Zeros where the columns aren't there (a box scored before its drainages are made).
+    The term is lake_share x the part of the reach's length that lies within LAKE_NEAR_M below a lake; a reach lying
+    in a lake takes its lake_share in full. Why only just below the lake: the module's header.
+    A reach's term is the mean over its length, as a site's is the value at its spot: a reach that starts at a pond
+    and runs on for half a mile is mostly past the warmth, and reads cool as a whole. Its first stretch still runs at
+    the term of its upper end (the reach's lake_share): the maps say so beside the reach's own estimate
+    (scoring.py's water_outlet). At the 19 measured sites within LAKE_NEAR_M of a lake the reach is a median 764 m
+    long and reads 4.4 C (7.9 F) below the site; the value at the site's spot reads 0.6 C below."""
+    import shapely
+    n = len(s)
+    if not n or "area_edge_km2" not in s or "area_full_km2" not in s or "geometry" not in s:
+        return np.zeros(n), np.zeros(n), np.zeros(n)
+    geom, share, in_lake, d0 = _lake_frame(s)
+    length = np.maximum(shapely.length(geom), 1e-6)
+    with np.errstate(invalid="ignore"):
+        near = np.clip((LAKE_NEAR_M - d0) / length, 0, 1)
+    near = np.where(in_lake, 1.0, np.where(np.isfinite(d0), near, 0.0))
+    return share * near, share * (near > 0), near * length
+
+
+def lake_term(s):
+    """The lake term of each reach of s: lake_parts()'s first value."""
+    return lake_parts(s)[0]
+
+
 def lake_at(pts):
-    """lake_share at measured sites (the area's CRS): of the reach each sits on, within 150 m; among several, the one
-    nearest the site's NHDPlus drainage (da_km2), then the nearest. NaN where no reach is that near, or the area's
-    reaches aren't built yet."""
+    """The lake term at measured sites (the area's CRS): the lake_share of the reach each sits on (within 150 m; among
+    several, the one nearest the site's NHDPlus drainage, da_km2, then the nearest) where the site lies within
+    LAKE_NEAR_M below a lake along that reach, else 0. A site on a reach lying in a lake reads lake water, except at
+    the reach's upper end where no lake reach runs in: there it reads the creek coming in (Archer Creek above Arbutus
+    Pond, 63.9 F, against 73.5 F at the pond's outlet), and takes that creek's term. NaN where no reach is within
+    150 m, or the area's reaches aren't built yet."""
     import shapely
     parts = []
     for r in REGIONS:
         d = out_dir(r)
-        if os.path.exists(f"{d}/streams_scored.gpkg") and os.path.exists(f"{d}/area_streams.csv"):
+        if all(os.path.exists(f"{d}/{f_}") for f_ in ("streams_scored.gpkg", "area_streams.csv", "flow_streams.csv")):
             s = gpd.read_file(f"{d}/streams_scored.gpkg")[["sid", "geometry"]].to_crs(CRS)
-            parts.append(s.merge(pd.read_csv(f"{d}/area_streams.csv"), on="sid"))
+            s = s.merge(pd.read_csv(f"{d}/area_streams.csv"), on="sid")
+            parts.append(s.merge(pd.read_csv(f"{d}/flow_streams.csv", low_memory=False)[["sid", "below_dam"]], on="sid", how="left"))
     out = np.full(len(pts), np.nan)
     if not parts:
         return out
-    s = pd.concat(parts, ignore_index=True)
-    geom, share = s.geometry.values, lake_share(s.area_edge_km2, s.area_full_km2)
-    full = s.area_full_km2.to_numpy(float)
-    tree = shapely.STRtree(geom)
+    s = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS)
+    geom, share, in_lake, d0 = _lake_frame(s)
+    full, length = s.area_full_km2.to_numpy(float), shapely.length(geom)
+    tree, ends = shapely.STRtree(geom), shapely.STRtree(shapely.get_point(geom, -1))
     da = pts.da_km2.to_numpy(float) if "da_km2" in pts else np.full(len(pts), np.nan)
+
+    def term(j, along):            # the lake term at `along` metres down reach j
+        return share[j] if in_lake[j] or d0[j] + along <= LAKE_NEAR_M else 0.0
+
     for i, p in enumerate(pts.geometry.values):
         k = tree.query(p, predicate="dwithin", distance=150)
         if len(k):
             dist = shapely.distance(geom[k], p)
             rank = dist if not np.isfinite(da[i]) else \
                 np.round(np.abs(np.log(np.clip(full[k], 0.1, None) / max(da[i], 0.1))), 1) * 1000 + dist
-            out[i] = share[k[int(np.argmin(rank))]]
+            j = k[int(np.argmin(rank))]
+            along = float(shapely.line_locate_point(geom[j], p))
+            if in_lake[j] and along <= LAKE_JOIN_M:
+                up = [q for q in ends.query(shapely.get_point(geom[j], 0), predicate="dwithin", distance=LAKE_JOIN_M) if q != j]
+                if not any(in_lake[q] for q in up):       # the site is where a creek comes into the lake
+                    q = max(up, key=lambda q_: full[q_], default=None)
+                    out[i] = 0.0 if q is None else term(q, length[q])
+                    continue
+            out[i] = term(j, along)
     return out
 
 
@@ -423,7 +563,7 @@ def fit_record():
 def estimate(air_aug, elev_m, area_km2=None, lake=None):
     """Estimated July-August daytime water temperature (C); NaN where an input the fit uses is missing, or the area
     has no fit with skill. Inputs outside the fitted sites' range are held at its edge: a straight line carried
-    far past the measured sites isn't evidence. `lake`: lake_share() of each reach."""
+    far past the measured sites isn't evidence. `lake`: lake_term() of each reach."""
     rec = fit_record()
     n = len(np.asarray(air_aug))
     if rec is None or not rec.get("ok"):
@@ -433,7 +573,7 @@ def estimate(air_aug, elev_m, area_km2=None, lake=None):
 
 
 NAMES = {"air": "August air (C)", "elev_km": "elevation (km)", "log_area": "log10 drainage area (km2)",
-         "lake": "share of the drainage that comes through a lake (fading out on rivers of 50 to 500 km2)"}
+         "lake": "share of the drainage that comes through a lake within 200 m upstream (fading out on rivers of 50 to 500 km2)"}
 
 
 if __name__ == "__main__":

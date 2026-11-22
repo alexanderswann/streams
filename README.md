@@ -784,24 +784,58 @@ of single readings around their site's median (1.3-3.9 °C by area), n the site'
 predictors miss on a well-measured site; a single grab sample counts for less than a logger's summer. The skill test
 and the area mean are weighted the same way. Jackson's fit has skill since (0.887 of the spread against 0.906), so
 its reaches carry an estimate; elsewhere scores moved by 2 points at most. Since 2026-11-21 a fit may also use
-**the share of a creek's drainage that reaches it through a lake upstream** (`lake`: the water `crossbox.py` carries
-past dams and ponds over the reach's full drainage; a measured site takes the reach it sits on within 150 m). A lake's
-outlet runs at the temperature of its surface: at the Adirondack sites a creek fed wholly through a pond reads about
-6 °C warmer than one with none. Three of the four Adirondack maps had no fit with skill (leave-one-out error
-0.92-1.02 of the spread) and gave every reach its area's mean, full credit everywhere. With the term:
-the High Peaks map fits elevation and the lake share (90 sites, 3.18 °C against a spread of 3.85), the south-west map the
-lake share (123 sites, 3.02 against 3.50), the south-east map keeps its fit on stream size (2.50 against 2.99), and the
-north-west map, still without a fit on its own 63 sites, takes the one on all four maps' 337 sites (elevation and the
-lake share, 3.13 against 3.59), which misses its own sites by 2.87 °C against their spread of 3.36
+**the lake water just above a reach** (`lake`). A lake's outlet runs at the temperature of its surface, and the warmth
+fades fast below it. At the Adirondack maps' measured sites with mostly lake water, the 19 within 200 m (650 ft) of
+the lake read 23.8 °C (74.9 °F; 16 of them 73 °F or more, none 68 °F or less), the 8 from there to 1 km below
+20.2 °C, the 7 from 1 to 3 km below 18.6 °C; the 231 sites with under half lake water read 17.2 °C. So the term is the
+share of a reach's drainage that reaches it through a lake (the water `crossbox.py` carries past dams and ponds over
+the reach's full drainage), counted **only for the part of the reach within 200 m below the lake, along the channel**
+(`LAKE_NEAR_M`; `below_lake()` walks up the reaches that bring the lake water, to a reach lying in the lake or to
+where the lake's water is put in beside its outline; no per-area setting). A reach lying in a lake takes the term in
+full. A measured site takes the value at its own spot on the reach it sits on (within 150 m); a site where a creek
+comes into a lake takes the creek's.
+**A reach is scored and shown on its estimate as a whole, the mean along it** (`lake_parts()`): a reach that starts
+at a pond and runs on for half a mile is mostly past the warmth and reads cool. Its first stretch still runs at the
+outlet's temperature, so the map's popup adds that ("summer water about 64 °F (…); about 75 °F over its first
+650 ft, just below a lake"; `water_outlet` and `outlet_m` in the ranked table, from `scoring.py`, with no part in the
+score) where the stretch is estimated 1 °C or more warmer than the reach as a whole and is 50 m or longer: 1,193 of
+the three maps' 24,914 drawn creek lines. At the 19 measured outlet sites the reach is a median 764 m long: its own
+estimate reads 4.4 °C (7.9 °F) below the site, the popup's line for its first stretch 0.6 °C (1.0 °F) below. Of the
+26 sites measuring 73 °F or more, 6 sit on a reach that itself reads 73 °F or more and 17 on one that keeps full
+credit; with the popup's line counted, the map says 73 °F or more at 16 of them. Only a reach cut 200 m below each
+lake would carry that warmth in its score (a rebuild from `05_score.py`; not done, the user's call).
+As first installed (2026-11-21) the share counted however far upstream the lake was. That read creeks 1 to 3 km below
+a pond 2.8 °C (5 °F) too warm and took 10 or more points from 444 creek reaches (173 mi) of three maps, 401 of them
+with a trout record. With the distance in it (2026-11-22, the user's choice of three options; measured by
+`audit/scripts/lake_term_test.py` and in the log) 99 short reaches just below ponds lose that much (8.7 mi, median
+139 m, estimated at about 24 °C). The estimate at a site's own spot is 73 °F or more at 21 sites (16 measured there,
+the other five at 70-73 °F) of the 26 that are; the first form's was at 7 (6 measured there).
+Three of the four Adirondack maps had no fit with skill without a lake term (leave-one-out error 0.92-1.02 of the
+spread) and gave every reach its area's mean, full credit everywhere. With the term:
+the High Peaks map fits elevation and the lake term (90 sites, 3.16 °C against a spread of 3.85), the south-west map the
+lake term (121 sites, 2.55 against 3.44; the fit's one pass of outlier removal now leaves out two single readings of
+25.0 °C, and with them in it is 2.69 against 3.50, where the first form gave 3.02), the south-east map keeps its fit
+on stream size (2.50 against 2.99), and the north-west map, still without a fit on its own 63 sites, takes the one on
+all four maps' 336 sites (elevation and the lake term, 2.95 against 3.58), which misses its own sites by 2.84 °C
+against their spread of 3.36
 (`water_temp_group` in `config.py`: a map's own fit comes first, and the region's only where it misses the map's own
 sites by no more than 0.9 × their spread. One fit for all four missed the south-east map's sites by 3.10 °C, more
-than their own spread.) The term counts in full on creeks up to 50 km² and fades to nothing at 500 km². A pond
+than their own spread.) A creek fed wholly through a pond reads 7.2-7.9 °C warmer at the outlet than one with no lake.
+The cost of the distance, said plainly: beyond 200 m the estimate reads a lake-fed creek as a creek with no lake,
+1.6-3.4 °C (3-6 °F) too cool at the 26 measured sites there. That marks no creek down; a lake-fed creek that does
+run warm further down keeps full credit (2 of the 8 sites from 200 m to 1 km below read 73 °F or more, 3 read 68 °F
+or less). Keeping about half the warmth beyond 200 m fits the sites a little better (under 0.1 °C of leave-one-out
+error) and would take about 5 points from some 100 mi on 15 thinly sampled sites: not near-certain, so not installed.
+The 200 m itself is not sharp: two outlet sites 230 and 251 m below their lake read 23.2 and 23.0 °C, a third at
+256 m reads 14.6 °C on one reading.
+The term counts in full on creeks up to 50 km² and fades to nothing at 500 km². A pond
 spills warm surface water, but a big dam may release cold water from depth, and the measured sites on lake-fed
-rivers of 200+ km² are mixed: with the plain share the Adirondack ones read 0.7 °C below the fit on average (the
-Sacandaga below Great Sacandaga Lake's dam 2.9 °C below, Lake George's outlet 0.9 °C above), Jackson's 1.4 °C
-below. A river below a dam isn't marked down for warmth on that. The cost: with the fade those Adirondack sites read
-2.2 °C above the estimate on average, so warm lake-outlet rivers keep the credit they had. The term enters a fit only
-where 10 measured sites are mostly lake water (the Adirondacks have 41, Jackson 3, the others fewer): every other area's fit is as it was.
+rivers of 200+ km² are mixed: with the plain share at any distance the Adirondack ones read 0.7 °C below the fit on
+average (the Sacandaga below Great Sacandaga Lake's dam 2.9 °C below, Lake George's outlet 0.9 °C above), Jackson's
+1.4 °C below. A river below a dam isn't marked down for warmth on that. The cost: with the fade those Adirondack
+sites read 2.2 °C above the estimate on average, so warm lake-outlet rivers keep the credit they had. The term enters
+a fit only where 5 measured sites have a term of 0.5 or more (the four Adirondack maps have 28: High Peaks 6,
+south-west 15; Jackson has 9, and no fit there is better for the term): every other area's fit is as it was.
 In the LA ranges: water = 10.5 + 0.56 × August air (°C) − 4.17 × elevation (km), on 65 sites, with a
 leave-one-out RMSE of 3.2 °C (air alone 3.45, elevation alone 3.3). Three sites with medians over 30 °C are left out
 (two on Warm Creek in San Bernardino, which is fed by hot springs, and one August afternoon reading in Chino
