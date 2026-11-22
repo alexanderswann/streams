@@ -6,7 +6,7 @@ Walking speed is Tobler's hiking function on the local slope, averaged uphill/do
   - creek bottoms (>= 1 km^2 drainage) off trail: 45% of Tobler (boulder-hopping, wading)
   - other off-trail terrain: 30% of Tobler (SoCal chaparral), slopes over 45 degrees nearly impassable
 Bikeable (ridden wherever it beats walking):
-  - roads closed to cars and every fire road: today's closure segments, roads cut off by closures, OSM roads tagged
+  - roads closed to cars and every fire road: closures in force in mid-July, roads cut off by them, OSM roads tagged
     access=no / motor_vehicle=no, OSM tracks, access roads of class "bike" (02e_access.py: closed to cars, open to
     bikes) and all fire roads of the trail layer (02d_trails.py). Fire roads count even where bikes may not be
     allowed (wilderness, posted no bikes, fire closures, closed or private in OSM): the bike time stays in and the
@@ -20,7 +20,9 @@ benched into a canyon wall climbs far less than the hillside under it (West Fork
 bike_check names why bike access is doubtful when the fastest route rides at least CHECK_MIN minutes on such a fire
 road, and bike_check_min is how long it rides on them. Reaches also get approach_med_min, the median time along the
 reach, and bike_med_min, the minutes of it ridden (the fish score counts ridden minutes double, scoring.py).
-Sources are cells on open public drivable roads a car can reach, minus today's full closures (07_road_closures.py).
+Sources are cells on open public drivable roads a car can reach, minus the full closures still in force in mid-July,
+the season the map scores (07_road_closures.py: a winter gate or a night's road work doesn't cut its road; 09_drive.py
+names today's closures on the access line instead).
 Each reach also gets the trailhead (the road cell its fastest route starts from). Run with REGION=<name>.
 """
 import numpy as np, pandas as pd, geopandas as gpd, rasterio, os, json, time, shapely
@@ -30,6 +32,7 @@ from scipy.ndimage import map_coordinates
 from shapely.geometry import Point, MultiPoint, box
 from config import *
 from geomatch import overpass, wilderness_path
+import roadclosures
 
 TRAIL_MAX_GRADE = 0.15
 CHANNEL_FACTOR, OFFTRAIL_FACTOR = 0.45, 0.30
@@ -60,12 +63,20 @@ roads = gpd.read_file(f"{RAW}/osm_roads.gpkg")
 trails = gpd.read_file(f"{RAW}/osm_trails.gpkg")
 drivable = roads[~roads.access.isin(["private", "no"]) & ~roads.motor_vehicle.isin(["no", "private"])
                  & (roads.highway != "track")]
+# The times are for mid-July: a full closure cuts its road only if 07_road_closures.py counts it as still in force then
+# (in_season); winter gates, short works and closures past their reopening date don't, nor one 07 could not lay on its
+# road (placed: a straight line between its ends would cut whatever roads it crosses). It cuts the road it runs along,
+# not the roads it meets (roadclosures.py)
 closed = None
 if os.path.exists(f"{MAP_OUT}/road_closures.gpkg"):
     cl = gpd.read_file(f"{MAP_OUT}/road_closures.gpkg").to_crs(CRS)
-    cl = cl[(cl.severity == "full closure") & (cl.when == "active now")]
-    closed = cl.buffer(25).union_all() if len(cl) else None
-open_roads = drivable if closed is None else drivable.assign(geometry=drivable.geometry.difference(closed))
+    if "in_season" not in cl:     # written before 2026-11-22
+        print(f"{LABEL}: road_closures.gpkg predates the season rule (run 07_road_closures.py): today's full closures cut")
+        cl["in_season"], cl["placed"] = cl.when.eq("active now"), True
+    cl = cl[cl.severity.eq("full closure") & cl.in_season.astype(bool) & cl.placed.astype(bool)]
+    cl = cl[cl.intersects(box(XMIN, YMIN, XMAX, YMAX).buffer(2000))]
+    closed = cl.geometry.values if len(cl) else None
+open_roads = drivable if closed is None else drivable.assign(geometry=roadclosures.cut(drivable.geometry.values, closed))
 open_roads = open_roads[~open_roads.is_empty].explode(index_parts=False)
 
 # Only roads a car can actually reach count as trailheads: drop pieces cut off by closures (e.g. campground
@@ -131,8 +142,10 @@ def cycleways():
 wild = gpd.read_file(wilderness_path()).to_crs(CRS).union_all().intersection(box(XMIN, YMIN, XMAX, YMAX).buffer(2000))
 shapely.prepare(wild)
 clip = lambda d: d.cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
-closed_roads = roads[roads.intersects(closed)] if closed is not None else roads.iloc[:0]
-closed_roads = closed_roads.assign(geometry=closed_roads.geometry.intersection(closed.buffer(30))) if closed is not None else closed_roads
+closed_roads = roads.iloc[:0]
+if closed is not None:     # the closed stretches themselves, ridden (5 m past the cut so they join the open road)
+    _rows, _parts = roadclosures.closed_parts(roads.geometry.values, closed)
+    closed_roads = roads.iloc[_rows].assign(geometry=_parts)
 gated = roads[(roads.access == "no") | roads.motor_vehicle.isin(["no"]) | (roads.highway == "track")]
 gated = gated[gated.access != "private"]            # private roads count only where the layers below list them
 ar = clip(gpd.read_file(f"{SHARED}/access_roads.gpkg").to_crs(CRS))        # 02e_access.py

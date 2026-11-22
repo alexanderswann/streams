@@ -24,6 +24,21 @@ Outside California (config.py `sources`; each feed was fetched and checked on 20
   blri_roads      Blue Ridge Parkway closures: the park's web table of milepost sections, drawn between the
                   park's milepost points along OSM roads
 WYDOT's highway conditions and Connecticut's closures have no feed that works without an account: not included.
+
+Which closures the approach times count (08_hike.py, 09_drive.py; 2026-11-22, audit finding 1). The times are for the
+season the map scores (mid-July, the day of 10_sun.py's sun hours), so a full closure cuts its road only if it will
+still be in force then (in_season), by the closure's own dates and words, never by road or park:
+  - an end date (the feed's, or one its notes give: "closed November 1 to April 30", "Through May31", "until
+    mid-May"): counted if it falls on or after the coming mid-July; one before it (a winter gate, a night's work, a
+    county closure whose reopening date has passed) is not
+  - no end date: counted if it has been in force since before last mid-July (it stayed shut through a summer: Angeles
+    Crest Highway's "weather" closure since December 2025) or its notes don't call it seasonal; not counted if they
+    do (winter, season, snow, muddy, icy, weather, annual)
+  - no dates and no notes at all (Grand Teton's Jenny Lake Loop): as the closure it can only be reached through, if
+    that one isn't counted (a road behind a winter gate); otherwise counted
+  - a closure the router could not lay on its road (drawn as a straight line, placed = False) cuts nothing.
+The closures not counted that are in force today become a dated note on the access line of the routes that use them
+(note, joined by 09_drive.py: "Teton Park Road closed for winter until Apr 30 (as of Nov 22)").
 """
 import json, os, re, time, datetime as dt, requests, shapely, numpy as np, pandas as pd, geopandas as gpd, networkx as nx
 from shapely.geometry import LineString, Point, box, shape
@@ -34,6 +49,37 @@ CA = has("ca_closures")
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
 NOW = dt.datetime.now()
 LOOKAHEAD = dt.timedelta(days=7)  # also show closures starting within a week
+# the day the approach times are for (see the docstring): the coming mid-July, and the one before it
+SEASON_MONTH, SEASON_DAY = 7, 15
+SEASON = dt.datetime(NOW.year + (NOW > dt.datetime(NOW.year, SEASON_MONTH, SEASON_DAY)), SEASON_MONTH, SEASON_DAY)
+LAST_SEASON = SEASON.replace(year=SEASON.year - 1)
+# a closure's notes that make it seasonal or a passing condition rather than damage or works (whole words, so a road
+# named Snowbird, Wintergreen or Mud Creek in the notes doesn't count)
+SEASONAL = re.compile(r"(?i)\bwinter\b|\bseasons?\b|\bseasonal(?:ly)?\b|\bsnow(?:fall|pack|mobiles?|y)?\b|\bover-?snow\b"
+                      r"|\bannual(?:ly)?\b|\bmuddy\b|\bmud season\b|\bicy\b|\bweather\b")
+_MON = r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?" \
+       r"|nov(?:ember)?|dec(?:ember)?)(?![a-z])\.?"
+END_WORDS = re.compile(rf"(?i)\b(?:to|until|till|through|thru)\s+(?:(mid|early|late)[\s-]*)?{_MON}\s*(\d{{1,2}})?(?!\d)"
+                       r"(?:st|nd|rd|th)?(?:,?\s*(20\d\d))?")
+
+
+def text_end(text):
+    """The reopening a closure's own notes give ("closed November 1 to April 30", "Seasonal Closure ... Through May31",
+    "until mid-May") as (the day, the words to show); (None, None) if they give none. Without a year it is the next
+    such day, or the last one if that was under two months ago (notes not yet updated after the reopening date)."""
+    m = END_WORDS.search(str(text or ""))
+    if not m:
+        return None, None
+    part, mon = (m.group(1) or "").lower(), "jan feb mar apr may jun jul aug sep oct nov dec".split().index(m.group(2)[:3].lower()) + 1
+    last = (dt.date(2001, mon % 12 + 1, 1) - dt.timedelta(days=1)).day
+    day = int(m.group(3)) if m.group(3) and 1 <= int(m.group(3)) <= last else {"early": 5, "mid": 15, "late": 25}.get(part, last)
+    if m.group(4):
+        end = dt.datetime(int(m.group(4)), mon, day, 23, 59)
+    else:
+        end = min(d for d in (dt.datetime(y, mon, day, 23, 59) for y in (NOW.year - 1, NOW.year, NOW.year + 1))
+                  if d >= NOW - dt.timedelta(days=60))
+    name = dt.date(2001, mon, 1).strftime("%b")
+    return end, (f"{part}-{name}" if part and not m.group(3) else f"{name} {day}" if m.group(3) else name)
 # Mountain highways only; urban freeway night work along the foothills would bury the map
 ROUTES = {"SR-1", "SR-2", "SR-18", "SR-23", "SR-27", "SR-38", "SR-39", "SR-138", "SR-142", "SR-173", "SR-189",
           "SR-330",
@@ -75,19 +121,20 @@ from scipy.spatial import cKDTree
 tree = cKDTree(nodes)
 
 def route(p, q):
-    """Road-following line between two points (UTM); straight line if no path or >3x crow-flies."""
+    """Road-following line between two points (UTM) and True; a straight line and False (not placed on its road: it
+    cuts nothing in 08 / 09) if an end is over 150 m from a road, there is no path or the path is over 3x crow-flies."""
     (dp, dq), (ip, iq) = tree.query([p, q])  # (distances, indices)
     if dp > 150 or dq > 150:
-        return LineString([p, q])
+        return LineString([p, q]), False
     a, b = tuple(nodes[ip]), tuple(nodes[iq])
     if a == b:
-        return Point(p).buffer(60).exterior  # spot closure: small ring so it is visible
+        return Point(p).buffer(60).exterior, True  # spot closure: small ring so it is visible
     try:
         path = nx.shortest_path(G, a, b, weight="w")
     except nx.NetworkXNoPath:
-        return LineString([p, q])
+        return LineString([p, q]), False
     line = LineString(path)
-    return line if line.length < 3 * Point(p).distance(Point(q)) + 500 else LineString([p, q])
+    return (line, True) if line.length < 3 * Point(p).distance(Point(q)) + 500 else (LineString([p, q]), False)
 
 to_utm = lambda lon, lat: gpd.GeoSeries([Point(lon, lat)], crs=4326).to_crs(CRS).iloc[0].coords[0]
 rows = []
@@ -120,6 +167,7 @@ for d in ((6, 7, 8, 12) if CA else ()):
         full = not side and (c["typeOfClosure"] == "Full" or c["lanesClosed"] == c["totalExistingLanes"])
         if b["beginRoute"] in FULL_ONLY and not full:
             continue
+        line, placed = route(p, q)
         rows.append(dict(
             source="Caltrans", road=f"{b['beginRoute']} ({l['location']['travelFlowDirection']})",
             from_=b["beginLocationName"], to=e["endLocationName"],
@@ -132,7 +180,7 @@ for d in ((6, 7, 8, 12) if CA else ()):
             end="indefinite" if end is None else end.strftime("%Y-%m-%d %H:%M"),
             when="active now" if start <= NOW else "upcoming (7 days)",
             long_term=indefinite or (end is not None and end - start > dt.timedelta(days=7)),
-            geometry=route(p, q)))
+            t0=start, t1=end, placed=placed, geometry=line))
 if CA:
     print("Caltrans", len(rows))
 
@@ -154,11 +202,14 @@ def county(url, fields, mk, where="1=1"):
     return n
 
 def reopening(reopen):
-    """LA County's estimated reopening ("12 31 26 12:00 AM") as a datetime; None for "TBD" or anything else."""
-    try:
-        return dt.datetime.strptime(reopen, "%m %d %y %I:%M %p")
-    except ValueError:
-        return None
+    """LA County's estimated reopening ("12 31 26 12:00 AM") or closure date ("01/15 23 06:31 PM") as a datetime;
+    None for "TBD" or anything else."""
+    for f_ in ("%m %d %y %I:%M %p", "%m/%d %y %I:%M %p"):
+        try:
+            return dt.datetime.strptime(" ".join(str(reopen or "").split()), f_)
+        except ValueError:
+            pass
+    return None
 
 def la(p):
     reopen = (p.get("ESTIMATEDREOPENING") or "").strip()
@@ -168,17 +219,29 @@ def la(p):
     return dict(source="LA County DPW", road=(p.get("MAIN_") or "").strip(), from_=p.get("FROM_"), to=p.get("TO_"),
                 severity="full closure", reason=(p.get("REASON") or "") + note, start=p.get("ACTUALCLOSUREDATEFORMATTED"),
                 end=reopen or "TBD", when="active now",
-                long_term=due is None or due - NOW > dt.timedelta(days=7))   # as for Caltrans: no date, or over a week off
+                long_term=due is None or due - NOW > dt.timedelta(days=7),   # as for Caltrans: no date, or over a week off
+                t0=reopening(p.get("ACTUALCLOSUREDATEFORMATTED")), t1=due)
 print("LA County", county("https://dpw.gis.lacounty.gov/dpw/rest/services/Road_Closures/MapServer/0/query",
                           ["MAIN_", "FROM_", "TO_", "REASON", "ACTUALCLOSUREDATEFORMATTED", "ESTIMATEDREOPENING"], la))
 
 def ms(v):
     return dt.datetime.fromtimestamp(v / 1000).strftime("%Y-%m-%d") if v else ""
+def ms_dt(v):
+    """An ArcGIS date (milliseconds since 1970, or a date written out) as a datetime; None if blank."""
+    if v is None or v == "" or (isinstance(v, float) and np.isnan(v)):
+        return None
+    try:
+        return dt.datetime.fromtimestamp(float(v) / 1000)
+    except (TypeError, ValueError):
+        try:
+            return pd.Timestamp(v).tz_localize(None).to_pydatetime()
+        except (TypeError, ValueError):
+            return None
 def sb(p):
     return dict(source="San Bernardino County DPW", road=p.get("street") or "unnamed road", from_=None, to=None,
                 severity="full closure", reason=" · ".join(x for x in (p.get("subtype"), p.get("description")) if x),
                 start=ms(p.get("starttime")), end=ms(p.get("endtime")) or "TBD", when="active now",
-                long_term=not p.get("endtime"))
+                long_term=not p.get("endtime"), t0=ms_dt(p.get("starttime")), t1=ms_dt(p.get("endtime")))
 print("SB County", county("https://services.arcgis.com/ZZ0KZXZVmgB1v555/arcgis/rest/services/"
                           "RoadClosures_89e62fc252ba4ce3b88ac0b524ebd6f0_public/FeatureServer/1/query",
                           ["street", "subtype", "description", "starttime", "endtime"], sb))
@@ -188,7 +251,8 @@ def riverside(p):
         return None
     return dict(source="Riverside County TLMA", road=p.get("RoadName") or "unnamed road", from_=p.get("RoadFrom"),
                 to=p.get("RoadTo"), severity="full closure", reason=p.get("ClosureReason") or "", start=ms(p.get("ClosedOn")),
-                end=ms(p.get("OpenedOn")) or "TBD", when="active now", long_term=not p.get("OpenedOn"))
+                end=ms(p.get("OpenedOn")) or "TBD", when="active now", long_term=not p.get("OpenedOn"),
+                t0=ms_dt(p.get("ClosedOn")), t1=ms_dt(p.get("OpenedOn")))
 print("Riverside County", county("https://gis.countyofriverside.us/arcgis/rest/services/road_closures/"
                                  "roadClosures_wMap_prod/MapServer/11/query",
                                  ["RoadName", "RoadFrom", "RoadTo", "ClosureReason", "ClosedOn", "OpenedOn", "IsClosed"],
@@ -236,7 +300,7 @@ def ventura():
         rows.append(dict(source="Ventura County PWA", road=pr.get("RoadName"), from_=pr.get("From_"), to=pr.get("To_"),
                          severity="full closure", reason=" · ".join(x for x in (pr.get("ClosureType"), pr.get("Description")) if x),
                          start=pr.get("StartDate") or "", end=pr.get("EndDate") or "TBD", when="active now",
-                         long_term=True, geometry=geom))
+                         long_term=True, t0=ms_dt(pr.get("StartDate")), t1=ms_dt(pr.get("EndDate")), geometry=geom))
         n += 1
     return n
 print("Ventura County", ventura())
@@ -267,12 +331,12 @@ def from_ms(v):
 def txt(*parts):
     """The parts that hold text, joined (the services leave empty fields as None or NaN)."""
     return " · ".join(str(x).strip() for x in parts if isinstance(x, str) and x.strip())
-def add(source, road, severity, reason, start, end, geom, always=False, frm=None, to=None):
+def add(source, road, severity, reason, start, end, geom, always=False, frm=None, to=None, placed=True):
     w = when_of(start, end)
     if w is not None and geom is not None and not geom.is_empty:
         rows.append(dict(source=source, road=road if isinstance(road, str) and road.strip() else "unnamed road", from_=frm, to=to, severity=severity,
                          reason=" ".join(str(reason or "").split())[:300], start=w[0], end=w[1], when=w[2], long_term=w[3],
-                         always=always, geometry=geom))
+                         always=always, t0=start, t1=end, placed=placed, geometry=geom))
 
 if has("grte_roads"):     # Grand Teton National Park: 1 open, 2 travel impacted, 3 closed, 4-6 over-snow travel only
     n0 = len(rows)
@@ -398,8 +462,9 @@ if has("blri_roads"):     # the Parkway's closures page: a table of milepost sec
             ka, kb = near(a_), near(b_)
             if ka is None or abs(ka - a_) > 1.5 or abs(kb - b_) > 1.5 or ka == kb:
                 continue                      # the section lies outside the area's mileposts
+            g, ok = route(mp[ka].coords[0], mp[kb].coords[0])
             add("Blue Ridge Parkway (NPS)", f"Blue Ridge Parkway, milepost {a_:g}–{b_:g}", "full closure", " · ".join(tds[1:]), None, None,
-                route(mp[ka].coords[0], mp[kb].coords[0]), always=True)
+                g, always=True, placed=ok)
     except requests.RequestException:
         print("  Blue Ridge Parkway: page not reachable")
     print("Blue Ridge Parkway", len(rows) - n0)
@@ -526,25 +591,29 @@ if has("cherokee_nf"):    # Cherokee NF (Tennessee): its road construction table
             if len(b_) < 2 or len(e_) < 2 or start is None:      # no place, or not begun ("TBD")
                 continue
             p_, q_ = to_utm(b_[1], b_[0]), to_utm(e_[1], e_[0])
-            g = route(p_, q_) if Point(p_).distance(Point(q_)) > 30 else Point(p_).buffer(60).exterior
+            g, ok = route(p_, q_) if Point(p_).distance(Point(q_)) > 30 else (Point(p_).buffer(60).exterior, True)
             if not g.intersects(area):
                 continue
             why = col(r, "Reason")
             full = re.search(r"(?i)fully closed|full closure|closed to (?:the )?public|bridge out|^closed\b|closed from", why)
             add("Cherokee NF (USFS)", f"FS {col(r, 'Road Number')} {col(r, 'Road Name')}", "full closure" if full else "phased closure",
                 txt(why, f"milepost {col(r, 'Milepost')}" if col(r, "Milepost") else ""), start, words_date(col(r, "End Date"), last=True),
-                g, always=True)
+                g, always=True, placed=ok)
     except requests.RequestException:
         print("  Cherokee NF: page not reachable")
     print("Cherokee NF", len(rows) - n0)
 
-COLS = ["source", "road", "from_", "to", "severity", "work", "reason", "start", "end", "when", "long_term", "always", "geometry"]
+COLS = ["source", "road", "from_", "to", "severity", "work", "reason", "start", "end", "when", "long_term", "always", "t0", "t1",
+        "placed", "geometry"]
 cl = gpd.GeoDataFrame(rows, crs=CRS) if rows else gpd.GeoDataFrame({c: [] for c in COLS[:-1]}, geometry=[], crs=CRS)
 for c_ in COLS:
     if c_ not in cl:
         cl[c_] = None
 cl = cl.rename(columns={"from_": "from"})
 cl["always"] = cl.always.fillna(False).astype(bool)
+cl["placed"] = cl.placed.fillna(True).astype(bool)          # a source's own line, or one routed along the roads
+for c_ in ("t0", "t1"):
+    cl[c_] = pd.to_datetime(cl[c_], errors="coerce")
 
 # Keep closures in mountain terrain: >= MIN_RELIEF m of elevation range within 1 km of the closure midpoint.
 # This drops urban stretches (PCH in Marina del Rey, foothill freeways) that fall inside the study boxes.
@@ -569,11 +638,75 @@ if cal.any():
     agg = cl[cal].sort_values("start").groupby(key, dropna=False).agg(
         reason=("reason", "first"), start=("start", "first"), end=("end", "last"), when=("when", "first"),
         long_term=("long_term", "max"), relief_m=("relief_m", "first"), geometry=("geometry", "first"),
+        t0=("t0", "min"), t1=("t1", lambda s: pd.NaT if s.isna().any() else s.max()), placed=("placed", "first"),
         nights=("start", "size")).reset_index()
     agg["reason"] = agg.reason + np.where(agg.nights > 1, " · " + agg.nights.astype(str) + " scheduled windows", "")
     cl = pd.concat([gpd.GeoDataFrame(agg.drop(columns="nights"), crs=CRS), cl[~cal]], ignore_index=True)
 cl = gpd.GeoDataFrame(cl.drop(columns=["work", "always"], errors="ignore"), crs=CRS)
 cl["fetched"] = NOW.strftime("%Y-%m-%d %H:%M")
+
+
+def season_rule(r):
+    """For one full closure (the docstring's rule): (counted in the approach times?, why, in words, for the closures
+    layer, the words for the access-line note of the routes it lies on, or None)."""
+    text = str(r.reason or "")
+    t1, words = (r.t1.to_pydatetime(), None) if pd.notna(r.t1) else text_end(text)
+    if t1 is not None and words is None:
+        words = f"{t1:%b} {t1.day}" + (f", {t1.year}" if t1 < NOW and t1.year != NOW.year else "")
+    kind = " for winter" if re.search(r"(?i)\bwinter\b|\bsnow(?:fall|pack|mobiles?|y)?\b|\bover-?snow\b", text) \
+        else " for the season" if re.search(r"(?i)\bseasons?\b|\bseasonal", text) \
+        else " (mud)" if re.search(r"(?i)\bmuddy\b|\bmud season\b", text) else " (weather)" if re.search(r"(?i)\bweather\b", text) else ""
+    if not r.placed:
+        return False, "not counted (could not be laid on its road: drawn as a straight line)", None
+    if t1 is not None:
+        if t1 < NOW:
+            return False, f"not counted (its reopening date, {words}, has passed)", f"{r.road} listed closed, reopening was due {words}"
+        if t1 < SEASON:      # (one lifting within a day, a night's road work, gets no note on the access lines)
+            return False, f"not counted (ends {words}, before mid-July)", \
+                f"{r.road} closed{kind} until {words}" if t1 - NOW >= dt.timedelta(days=1) else None
+        return True, f"counted (in force until {t1:%b} {t1.day}, {t1.year})", None
+    if pd.notna(r.t0) and r.t0 <= LAST_SEASON:
+        return True, f"counted (in force since {r.t0:%b %Y}, last mid-July included)", None
+    if SEASONAL.search(text):
+        return False, "not counted (seasonal or weather closure, by its notes)", f"{r.road} closed{kind}"
+    return True, "counted (no end date)", None
+
+
+rule = [season_rule(r) if r.severity == "full closure" else (False, "", None) for r in cl.itertuples()]
+
+
+def behind_gates(cands, gates):
+    """{candidate: the gate it lies behind} for the candidate closures none of whose road is left in the main road
+    network once the gate closures' roads are taken out (every way to them runs through a gate)."""
+    def near(g):     # the road graph's nodes within 25 m of a closure line
+        pts = [shapely.line_interpolate_point(g, d).coords[0] for d in np.arange(0, g.length + 10, 10)]
+        return {k for lst in tree.query_ball_point(pts, 25) for k in lst}
+    shut = set().union(*(near(cl.geometry.iloc[j]) for j in gates))
+    H = G.copy()
+    H.remove_nodes_from(tuple(nodes[k]) for k in shut)
+    main = max(nx.connected_components(H), key=len)
+    out = {}
+    for i in cands:
+        if not any(tuple(nodes[k]) in main for k in near(cl.geometry.iloc[i]) - shut):
+            out[i] = min(gates, key=lambda j: cl.geometry.iloc[j].distance(cl.geometry.iloc[i]))
+    return out
+
+
+# A closure with no dates and no words of its own can't be judged by the rule (Grand Teton's Jenny Lake Loop, shut
+# November 1 with the park's other roads, comes with nothing). Where every way to it runs through a closure the rule
+# doesn't count and that hasn't lapsed (a winter gate, works ending before mid-July), it is taken to share that closure's
+# season, as a road behind a winter gate does
+cands = [i for i, (x, r) in enumerate(zip(rule, cl.itertuples())) if x[1] == "counted (no end date)" and not str(r.reason or "").strip()]
+gates = [i for i, x in enumerate(rule) if x[1].startswith(("not counted (ends", "not counted (seasonal"))]
+if cands and gates:
+    for i, j in behind_gates(cands, gates).items():
+        r = cl.iloc[i]
+        rule[i] = (False, f"not counted (no dates or notes of its own; reached only past {cl.road.iloc[j]}, not counted)",
+                   f"{r.road} closed")
+cl["in_season"] = [x[0] for x in rule]       # cuts the road in 08_hike.py and 09_drive.py
+cl["times"] = [x[1] for x in rule]
+cl["note"] = [x[2] if w == "active now" else None for x, w in zip(rule, cl["when"])]
+cl = cl.drop(columns=["t0", "t1"])
 if len(cl):
     cl.to_crs(4326).to_file(f"{MAP_OUT}/road_closures.gpkg")
     cl.drop(columns="geometry").to_csv(f"{MAP_OUT}/road_closures.csv", index=False)
@@ -581,6 +714,12 @@ else:   # nothing closed (or no feed for this area): no layer, and the later ste
     for f_ in ("road_closures.gpkg", "road_closures.csv"):
         if os.path.exists(f"{MAP_OUT}/{f_}"):
             os.remove(f"{MAP_OUT}/{f_}")
+# when the feeds were read, and whether there are any for this area, for the date under the access lines (06_map.py)
+FEEDS = ("ca_closures", "grte_roads", "teton_county", "gdot_511", "ne_compass", "id_511", "vdot_511", "blri_roads",
+         "ncdot_tims", "tdot_smartway", "grsm_roads", "cherokee_nf")
+with open(f"{MAP_OUT}/road_closures.json", "w") as f_:
+    json.dump(dict(fetched=NOW.strftime("%Y-%m-%d %H:%M"), feeds=sum(map(has, FEEDS)), closures=int(len(cl)),
+                   counted=int(cl.in_season.sum()) if len(cl) else 0, season=SEASON.strftime("%Y-%m-%d")), f_)
 
 # ---- static: gated / no public vehicles (OSM) ----
 gated = roads[roads.access.isin(["no", "private"]) | roads.motor_vehicle.isin(["no", "private"])]
@@ -593,3 +732,8 @@ gated.assign(name=gated.name.fillna("unnamed road"))[["name", "highway", "access
 print(len(cl), "closures |", cl.groupby(["source", "severity"]).size().to_dict(), "| gated roads", len(gated))
 if len(cl):
     print(cl[["source", "road", "from", "to", "severity", "when", "end", "reason"]].to_string(max_colwidth=40))
+    full_ = cl[cl.severity.eq("full closure")]
+    print(f"approach times count {int(full_.in_season.sum())} of {len(full_)} full closures (in force on "
+          f"{SEASON:%Y-%m-%d}); {int((~full_.placed).sum())} not laid on their road; notes on the access line from "
+          f"{int(cl.note.notna().sum())}")
+    print(full_[["road", "when", "times", "note"]].to_string(max_colwidth=70))

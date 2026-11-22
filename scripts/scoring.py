@@ -117,7 +117,8 @@ def attach(gdf, key, region_dirs, kind):
         th = pd.concat(ths, ignore_index=True)
         th = gpd.GeoDataFrame(th, crs=ths[0].crs).to_crs(4326)
         th_attr = pd.DataFrame({"th_id": th.th_id, "th_road": th.road, "drive_min": th.drive_min,
-                                "drive_km": th.drive_km, "th_lat": th.geometry.y.round(6), "th_lon": th.geometry.x.round(6)})
+                                "drive_km": th.drive_km, "th_lat": th.geometry.y.round(6), "th_lon": th.geometry.x.round(6),
+                                "th_closed": th.get("closed_now")})       # 09_drive.py: today's closures on the way
         out = out.merge(th_attr, on="th_id", how="left")
     return gpd.GeoDataFrame(out, geometry="geometry", crs=gdf.crs)
 

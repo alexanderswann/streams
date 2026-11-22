@@ -593,7 +593,8 @@
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
       `<tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr><tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
-      `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` + (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
+      `<tr><td>Access</td><td>${esc(p.acc)}${(D.lbl || {}).acc_asof ? `<div class="dm">${esc(D.lbl.acc_asof)}</div>` : ""}</td></tr>` +
+      (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
       (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
       (p.burn ? `<tr><td>Fire</td><td class="warn">${esc(p.burn)}</td></tr>` : "") +
@@ -609,7 +610,8 @@
       if (id.startsWith("drop")) return `${FEET(p.h)} drop · ${esc(p.s)}`;
       if (id === "falls") return `${esc(p.name)} (${esc(p.src)})` + (p.note ? `<br><span class="dm">${esc(p.note)}</span>` : "");
       if (id === "trout" || id === "springs") return esc(p.tip);
-      if (id === "closures") return `<b>${esc(p.road)}</b> · ${esc(p.severity)}<br>${esc(p.when)} ${esc(p.reason)}`;
+      if (id === "closures") return `<b>${esc(p.road)}</b> · ${esc(p.severity)}<br>${esc(p.when)} ${esc(p.reason)}` +
+                                    (p.times ? `<br><span class="dm">Approach times: ${esc(p.times)}</span>` : "");
       if (id === "fires") return `${esc(p.fire)} fire, ${p.year} · ${Math.round(p.acres).toLocaleString()} acres`;
       if (id === "poi-trailhead" || id === "poi-parking") return `<b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b>` +
         (/closed/i.test(p.st || "") ? `<div class="warn">${esc(p.st)} (Forest Service status)</div>` : "") +

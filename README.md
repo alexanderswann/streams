@@ -143,7 +143,7 @@ each metric one (`units.imperial_text`: CDFW's surveyors write "2.5 meters [8.2 
 | `stream_reaches_ranked.csv` | Every DEM stream link (≥1 km² drainage), all ranges, ranked by fish score |
 | `waterfall_candidates.csv` | All detected drops with height, run, slope above/below, plunge-pool coordinates |
 | `waterfall_candidates.gpx` | Waterfall-like steps, cascades and their pools. Import into Gaia, CalTopo or onX |
-| `road_closures.csv` / `.gpkg` | Current closures on mountain roads (Caltrans, LA County, SB County), routed along the roads |
+| `road_closures.csv` / `.gpkg` | Current closures on mountain roads (Caltrans, LA County, SB County), routed along the roads; whether the approach times count them (`in_season`, `times`) and the access-line note of those they don't (`note`). `road_closures.json`: when the feeds were read, for the date under the access lines |
 | `gated_roads.gpkg` | OSM roads tagged closed to public vehicles (locked fire roads, gated forest roads) |
 | `profiles.html` | Creek profile viewer: elevation vs. distance for about 490 creeks (those with 2 km or more of channel named in NHD; a link from the map to any other creek says it has no profile), with drops, falls, gauges and fish score / burn / trout-water strips. Keep it next to `profiles_data.js` and the map |
 | `context/` | Fire perimeters, stream gauges (USGS + CDEC, live), wilderness, non-Forest-Service land, critical habitat, Wild Trout Waters, trout evidence, springs |
@@ -630,6 +630,32 @@ want fresh closures on the map; the layer name shows when they were fetched. Sou
 
 Drop popups name any full closure within 3 km.
 
+**Which closures the approach times count** (2026-11-22). The approach and drive times are for the season the map
+scores (mid-July, the day of the sun hours), not for the day of the build. A full closure cuts its road in `08_hike.py`
+and `09_drive.py` only if it will still be in force on the coming July 15, by its own dates and words (`in_season` in
+`road_closures.gpkg`; the reason is in `times`, shown in the layer's tooltip):
+- an end date, the feed's or one its notes give ("closed November 1 to April 30", "Through May31", "until mid-May"):
+  counted if it falls on or after the coming mid-July. A winter gate, a night's road work and a county closure whose
+  reopening date has passed don't count.
+- no end date: counted if it has been in force since before last mid-July (Angeles Crest Highway's "weather"
+  closure since December 2025) or if its notes don't call it seasonal; not counted if they do (winter, season, snow,
+  muddy, icy, weather, annual).
+- neither dates nor notes (Grand Teton's Jenny Lake Loop): as the closure it can only be reached through, where that
+  one isn't counted; otherwise counted.
+- a closure the router couldn't lay on its road (a straight line between its ends) cuts nothing.
+
+A counted closure cuts the road it runs along, not the roads it meets (`roadclosures.py`): cutting 25 m around it out
+of every road had severed the Antelope Valley Freeway at Stonecrest Road, Newfound Gap Road at Sugarlands, Teton Park
+Road where the Jenny Lake Loop joins it and Lower Gros Ventre Road at the foot of Mormon Row. The closures in force
+today that the times don't count (bar those lifting within a day) are named, dated, on the access line of each route
+whose drive runs on them ("⚠ Teton Park Road closed for winter until Apr 30 (as of Nov 22)"; by the map's own name
+for the road where the feed's shares no word with it: Vermont's "TH-1" is Lincoln Gap Road), and every reach's access
+line says what its times stand for ("Times for summer (mid-July) · road closures as of Nov 22, winter ones not
+counted"). Before, every full closure active on the build day cut its road: in November, 654 Jackson reaches were
+timed from the Teton Park Road, North Park Road or Grassy Lake Road gates with a ride up the closed road (Cascade
+Creek: "park at Teton Park Road → bike 57 min on closed roads → hike 48 min", fish 100; now "park at Lupine Meadows
+Park Access → hike 41 min", fish 87).
+
 **Access, conditions and context** (run after 05 and 07):
 - `08_hike.py` (per REGION): cost-distance approach time from the nearest road a car can reach, on the 10 m DEM.
   Freeways and their ramps don't count as places to start from.
@@ -639,8 +665,8 @@ Drop popups name any full closure within 3 km.
     dirt roads and ×0.5 on singletrack. The grade is the road's or trail's own, from the DEM along the line over
     200 m (capped at 25%). A cell's own slope is the hillside's: the West Fork Road climbs 1.4% across a 30% canyon
     wall, and riding it at hillside grade took twice as long.
-  - **Bikeable:** every road closed to cars and every fire road. That means today's closure segments, roads cut off
-    by closures, OSM roads tagged access=no / motor_vehicle=no, OSM tracks, access roads of class "bike"
+  - **Bikeable:** every road closed to cars and every fire road. That means the closures counted for mid-July (above),
+    roads cut off by them, OSM roads tagged access=no / motor_vehicle=no, OSM tracks, access roads of class "bike"
     (`02e_access.py`) and all fire roads in the trail layer (`02d_trails.py`). Also every OSM bike path
     (`highway=cycleway`) in the range, which `08_hike.py` downloads itself and keeps for a week (`02e_access.py`
     keeps only those in mountain terrain; the paved West Fork Road to Cogswell Dam is one), and singletrack the
@@ -654,7 +680,8 @@ Drop popups name any full closure within 3 km.
     `approach_min` = `bike_min` + `walk_min` and its trailhead. Reaches also get `approach_med_min`, the typical
     time along the reach, and `bike_med_min`, the minutes of it ridden.
 - `09_drive.py`: free-flow drive time and distance from `HOME` in `config.py` (ZIP 90404) to each trailhead.
-  It routes over regional OSM highways plus local roads, with today's full closures removed and winding mountain
+  It routes over regional OSM highways plus local roads, with the full closures counted for mid-July removed (above;
+  today's others are named on the access line of the drives that use them) and winding mountain
   roads at ×0.75 speed. There is no traffic model. A road that reaches the network only through local streets
   outside every box (Bautista Road) is joined to it across the gap (up to 3 km, at 25 km/h); those drive times are
   flagged approximate.

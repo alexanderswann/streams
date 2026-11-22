@@ -115,7 +115,7 @@ function initDrainageMap(map, ctrl) {
       `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
       `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
-      `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` +
+      `<tr><td>Access</td><td>${esc(p.acc)}${(window.LBL || {}).acc_asof ? `<div class="dm">${esc(window.LBL.acc_asof)}</div>` : ""}</td></tr>` +
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
       (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +

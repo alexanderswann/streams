@@ -3766,3 +3766,31 @@ site 4315299, on what the maps draw):
 
 **Published by the overview session** after its own comparison with the published copy: site 6c72e2e, pushed
 2026-11-22 08:01 ET, all 12 maps.
+
+## 2026-11-22: approach times for the summer; today's closures as a dated note (access-times session)
+
+The audit's finding 1. Every full closure active on the build day cut its road, winter gates included: in November
+654 Jackson reaches were timed from the Teton Park Road, North Park Road or Grassy Lake Road gates with a ride up the
+closed road (Cascade Creek, 43.76524, -110.74842: "park at Teton Park Road → bike 57 min on closed roads → hike 48
+min", fish 100), 96 in the Smokies. Remoteness is a quarter of the fish score, so they also scored high.
+
+- **Rule** (`07_road_closures.py`; README, "Which closures the approach times count"): a full closure counts for the
+  times only if it will still be in force on the coming July 15, by its own dates and words. Not counted: winter
+  gates, night work, lapsed county closures, closures the router could not lay on their road; a closure with no
+  dates or notes behind an uncounted one (Grand Teton's Jenny Lake Loop) goes with it.
+- **A counted closure cuts only the road it runs along** (`roadclosures.py`). The 25 m buffer had severed the roads
+  closures met: the Antelope Valley Freeway and Soledad Canyon Road at Stonecrest Road, Newfound Gap Road at
+  Sugarlands (Park Headquarters Road), US-129 (Parson Branch Road), the Cades Cove Loop (Rich Mountain Road), Cajon
+  Boulevard, Lower Gros Ventre Road (Mormon Row), Teton Park Road at both Jenny Lake junctions.
+- **Dated note** on the access line of each route whose drive runs on a closure in force today that the times don't
+  count, and a grey line under every reach's access line saying what the times stand for.
+- **Measured in scratch against site 6c72e2e** (this change alone): 5,533 reaches change time (2,916 mi); 503 change
+  fish score (483 down, 20 up); fish 60+ 55,261 → 55,178 reaches, 26,761 → 26,713 mi (Jackson 7,240 → 7,166,
+  Smokies 5,039 → 5,030, the rest unchanged); notes on 1,671 reaches, 425 drops, 107 lakes. Drives shorten where the
+  old cut had severed a road (LA median -12 min, Smokies -17, Jackson -13) and in Vermont over Lincoln Gap (-9).
+  Cascade Creek now: "Drive 33 min (20 mi) → park at Lupine Meadows Park Access → hike 41 min · ⚠ Teton Park Road
+  closed for winter until Apr 30 (as of Nov 22)", fish 87. Audit runner: no new access oddities.
+- **Left:** the two Moose-Wilson Road pieces without seasonal words still count (70 reaches ride them); the Blue Ridge
+  Parkway row cuts mileposts 61.4-66.3 where the park's notes close 63.5-63.9.
+- **Installed** 2026-11-22 13:34 ET on main (after the phone-fix publish c178411); not yet rebuilt or published: the
+  overview session rebuilds all 12 maps from `07_road_closures`.

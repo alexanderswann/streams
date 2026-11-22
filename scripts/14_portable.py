@@ -49,7 +49,7 @@ for key in AREAS:
             d.update(json.JSONDecoder().raw_decode(h, h.index(mark) + len(mark))[0])
     lbl = d.get("lbl") or {}
     a.update(built=dt.datetime.fromtimestamp(os.path.getmtime(q)).strftime("%Y-%m-%d"), long_trail=lbl.get("long_trail"),
-             closures_fetched=d.get("closures_fetched"), credits=lbl.get("credits"))
+             closures_fetched=d.get("closures_fetched"), credits=lbl.get("credits"), acc_asof=lbl.get("acc_asof"))
     core, extra = pack({k: d.get(k) for k in CORE}), pack({k: d.get(k) for k in EXTRA})
     blobs.append(f'<script type="text/plain" id="core-{key}">{core}</script>\n<script type="text/plain" id="extra-{key}">{extra}</script>')
     sizes.append((key, len(core) / 1e6, len(extra) / 1e6))
@@ -149,7 +149,7 @@ function pop(p, a) {
     `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
     `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || String(p.fl || "").replace(/^NHD /, ""))}</td></tr>` +
     `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
-    `<tr><td>Access</td><td>${esc(p.acc)}</td></tr>` +
+    `<tr><td>Access</td><td>${esc(p.acc)}${a.acc_asof ? `<div class="dw">${esc(a.acc_asof)}</div>` : ""}</td></tr>` +
     (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
     (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
     (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
@@ -214,7 +214,8 @@ async function load(a) {
     const lines = [];
     if (d.closures) lines.push(L.geoJSON(d.closures, {style: f => ({color: /^full/.test(f.properties.severity) ? "#e03131" : "#f08c00", weight: 5, opacity: .85}),
       onEachFeature: (f, l) => { const p = f.properties; l.bindPopup(`<div class="pp"><b>${esc(p.road)}</b> · <span class="warn">${esc(p.severity)}</span><br>` +
-        `${esc(p.reason || "")}<br><span class="dw">${esc(p.when || "")}${p.end ? " · until " + esc(p.end) : ""} · fetched ${esc(a.closures_fetched || "")}</span></div>`); }}));
+        `${esc(p.reason || "")}<br><span class="dw">${esc(p.when || "")}${p.end ? " · until " + esc(p.end) : ""} · fetched ${esc(a.closures_fetched || "")}` +
+        `${p.times ? "<br>Approach times: " + esc(p.times) : ""}</span></div>`); }}));
     if (d.gauges) lines.push(L.geoJSON(d.gauges, {pointToLayer: pt(f => f.properties.c || "#1c7ed6", {radius: 6}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${f.properties.html}</div>`)}));
     g.live = [L.layerGroup(lines), 10.5, "live"];
     g.falls = [L.layerGroup(d.falls ? [L.geoJSON(d.falls, {pointToLayer: pt(() => "#0b3d91", {radius: 5.5}),

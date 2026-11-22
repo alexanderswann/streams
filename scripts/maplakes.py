@@ -72,11 +72,12 @@ def load(done):
             th = gpd.GeoDataFrame(pd.concat(ths, ignore_index=True), crs=ths[0].crs).to_crs(4326)
             lk = lk.merge(pd.DataFrame({"th_id": th.th_id, "th_road": th.road, "drive_min": th.get("drive_min"),
                                         "drive_km": th.get("drive_km"), "th_lat": th.geometry.y.round(6),
-                                        "th_lon": th.geometry.x.round(6)}), on="th_id", how="left")
+                                        "th_lon": th.geometry.x.round(6), "th_closed": th.get("closed_now")}),
+                          on="th_id", how="left")
     for c in ("approach_min", "bike_min", "walk_min", "bike_check", "bike_check_min", "route_km", "th_road", "drive_min",
-              "drive_km", "th_lat", "th_lon", "th_id"):
+              "drive_km", "th_lat", "th_lon", "th_id", "th_closed"):
         if c not in lk:
-            lk[c] = np.nan if c not in ("bike_check", "th_road", "th_id") else None
+            lk[c] = np.nan if c not in ("bike_check", "th_road", "th_id", "th_closed") else None
     # wilderness, from 11_context.py
     lk["wilderness"] = None
     wp = f"{MAP_OUT}/context/wilderness.gpkg"
@@ -289,7 +290,7 @@ def add(m, X3D, done, approach):
     keep = ["lid", "name", "agency_name", "lake_type", "ftype", "ha", "acres", "elev_m", "elev_src", "depth_max_m",
             "depth_mean_m", "depth_src", "depth_note", "survey", "game_fish", "common_fish", "fish", "n_records", "conflict", "outlet_name",
             "inlet_names", "connection", "drainage", "fork", "approach_min", "bike_min", "walk_min", "route_km",
-            "bike_check", "th_road", "th_lat", "th_lon", "drive_min", "drive_km", "land", "land_access", "access", "rules",
+            "bike_check", "th_road", "th_lat", "th_lon", "drive_min", "drive_km", "th_closed", "land", "land_access", "access", "rules",
             "designation", "links", "agency_recs", "wilderness", "private_shore",
             "water_note", "src_outline", "nhd_ha", "lidar_dates", "lat", "lon"]
     tab[[c for c in keep if c in tab]].sort_values(["ha"], ascending=False).to_csv(f"{MAP_OUT}/lakes.csv", index=False)

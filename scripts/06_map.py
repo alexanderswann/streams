@@ -475,7 +475,9 @@ def ctx(n):
     return g if g is not None and len(g) else None
 
 def approach(r):
-    """'Drive 95 min (73 mi) → park at X → bike 12 min → hike 40 min' for a reach or drop row."""
+    """'Drive 95 min (73 mi) → park at X → bike 12 min → hike 40 min' for a reach or drop row, with today's closures
+    on the way that the times (for mid-July) don't count: ' · ⚠ Teton Park Road closed for winter until Apr 30 (as of
+    Nov 22)' (09_drive.py)."""
     if pd.isna(getattr(r, "approach_min", np.nan)):
         return "No route from an open road"
     bits = []
@@ -489,11 +491,20 @@ def approach(r):
                     + (f" (⚠ fire road: double-check bike access, {r.bike_check_min:.0f} min of the ride: {chk})"
                        if isinstance(chk, str) else ""))
     bits.append(f"hike {r.walk_min:.0f} min")
-    return " → ".join(bits)
+    shut = getattr(r, "th_closed", None)
+    return " → ".join(bits) + (f" · ⚠ {shut}" if isinstance(shut, str) and shut else "")
+
+# what the approach times stand for, shown under each reach's access line by the map pages (map3d.html,
+# map_drainages.js, 14_portable.py) from 07_road_closures.py's road_closures.json
+_rc = json.load(open(f"{MAP_OUT}/road_closures.json")) if os.path.exists(f"{MAP_OUT}/road_closures.json") else None
+_day = pd.Timestamp(_rc["fetched"]) if _rc else None
+LBL["acc_asof"] = ("Times for summer (mid-July)" if _rc is None else
+                   f"Times for summer (mid-July) · road closures as of {_day:%b} {_day.day}, winter ones not counted"
+                   if _rc.get("feeds") else "Times for summer (mid-July) · no road-closure feed for this area")
 
 # ---- merged exports ----
 ACCESS = ["drive_min", "drive_km", "th_road", "th_lat", "th_lon", "bike_min", "bike_check", "bike_check_min", "walk_min",
-          "approach_min"]
+          "approach_min", "th_closed"]
 CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn_fire", "burn_year", "burn_sev", "debris_flow",
            "trout_water", "trout_found", "trout_absent", "trout_ev", "crit_habitat", "wilderness", "non_fs_land",
            "cpad_access"]
@@ -1339,18 +1350,20 @@ def r6(gs):
 
 if closures is not None and len(closures):
     fetched = closures.fetched.iloc[0]
-    c_show = closures.assign(**{c: closures[c].fillna("") for c in ("road", "from", "to", "reason", "start", "end", "when")},
+    if "times" not in closures:     # 07_road_closures.py before 2026-11-22: whether the approach times count it
+        closures["times"] = ""
+    c_show = closures.assign(**{c: closures[c].fillna("") for c in ("road", "from", "to", "reason", "start", "end", "when", "times")},
                              geometry=r6(closures.geometry))
-    folium.GeoJson(c_show[["source", "road", "from", "to", "severity", "reason", "when", "start", "end", "geometry"]].to_json(),
+    folium.GeoJson(c_show[["source", "road", "from", "to", "severity", "reason", "when", "start", "end", "times", "geometry"]].to_json(),
                    name=f"<span style='color:#c92a2a'>▬</span> Road closures (fetched {fetched})", show=False,
                    style_function=lambda f: {
                        "color": "#c92a2a" if f["properties"]["severity"].startswith("full") else "#f76707",
                        "weight": 7 if f["properties"]["severity"] == "full closure" else 5, "opacity": 0.85,
                        "dashArray": None if f["properties"]["severity"].startswith("full") else "8 6"},
-                   tooltip=folium.GeoJsonTooltip(["road", "severity", "when", "from", "to", "reason", "start", "end", "source"],
+                   tooltip=folium.GeoJsonTooltip(["road", "severity", "when", "from", "to", "reason", "start", "end", "times", "source"],
                                                  aliases=["Road", "Closure", "Status", "From", "To", "Reason", "Start",
-                                                          "End / reopen", "Source"])).add_to(m)
-    X3D["closures"] = gj(c_show[["road", "from", "to", "severity", "reason", "when", "start", "end", "source", "geometry"]])
+                                                          "End / reopen", "Approach times", "Source"])).add_to(m)
+    X3D["closures"] = gj(c_show[["road", "from", "to", "severity", "reason", "when", "start", "end", "times", "source", "geometry"]])
     X3D["closures_fetched"] = str(fetched)
 if gated is not None and len(gated) and roads_json is None:   # older runs: the access-road layer replaces this
     folium.GeoJson(gated.assign(geometry=shapely.set_precision(gated.geometry.simplify(0.0001).values, 1e-5)).to_json(),
