@@ -5,7 +5,7 @@ properties of the place, not of the routing. Writes the root's output/<area>/str
 columns) and prints how the reaches were matched.  AREA=<area> python score_root.py <root>"""
 import sys, os, shutil
 ROOT = sys.argv[1]
-P = "/Users/mac/Fishing"
+P = os.environ.get("LATE_ROOT", "/Users/mac/Fishing")      # where the late values (08, 10, 11) are taken from, by place
 import os.path as _op
 if _op.realpath(ROOT) == _op.realpath(P):
     raise SystemExit("score_root.py writes tables into the root's output/: never on the project")
@@ -57,6 +57,7 @@ cols = ["sid", "region", "drainage", "fork", "name", "flow", "water_class", "dry
         "flow_src", "below_dam", "below_div", "div_share", "div_years", "water_by_gauge", "water_term", "fish_score",
         "thermal", "water_aug", "tailwater", "burn_factor", "trout_factor", "heat_factor", "channel_factor",
         "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m", "gradient_pct", "len_m",
-        "approach_med_min", "bike_med_min", "lat", "lon", "match_old", "match_m"]
+        "approach_med_min", "bike_med_min", "lat", "lon", "match_old", "match_m", "water_rule", "gauge_name", "gauge_share",
+        "green_p90", "trout_water", "trout_found"]
 s.sort_values("fish_score", ascending=False)[[c for c in cols if c in s]].to_csv(f"{config.MAP_OUT}/stream_reaches_ranked.csv", index=False)
 print("wrote", f"{config.MAP_OUT}/stream_reaches_ranked.csv", len(s))

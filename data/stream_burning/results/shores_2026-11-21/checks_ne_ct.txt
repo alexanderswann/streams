@@ -1,0 +1,148 @@
+######## rA
+#### score_root
+reaches 3588 (project 3433); matched within 30 m 3443, 30-200 m 61, none within 200 m 84
+wrote rA/output/ne_ct/stream_reaches_ranked.csv 3588
+#### standing
+ne_ct (rA)
+      box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ natchaug     1751           0.0                   18             0                      0.25      413.4
+quinebaug     1837           0.0                    0             0                      0.39      462.1
+#### lake_outlets
+ne_ct (project): lakes with an outlet line 140; below them under half of NHDPlus: 5
+                    lake   ha  nhd_km2   ours             sid      reach_name  ratio
+               Acme Pond 13.8    289.9 135.75  quinebaug:s368    French River   0.47
+North Grosvenordale Pond 23.8    256.7 102.74  quinebaug:s197    French River   0.40
+       unnamed reservoir  9.0     10.4   4.95  quinebaug:s532 Wappoquia Brook   0.48
+             Arnold Pond 30.5      9.7   3.87 quinebaug:s1271   Roaring Brook   0.40
+              Clark Pond  8.2      3.0   1.19  quinebaug:s967    Moosup River   0.40
+#### check_flow_drops
+ne_ct: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+ne_ct: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 9 | pass 1 + big-creek pass: 4 / 9
+  on smaller drainages:   pass 1: 0 / 14 | pass 1 + big-creek pass: 0 / 14
+  all:                    pass 1: 0 / 23 | pass 1 + big-creek pass: 4 / 23
+
+by range:
+                                falls  pass1  both
+region                                            
+Natchaug, Fenton & Willimantic     20      0     4
+Quinebaug, Five Mile & Moosup       3      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                        region                   name  area      d1     d2
+Natchaug, Fenton & Willimantic     Diana's Pool Falls 143.0  4914.0 2113.0
+ Quinebaug, Five Mile & Moosup          Cargill Falls  16.0  3087.0  766.0
+ Quinebaug, Five Mile & Moosup Spencer Rock Waterfall  34.0 15157.0 8061.0
+
+every precisely placed known fall, any source: pass 1: 0 / 25 | pass 1 + big-creek pass: 4 / 25
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+ne_ct (rA): known falls 27: found pass 1 0, both passes 6 | OSM/NHD-mapped 23: pass 1 0, both 4
+  drops: pass 1 14 {'cascade / knickpoint': 14}; big-creek pass 42
+  waterfall candidates by status: {'dam / weir': 26, 'likely DEM artifact': 11, 'unmapped cascade': 8, 'unmapped short fall (big creek)': 7}
+#### straddle
+ne_ct           reaches   3588 | flagged in-lake   365 (  202.3 km), outside every drawn lake   24.7 km:   64 reaches with 100+ m outside (  22.5 km),   2 untouched by a drawn lake | not flagged:   30.1 km inside counted lakes (84 reaches with 100+ m),  120.2 km inside any drawn lake
+#### v2_ends
+no_reach         39      21         7      0
+under_half       15       6        10      0
+under_quarter     8       4         3      0
+over_double      24       8         2      0
+#### piece_water
+ne_ct           pieces ending above where carried water joins their link: 5 (2.4 km); creek pieces 5 (2.4 km), of them with 10x more water below 1
+######## rD
+#### score_root
+reaches 3813 (project 3433); matched within 30 m 3651, 30-200 m 76, none within 200 m 86
+wrote rD/output/ne_ct/stream_reaches_ranked.csv 3813
+#### standing
+ne_ct (rD)
+      box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ natchaug     1849           0.0                   18             0                      0.25      413.4
+quinebaug     1964           0.0                    0             0                      0.39      462.1
+#### lake_outlets
+ne_ct (project): lakes with an outlet line 140; below them under half of NHDPlus: 6
+                    lake   ha  nhd_km2   ours             sid      reach_name  ratio
+               Acme Pond 13.8    289.9 135.75  quinebaug:s407    French River   0.47
+North Grosvenordale Pond 23.8    256.7 102.74  quinebaug:s211    French River   0.40
+       unnamed reservoir  9.0     10.4   4.95  quinebaug:s583 Wappoquia Brook   0.48
+             Arnold Pond 30.5      9.7   3.87 quinebaug:s1360   Roaring Brook   0.40
+   Number Four Reservoir 27.2      4.3   0.85    natchaug:s11             NaN   0.20
+              Clark Pond  8.2      3.0   1.19 quinebaug:s1045    Moosup River   0.40
+#### check_flow_drops
+ne_ct: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+ne_ct: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 9 | pass 1 + big-creek pass: 4 / 9
+  on smaller drainages:   pass 1: 0 / 14 | pass 1 + big-creek pass: 0 / 14
+  all:                    pass 1: 0 / 23 | pass 1 + big-creek pass: 4 / 23
+
+by range:
+                                falls  pass1  both
+region                                            
+Natchaug, Fenton & Willimantic     20      0     4
+Quinebaug, Five Mile & Moosup       3      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                        region                   name  area      d1     d2
+Natchaug, Fenton & Willimantic     Diana's Pool Falls 143.0  4914.0 2113.0
+ Quinebaug, Five Mile & Moosup          Cargill Falls  16.0  3087.0  766.0
+ Quinebaug, Five Mile & Moosup Spencer Rock Waterfall  34.0 10841.0 8061.0
+
+every precisely placed known fall, any source: pass 1: 1 / 25 | pass 1 + big-creek pass: 5 / 25
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+ne_ct (rD): known falls 27: found pass 1 1, both passes 7 | OSM/NHD-mapped 23: pass 1 0, both 4
+  drops: pass 1 18 {'cascade / knickpoint': 18}; big-creek pass 65
+  waterfall candidates by status: {'dam / weir': 43, 'likely DEM artifact': 14, 'unmapped short fall (big creek)': 11, 'unmapped cascade': 9}
+#### straddle
+ne_ct           reaches   3813 | flagged in-lake   487 (  209.8 km), outside every drawn lake    2.5 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    1.9 km inside counted lakes (1 reaches with 100+ m),   90.8 km inside any drawn lake
+#### v2_ends
+no_reach         39      21         7      0
+under_half       15       6        10      0
+under_quarter     8       4         3      0
+over_double      24       8         2      0
+#### piece_water
+ne_ct           pieces ending above where carried water joins their link: 4 (1.8 km); creek pieces 4 (1.8 km), of them with 10x more water below 1
+######## compare rD against rA
+ne_ct: A rA
+   B rD
+fish scores  A: {'n': 3588, 'km': 2849, 'mean': np.float64(53.62), '>=40': 2456, '>=60': 1668, '>=80': 550, 'km60': np.float64(1168.9)}
+             B: {'n': 3813, 'km': 2850, 'mean': np.float64(52.48), '>=40': 2533, '>=60': 1721, '>=80': 566, 'km60': np.float64(1171.5)}
+B reaches matched to an A reach within 30 m: 3808 of 3813 (5 unmatched, 1.0 km); A reaches no B reach matched: 1
+  drainage +20% or more: 1, -20% or more: 42; x2 or more: 1, /2 or less: 12
+  flow class changed: 225; name changed: 58
+  fish score up 10+: 93, down 10+: 117; any change: 281; crossing 60: up 50, down 36
+  biggest moves:
+          sid_b             name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+quinebaug:s1260       Moosup River   1.10   1.10   1.00      seasonal    year-round          15.0          81.0  66.0
+quinebaug:s1834      Pachaug River   1.20   1.14   0.95     reservoir    year-round          13.0          74.0  61.0
+quinebaug:s1202    Blackwell Brook   1.07   1.07   1.00      seasonal    year-round          24.0          85.0  61.0
+  natchaug:s266       Middle River  29.69  29.58   1.00     reservoir    year-round          25.0          84.0  59.0
+  natchaug:s264       Middle River  29.69  29.41   0.99     reservoir    year-round          25.0          83.0  58.0
+ natchaug:s1680       Yantic River  40.68  39.84   0.98     reservoir    year-round          24.0          82.0  58.0
+ quinebaug:s564     Fivemile River   1.14   1.14   1.00      seasonal    year-round          25.0          82.0  57.0
+quinebaug:s1215 Snake Meadow Brook  27.62  26.96   0.98     reservoir    year-round          25.0          82.0  57.0
+ natchaug:s1014  Willimantic River 275.93 275.93   1.00    year-round     reservoir          81.0          24.0 -57.0
+ quinebaug:s447     Fivemile River   1.28   1.28   1.00      seasonal    year-round          28.0          84.0  56.0
+ quinebaug:s173       French River 101.78 101.78   1.00     reservoir    year-round          23.0          79.0  56.0
+quinebaug:s1538         Wood River  21.84  21.84   1.00    year-round     reservoir          80.0          24.0 -56.0
+ quinebaug:s356       French River 125.51 125.39   1.00     reservoir    year-round          24.0          80.0  56.0
+ quinebaug:s354       French River 125.51 125.21   1.00     reservoir    year-round          24.0          80.0  56.0
+  natchaug:s973   Stonehouse Brook  16.14  15.38   0.95    year-round     reservoir          79.0          23.0 -56.0
+ quinebaug:s217     Fivemile River  20.95  20.95   1.00    year-round     reservoir          79.0          24.0 -55.0
+  natchaug:s876       Fenton River   1.14   1.14   1.00 usually flows    year-round          31.0          86.0  55.0
+ quinebaug:s960     Quanduck Brook  16.99  16.99   1.00    year-round     reservoir          79.0          24.0 -55.0
+quinebaug:s1749      Pachaug River 157.46 157.46   1.00    year-round     reservoir          79.0          24.0 -55.0
+ natchaug:s1790       Yantic River 147.13 146.58   1.00     reservoir    year-round          24.0          79.0  55.0
+  natchaug:s296       Middle River  30.78  30.78   1.00     reservoir    year-round          24.0          79.0  55.0
+  natchaug:s914     Natchaug River   1.15   1.15   1.00      seasonal    year-round          28.0          82.0  54.0
+ quinebaug:s318    Quinebaug River 417.12 417.04   1.00    year-round     reservoir          77.0          23.0 -54.0
+  natchaug:s329      Roaring Brook  16.23  16.23   1.00    year-round     reservoir          77.0          23.0 -54.0
+ quinebaug:s320    Quinebaug River 417.12 417.12   1.00    year-round     reservoir          77.0          23.0 -54.0
+ne_ct: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  2160.6           0.7           0.3
+10-100     549.1           0.0           0.0
+100+       140.5           0.0           0.0
+total km 2850.3 | moved 20+ m 0.8 | 50+ m 0.3

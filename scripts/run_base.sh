@@ -1,5 +1,6 @@
 #!/bin/zsh
-# Base steps for one or more areas: the ones with no area-specific code (DEM, NHD + OSM, hydrology, drops).
+# Base steps for one or more areas: the ones with no area-specific code (DEM, NHD + OSM, hydrology, drops; and the
+# flow download the drops need).
 #   ./run_base.sh ne_ct central_vt        (run from anywhere; logs to data/base_<area>.log)
 # The hydrology is two steps: 03 conditions each box's DEM (with a margin of its neighbours' terrain, so every
 # box's DEM must be there first), then 03b works out directions, areas and streams for the whole area at once.
@@ -27,6 +28,9 @@ for a in "$@"; do
   until mkdir $LOCK 2>/dev/null; do sleep 5; done
   step "" 03b_stitch
   rmdir $LOCK
+  # the flow data before the drops: 04 and 04b count the water crossbox.py carries past dams (a river is a channel
+  # from the dam on), and crossbox.py needs the reservoir list and NHDPlus's lines (2026-11-21); run_mid.sh runs it too
+  step "" 02b_download_flow
   for r in $ranges; do step $r 04_knickpoints; step $r 04b_bigcreek_steps; done
   echo "== DONE $a $(date '+%m-%d %H:%M:%S')" >> $LOG
 done

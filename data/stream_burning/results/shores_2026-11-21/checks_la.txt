@@ -1,0 +1,157 @@
+######## rA
+#### score_root
+reaches 17867 (project 17802); matched within 30 m 17804, 30-200 m 22, none within 200 m 41
+wrote rA/output/la/stream_reaches_ranked.csv 17867
+#### standing
+la (rA)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   san_gabriel     3969           0.0                   14             0                      1.11     1126.3
+  santa_monica      691           0.0                    0             0                     36.96      214.1
+san_bernardino     3227           0.0                    0             0                      1.74      914.7
+         sespe     3481           0.0                   14             0                      0.40      884.6
+          piru     2409           0.0                    7             0                      0.73      667.6
+ sierra_pelona      621           0.0                   12             0                      0.61      171.9
+   san_jacinto     1686           0.0                    0             0                      0.40      464.4
+santa_ana_mtns     1783           0.0                    0             0                      0.17      492.1
+#### lake_outlets
+la (project): lakes with an outlet line 40; below them under half of NHDPlus: 3
+                     lake     ha  nhd_km2    ours                  sid    reach_name  ratio
+Prado Flood Control Basin  171.5   5680.0 2502.82   santa_ana_mtns:s26           NaN   0.44
+            Lake Elsinore 1277.1   1866.3    2.87 santa_ana_mtns:s1038 Temescal Wash   0.00
+               Quail Lake  101.8     77.4   10.28            piru:s433           NaN   0.13
+#### check_flow_drops
+la: sudden flow drops (flow per km2 of area_edge_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+la: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 36 / 54 | pass 1 + big-creek pass: 46 / 54
+  on smaller drainages:   pass 1: 81 / 158 | pass 1 + big-creek pass: 81 / 158
+  all:                    pass 1: 117 / 212 | pass 1 + big-creek pass: 127 / 212
+
+by range:
+                             falls  pass1  both
+region                                         
+Piru Creek & Castaic             1      0     0
+San Bernardino Mountains        15     11    13
+San Gabriel Mountains           69     39    43
+San Jacinto Mountains           28     21    21
+Santa Ana Mountains             46     15    16
+Santa Monica Mountains          21     11    14
+Sespe, Topatopa & Mt. Pinos     32     20    20
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 123 / 219 | pass 1 + big-creek pass: 134 / 219
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 49 / 172 | pass 1 + big-creek pass: 51 / 172
+#### falls
+la (rA): known falls 412: found pass 1 185, both passes 199 | OSM/NHD-mapped 212: pass 1 117, both 127
+  drops: pass 1 4996 {'steep reach': 3272, 'cascade / knickpoint': 1568, 'waterfall-like step': 156}; big-creek pass 418
+  waterfall candidates by status: {'steep reach': 3110, 'unmapped cascade': 1268, 'matches mapped waterfall': 256, 'likely DEM artifact': 205, 'unmapped waterfall-like step': 115, 'unmapped short fall (big creek)': 81, 'dam / weir': 64}
+#### straddle
+la              reaches  17867 | flagged in-lake   364 (  200.6 km), outside every drawn lake   23.0 km:   63 reaches with 100+ m outside (  21.4 km),   4 untouched by a drawn lake | not flagged:   10.0 km inside counted lakes (24 reaches with 100+ m),   84.8 km inside any drawn lake
+#### v2_ends
+no_reach        188     100       237     17
+under_half       55      29        84     33
+under_quarter    31      22        81     28
+over_double      94      20         7      0
+#### piece_water
+la              pieces ending above where carried water joins their link: 5 (2.9 km); creek pieces 4 (2.8 km), of them with 10x more water below 1
+######## rD
+#### score_root
+reaches 18065 (project 17802); matched within 30 m 17999, 30-200 m 25, none within 200 m 41
+wrote rD/output/la/stream_reaches_ranked.csv 18065
+#### standing
+la (rD)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   san_gabriel     4007           0.0                   14             0                      1.11     1126.3
+  santa_monica      705           0.0                    0             0                     36.96      214.1
+san_bernardino     3287           0.0                    0             0                      1.74      914.7
+         sespe     3483           0.0                   14             0                      0.40      884.6
+          piru     2452           0.0                    7             0                      0.73      667.6
+ sierra_pelona      633           0.0                   12             0                      0.61      171.9
+   san_jacinto     1698           0.0                    0             0                      0.40      464.4
+santa_ana_mtns     1800           0.0                    0             0                      0.17      492.1
+#### lake_outlets
+la (project): lakes with an outlet line 40; below them under half of NHDPlus: 3
+                     lake     ha  nhd_km2    ours                  sid    reach_name  ratio
+Prado Flood Control Basin  171.5   5680.0 2502.82   santa_ana_mtns:s26           NaN   0.44
+            Lake Elsinore 1277.1   1866.3    2.87 santa_ana_mtns:s1051 Temescal Wash   0.00
+               Quail Lake  101.8     77.4   10.28            piru:s438           NaN   0.13
+#### check_flow_drops
+la: sudden flow drops (flow per km2 of area_edge_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+la: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 36 / 54 | pass 1 + big-creek pass: 46 / 54
+  on smaller drainages:   pass 1: 81 / 158 | pass 1 + big-creek pass: 81 / 158
+  all:                    pass 1: 117 / 212 | pass 1 + big-creek pass: 127 / 212
+
+by range:
+                             falls  pass1  both
+region                                         
+Piru Creek & Castaic             1      0     0
+San Bernardino Mountains        15     11    13
+San Gabriel Mountains           69     39    43
+San Jacinto Mountains           28     21    21
+Santa Ana Mountains             46     15    16
+Santa Monica Mountains          21     11    14
+Sespe, Topatopa & Mt. Pinos     32     20    20
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 123 / 219 | pass 1 + big-creek pass: 134 / 219
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 49 / 172 | pass 1 + big-creek pass: 51 / 172
+#### falls
+la (rD): known falls 412: found pass 1 185, both passes 199 | OSM/NHD-mapped 212: pass 1 117, both 127
+  drops: pass 1 5017 {'steep reach': 3273, 'cascade / knickpoint': 1580, 'waterfall-like step': 164}; big-creek pass 450
+  waterfall candidates by status: {'steep reach': 3111, 'unmapped cascade': 1272, 'matches mapped waterfall': 256, 'likely DEM artifact': 205, 'unmapped waterfall-like step': 119, 'unmapped short fall (big creek)': 83, 'dam / weir': 76}
+#### straddle
+la              reaches  18065 | flagged in-lake   459 (  210.0 km), outside every drawn lake    1.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.8 km inside counted lakes (0 reaches with 100+ m),   53.7 km inside any drawn lake
+#### v2_ends
+no_reach        188     100       237     17
+under_half       55      29        84     33
+under_quarter    31      22        81     28
+over_double      94      20         7      0
+#### piece_water
+la              pieces ending above where carried water joins their link: 3 (2.2 km); creek pieces 2 (2.2 km), of them with 10x more water below 0
+######## compare rD against rA
+la: A rA
+   B rD
+fish scores  A: {'n': 17867, 'km': 16027, 'mean': np.float64(19.61), '>=40': 3467, '>=60': 2161, '>=80': 898, 'km60': np.float64(1395.7)}
+             B: {'n': 18065, 'km': 16028, 'mean': np.float64(19.81), '>=40': 3541, '>=60': 2216, '>=80': 920, 'km60': np.float64(1423.5)}
+B reaches matched to an A reach within 30 m: 18063 of 18065 (2 unmatched, 0.5 km); A reaches no B reach matched: 3
+  drainage +20% or more: 3, -20% or more: 36; x2 or more: 2, /2 or less: 8
+  flow class changed: 305; name changed: 128
+  fish score up 10+: 160, down 10+: 37; any change: 349; crossing 60: up 56, down 7
+  biggest moves:
+               sid_b                       name_b    af_a    af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+san_bernardino:s1348                   Bear Creek    1.03    1.03   1.00    mostly dry    year-round          10.0          99.0  89.0
+san_bernardino:s1108                   Bear Creek  189.68  189.68   1.00    mostly dry    year-round          16.0         100.0  84.0
+   san_jacinto:s1268 South Fork San Jacinto River  166.65  166.65   1.00    mostly dry    year-round           4.0          83.0  79.0
+   san_jacinto:s1394 South Fork San Jacinto River  172.52  172.52   1.00    mostly dry    year-round           4.0          82.0  78.0
+   san_jacinto:s1267 South Fork San Jacinto River  166.33  166.33   1.00    mostly dry    year-round           4.0          82.0  78.0
+   san_jacinto:s1266 South Fork San Jacinto River  165.99  165.99   1.00    mostly dry    year-round           4.0          82.0  78.0
+   san_gabriel:s2324            Big Tujunga Creek  215.24  215.24   1.00    mostly dry    year-round           9.0          82.0  73.0
+   san_gabriel:s2381            Big Tujunga Creek  215.87  215.87   1.00    mostly dry    year-round          13.0          80.0  67.0
+          piru:s2093                   Piru Creek 1094.77 1094.77   1.00    mostly dry    year-round           3.0          70.0  67.0
+          sespe:s930                 Cuyama River    1.24    1.24   1.00    mostly dry    year-round           2.0          68.0  66.0
+  sierra_pelona:s521                          NaN   40.64   40.64   1.00    mostly dry    year-round           3.0          68.0  65.0
+  sierra_pelona:s519                          NaN   38.28   38.28   1.00    mostly dry    year-round           3.0          68.0  65.0
+  sierra_pelona:s520                          NaN   39.06   39.06   1.00    mostly dry    year-round           3.0          67.0  64.0
+  sierra_pelona:s553                          NaN   44.56   44.56   1.00    mostly dry    year-round           3.0          67.0  64.0
+          piru:s2043                   Piru Creek 1094.17 1094.17   1.00    mostly dry    year-round           3.0          67.0  64.0
+   san_gabriel:s3135  West Fork San Gabriel River  267.63  267.63   1.00    year-round     reservoir          85.0          23.0 -62.0
+  sierra_pelona:s525                          NaN   40.98   40.98   1.00    mostly dry    year-round           3.0          64.0  61.0
+   san_gabriel:s2188                    Fox Creek   24.71   24.71   1.00    year-round     reservoir          86.0          26.0 -60.0
+   san_jacinto:s1395 South Fork San Jacinto River  174.02  174.02   1.00      seasonal    year-round          24.0          84.0  60.0
+   san_jacinto:s1396 South Fork San Jacinto River  174.89  174.89   1.00      seasonal    year-round          30.0          90.0  60.0
+   san_gabriel:s1777                 Pacoima Wash   73.24   72.40   0.99     reservoir    year-round          24.0          83.0  59.0
+santa_ana_mtns:s1694               San Juan Creek    1.38    1.38   1.00    mostly dry    year-round           2.0          60.0  58.0
+  sierra_pelona:s558                          NaN   49.84   49.84   1.00    mostly dry    year-round           7.0          65.0  58.0
+  sierra_pelona:s559                          NaN   51.40   51.40   1.00    mostly dry    year-round           7.0          65.0  58.0
+  sierra_pelona:s580                          NaN   52.12   52.12   1.00    mostly dry    year-round           7.0          65.0  58.0
+la: B's lines against A's (rD vs rA)
+               km  km_moved_20m  km_moved_50m
+size                                         
+1-10 km2  12203.9           0.2           0.1
+10-100     3062.1           0.0           0.0
+100+        761.1           0.0           0.0
+total km 16027.4 | moved 20+ m 0.4 | 50+ m 0.3

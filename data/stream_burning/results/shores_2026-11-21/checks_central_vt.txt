@@ -1,0 +1,148 @@
+######## rA
+#### score_root
+reaches 8358 (project 8295); matched within 30 m 8296, 30-200 m 23, none within 200 m 39
+wrote rA/output/central_vt/stream_reaches_ranked.csv 8358
+#### standing
+central_vt (rA)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+stowe_lamoille     2756           0.0                   21             0                      6.18      786.4
+  mad_winooski     2717           0.0                   15             0                     22.29      725.1
+   white_river     2885           0.0                    0             0                     12.50      816.4
+#### lake_outlets
+central_vt (project): lakes with an outlet line 58; below them under half of NHDPlus: 2
+                 lake    ha  nhd_km2  ours                 sid reach_name  ratio
+    unnamed reservoir   9.5     40.0 18.12 stowe_lamoille:s952  The Creek   0.45
+Green River Reservoir 240.1     37.9  2.30 stowe_lamoille:s252        NaN   0.06
+#### check_flow_drops
+central_vt: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+central_vt: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 10 / 23 | pass 1 + big-creek pass: 16 / 23
+  on smaller drainages:   pass 1: 4 / 7 | pass 1 + big-creek pass: 4 / 7
+  all:                    pass 1: 14 / 30 | pass 1 + big-creek pass: 20 / 30
+
+by range:
+                                           falls  pass1  both
+region                                                       
+Mad River, Winooski & New Haven River          6      1     2
+Middlebury River, Breadloaf & White River      7      5     7
+Stowe & upper Lamoille                        17      8    11
+
+named mapped falls on big creeks that both passes miss: 
+                               region              name   area     d1     d2
+               Stowe & upper Lamoille    Winooski Falls 1665.0  268.0 4419.0
+               Stowe & upper Lamoille     Sloping Falls  109.0 2659.0 1960.0
+Mad River, Winooski & New Haven River    Dog Team Falls  302.0 2069.0 3642.0
+Mad River, Winooski & New Haven River    Moretown Falls  337.0 2599.0 2658.0
+Mad River, Winooski & New Haven River Putnamville Falls  122.0 1986.0 9256.0
+
+every precisely placed known fall, any source: pass 1: 20 / 66 | pass 1 + big-creek pass: 38 / 66
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+central_vt (rA): known falls 120: found pass 1 40, both passes 65 | OSM/NHD-mapped 38: pass 1 14, both 20
+  drops: pass 1 511 {'cascade / knickpoint': 336, 'steep reach': 166, 'waterfall-like step': 9}; big-creek pass 194
+  waterfall candidates by status: {'unmapped cascade': 232, 'steep reach': 149, 'likely DEM artifact': 139, 'unmapped short fall (big creek)': 70, 'matches mapped waterfall': 60, 'dam / weir': 27, 'unmapped waterfall-like step': 4}
+#### straddle
+central_vt      reaches   8358 | flagged in-lake   232 (  104.0 km), outside every drawn lake   10.4 km:   27 reaches with 100+ m outside (   9.0 km),   2 untouched by a drawn lake | not flagged:   19.3 km inside counted lakes (58 reaches with 100+ m),   67.1 km inside any drawn lake
+#### v2_ends
+no_reach         28      22        28     15
+under_half       13      11         2      1
+under_quarter     2      10         2      1
+over_double      25      17        10      0
+#### piece_water
+central_vt      pieces ending above where carried water joins their link: 3 (6.0 km); creek pieces 3 (6.0 km), of them with 10x more water below 1
+######## rD
+#### score_root
+reaches 8497 (project 8295); matched within 30 m 8431, 30-200 m 28, none within 200 m 38
+wrote rD/output/central_vt/stream_reaches_ranked.csv 8497
+#### standing
+central_vt (rD)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+stowe_lamoille     2823           0.0                   21             0                      6.18      786.4
+  mad_winooski     2751           0.0                   15             0                     22.28      725.1
+   white_river     2923           0.0                    0             0                     12.50      816.4
+#### lake_outlets
+central_vt (project): lakes with an outlet line 58; below them under half of NHDPlus: 1
+             lake  ha  nhd_km2  ours                 sid reach_name  ratio
+unnamed reservoir 9.5     40.0 18.12 stowe_lamoille:s984  The Creek   0.45
+#### check_flow_drops
+central_vt: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+central_vt: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 10 / 23 | pass 1 + big-creek pass: 16 / 23
+  on smaller drainages:   pass 1: 4 / 7 | pass 1 + big-creek pass: 4 / 7
+  all:                    pass 1: 14 / 30 | pass 1 + big-creek pass: 20 / 30
+
+by range:
+                                           falls  pass1  both
+region                                                       
+Mad River, Winooski & New Haven River          6      1     2
+Middlebury River, Breadloaf & White River      7      5     7
+Stowe & upper Lamoille                        17      8    11
+
+named mapped falls on big creeks that both passes miss: 
+                               region              name   area     d1     d2
+               Stowe & upper Lamoille    Winooski Falls 1665.0  268.0 4419.0
+               Stowe & upper Lamoille     Sloping Falls  109.0 2659.0 1960.0
+Mad River, Winooski & New Haven River    Dog Team Falls  302.0 2069.0 3642.0
+Mad River, Winooski & New Haven River    Moretown Falls  337.0 2599.0 2658.0
+Mad River, Winooski & New Haven River Putnamville Falls  122.0 1986.0 7332.0
+
+every precisely placed known fall, any source: pass 1: 20 / 66 | pass 1 + big-creek pass: 39 / 66
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+central_vt (rD): known falls 120: found pass 1 40, both passes 69 | OSM/NHD-mapped 38: pass 1 14, both 22
+  drops: pass 1 524 {'cascade / knickpoint': 348, 'steep reach': 166, 'waterfall-like step': 10}; big-creek pass 240
+  waterfall candidates by status: {'unmapped cascade': 237, 'likely DEM artifact': 156, 'steep reach': 149, 'unmapped short fall (big creek)': 87, 'matches mapped waterfall': 61, 'dam / weir': 36, 'unmapped waterfall-like step': 4}
+#### straddle
+central_vt      reaches   8497 | flagged in-lake   317 (  113.7 km), outside every drawn lake    1.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    1.2 km inside counted lakes (1 reaches with 100+ m),   48.2 km inside any drawn lake
+#### v2_ends
+no_reach         28      22        28     15
+under_half       13      11         2      1
+under_quarter     2      10         2      1
+over_double      25      17        10      0
+#### piece_water
+central_vt      pieces ending above where carried water joins their link: 2 (4.4 km); creek pieces 2 (4.4 km), of them with 10x more water below 1
+######## compare rD against rA
+central_vt: A rA
+   B rD
+fish scores  A: {'n': 8358, 'km': 6808, 'mean': np.float64(61.77), '>=40': 7751, '>=60': 4682, '>=80': 1338, 'km60': np.float64(3478.4)}
+             B: {'n': 8497, 'km': 6808, 'mean': np.float64(61.34), '>=40': 7804, '>=60': 4727, '>=80': 1347, 'km60': np.float64(3483.7)}
+B reaches matched to an A reach within 30 m: 8496 of 8497 (1 unmatched, 0.1 km); A reaches no B reach matched: 0
+  drainage +20% or more: 1, -20% or more: 28; x2 or more: 1, /2 or less: 6
+  flow class changed: 140; name changed: 82
+  fish score up 10+: 62, down 10+: 83; any change: 182; crossing 60: up 42, down 23
+  biggest moves:
+               sid_b                      name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+stowe_lamoille:s2648             La Platte River   1.13   1.13   1.00      seasonal    year-round          19.0          87.0  68.0
+stowe_lamoille:s2097                Little River 214.16 214.16   1.00     reservoir    year-round          26.0          86.0  60.0
+stowe_lamoille:s2098                Little River 214.76 214.68   1.00     reservoir    year-round          26.0          86.0  60.0
+stowe_lamoille:s1899              Lamoille River 611.97 611.97   1.00    year-round     reservoir          84.0          25.0 -59.0
+    mad_winooski:s71 North Branch Winooski River  33.12  33.12   1.00    year-round     reservoir          82.0          24.0 -58.0
+    mad_winooski:s37 North Branch Winooski River 128.18 127.66   1.00     reservoir    year-round          24.0          80.0  56.0
+stowe_lamoille:s1251                         NaN  19.78  19.76   1.00     reservoir    year-round          23.0          78.0  55.0
+stowe_lamoille:s1613                         NaN  50.30  49.60   0.99     reservoir    year-round          24.0          79.0  55.0
+stowe_lamoille:s2290             Stevenson Brook  15.35  14.90   0.97     reservoir    year-round          23.0          75.0  52.0
+   white_river:s1451                Sucker Brook   6.14   6.14   1.00    year-round     reservoir          74.0          22.0 -52.0
+  mad_winooski:s1606                  Pond Brook  12.94  12.94   1.00    year-round     reservoir          74.0          22.0 -52.0
+stowe_lamoille:s1321           Elmore Pond Brook  13.81  13.81   1.00    year-round     reservoir          73.0          22.0 -51.0
+stowe_lamoille:s2126                Cotton Brook  19.21  19.21   1.00    year-round     reservoir          72.0          21.0 -51.0
+   white_river:s2498            Lemon Fair River  49.20  49.04   1.00     reservoir    year-round          21.0          71.0  50.0
+   mad_winooski:s985                 Otter Creek   1.05   1.05   1.00     reservoir    year-round          13.0          63.0  50.0
+   white_river:s2500            Lemon Fair River  49.20  49.15   1.00     reservoir    year-round          21.0          71.0  50.0
+stowe_lamoille:s2657             La Platte River 120.18 119.60   1.00    year-round     reservoir          70.0          21.0 -49.0
+   mad_winooski:s206                         NaN   7.31   7.31   1.00    year-round     reservoir          70.0          21.0 -49.0
+   white_river:s2516            Lemon Fair River  73.94  73.09   0.99    year-round     reservoir          70.0          21.0 -49.0
+stowe_lamoille:s2659             La Platte River 120.18 120.14   1.00    year-round     reservoir          70.0          21.0 -49.0
+   white_river:s2768                  East Creek  45.64  45.64   1.00     reservoir    year-round          21.0          69.0  48.0
+     white_river:s75                         NaN   4.17   4.17   1.00    year-round     reservoir          68.0          20.0 -48.0
+   white_river:s2507            Lemon Fair River  66.23  66.04   1.00     reservoir    year-round          20.0          68.0  48.0
+   white_river:s2509            Lemon Fair River  66.23  66.23   1.00     reservoir    year-round          20.0          68.0  48.0
+ stowe_lamoille:s196                 Wiley Brook  10.30  10.16   0.99     reservoir    year-round          20.0          67.0  47.0
+central_vt: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  4911.1           0.0           0.0
+10-100    1227.8           0.0           0.0
+100+       668.6           0.0           0.0
+total km 6807.5 | moved 20+ m 0.0 | 50+ m 0.0

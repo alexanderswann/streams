@@ -1,0 +1,156 @@
+######## rA
+#### score_root
+reaches 14945 (project 14841); matched within 30 m 14844, 30-200 m 42, none within 200 m 59
+wrote rA/output/n_georgia/stream_reaches_ranked.csv 14945
+#### standing
+n_georgia (rA)
+            box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+        cohutta     4222           0.0                    8             0                      0.52     1315.1
+     blue_ridge     4301           0.0                   16             0                      0.55     1254.0
+          rabun     4142           0.0                    1             0                      0.65     1160.8
+hooch_tailwater     2280           0.0                    0             0                      0.36      559.2
+#### lake_outlets
+n_georgia (project): lakes with an outlet line 89; below them under half of NHDPlus: 1
+             lake   ha  nhd_km2  ours         sid reach_name  ratio
+unnamed reservoir 10.0     68.3   5.0 rabun:s3554        NaN   0.07
+#### check_flow_drops
+n_georgia: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+n_georgia: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 18 / 38 | pass 1 + big-creek pass: 30 / 38
+  on smaller drainages:   pass 1: 81 / 155 | pass 1 + big-creek pass: 81 / 155
+  all:                    pass 1: 99 / 193 | pass 1 + big-creek pass: 111 / 193
+
+by range:
+                                                 falls  pass1  both
+region                                                             
+Chattahoochee tailwater (Buford Dam to Atlanta)      5      0     1
+Cohutta, Conasauga & Jacks                           8      4     5
+Rabun, Chattooga & Tallulah                        133     70    77
+Toccoa, Blue Ridge & Chattahoochee headwaters       47     25    28
+
+named mapped falls on big creeks that both passes miss: 
+                                       region                  name  area     d1     d2
+                   Cohutta, Conasauga & Jacks Tumbling Waters Falls  42.0 2296.0 2775.0
+Toccoa, Blue Ridge & Chattahoochee headwaters          Etowah Falls 170.0 4886.0 1624.0
+                  Rabun, Chattooga & Tallulah           Final Falls 410.0  279.0 4748.0
+                  Rabun, Chattooga & Tallulah         Homer's Falls 581.0  708.0 2405.0
+                  Rabun, Chattooga & Tallulah    Bulls Sluice Falls 419.0 2542.0 2805.0
+                  Rabun, Chattooga & Tallulah     First Falls Rapid 591.0  681.0 4083.0
+                  Rabun, Chattooga & Tallulah      Seven Foot Falls 435.0  947.0 1246.0
+
+every precisely placed known fall, any source: pass 1: 362 / 857 | pass 1 + big-creek pass: 407 / 857
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+n_georgia (rA): known falls 925: found pass 1 380, both passes 434 | OSM/NHD-mapped 205: pass 1 100, both 113
+  drops: pass 1 821 {'cascade / knickpoint': 547, 'steep reach': 237, 'waterfall-like step': 37}; big-creek pass 249
+  waterfall candidates by status: {'matches mapped waterfall': 457, 'unmapped cascade': 191, 'likely DEM artifact': 131, 'steep reach': 126, 'unmapped short fall (big creek)': 83, 'dam / weir': 56, 'unmapped waterfall-like step': 4}
+#### straddle
+n_georgia       reaches  14945 | flagged in-lake   582 (  372.0 km), outside every drawn lake   27.8 km:   76 reaches with 100+ m outside (  25.6 km),   0 untouched by a drawn lake | not flagged:   17.4 km inside counted lakes (51 reaches with 100+ m),  140.6 km inside any drawn lake
+#### v2_ends
+no_reach        101      47        18      3
+under_half       36       8         3      1
+under_quarter    12       5         3      1
+over_double      86      46         8      1
+#### piece_water
+n_georgia       pieces ending above where carried water joins their link: 4 (7.8 km); creek pieces 4 (7.8 km), of them with 10x more water below 2
+######## rD
+#### score_root
+reaches 15199 (project 14841); matched within 30 m 15091, 30-200 m 49, none within 200 m 59
+wrote rD/output/n_georgia/stream_reaches_ranked.csv 15199
+#### standing
+n_georgia (rD)
+            box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+        cohutta     4274           0.0                    8             0                      0.52     1315.1
+     blue_ridge     4374           0.0                   16             0                      0.55     1254.0
+          rabun     4238           0.0                    1             0                      0.64     1160.8
+hooch_tailwater     2313           0.0                    0             0                      0.36      559.2
+#### lake_outlets
+n_georgia (project): lakes with an outlet line 89; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+n_georgia: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+n_georgia: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 18 / 38 | pass 1 + big-creek pass: 30 / 38
+  on smaller drainages:   pass 1: 84 / 155 | pass 1 + big-creek pass: 85 / 155
+  all:                    pass 1: 102 / 193 | pass 1 + big-creek pass: 115 / 193
+
+by range:
+                                                 falls  pass1  both
+region                                                             
+Chattahoochee tailwater (Buford Dam to Atlanta)      5      0     1
+Cohutta, Conasauga & Jacks                           8      4     5
+Rabun, Chattooga & Tallulah                        133     73    81
+Toccoa, Blue Ridge & Chattahoochee headwaters       47     25    28
+
+named mapped falls on big creeks that both passes miss: 
+                                       region                  name  area     d1     d2
+                   Cohutta, Conasauga & Jacks Tumbling Waters Falls  42.0 2296.0 2775.0
+Toccoa, Blue Ridge & Chattahoochee headwaters          Etowah Falls 170.0 4886.0 1624.0
+                  Rabun, Chattooga & Tallulah           Final Falls 410.0  279.0 4748.0
+                  Rabun, Chattooga & Tallulah         Homer's Falls 581.0  708.0 2405.0
+                  Rabun, Chattooga & Tallulah    Bulls Sluice Falls 419.0 2542.0 2805.0
+                  Rabun, Chattooga & Tallulah     First Falls Rapid 591.0  681.0 4083.0
+                  Rabun, Chattooga & Tallulah      Seven Foot Falls 435.0  947.0 1246.0
+
+every precisely placed known fall, any source: pass 1: 366 / 857 | pass 1 + big-creek pass: 413 / 857
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+n_georgia (rD): known falls 925: found pass 1 384, both passes 441 | OSM/NHD-mapped 205: pass 1 103, both 117
+  drops: pass 1 846 {'cascade / knickpoint': 565, 'steep reach': 237, 'waterfall-like step': 44}; big-creek pass 284
+  waterfall candidates by status: {'matches mapped waterfall': 461, 'unmapped cascade': 193, 'likely DEM artifact': 140, 'steep reach': 126, 'unmapped short fall (big creek)': 91, 'dam / weir': 84, 'unmapped waterfall-like step': 4}
+#### straddle
+n_georgia       reaches  15199 | flagged in-lake   727 (  384.2 km), outside every drawn lake    2.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    1.2 km inside counted lakes (0 reaches with 100+ m),  102.7 km inside any drawn lake
+#### v2_ends
+no_reach        101      47        18      3
+under_half       36       8         3      1
+under_quarter    12       5         3      1
+over_double      86      46         8      1
+#### piece_water
+n_georgia       pieces ending above where carried water joins their link: 2 (3.7 km); creek pieces 2 (3.7 km), of them with 10x more water below 2
+######## compare rD against rA
+n_georgia: A rA
+   B rD
+fish scores  A: {'n': 14945, 'km': 12235, 'mean': np.float64(56.84), '>=40': 12458, '>=60': 6801, '>=80': 1732, 'km60': np.float64(5375.9)}
+             B: {'n': 15199, 'km': 12235, 'mean': np.float64(56.46), '>=40': 12555, '>=60': 6858, '>=80': 1748, 'km60': np.float64(5375.5)}
+B reaches matched to an A reach within 30 m: 15193 of 15199 (6 unmatched, 1.0 km); A reaches no B reach matched: 1
+  drainage +20% or more: 0, -20% or more: 35; x2 or more: 0, /2 or less: 10
+  flow class changed: 235; name changed: 91
+  fish score up 10+: 120, down 10+: 140; any change: 331; crossing 60: up 56, down 40
+  biggest moves:
+           sid_b                  name_b    af_a    af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+     rabun:s3994 Middle Fork Broad River   50.90   50.90   1.00     reservoir    year-round          26.0          88.0  62.0
+     rabun:s2364          Tallulah River  489.43  489.34   1.00     reservoir    year-round          27.0          88.0  61.0
+blue_ridge:s2874            Toccoa River  492.18  490.96   1.00     reservoir    year-round          26.0          87.0  61.0
+blue_ridge:s1440           Wilscot Creek   37.65   37.65   1.00    year-round     reservoir          86.0          25.0 -61.0
+blue_ridge:s1734             Coosa Creek   58.18   56.89   0.98     reservoir    year-round          25.0          85.0  60.0
+     rabun:s2052               Bad Creek    6.39    6.39   1.00    year-round     reservoir          83.0          24.0 -59.0
+blue_ridge:s2113           Nottely River  248.78  248.78   1.00    year-round     reservoir          84.0          25.0 -59.0
+   cohutta:s1638        Cherry Log Creek   36.78   36.78   1.00    year-round     reservoir          81.0          24.0 -57.0
+     rabun:s2293           Tugaloo River  668.25  667.84   1.00     reservoir    year-round          24.0          81.0  57.0
+blue_ridge:s1543         Youngcane Creek   76.95   76.31   0.99     reservoir    year-round          24.0          80.0  56.0
+ blue_ridge:s718            Ivylog Creek   43.61   43.17   0.99     reservoir    year-round          24.0          80.0  56.0
+blue_ridge:s1046            Fodder Creek   29.01   29.01   1.00    year-round     reservoir          79.0          23.0 -56.0
+     rabun:s2096         Chattooga River  648.02  647.46   1.00     reservoir    year-round          24.0          79.0  55.0
+   cohutta:s2425             Tails Creek   41.82   41.82   1.00    year-round     reservoir          78.0          23.0 -55.0
+blue_ridge:s3885         Hurricane Creek   25.45   25.16   0.99     reservoir    year-round          23.0          78.0  55.0
+     rabun:s2149          Tallulah River  363.78  363.75   1.00     reservoir    year-round          24.0          79.0  55.0
+blue_ridge:s1975             Smith Creek   19.02   18.99   1.00    year-round     reservoir          76.0          22.0 -54.0
+     rabun:s1232             Dicks Creek   18.31   18.31   1.00    year-round     reservoir          77.0          23.0 -54.0
+blue_ridge:s3585         Amicalola Creek   25.06   25.06   1.00    year-round     reservoir          77.0          23.0 -54.0
+blue_ridge:s1977             Smith Creek   19.02   19.02   1.00    year-round     reservoir          76.0          22.0 -54.0
+   cohutta:s2900           Licklog Creek   17.92   17.11   0.95    year-round     reservoir          76.0          22.0 -54.0
+     rabun:s1713          Tallulah River   21.29   21.29   1.00    year-round     reservoir          77.0          23.0 -54.0
+   cohutta:s1372             Ocoee River 1110.10 1109.92   1.00     reservoir    year-round          22.0          76.0  54.0
+     rabun:s1100           Popcorn Creek   14.95   14.95   1.00    year-round     reservoir          76.0          23.0 -53.0
+     rabun:s1718         La Counts Creek    3.93    3.93   1.00    year-round     reservoir          75.0          22.0 -53.0
+n_georgia: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  8551.3           0.8           0.5
+10-100    2667.0           0.0           0.0
+100+      1016.2           0.0           0.0
+total km 12234.9 | moved 20+ m 0.9 | 50+ m 0.5

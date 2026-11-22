@@ -1,0 +1,144 @@
+######## rA
+#### score_root
+reaches 6999 (project 6767); matched within 30 m 6770, 30-200 m 85, none within 200 m 144
+wrote rA/output/adk_southwest/stream_reaches_ranked.csv 6999
+#### standing
+adk_southwest (rA)
+              box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+            moose     2583           0.0                   17             0                      0.65      763.7
+west_canada_lakes      570           0.0                    3             0                      0.15      130.9
+      west_canada     1811           0.0                    6             0                      0.44      555.4
+       speculator     2035           0.0                    0             0                      0.44      477.8
+#### lake_outlets
+adk_southwest (project): lakes with an outlet line 216; below them under half of NHDPlus: 4
+             lake   ha  nhd_km2  ours               sid              reach_name  ratio
+unnamed reservoir 24.7     58.3  3.87   west_canada:s23                     NaN   0.07
+        Pine Lake 67.3     28.9 12.20  speculator:s1388                     NaN   0.42
+    Tamarack Lake 13.1      6.6  3.23       moose:s1002 Middle Settlement Creek   0.49
+unnamed reservoir 11.7      5.1  1.46 west_canada:s1250                     NaN   0.29
+#### check_flow_drops
+adk_southwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 7 | pass 1 + big-creek pass: 5 / 7
+  on smaller drainages:   pass 1: 1 / 3 | pass 1 + big-creek pass: 1 / 3
+  all:                    pass 1: 4 / 10 | pass 1 + big-creek pass: 6 / 10
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls      2      1     1
+Piseco, Speculator, Caroga & the West Branch Sacandaga             8      3     5
+
+named mapped falls on big creeks that both passes miss: 
+                                                region                    name  area     d1     d2
+Piseco, Speculator, Caroga & the West Branch Sacandaga West Stoney Creek Falls  15.0 1767.0 8908.0
+
+every precisely placed known fall, any source: pass 1: 7 / 20 | pass 1 + big-creek pass: 11 / 20
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_southwest (rA): known falls 55: found pass 1 15, both passes 24 | OSM/NHD-mapped 12: pass 1 4, both 6
+  drops: pass 1 93 {'cascade / knickpoint': 73, 'steep reach': 18, 'waterfall-like step': 2}; big-creek pass 92
+  waterfall candidates by status: {'unmapped cascade': 53, 'unmapped short fall (big creek)': 46, 'likely DEM artifact': 40, 'steep reach': 18, 'dam / weir': 14, 'matches mapped waterfall': 12, 'unmapped waterfall-like step': 1}
+#### straddle
+adk_southwest   reaches   6999 | flagged in-lake   732 (  416.6 km), outside every drawn lake   43.6 km:  112 reaches with 100+ m outside (  38.7 km),   5 untouched by a drawn lake | not flagged:   52.2 km inside counted lakes (155 reaches with 100+ m),  186.0 km inside any drawn lake
+#### v2_ends
+no_reach         49      19         6      0
+under_half       22       2         6      0
+under_quarter     9       1         5      0
+over_double      79      32         6      0
+#### piece_water
+adk_southwest   pieces ending above where carried water joins their link: 8 (9.6 km); creek pieces 7 (9.3 km), of them with 10x more water below 1
+######## rD
+#### score_root
+reaches 7426 (project 6767); matched within 30 m 7166, 30-200 m 111, none within 200 m 149
+wrote rD/output/adk_southwest/stream_reaches_ranked.csv 7426
+#### standing
+adk_southwest (rD)
+              box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+            moose     2748           0.0                   17             0                      0.65      763.7
+west_canada_lakes      621           0.0                    3             0                      0.15      130.9
+      west_canada     1867           0.0                    6             0                      0.44      555.4
+       speculator     2190           0.0                    0             0                      0.44      477.8
+#### lake_outlets
+adk_southwest (project): lakes with an outlet line 216; below them under half of NHDPlus: 3
+         lake    ha  nhd_km2  ours              sid              reach_name  ratio
+    Pine Lake  67.3     28.9 12.20 speculator:s1498                     NaN   0.42
+     Spy Lake 154.5      9.3  0.43  speculator:s543                     NaN   0.05
+Tamarack Lake  13.1      6.6  3.23      moose:s1106 Middle Settlement Creek   0.49
+#### check_flow_drops
+adk_southwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 7 | pass 1 + big-creek pass: 5 / 7
+  on smaller drainages:   pass 1: 1 / 3 | pass 1 + big-creek pass: 1 / 3
+  all:                    pass 1: 4 / 10 | pass 1 + big-creek pass: 6 / 10
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls      2      1     1
+Piseco, Speculator, Caroga & the West Branch Sacandaga             8      3     5
+
+named mapped falls on big creeks that both passes miss: 
+                                                region                    name  area     d1     d2
+Piseco, Speculator, Caroga & the West Branch Sacandaga West Stoney Creek Falls  15.0 1767.0 8908.0
+
+every precisely placed known fall, any source: pass 1: 8 / 20 | pass 1 + big-creek pass: 12 / 20
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_southwest (rD): known falls 55: found pass 1 16, both passes 31 | OSM/NHD-mapped 12: pass 1 4, both 6
+  drops: pass 1 103 {'cascade / knickpoint': 82, 'steep reach': 18, 'waterfall-like step': 3}; big-creek pass 128
+  waterfall candidates by status: {'unmapped short fall (big creek)': 62, 'unmapped cascade': 59, 'likely DEM artifact': 48, 'dam / weir': 23, 'matches mapped waterfall': 18, 'steep reach': 18, 'unmapped waterfall-like step': 1}
+#### straddle
+adk_southwest   reaches   7426 | flagged in-lake   985 (  443.6 km), outside every drawn lake    4.1 km:    1 reaches with 100+ m outside (   0.1 km),   0 untouched by a drawn lake | not flagged:    3.3 km inside counted lakes (1 reaches with 100+ m),  119.6 km inside any drawn lake
+#### v2_ends
+no_reach         49      19         6      0
+under_half       22       2         6      0
+under_quarter     9       1         5      0
+over_double      79      32         6      0
+#### piece_water
+adk_southwest   pieces ending above where carried water joins their link: 6 (6.3 km); creek pieces 5 (6.0 km), of them with 10x more water below 1
+######## compare rD against rA
+adk_southwest: A rA
+   B rD
+fish scores  A: {'n': 6999, 'km': 6204, 'mean': np.float64(68.63), '>=40': 6218, '>=60': 5033, '>=80': 2640, 'km60': np.float64(4502.0)}
+             B: {'n': 7426, 'km': 6205, 'mean': np.float64(66.37), '>=40': 6311, '>=60': 5101, '>=80': 2613, 'km60': np.float64(4453.2)}
+B reaches matched to an A reach within 30 m: 7423 of 7426 (3 unmatched, 2.1 km); A reaches no B reach matched: 2
+  drainage +20% or more: 0, -20% or more: 90; x2 or more: 0, /2 or less: 25
+  flow class changed: 406; name changed: 68
+  fish score up 10+: 177, down 10+: 381; any change: 1211; crossing 60: up 108, down 197
+  biggest moves:
+                 sid_b                        name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+            moose:s469                   North Inlet   7.85   7.85   1.00    year-round     reservoir          99.0          29.0 -70.0
+           moose:s2152         Little Woodhull Creek   7.10   7.10   1.00    year-round     reservoir          99.0          29.0 -70.0
+           moose:s2173         Little Woodhull Creek  11.64  11.64   1.00     reservoir    year-round          30.0          99.0  69.0
+            moose:s523                   Otter Creek  15.14  14.96   0.99     reservoir    year-round          30.0          99.0  69.0
+            moose:s724                   South Inlet  27.89  27.89   1.00    year-round     reservoir         100.0          31.0 -69.0
+       speculator:s831 West Branch East Canada Creek  16.10  16.10   1.00     reservoir    year-round          30.0          99.0  69.0
+west_canada_lakes:s451                 Whitney Creek  15.97  15.97   1.00    year-round     reservoir         100.0          31.0 -69.0
+west_canada_lakes:s452             West Canada Creek  40.41  40.41   1.00     reservoir    year-round          32.0         100.0  68.0
+west_canada_lakes:s453             West Canada Creek  44.67  44.67   1.00     reservoir    year-round          32.0         100.0  68.0
+            moose:s117      North Branch Moose River 107.26 106.59   0.99     reservoir    year-round          32.0         100.0  68.0
+            moose:s115      North Branch Moose River 107.26 106.39   0.99     reservoir    year-round          32.0         100.0  68.0
+west_canada_lakes:s496                           NaN   6.67   6.67   1.00    year-round     reservoir          96.0          28.0 -68.0
+west_canada_lakes:s497                           NaN   6.67   6.67   1.00    year-round     reservoir          96.0          28.0 -68.0
+      speculator:s1543                     Frie Flow  17.43  17.43   1.00    year-round     reservoir          92.0          24.0 -68.0
+            moose:s995                           NaN   7.16   6.43   0.90    year-round     reservoir          95.0          28.0 -67.0
+      west_canada:s990                    Mill Creek  21.65  21.65   1.00    year-round     reservoir          91.0          24.0 -67.0
+           moose:s1274                           NaN  10.09  10.09   1.00     reservoir    year-round          29.0          96.0  67.0
+           moose:s2189                Woodhull Creek  62.75  61.76   0.98     reservoir    year-round          30.0          96.0  66.0
+west_canada_lakes:s102                  Wakely Brook   3.39   3.39   1.00    year-round     reservoir          92.0          27.0 -65.0
+           moose:s1376                 Muskrat Creek   7.87   7.70   0.98     reservoir    year-round          28.0          93.0  65.0
+             moose:s49      North Branch Moose River 103.86 103.86   1.00     reservoir    year-round          30.0          95.0  65.0
+           moose:s2322                 Raymond Brook   5.57   5.57   1.00    year-round     reservoir          93.0          28.0 -65.0
+           moose:s2550                           NaN   2.66   1.68   0.63    year-round     reservoir          89.0          25.0 -64.0
+           moose:s1710                           NaN   2.20   1.82   0.83    year-round     reservoir          88.0          25.0 -63.0
+       speculator:s112                   Fall Stream  28.38  28.38   1.00    year-round     reservoir          90.0          27.0 -63.0
+adk_southwest: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  4674.6           2.0           1.8
+10-100    1222.3           0.0           0.0
+100+       308.2           0.0           0.0
+total km 6205.3 | moved 20+ m 2.0 | 50+ m 1.8

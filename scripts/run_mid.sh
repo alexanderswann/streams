@@ -18,6 +18,17 @@ steps() {
   # the flow data first: 05_score.py's size floor reads crossbox.py's links past dams, which need the reservoir list
   # and NHDPlus's lines (2026-11-21; it ran after 05_score before, which a new area's first build would trip over)
   run $a "" 02b_download_flow || return 1
+  # lakes, for the areas 05d_lakes.py is built for (it says so and does nothing elsewhere), before the reaches: 05_score.py
+  # cuts the stream links at the shores of the lakes a reach can lie in, and 05b_flow.py reads the same outlines for
+  # the reaches lying in a lake (flowlib.lake_water; 2026-11-21). 05d_lakes.py needs nothing of the reaches' (each
+  # lake's drainage label is looked up when the map is drawn, maplakes.py); 08_hike.py reads the outlines too.
+  # It downloads (agency lake lists, GBIF, PAD-US, OSM, lidar): if that fails, the last lakes.gpkg stays
+  # then the surveyed depths and contours (lake_bathymetry.py), which 05d_lakes.py leaves out
+  if run $a "" 05d_lakes; then
+    run $a "" lake_bathymetry || echo "NOTE $a: lake depth surveys not read; lakes.gpkg has no surveyed depths" >> $LOG
+  else
+    echo "NOTE $a: lakes not rebuilt; the last lakes.gpkg stays" >> $LOG
+  fi
   for r in $ranges; do run $a $r 05_score || return 1; done
   # late-summer greenness of the channels (Sentinel-2), which 05b_flow.py reads for creeks the flow model rates flowing
   # that are dry; only for areas with the late_summer_green source (it says so and does nothing elsewhere); kept once made
@@ -26,16 +37,6 @@ steps() {
   # box it runs into and matches it there with that box's area_streams.csv (05c), so a neighbour whose 05c hadn't
   # rerun yet was read on its own box's areas (05b prints a NOTE then)
   for r in $ranges; do run $a $r 05c_drainages || return 1; done
-  # lakes, for the areas 05d_lakes.py is built for (it says so and does nothing elsewhere): before the flows, since
-  # 05b_flow.py reads their outlines for the reaches that lie in a lake (05d_lakes.py reads 05c's drainages for the
-  # lakes' labels, nothing of 05b's; 2026-11-20); 08_hike.py reads them too.
-  # It downloads (agency lake lists, GBIF, PAD-US, OSM, lidar): if that fails, the last lakes.gpkg stays
-  # then the surveyed depths and contours (lake_bathymetry.py: Connecticut and Vermont), which 05d_lakes.py leaves out
-  if run $a "" 05d_lakes; then
-    run $a "" lake_bathymetry || echo "NOTE $a: lake depth surveys not read; lakes.gpkg has no surveyed depths" >> $LOG
-  else
-    echo "NOTE $a: lakes not rebuilt; the last lakes.gpkg stays" >> $LOG
-  fi
   for r in $ranges; do run $a $r 05b_flow || return 1; done
   run $a "" 02d_trails || return 1
   run $a "" 02e_access || return 1

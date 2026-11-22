@@ -343,3 +343,50 @@ $H/compare.sh /private/tmp/burn/r0 /private/tmp/burn/r3e adk_northwest
   - `lakes_2026-11-21/`: the lake routing's 12-area summary and per-area checks and comparisons.
   - `installed_2026-11-21/`: the 12 installed builds (lake routing and the carried-water floor) against the builds
     before: totals, moves by cause, the named cases, lines gone, lake outlets, each area's checks.
+
+## Lake shores, side channels, drops below dams (installed 2026-11-21, late)
+Work of the session "Fix the lake-routing side effects and open items", measured from the drops on (04) in scratch
+copies of all 12 maps, against a baseline built the same way from the same 03b outputs with the scripts of 80b42e8.
+Log entry: "2026-11-21, late: reaches cut at lake shores" in `MULTI_AREA_LOG.md`.
+
+- **What went in** (`scripts/`):
+  - `05_score.py` cuts the stream links at lake shores, names a creek's last stretch beside a river after the creek,
+    marks true side channels, and calls a drop at a dammed lake's outlet the dam.
+  - `05b_flow.py` measures a reach's length in a lake against the shore the map draws, counts a reach at the end of
+    a gauge's own model line as on it, and gives a side channel its river's flow.
+  - `04_knickpoints.py` / `04b_bigcreek_steps.py` size channels with the water carried past dams.
+  - `crossbox.py` puts a lake's water back in at the top of the routed outflow line.
+  - `scoring.py` keeps a creek below a lake or dam at NHD's class or better (LA).
+  - `watertemp.py` has a lake term, and a map without a fit of its own can take its region's.
+  - `lake_bathymetry.py` reads Lake Champlain's chart soundings.
+- **Scratch builds from 04** (`harness/`):
+  - `setup_clone.sh <root> <derived source root> <area> ...` copies `scripts/` and clones the raw and derived files
+    (APFS `cp -c`: no space, and nothing in the scratch root can write through to the project).
+  - `chain_from04.sh <root> <04|05|05b> <area> ...` runs 04 + 04b, 05_score, 05c, 05b.
+  - `evaluate.sh <rootA> <rootB> <outdir> <area> ...` scores both roots (`checks/score_root.py`; set `LATE_ROOT` to a
+    frozen root while the project itself is being rebuilt), runs the checks on each and compares B with A.
+- **Checks** (`checks/`):
+  - `lake_shares.py <root> <csv>`: each reach's length inside the drawn lakes, with 05b's flag; km of creek scored as
+    lake and of lake scored as creek.
+  - `sumeval.py <outdir>`: one table over the areas of an evaluation.
+  - `moves2.py <outdir> <root name>`: the 10+ point moves by what the reach is in the new build (lake water, creek).
+  - `landing.py <root>`: where crossbox puts each lake's water back in against the routed outflow line.
+  - `piece_water.py <root>`: pieces of cut links that end above the point where carried water joins their link.
+  - `side_channels.py <root> <csv>`: small reaches named after the river beside them, by kind.
+  - `damlake.py <root>`: drops at the outlets of dammed lakes, by status.
+  - `under_floor.py <root>`: creek pieces under the 1 km2 floor (kept: they are stretches the map drew before).
+- **Numbers**: `results/shores_2026-11-21/` (the table over the 12 areas, the moves by kind, per-area check output).
+- **Measured and not installed:**
+  - Carrying a gauge's record along its creek across junctions (reaches with a record 1,170 -> 3,097): it put dry
+    records on reaches 2-4 km above their gauge and below junctions where another creek comes in.
+  - The plain lake share in the water-temperature fits, and one fit for all four Adirondack maps: see `watertemp.py`.
+- **Things that bit:**
+  - A scratch `06_map.py` run needs the late tables for drops too (08, 10, 11), which a scratch root doesn't have: it
+    runs through the streams and stops at the drops. Enough to test the stream popups; the lakes can be tested with
+    `maplakes.load()`.
+  - A helper named `numbers.py` in the folder the checks run from shadows Python's own `numbers` module and breaks
+    every numpy import there.
+  - `lake_outlets.py` looks 100 m down NHDPlus's outlet line and leaves out reaches mostly inside NHD's outline. With
+    the links cut it can pick a small creek piece: where the routed way out leaves the lake somewhere else
+    (Stillwater Reservoir), where the next lake starts right below (Number Four Reservoir), or where the lidar's lake
+    is smaller than NHD's (Spy Lake). Look at the reaches around the lake before reading such a flag as lost water.

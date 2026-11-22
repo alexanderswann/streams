@@ -54,6 +54,15 @@ def load(done):
     if not os.path.exists(p):
         return None
     lk = gpd.read_file(p)
+    # each lake's drainage and fork: 05c_drainages.py's outlines at the lake's label point (05d_lakes.py: its outlet,
+    # or a point inside it). Looked up here since 2026-11-21, so that 05d_lakes.py can run before the reaches are made
+    dparts = [gpd.read_file(f"{MAP_OUT}/{r}/drainages.gpkg") for r in done if os.path.exists(f"{MAP_OUT}/{r}/drainages.gpkg")]
+    if dparts and "label_x" in lk and lk.label_x.notna().any():
+        dr = gpd.GeoDataFrame(pd.concat(dparts, ignore_index=True), crs=dparts[0].crs).to_crs(lk.crs)
+        at = gpd.GeoDataFrame(geometry=gpd.points_from_xy(lk.label_x, lk.label_y), index=lk.index, crs=lk.crs)
+        j = gpd.sjoin(at[lk.label_x.notna().values], dr[["drainage", "fork", "geometry"]], how="left", predicate="within")
+        j = j[~j.index.duplicated()]
+        lk["drainage"], lk["fork"] = j.drainage.reindex(lk.index).values, j.fork.reindex(lk.index).values
     parts = [pd.read_csv(f"{MAP_OUT}/{r}/hike_lakes.csv") for r in done if os.path.exists(f"{MAP_OUT}/{r}/hike_lakes.csv")]
     if parts:   # a lake on a box edge is reached from the box with the quicker approach
         h = pd.concat(parts, ignore_index=True).sort_values("approach_min", na_position="last").drop_duplicates("lid")

@@ -21,6 +21,14 @@ z = src.read(1).astype("float64").ravel()
 zf = rasterio.open(f"{DERIVED}/dem_filled.tif").read(1).astype("float64").ravel()
 fdir = rasterio.open(f"{DERIVED}/flowdir.tif").read(1)
 area = rasterio.open(f"{DERIVED}/area_km2.tif").read(1).ravel()
+# A channel's size counts the water that reaches it from elsewhere, as the reaches' areas do (crossbox.py: over a dam,
+# past a pond, across a box edge, in from outside the map). A lake ends its D8 paths at its outlet (03b_stitch.py),
+# so the river below starts again near nothing, and on its own area alone its first stretch was no channel here until
+# 1 km2 had gathered again: Rainbow Falls on the Raquette, two steps of 14.5 and 15.3 m in the bypassed channel 700 m
+# below Rainbow Falls Dam, was found only while a path leaked out of the reservoir beside the dam (4.3 km2), and went
+# when every lake cell was sent to the outlet (03b_stitch.route_lake, 2026-11-21). A drop's area_km2 is this size.
+import crossbox
+area = area + crossbox.carried_km2(REGION)
 fill = rasterio.open(f"{DERIVED}/fill_depth.tif").read(1).ravel()
 H, W = fdir.shape
 N = H * W

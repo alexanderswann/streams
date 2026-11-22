@@ -25,9 +25,10 @@ from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_di
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 16
+VERSION = 17
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 OUTSIDE_MIN_KM2 = 10   # a river entering from outside every box brings at least this much, or it isn't carried
+OUTFLOW_NEAR_M = 100   # the cell found below a dam lies on the lake's routed way out within this distance of it
 
 
 def fdir_path(region):
@@ -331,6 +332,65 @@ def _dam_links(fd, T, sinks, lakes, v2, by_seq, detailed=None, ponds=None, pond_
     return out
 
 
+def _at_outflow(region, fd, links, km2):
+    """_dam_links' cells below the dams, moved to the top of each lake's routed way out where they lie on it.
+    _dam_links finds the cell where a lake's water goes on along NHDPlus's (1:100,000) or NHD's outlet line: the first
+    point outside the lake whose D8 path doesn't lead back into it. That cell sits 20-250 m from the lake and often
+    beside the channel, so its path joined the river's own line (03b_stitch.py's outflow line, from the cell below the
+    outlet pit) some way down: a median 40-120 m on the 12 maps, 300 m or more at about 60 outlets (the Snake below
+    Palisades Dam 700 m, the Gros Ventre below Lower Slide Lake 560 m). Above that point the river read only its own
+    few cells: the stretch between a dam and the next lake could read 0 km2 (the Raquette's 54 m between Rainbow Falls
+    and Five Falls reservoirs), which showed once 05_score.py cut the links at lake shores (2026-11-21).
+    The routed way out is the D8 path from the outlet pit's steepest-descent neighbour on the conditioned DEM (what
+    03b_stitch.py's directions held there before it made the outlet a pit). A lake's outlet is its dead end holding the
+    most water (`km2`: dead end -> km2). The water is put in at the top of that line where the cell found lies within
+    OUTFLOW_NEAR_M of it and its own path joins it: the same channel. Where it doesn't (the routing spills Stillwater
+    Reservoir over a saddle 450 m from its dam, and Raquette Lake south over the Brown's Tract carry), NHD's cell
+    stands, as before."""
+    p = f"{derived_dir(region)}/dem_cond.tif"
+    if not links or not os.path.exists(p):
+        return links
+    H, W = fd.shape
+    groups = defaultdict(list)
+    for o, rc in links.items():
+        groups[tuple(rc)].append(o)
+    out = dict(links)
+
+    def line(r, c, n=600):
+        cells = []
+        for _ in range(n):
+            cells.append((r, c))
+            st = D8.get(int(fd[r, c]))
+            if st is None or not (0 <= r + st[0] < H and 0 <= c + st[1] < W):
+                break
+            r, c = r + st[0], c + st[1]
+        return cells
+
+    with rasterio.open(p) as src:
+        for (lr, lc), dead in groups.items():
+            o = max(dead, key=lambda q: km2.get(q, 0.0))
+            pr, pc = divmod(int(o), W)
+            if int(fd[pr, pc]) in D8 or not (0 < pr < H - 1 and 0 < pc < W - 1):
+                continue
+            z = src.read(1, window=rasterio.windows.Window(pc - 1, pr - 1, 3, 3)).astype(float)
+            best, nb = 0.0, None
+            for dr, dc in ((-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)):   # 03b_stitch.py's order
+                s = (z[1, 1] - z[1 + dr, 1 + dc]) / (RES * (2 ** 0.5 if dr and dc else 1.0))
+                if s > best:
+                    best, nb = s, (pr + dr, pc + dc)
+            if nb is None or walk(fd, *nb) in set(dead):        # no way out on the DEM, or one leading back into the lake
+                continue
+            way = line(*nb)
+            a = np.array(way)
+            if np.hypot(a[:, 0] - lr, a[:, 1] - lc).min() * RES > OUTFLOW_NEAR_M:
+                continue
+            on = set(way)
+            if any(rc in on for rc in line(lr, lc)):
+                for q in dead:
+                    out[q] = nb
+    return out
+
+
 def _build(regions):
     from flowlib import FLOW, reservoirs
     from config import SHARED
@@ -346,6 +406,7 @@ def _build(regions):
     edges = shared_edges(regions)
     fds, exits, own, links = {}, {}, {}, []      # own: (region, outlet) -> its basin km2; links: (src, region, row, col, kind)
     ponds, pond_dead = [], set()                  # the cells below the ponds whose way on comes from the detailed lines
+    n_moved = 0                                   # dead ends whose water goes on from the top of the routed way out
     for r in regions:
         with rasterio.open(fdir_path(r)) as src:
             fds[r] = (src.read(1), src.transform)
@@ -371,7 +432,10 @@ def _build(regions):
         own.update({(r, int(o)): float(a) for o, a in zip(uo[sink], km2[sink])})
         own.update({(r, int(o)): (0.0 if r in stitched() else float(a)) for o, a in zip(uo[exit_ & ~sink], km2[exit_ & ~sink])})
         sinks = {int(o): T * (c + 0.5, rr + 0.5) for o, rr, c in zip(uo[sink], orow[sink], ocol[sink])}
-        for o, (row, col) in _dam_links(fd, T, sinks, lakes, v2, by_seq, _outflow_lines(r), ponds, pond_dead).items():
+        below = _dam_links(fd, T, sinks, lakes, v2, by_seq, _outflow_lines(r), ponds, pond_dead)
+        moved = _at_outflow(r, fd, below, {int(o): float(a) for o, a in zip(uo[sink], km2[sink])})
+        n_moved += sum(tuple(moved[o]) != tuple(below[o]) for o in below)
+        for o, (row, col) in moved.items():
             links.append(((r, o), r, row, col, "pond" if o in pond_dead else "dam"))
     # each exit -> the cell in the neighbouring box where its creek heads away from the edge
     for r in regions:
@@ -556,7 +620,8 @@ def _build(regions):
                              b, int(row), int(col), round(tot(src), 3), kind] for src, b, row, col, kind in use]
     dams = [l for l in links if l[4] in ("dam", "pond")]
     print(f"crossbox: {sum(l[4] == 'edge' for l in links)} edge links, {len(dams)} reservoir dead ends carried past "
-          f"their dams ({len(ponds)} ponds NHDPlus has no flowline for, by the detailed NHD stream line leaving them)")
+          f"their dams ({len(ponds)} ponds NHDPlus has no flowline for, by the detailed NHD stream line leaving them; "
+          f"{n_moved} put in at the top of the lake's routed way out)")
     # the dead ends themselves, for dam_links(): {region: [[dead-end cell, row, col of the cell below the dam]]}
     out["dams"] = {r: [[int(src[1]), int(row), int(col)] for src, b, row, col, kind in dams
                        if b == r and src[0] == r] for r in regions}

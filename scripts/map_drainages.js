@@ -105,8 +105,10 @@ function initDrainageMap(map, ctrl) {
   const tip = p => `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
     `Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}`;
   function pop(p) {
-    const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
-                     : `<span class="dm">Unnamed reach (no profile)</span>`;
+    // (a side channel's name carries " (side channel)", 06_map.py: its profile is the river's)
+    const pn = p.n ? p.n.replace(/ \(side channel\)$/, "") : null;
+    const prof = pn ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
+                    : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
       `<table><tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr>` +
       `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +

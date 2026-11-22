@@ -1,0 +1,169 @@
+######## rA
+#### score_root
+reaches 8492 (project 8137); matched within 30 m 8145, 30-200 m 135, none within 200 m 212
+wrote rA/output/adk_northwest/stream_reaches_ranked.csv 8492
+#### standing
+adk_northwest (rA)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     2777           0.0                    8             0                      0.83      744.3
+  long_lake     1925           0.0                    0             0                      0.40      414.1
+     tupper     1346           0.0                   17             0                      0.52      353.9
+   st_regis     1298           0.0                   16             0                      0.41      347.4
+lake_ozonia     1146           0.0                    6             0                      0.37      377.9
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 7
+       lake   ha  nhd_km2  ours             sid         reach_name  ratio
+ Lower Pond 63.9     12.4  5.38 long_lake:s1806 Browns Tract Inlet   0.43
+ Slang Pond 21.2     11.0  1.68      tupper:s33                NaN   0.15
+Graves Pond  9.2     10.0  3.87     beaver:s723                NaN   0.39
+ Upper Pond 21.1      8.9  2.28 long_lake:s1822                NaN   0.26
+Turtle Pond 28.7      8.4  1.03      tupper:s36                NaN   0.12
+   Dog Pond 10.1      5.9  1.67     beaver:s419                NaN   0.28
+  Long Pond 22.3      3.4  1.44   st_regis:s621   Long Pond Outlet   0.42
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_northwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 24 | pass 1 + big-creek pass: 18 / 24
+  on smaller drainages:   pass 1: 0 / 9 | pass 1 + big-creek pass: 0 / 9
+  all:                    pass 1: 3 / 33 | pass 1 + big-creek pass: 18 / 33
+
+by range:
+                                                                  falls  pass1  both
+region                                                                              
+Carry Falls, the Raquette reservoirs & the St. Regis                  5      1     4
+Lake Ozonia, the Deer and Little Salmon rivers                        3      1     3
+Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper          6      0     2
+Stillwater, Beaver River, Cranberry Lake & Five Ponds                11      0     3
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls      8      1     6
+
+named mapped falls on big creeks that both passes miss: 
+                                                          region            name  area      d1      d2
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Upper Falls  70.0  4365.0  4910.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Lower Falls  70.0  4429.0  5719.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper  Raquette Falls  70.0  4415.0  5499.0
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls Jamestown Falls 165.0 24776.0 19653.0
+            Carry Falls, the Raquette reservoirs & the St. Regis Augerhole Falls  69.0 28294.0  7923.0
+
+every precisely placed known fall, any source: pass 1: 4 / 44 | pass 1 + big-creek pass: 23 / 44
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_northwest (rA): known falls 81: found pass 1 5, both passes 28 | OSM/NHD-mapped 44: pass 1 3, both 18
+  drops: pass 1 48 {'cascade / knickpoint': 41, 'steep reach': 7}; big-creek pass 118
+  waterfall candidates by status: {'unmapped short fall (big creek)': 74, 'unmapped cascade': 31, 'matches mapped waterfall': 28, 'likely DEM artifact': 20, 'steep reach': 7, 'dam / weir': 5}
+#### straddle
+adk_northwest   reaches   8492 | flagged in-lake  1386 (  861.6 km), outside every drawn lake   77.0 km:  190 reaches with 100+ m outside (  70.6 km),   8 untouched by a drawn lake | not flagged:   67.9 km inside counted lakes (186 reaches with 100+ m),  257.2 km inside any drawn lake
+#### v2_ends
+no_reach         49      36        34      4
+under_half       45      13         9      5
+under_quarter    21       9         9      5
+over_double      58      14         2      0
+#### piece_water
+adk_northwest   pieces ending above where carried water joins their link: 9 (7.8 km); creek pieces 7 (7.1 km), of them with 10x more water below 1
+######## rD
+#### score_root
+reaches 9156 (project 8137); matched within 30 m 8749, 30-200 m 187, none within 200 m 220
+wrote rD/output/adk_northwest/stream_reaches_ranked.csv 9156
+#### standing
+adk_northwest (rD)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     3035           0.0                    8             0                      0.83      744.3
+  long_lake     2194           0.0                    0             0                      0.40      414.1
+     tupper     1410           0.0                   17             0                      0.52      353.9
+   st_regis     1356           0.0                   16             0                      0.41      347.4
+lake_ozonia     1161           0.0                    6             0                      0.37      377.9
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 9
+                lake     ha  nhd_km2  ours             sid         reach_name  ratio
+Stillwater Reservoir 2520.5    464.3  0.39    beaver:s2318                NaN   0.00
+          Lower Pond   63.9     12.4  5.38 long_lake:s2066 Browns Tract Inlet   0.43
+          Slang Pond   21.2     11.0  1.58      tupper:s36                NaN   0.14
+         Graves Pond    9.2     10.0  3.87     beaver:s812                NaN   0.39
+          Upper Pond   21.1      8.9  2.16 long_lake:s2083                NaN   0.24
+         Turtle Pond   28.7      8.4  1.03      tupper:s40                NaN   0.12
+            Dog Pond   10.1      5.9  1.67     beaver:s473                NaN   0.28
+           Long Pond   22.3      3.4  1.44   st_regis:s651   Long Pond Outlet   0.42
+           Boyd Pond   35.5      2.0  0.43  st_regis:s1021                NaN   0.22
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_northwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 24 | pass 1 + big-creek pass: 18 / 24
+  on smaller drainages:   pass 1: 0 / 9 | pass 1 + big-creek pass: 6 / 9
+  all:                    pass 1: 3 / 33 | pass 1 + big-creek pass: 24 / 33
+
+by range:
+                                                                  falls  pass1  both
+region                                                                              
+Carry Falls, the Raquette reservoirs & the St. Regis                  5      1     4
+Lake Ozonia, the Deer and Little Salmon rivers                        3      1     3
+Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper          6      0     3
+Stillwater, Beaver River, Cranberry Lake & Five Ponds                11      0     8
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls      8      1     6
+
+named mapped falls on big creeks that both passes miss: 
+                                                          region            name  area      d1      d2
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Upper Falls  70.0  4365.0  4910.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Lower Falls  70.0  4429.0  5719.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper  Raquette Falls  70.0  4415.0  5499.0
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls Jamestown Falls 165.0 24776.0 19653.0
+            Carry Falls, the Raquette reservoirs & the St. Regis Augerhole Falls  69.0 18219.0  7923.0
+
+every precisely placed known fall, any source: pass 1: 4 / 44 | pass 1 + big-creek pass: 32 / 44
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_northwest (rD): known falls 81: found pass 1 6, both passes 42 | OSM/NHD-mapped 44: pass 1 3, both 24
+  drops: pass 1 57 {'cascade / knickpoint': 49, 'steep reach': 7, 'waterfall-like step': 1}; big-creek pass 172
+  waterfall candidates by status: {'unmapped short fall (big creek)': 89, 'matches mapped waterfall': 35, 'unmapped cascade': 32, 'dam / weir': 32, 'likely DEM artifact': 25, 'steep reach': 7}
+#### straddle
+adk_northwest   reaches   9156 | flagged in-lake  1757 (  893.9 km), outside every drawn lake    5.7 km:    1 reaches with 100+ m outside (   0.3 km),   1 untouched by a drawn lake | not flagged:    4.3 km inside counted lakes (0 reaches with 100+ m),  153.7 km inside any drawn lake
+#### v2_ends
+no_reach         49      36        34      4
+under_half       45      13         9      5
+under_quarter    23       9         9      5
+over_double      58      14         2      0
+#### piece_water
+adk_northwest   pieces ending above where carried water joins their link: 5 (4.0 km); creek pieces 4 (3.9 km), of them with 10x more water below 2
+######## compare rD against rA
+adk_northwest: A rA
+   B rD
+fish scores  A: {'n': 8492, 'km': 7182, 'mean': np.float64(64.13), '>=40': 7044, '>=60': 5479, '>=80': 2557, 'km60': np.float64(4751.1)}
+             B: {'n': 9156, 'km': 7181, 'mean': np.float64(61.94), '>=40': 7239, '>=60': 5612, '>=80': 2557, 'km60': np.float64(4685.7)}
+B reaches matched to an A reach within 30 m: 9154 of 9156 (2 unmatched, 0.3 km); A reaches no B reach matched: 1
+  drainage +20% or more: 1, -20% or more: 174; x2 or more: 1, /2 or less: 44
+  flow class changed: 614; name changed: 94
+  fish score up 10+: 262, down 10+: 461; any change: 1613; crossing 60: up 173, down 309
+  biggest moves:
+          sid_b                          name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+long_lake:s1247              Salmon Lake Outlet  28.57  28.57   1.00    year-round     reservoir         100.0          27.0 -73.0
+long_lake:s1395                             NaN  10.31  10.31   1.00    year-round     reservoir         100.0          28.0 -72.0
+long_lake:s1200                             NaN  40.27  40.27   1.00    year-round     reservoir          98.0          27.0 -71.0
+   beaver:s1619                    Beaver River  99.73  99.73   1.00    year-round     reservoir         100.0          29.0 -71.0
+long_lake:s1493                             NaN  26.23  26.23   1.00    year-round     reservoir         100.0          29.0 -71.0
+   beaver:s1670                             NaN   8.52   8.52   1.00    year-round     reservoir         100.0          30.0 -70.0
+   beaver:s2247                   Moshier Creek   9.67   9.67   1.00     reservoir    year-round          30.0         100.0  70.0
+    beaver:s221                    Brandy Brook  15.88  15.88   1.00    year-round     reservoir         100.0          30.0 -70.0
+long_lake:s1549                             NaN  11.10  11.10   1.00    year-round     reservoir          96.0          26.0 -70.0
+    beaver:s640                    Sucker Brook  22.18  21.59   0.97     reservoir    year-round          30.0         100.0  70.0
+    beaver:s342                      East Creek   8.82   8.82   1.00    year-round     reservoir         100.0          30.0 -70.0
+   beaver:s1471            Shingle Shanty Brook  56.83  55.82   0.98     reservoir    year-round          31.0         100.0  69.0
+   beaver:s1775 Middle Branch Oswegatchie River  12.63  12.36   0.98    year-round     reservoir         100.0          31.0 -69.0
+ long_lake:s695                      Pine Brook  14.86  14.86   1.00    year-round     reservoir          99.0          30.0 -69.0
+    beaver:s882                   Sixmile Creek  19.30  18.76   0.97     reservoir    year-round          31.0         100.0  69.0
+   beaver:s1940                    Beaver River 135.90 135.62   1.00    year-round     reservoir         100.0          31.0 -69.0
+   beaver:s2737        North Branch Moose River  59.66  59.66   1.00    year-round     reservoir         100.0          31.0 -69.0
+   beaver:s1469            Shingle Shanty Brook  56.83  55.55   0.98     reservoir    year-round          31.0         100.0  69.0
+   beaver:s2209                             NaN  17.93  17.93   1.00    year-round     reservoir         100.0          32.0 -68.0
+   beaver:s1793                             NaN  18.74  18.74   1.00     reservoir    year-round          32.0         100.0  68.0
+long_lake:s1907                   Boulder Brook  24.20  22.96   0.95     reservoir    year-round          29.0          97.0  68.0
+   beaver:s2357                             NaN  13.75  13.74   1.00     reservoir    year-round          29.0          97.0  68.0
+long_lake:s1842                             NaN  18.76  18.76   1.00    year-round     reservoir          96.0          28.0 -68.0
+   beaver:s2700        West Branch Beaver River  19.85  19.85   1.00    year-round     reservoir         100.0          32.0 -68.0
+   beaver:s2155                    Beaver River   7.78   7.78   1.00    year-round     reservoir          97.0          29.0 -68.0
+adk_northwest: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  5385.0           0.3           0.1
+10-100    1395.8           0.0           0.0
+100+       399.2           0.0           0.0
+total km 7181.1 | moved 20+ m 0.3 | 50+ m 0.1

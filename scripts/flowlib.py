@@ -1,7 +1,8 @@
 """Shared helpers for the flow evidence (05b_flow.py, data/validate_flow.py)."""
 import os, json, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from shapely.geometry import box
-from config import REGIONS, CRS, SHARED, NATIONAL, AREA, has
+import shapely
+from config import REGIONS, CRS, SHARED, SHARED_DERIVED, NATIONAL, AREA, has, derived_dir
 
 FLOW = f"{SHARED}/flow"
 MIN_RESERVOIR_KM2 = 0.08     # waterbodies smaller than 8 ha (debris basins, ponds) don't control a creek's base flow
@@ -177,6 +178,130 @@ def reservoirs():
     os.replace(path + ".tmp.gpkg", path)
     json.dump(sorted(REGIONS), open(meta, "w"))
     return wb
+
+
+# ---- the lake water a reach can lie in ----
+# 05b_flow.py reads a reach as lying in a lake ("in:<lake>", class reservoir) when half its length is in the water, and
+# 05_score.py cuts the stream links at the same shores, so that a reach is creek or lake and not half of each. The
+# water is NHD's lakes of MIN_RESERVOIR_KM2 or more (reservoirs()) and the lakes layer's (05d_lakes.py's lakes.gpkg).
+LAKE_PIECE_M = 50.0      # 05_score.py cuts a link at a lake's shore where at least this much of it lies on each side
+
+
+def lakes_layer():
+    """The lakes layer (05d_lakes.py's lakes.gpkg) in this area's CRS, with valid outlines; None where there is none."""
+    p = f"{SHARED_DERIVED}/lakes.gpkg"
+    if not os.path.exists(p):
+        return None
+    ll = gpd.read_file(p).to_crs(CRS)
+    return ll.assign(geometry=shapely.make_valid(ll.geometry.values))
+
+
+def layer_counted(ll):
+    """The layer's lakes a reach can lie in: 8 ha or more (the whole lake's size: one reaching far past the map is
+    stored clipped), level in the lidar ("flattened" or "level, not flattened"; not "little level water", a dry, marsh
+    or overgrown bed; not drawn down or drained), not intermittent, and not a lagoon (as reservoirs())."""
+    note = ll.water_note.fillna("").astype(str).str.strip().str.lower()
+    return ll[ll.lidar_kind.isin(["flattened", "level, not flattened"]) & ~note.str.startswith("little level water")
+              & ~note.str.contains("drawn down|drained") & ~ll.intermittent.fillna(False).astype(bool)
+              & ~ll["name"].fillna("").str.contains("Lagoon")
+              & (ll.ha.fillna(ll.geometry.area / 1e4) >= MIN_RESERVOIR_KM2 * 100)]
+
+
+def as_drawn(wb, ll):
+    """The outlines of NHD's lakes (wb, from reservoirs()) with the shore the lakes layer draws, where it drew that lake
+    from the lidar: NHD's outline cut to the lidar's. NHD's outlines come from older photos and topographic sheets, and
+    at a natural lake the lidar's shoreline replaces them on the map (05d_lakes.py; a reservoir, a lake caught drawn
+    down and one over 600 ha keep NHD's). Read against NHD's, a creek beside a lake whose mapped outline reaches
+    further than its water lay "in" it: a 324 m side creek at Lower Slide Lake's head and Emma Matilda Lake's outlet
+    creek between its ponds drew as reservoir where the map shows no lake (158 reaches, 84 km, over the 12 maps,
+    2026-11-21). A layer lake is the NHD lake's own where their overlap covers half of the smaller of the two.
+    Returns a GeoSeries on wb's index."""
+    geom = np.array(wb.geometry.values, dtype=object)
+    if ll is not None and len(ll) and len(wb):
+        lid = ll.geometry.values[ll.src_outline.fillna("").astype(str).str.startswith("lidar").values]
+        if len(lid):
+            wi, li = shapely.STRtree(lid).query(geom, predicate="intersects")
+            for i in np.unique(wi):
+                own = [L for L in lid[li[wi == i]] if geom[i].intersection(L).area >= 0.5 * min(geom[i].area, L.area)]
+                if own:
+                    parts = shapely.get_parts(shapely.intersection(geom[i], shapely.union_all(own)))
+                    geom[i] = shapely.union_all([q for q in parts if q.geom_type == "Polygon"])
+    return gpd.GeoSeries(geom, index=wb.index, crs=wb.crs)
+
+
+def wet_lakes(wb, region):
+    """The index labels of the lakes in wb that hold water in this box: 03b_stitch.py ends the paths at the outlet of
+    every lake with 2+ ha of its outline at one level in the DEM (a pit, 254 in flowdir.tif); one without (a marsh or
+    meadow NHD maps as a pond, a dry basin) has none."""
+    import rasterio
+    with rasterio.open(f"{derived_dir(region)}/flowdir.tif") as src:
+        rr, cc = np.nonzero(src.read(1) == 254)
+        xs, ys = src.transform * (cc + 0.5, rr + 0.5)
+    if not len(wb) or not len(rr):
+        return set()
+    pits = gpd.GeoDataFrame(geometry=gpd.points_from_xy(xs, ys), crs=CRS)
+    return set(gpd.sjoin(pits, wb[["geometry"]], predicate="within").index_right.tolist())
+
+
+def lake_water(region):
+    """The outlines 05_score.py cuts this box's stream links at: every lake 05b_flow.py can flag a reach in. NHD's lakes
+    (reservoirs()) with the shore the map draws (as_drawn), and the lakes layer's lakes a reach can lie in
+    (layer_counted). NHD's lakes all count, not only those holding level water in this box's lidar (wet_lakes): 05b
+    also makes a reach "reservoir" that lies half in a lake without one and has no model line of its own, so with the
+    cut at wet lakes only, links into a reservoir caught drawn down stayed half creek: 880 m of the West Fork San
+    Gabriel and 1.3 km of Devils Canyon above Cogswell Reservoir read as lake (47 such links, 16 km, on the 12 maps,
+    2026-11-21). An array of polygons in this area's CRS. `region` is kept for the callers; nothing is read per box."""
+    wb = reservoirs()
+    wb = wb.assign(geometry=shapely.make_valid(wb.geometry.values))
+    ll = lakes_layer()
+    out = list(as_drawn(wb, ll).values)
+    if ll is not None:
+        out += list(layer_counted(ll).geometry.values)
+    return np.array([g for g in out if g is not None and not g.is_empty], dtype=object)
+
+
+def shore_cuts(inside, seglen, min_m=LAKE_PIECE_M):
+    """The vertices at which a line is cut at lake shores. inside: for each of its segments, whether it lies in the
+    water; seglen: their lengths. Runs of segments in or out of the water shorter than min_m join their neighbours,
+    the shortest first (a line clipping a point or a cove, a sliver of shore inside the outline); the line is cut
+    between the runs left. Returns vertex numbers (a cut at vertex k ends one piece and starts the next there)."""
+    b = (np.flatnonzero(np.diff(np.asarray(inside, bool).astype(np.int8))) + 1).tolist()
+    runs = [[s, e, float(np.sum(seglen[s:e]))] for s, e in zip([0] + b, b + [len(inside)])]
+    while len(runs) > 1:
+        k = min(range(len(runs)), key=lambda j: runs[j][2])
+        if runs[k][2] >= min_m:
+            break
+        lo, hi = max(k - 1, 0), min(k + 1, len(runs) - 1)
+        runs[lo:hi + 1] = [[runs[lo][0], runs[hi][1], sum(r[2] for r in runs[lo:hi + 1])]]
+    return [r[0] for r in runs[1:]]
+
+
+def cut_at_shores(lines, water, min_m=LAKE_PIECE_M):
+    """Each line cut where it crosses the shore of the water (an array of polygons): (pieces, the number of the line
+    each piece comes from, whether the piece lies in the water: half its length or more), in order along each line.
+    A line the water doesn't touch stays whole."""
+    lines = np.asarray(lines, dtype=object)
+    pieces, src, wet = [], [], []
+    hit = {}
+    if len(water):
+        li, wi = shapely.STRtree(water).query(lines, predicate="intersects")
+        for i, w in zip(li.tolist(), wi.tolist()):
+            hit.setdefault(i, []).append(w)
+    for i, g in enumerate(lines):
+        cuts, inside, seg = [], None, None
+        if i in hit and len(g.coords) >= 2:
+            xy = np.asarray(g.coords)[:, :2]
+            u = shapely.union_all(water[hit[i]])
+            inside = shapely.contains(u, shapely.points((xy[:-1] + xy[1:]) / 2))
+            seg = np.hypot(*(xy[1:] - xy[:-1]).T)
+            if len(inside) >= 2 and inside.any() and not inside.all():
+                cuts = shore_cuts(inside, seg, min_m)
+        c = list(g.coords)
+        for a_, b_ in zip([0] + cuts, cuts + [len(c) - 1]):
+            pieces.append(g if not cuts else shapely.LineString(c[a_:b_ + 1]))
+            src.append(i)
+            wet.append(bool(inside is not None and seg[a_:b_][inside[a_:b_]].sum() >= 0.5 * seg[a_:b_].sum()))
+    return pieces, src, wet
 
 
 def level_paths():
@@ -414,10 +539,39 @@ def creek_gauges(v2):
     return gs.reset_index(drop=True)
 
 
-def gauge_record(mid, area_full, comid, flow_src, in_lake, gauges, near_comid=None):
+GAUGE_END_M = 100.0                  # a reach whose middle lies this near the gauge's own model line is on it
+
+
+def gauge_own_lines(gauges, v2, near_comid=None):
+    """{site_no: the gauge's own model line(s), one geometry in the area's CRS}: its NHDPlus line and the one the reach
+    it sits on takes its flow from (`near_comid`). gauge_record counts a reach as on the gauge's line where it took
+    its flow from that line or its middle lies within GAUGE_END_M of it. NHDPlus ends a line at every junction,
+    however small the creek joining, and a short reach at the end of the gauge's line can take its flow from the
+    next one: a 10 m reach of the San Jacinto River, at the junction 1.4 km above its gauge near San Jacinto, did
+    when the routing moved a vertex (2026-11-21), and read year-round below reaches the same and above reaches the
+    gauge sets at "mostly dry" (19 % of summers).
+    The record is not carried further along the creek. Following it across junctions was measured the same day (down
+    NHDPlus's path and up its main stem while the drainage stayed within 2/3 to 1.5 x the gauge's): reaches with a
+    record 1,170 -> 3,097 over the 12 maps, but it put dry records on reaches 2-4 km above their gauge (Murray Canyon,
+    fish 58 -> 3; San Juan Creek above La Novia, 60 -> 10, along a channel green in late summer) and below junctions
+    where another creek comes in (the East Fork of the West Fork Mojave, 72 -> 8). The canyon above a dry gauge may
+    still run, and a wet creek is never shown as dry."""
+    out = {}
+    if not len(gauges):
+        return out
+    geo = v2.drop_duplicates("comid").set_index("comid").geometry.to_crs(CRS)
+    for g in gauges.itertuples():
+        own = [c for c in (g.comid, (near_comid or {}).get(g.site_no)) if pd.notna(c) and c in geo.index]
+        if own:
+            out[g.site_no] = shapely.union_all(geo.loc[own].values)
+    return out
+
+
+def gauge_record(mid, area_full, comid, flow_src, in_lake, gauges, near_comid=None, own=None):
     """Per reach: the record of the nearest gauge (creek_gauges) on its own creek, within GAUGE_KM, where the reach is on
     the gauge's model line (its own, or the one the reach the gauge sits on takes its flow from: `near_comid`, by
-    site_no) and drains 2/3 to 1.5 x the gauge's area, and isn't in a lake. Gauges within GAUGE_SITE_M of each other
+    site_no; a reach took its flow from that line, or its middle lies within GAUGE_END_M of it: `own`,
+    gauge_own_lines) and drains 2/3 to 1.5 x the gauge's area, and isn't in a lake. Gauges within GAUGE_SITE_M of each other
     are one site: their shares are averaged. -> DataFrame: gauge_site, gauge_name, gauge_share, gauge_summers,
     gauge_years, gauge_area_km2, gauge_m (distance), gauge_below (the reach drains 0.9 x the gauge's area or more: at or
     below it, where a dry record also holds; the canyon above a dry gauge may still run)."""
@@ -429,13 +583,17 @@ def gauge_record(mid, area_full, comid, flow_src, in_lake, gauges, near_comid=No
         out["gauge_below"] = False
         return out
     mx, my = np.array([p.x for p in mid]), np.array([p.y for p in mid])
+    pts = shapely.points(mx, my)
     area_full, comid = np.asarray(area_full, float), np.asarray(comid, float)
     ok_src = np.isin(np.asarray(flow_src, dtype=object), ["model", "scaled"]) & ~np.asarray(in_lake, bool)
     gx, gy = gauges.geometry.x.values, gauges.geometry.y.values
     for k, g in gauges.reset_index(drop=True).iterrows():
         site = np.hypot(gx - gx[k], gy - gy[k]) <= GAUGE_SITE_M
         lines = [c for c in (g.comid, (near_comid or {}).get(g.site_no)) if pd.notna(c)]
-        on = ok_src & np.isin(comid, lines) & (area_full >= g.area_km2 / 1.5) & (area_full <= g.area_km2 * 1.5)
+        at = np.isin(comid, lines)
+        if own is not None and g.site_no in own:
+            at |= shapely.distance(pts, own[g.site_no]) <= GAUGE_END_M
+        on = ok_src & at & (area_full >= g.area_km2 / 1.5) & (area_full <= g.area_km2 * 1.5)
         d = np.hypot(mx - gx[k], my - gy[k])
         take = on & (d <= GAUGE_KM * 1000) & (d < best_d)
         if take.any():

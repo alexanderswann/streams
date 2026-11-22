@@ -1,0 +1,157 @@
+######## rA
+#### score_root
+reaches 8640 (project 8342); matched within 30 m 8350, 30-200 m 112, none within 200 m 178
+wrote rA/output/adk_southeast/stream_reaches_ranked.csv 8640
+#### standing
+adk_southeast (rA)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+indian_lake     1926           0.0                   15             0                      0.25      484.3
+    minerva      757           0.0                   13             0                      0.09      151.6
+    siamese      791           0.0                   17             0                      0.10      208.7
+  sacandaga     1803           0.0                    0             0                      0.50      466.4
+lake_george     3363           0.0                    3             0                      0.53      843.8
+#### lake_outlets
+adk_southeast (project): lakes with an outlet line 216; below them under half of NHDPlus: 3
+        lake   ha  nhd_km2  ours              sid reach_name  ratio
+Thurman Pond 50.8      9.7  1.76 lake_george:s740        NaN   0.18
+ Grassy Pond 14.7      6.2  2.98     minerva:s354        NaN   0.48
+Unknown Pond 15.1      4.5  1.71     minerva:s550        NaN   0.38
+#### check_flow_drops
+adk_southeast: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southeast: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 5 / 31 | pass 1 + big-creek pass: 22 / 31
+  on smaller drainages:   pass 1: 14 / 35 | pass 1 + big-creek pass: 14 / 35
+  all:                    pass 1: 19 / 66 | pass 1 + big-creek pass: 36 / 66
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Great Sacandaga Lake, Northville & Lake Luzerne           10      4     8
+Hudson Gorge, Minerva & the Essex Chain                    2      1     2
+Indian Lake, Cedar River, North Creek & Gore Mountain     19      1     3
+Lake George, Schroon Lake, Brant Lake & Pharaoh           30     13    21
+Siamese Ponds, Wells & Stony Creek                         5      0     2
+
+named mapped falls on big creeks that both passes miss: 
+                                               region           name   area     d1     d2
+Indian Lake, Cedar River, North Creek & Gore Mountain   Square Falls   93.0 5230.0 5887.0
+                   Siamese Ponds, Wells & Stony Creek    Auger Falls   66.0 1084.0 1852.0
+      Great Sacandaga Lake, Northville & Lake Luzerne Rockwell Falls 1443.0 2368.0 7327.0
+      Lake George, Schroon Lake, Brant Lake & Pharaoh  Schroon Falls   27.0 3015.0 3196.0
+
+every precisely placed known fall, any source: pass 1: 20 / 71 | pass 1 + big-creek pass: 39 / 71
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_southeast (rA): known falls 143: found pass 1 37, both passes 61 | OSM/NHD-mapped 70: pass 1 19, both 37
+  drops: pass 1 351 {'cascade / knickpoint': 235, 'steep reach': 108, 'waterfall-like step': 8}; big-creek pass 125
+  waterfall candidates by status: {'unmapped cascade': 169, 'steep reach': 101, 'likely DEM artifact': 84, 'matches mapped waterfall': 45, 'unmapped short fall (big creek)': 45, 'dam / weir': 21, 'unmapped waterfall-like step': 5}
+#### straddle
+adk_southeast   reaches   8640 | flagged in-lake  1188 (  705.3 km), outside every drawn lake   64.4 km:  159 reaches with 100+ m outside (  58.8 km),   6 untouched by a drawn lake | not flagged:   63.4 km inside counted lakes (177 reaches with 100+ m),  242.7 km inside any drawn lake
+#### v2_ends
+no_reach         42      19         5      8
+under_half       19       5        15      9
+under_quarter     2       4        11      9
+over_double      39      20         8      1
+#### piece_water
+adk_southeast   pieces ending above where carried water joins their link: 14 (9.0 km); creek pieces 13 (9.0 km), of them with 10x more water below 2
+######## rD
+#### score_root
+reaches 9253 (project 8342); matched within 30 m 8929, 30-200 m 147, none within 200 m 177
+wrote rD/output/adk_southeast/stream_reaches_ranked.csv 9253
+#### standing
+adk_southeast (rD)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+indian_lake     2048           0.0                   15             0                      0.25      484.3
+    minerva      816           0.0                   13             0                      0.08      151.6
+    siamese      809           0.0                   17             0                      0.10      208.7
+  sacandaga     1923           0.0                    0             0                      0.50      466.4
+lake_george     3657           0.0                    3             0                      0.52      843.8
+#### lake_outlets
+adk_southeast (project): lakes with an outlet line 216; below them under half of NHDPlus: 3
+        lake   ha  nhd_km2  ours              sid reach_name  ratio
+Thurman Pond 50.8      9.7  1.76 lake_george:s821        NaN   0.18
+ Grassy Pond 14.7      6.2  2.97     minerva:s386        NaN   0.48
+Unknown Pond 15.1      4.5  1.71     minerva:s597        NaN   0.38
+#### check_flow_drops
+adk_southeast: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southeast: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 5 / 31 | pass 1 + big-creek pass: 22 / 31
+  on smaller drainages:   pass 1: 15 / 35 | pass 1 + big-creek pass: 15 / 35
+  all:                    pass 1: 20 / 66 | pass 1 + big-creek pass: 37 / 66
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Great Sacandaga Lake, Northville & Lake Luzerne           10      4     8
+Hudson Gorge, Minerva & the Essex Chain                    2      1     2
+Indian Lake, Cedar River, North Creek & Gore Mountain     19      2     4
+Lake George, Schroon Lake, Brant Lake & Pharaoh           30     13    21
+Siamese Ponds, Wells & Stony Creek                         5      0     2
+
+named mapped falls on big creeks that both passes miss: 
+                                               region           name   area     d1     d2
+Indian Lake, Cedar River, North Creek & Gore Mountain   Square Falls   93.0 5230.0 5887.0
+                   Siamese Ponds, Wells & Stony Creek    Auger Falls   66.0 1084.0 1852.0
+      Great Sacandaga Lake, Northville & Lake Luzerne Rockwell Falls 1443.0 2368.0  336.0
+      Lake George, Schroon Lake, Brant Lake & Pharaoh  Schroon Falls   27.0 3015.0 3072.0
+
+every precisely placed known fall, any source: pass 1: 21 / 71 | pass 1 + big-creek pass: 42 / 71
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_southeast (rD): known falls 143: found pass 1 38, both passes 69 | OSM/NHD-mapped 70: pass 1 20, both 38
+  drops: pass 1 370 {'cascade / knickpoint': 250, 'steep reach': 111, 'waterfall-like step': 9}; big-creek pass 172
+  waterfall candidates by status: {'unmapped cascade': 181, 'steep reach': 104, 'likely DEM artifact': 102, 'unmapped short fall (big creek)': 58, 'matches mapped waterfall': 50, 'dam / weir': 34, 'unmapped waterfall-like step': 5}
+#### straddle
+adk_southeast   reaches   9253 | flagged in-lake  1562 (  756.2 km), outside every drawn lake    6.4 km:    3 reaches with 100+ m outside (   1.6 km),   2 untouched by a drawn lake | not flagged:    3.1 km inside counted lakes (0 reaches with 100+ m),  133.7 km inside any drawn lake
+#### v2_ends
+no_reach         42      19         5      8
+under_half       19       5        15      9
+under_quarter     2       4        11      9
+over_double      39      20         8      1
+#### piece_water
+adk_southeast   pieces ending above where carried water joins their link: 8 (5.5 km); creek pieces 7 (5.4 km), of them with 10x more water below 3
+######## compare rD against rA
+adk_southeast: A rA
+   B rD
+fish scores  A: {'n': 8640, 'km': 7132, 'mean': np.float64(61.1), '>=40': 7297, '>=60': 5177, '>=80': 1776, 'km60': np.float64(4251.5)}
+             B: {'n': 9253, 'km': 7132, 'mean': np.float64(59.3), '>=40': 7506, '>=60': 5287, '>=80': 1805, 'km60': np.float64(4201.1)}
+B reaches matched to an A reach within 30 m: 9247 of 9253 (6 unmatched, 0.9 km); A reaches no B reach matched: 0
+  drainage +20% or more: 2, -20% or more: 156; x2 or more: 1, /2 or less: 36
+  flow class changed: 590; name changed: 112
+  fish score up 10+: 226, down 10+: 385; any change: 839; crossing 60: up 114, down 217
+  biggest moves:
+            sid_b             name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+indian_lake:s1226     Woodland Brook   6.48   6.48   1.00    year-round     reservoir          99.0          29.0 -70.0
+ lake_george:s895 Pharoah Lake Brook  11.75  11.75   1.00    year-round     reservoir          98.0          29.0 -69.0
+ indian_lake:s927    John Mack Brook  10.51  10.51   1.00    year-round     reservoir         100.0          31.0 -69.0
+ indian_lake:s707   Round Pond Brook  67.04  67.02   1.00    year-round     reservoir          95.0          28.0 -67.0
+indian_lake:s1020    John Mack Brook   7.47   7.47   1.00     reservoir    year-round          29.0          95.0  66.0
+      siamese:s63      Madison Creek   4.59   4.10   0.89    year-round     reservoir          94.0          28.0 -66.0
+indian_lake:s1219       McGinn Brook   3.32   3.32   1.00    year-round     reservoir          93.0          28.0 -65.0
+indian_lake:s1018    John Mack Brook   5.10   5.10   1.00    year-round     reservoir          91.0          27.0 -64.0
+indian_lake:s1029                NaN   2.60   2.60   1.00    year-round     reservoir          90.0          27.0 -63.0
+  sacandaga:s1477         Hans Creek  72.12  72.12   1.00    year-round     reservoir          88.0          26.0 -62.0
+      siamese:s56      Madison Creek   2.65   2.65   1.00    year-round     reservoir          88.0          26.0 -62.0
+ lake_george:s875         Mill Brook   1.82   1.82   1.00    year-round     reservoir          88.0          26.0 -62.0
+indian_lake:s1880       Jessup River 119.35 119.28   1.00     reservoir    year-round          27.0          89.0  62.0
+   sacandaga:s870         Daly Creek  66.75  66.75   1.00    year-round     reservoir          88.0          26.0 -62.0
+ indian_lake:s807                NaN   2.17   2.17   1.00    year-round     reservoir          87.0          26.0 -61.0
+ lake_george:s362                NaN  68.68  68.68   1.00     reservoir    year-round          26.0          87.0  61.0
+lake_george:s2067                NaN   2.91   2.91   1.00    year-round     reservoir          87.0          26.0 -61.0
+lake_george:s3157                NaN  26.88  26.88   1.00    year-round     reservoir          87.0          26.0 -61.0
+ indian_lake:s759   Thirteenth Brook  14.87  14.87   1.00    year-round     reservoir          87.0          26.0 -61.0
+ lake_george:s511                NaN  10.93  10.93   1.00    year-round     reservoir          87.0          26.0 -61.0
+lake_george:s3155                NaN  26.88  26.65   0.99    year-round     reservoir          87.0          26.0 -61.0
+ lake_george:s670     Desolate Brook   4.60   4.40   0.96     reservoir    year-round          15.0          75.0  60.0
+ indian_lake:s640      Doherty Brook   6.79   6.29   0.93     reservoir    year-round          26.0          86.0  60.0
+ lake_george:s667                NaN   9.08   9.08   1.00     reservoir    year-round          25.0          85.0  60.0
+ lake_george:s642       Putnam Creek  55.11  55.11   1.00     reservoir    year-round          26.0          86.0  60.0
+adk_southeast: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  5391.6           0.8           0.5
+10-100    1328.6           0.0           0.0
+100+       411.5           0.0           0.0
+total km 7132.4 | moved 20+ m 0.9 | 50+ m 0.5

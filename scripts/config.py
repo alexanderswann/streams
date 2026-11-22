@@ -46,6 +46,9 @@ TILE = 1500                   # px per download tile (large requests 500 on the 
 #   run through dry washes and reservoirs; "perennial" in wet country, where they are the rivers themselves.
 # clip_state = the state an area stops at where its boxes reach past a state line (areaclip.py): central Vermont's
 #   west edge is the New York line down the middle of Lake Champlain. The hydrology still runs on the whole boxes.
+# water_temp_group = a name shared by areas that are one region cut into several maps (the four Adirondack maps): a map
+#   whose own measured sites give no water-temperature fit with skill takes the fit on all the group's sites
+#   (watertemp.py), where that fits its own sites.
 # hidden = True: the area is built and its map stays where it is (website included), but nothing lists or links it:
 #   not the map of all areas, the "Go to" menus or the one-file map (13_overview.py, 06_map.py, 14_portable.py).
 AREAS = {
@@ -285,7 +288,7 @@ AREAS = {
     # hide anywhere it is displayed on the website"): the four maps are kept, built and published as before, but no
     # page lists or links them. Take hidden=True out of all four to show them again.
     "adk_high_peaks": dict(
-        label="Adirondacks: High Peaks & Lake Placid", crs=26918, hidden=True,
+        label="Adirondacks: High Peaks & Lake Placid", crs=26918, hidden=True, water_temp_group="adirondack",
         min_relief=50,     # the Champlain valley and the northern plains are gentle; the peaks pass any test
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
@@ -305,7 +308,7 @@ AREAS = {
                                bbox=(544400, 4938000, 609400, 4971500)),
         }),
     "adk_northwest": dict(
-        label="Adirondacks: Long Lake, Tupper & Cranberry", crs=26918, min_relief=50, hidden=True,
+        label="Adirondacks: Long Lake, Tupper & Cranberry", crs=26918, min_relief=50, hidden=True, water_temp_group="adirondack",
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
@@ -322,7 +325,7 @@ AREAS = {
                                 bbox=(505600, 4934000, 544400, 4960000)),
         }),
     "adk_southwest": dict(
-        label="Adirondacks: Old Forge & West Canada Lakes", crs=26918, min_relief=50, hidden=True,
+        label="Adirondacks: Old Forge & West Canada Lakes", crs=26918, min_relief=50, hidden=True, water_temp_group="adirondack",
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),
@@ -337,7 +340,7 @@ AREAS = {
                                bbox=(522000, 4765000, 556400, 4818000)),
         }),
     "adk_southeast": dict(
-        label="Adirondacks: Hudson, Indian Lake & Lake George", crs=26918, min_relief=50, hidden=True,
+        label="Adirondacks: Hudson, Indian Lake & Lake George", crs=26918, min_relief=50, hidden=True, water_temp_group="adirondack",
         sources=("ny_trout", "tu_brook_trout", "nys_forest_preserve"),
         long_trail=("Northville-Placid Trail", "NPT", r"^Northville.?Placid"),
         home=dict(label="05753 Middlebury", lon=-73.1673, lat=44.0153),

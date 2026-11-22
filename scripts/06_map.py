@@ -630,6 +630,11 @@ def summer_flow(r):
         tw = r.tailwater if isinstance(getattr(r, "tailwater", None), str) else "the dam"
         return (f"{c} · below {tw}: its releases keep it flowing every summer, which the score uses · the {src}, "
                 f"which sees only the natural flow, said: " + ", ".join(bits) + f" · NHD: {r.flow}")
+    # scoring.py's water (4): below a lake or dam the model's figure is the creek's own ground, a floor
+    if r.water_rule == "below a dam":
+        return (f"{c} · most of this creek's drainage lies above a lake or dam, and the {src} counts only its own "
+                f"ground below it (" + ", ".join(bits) + f"), which leaves out what seeps, spills or is released: the "
+                f"score takes NHD's class · NHD: {r.flow}")
     return (" · ".join([c] + bits) + f" ({src})" + (f" · below {dam}: releases set the flow" if dam else "")
             + (f" · {gauge}" if gauge else "") + f" · NHD: {r.flow}")
 
@@ -642,7 +647,8 @@ def sev_label(v):
 # how this area's water-temperature estimate is made (watertemp.py), for the popups
 import watertemp
 _wt = watertemp.fit_record() or {}
-WT_HOW = ("estimated from " + " and ".join({"air": "air temperature", "elev_km": "elevation", "log_area": "stream size"}[t]
+WT_HOW = ("estimated from " + " and ".join({"air": "air temperature", "elev_km": "elevation", "log_area": "stream size",
+                                           "lake": "the lake water in it"}[t]
                                            for t in _wt.get("terms", [])) + f", ± {degf_diff(_wt.get('rmse_loo', 3))}") if _wt.get("ok") else ""
 # the hottest creek with a trout record (11_context.py), for the heat gate's popup line
 tev = ctx("trout_evidence")
@@ -892,13 +898,17 @@ s_show = s_show.assign(geometry=shapely.set_precision(s_show.geometry.simplify(0
 s_show = s_show[~s_show.geometry.is_empty & (s_show.geom_type == "LineString")]
 mid_ll = s_show.geometry.interpolate(0.5, normalized=True)
 nz = lambda v, nd=0: None if pd.isna(v) else round(float(v), nd) if nd else int(round(float(v)))
+# a side channel of a river (05_score.py's side_of) says so in its name and in its flow line
+_side = s_show.side_of.notna().values if "side_of" in s_show else np.zeros(len(s_show), bool)
 props = pd.DataFrame({
-    "n": s_show["name"].where(s_show["name"].notna(), None),
+    "n": np.where(_side, s_show["name"].astype(object) + " (side channel)", s_show["name"].where(s_show["name"].notna(), None)),
     "d": s_show.drainage, "k": s_show.fork, "o": s_show.strahler,
     "c": [fcol.get((d, f), dcol.get(d, MINOR_COL)) for d, f in zip(s_show.drainage, s_show.fork)],
     "fs": s_show.fish_score.round(0).astype(int),
     "fl": [f"summer: {c}" if isinstance(c, str) and c != "no data" else f"NHD {f}" for c, f in zip(s_show.water_class, s_show.flow)],
-    "dq": [summer_flow(r) for r in s_show.itertuples()],
+    "dq": [(f"a side channel of the {r.side_of}, which drains {sqmi(r.river_km2)} beside it: the routing sends the whole "
+            f"river down one arm, so this arm's own drainage is small; it is scored on the river's size and flow · "
+            if sd_ else "") + summer_flow(r) for r, sd_ in zip(s_show.itertuples(), _side)],
     # drainage (km2, to 0.01 so the popups' square miles keep two places) and elevation (m): the pages show them in
     # square miles and feet
     "a": s_show.area_full_km2.fillna(s_show.area_km2).astype(float).round(2), "el": [nz(v) for v in s_show.elev_m], "gr": s_show.gradient_pct.astype(float).round(1),

@@ -12,6 +12,12 @@ Surveys, by area (checked 2026-11-19):
               Apr 2017), and USGS's sonar survey of Chambers Lake (Sept 2014: 150,779 soundings and a 1.6 ft grid)
   la          USGS multibeam survey of Little Rock Reservoir (8-9 Feb 2022, doi:10.5066/P9BQW35E): a 1 m grid of bed
               elevation. California DWR's multibeam surveys of Castaic, Pyramid and Silverwood are not public.
+  central_vt, adk_high_peaks, adk_southeast   Lake Champlain: the soundings of NOAA's electronic navigational charts
+              (NOAA ENC, charts 14781-14784: about 12,000 soundings of the 1870-1939 lake surveys, with the charts'
+              6 and 12 ft depth curves), gridded into contours. Depths below low lake level, the chart datum (93.0 ft
+              above mean sea level; the lake usually stands 2-3 ft higher). NOAA's user agreement lets the charts be
+              redistributed, also inside another product, if their origin and the agreement are shown: the popups
+              name both. Looked for on 2026-11-21 and not open: the Middlebury College multibeam survey (not released).
   jackson     none published (see lakedata.py)
 Each contour line belongs to the lake it lies in, each sounding to the lake it falls in: no name matching.
 Writes data/derived/<area>/_shared/lake_depth.gpkg (lid, depth_ft, depth_m, major, src).
@@ -291,8 +297,132 @@ def usgs_chambers(lk, bounds_ll):
     return rows, facts
 
 
-ADAPTERS = {"ne_ct": [ct_contours], "central_vt": [vt_soundings], "la": [usgs_little_rock],
-            "se_pa": [dcnr_bands, usgs_chambers]}
+ENC_CAT = "https://charts.noaa.gov/ENCs/ENCProdCat.xml"
+ENC_ZIP = "https://charts.noaa.gov/ENCs/{}.zip"
+ENC_TERMS = "https://charts.noaa.gov/ENCs/Agreement.shtml"
+ENC_DIR = f"{SHARED}/bathymetry/noaa_enc"
+CHAMPLAIN_LL = (-73.55, 43.52, -73.00, 45.10)       # the lake, to the Canadian line
+# the chart cells over the lake on 2026-11-21, used when NOAA's catalogue can't be read (it is re-cut now and then)
+CHAMPLAIN_CELLS = ["US4NY1KS", "US4NY1LS", "US4NY1MS", "US4NY1NS", "US4NY1NT", "US4NY1OS", "US4NY1OT", "US4NY1PS", "US4NY1PT",
+                   "US5VT1DD", "US5VT1ED", "US5NY3MR", "US5NY3MS"]
+CHAMPLAIN_LLL_FT = 93.0     # low lake level above mean sea level, the charts' plane of reference (Coast Pilot 6, ch. 14)
+
+
+def _enc_cells(box_ll):
+    """Names of the NOAA ENC cells of harbour and approach scale (1:80,000 and larger) whose coverage meets box_ll."""
+    import xml.etree.ElementTree as ET
+    os.makedirs(ENC_DIR, exist_ok=True)
+    p = f"{ENC_DIR}/ENCProdCat.xml"
+    try:
+        if not os.path.exists(p):
+            r = requests.get(ENC_CAT, timeout=300, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+            r.raise_for_status()
+            with open(p + ".part", "wb") as f:
+                f.write(r.content)
+            os.replace(p + ".part", p)
+        w, s, e, n = box_ll
+        out = []
+        for cell in ET.parse(p).getroot().iter("cell"):
+            scale = float(cell.findtext("cscale") or 0)
+            if not (0 < scale <= 80000) or (cell.findtext("status") or "Active") != "Active":
+                continue
+            lat = [float(v.text) for v in cell.iter("lat")]
+            lon = [float(v.text) for v in cell.iter("long")]
+            if lat and min(lat) < n and max(lat) > s and min(lon) < e and max(lon) > w:
+                out.append(cell.findtext("name"))
+        if out:
+            return sorted(out)
+    except Exception as ex:
+        print(f"  NOAA ENC catalogue not read ({str(ex)[:80]}); the cells listed on 2026-11-21 are used")
+    return CHAMPLAIN_CELLS
+
+
+def noaa_champlain(lk, bounds_ll):
+    """(contour rows, {lid: depth facts}) for Lake Champlain from NOAA's electronic navigational charts (NOAA ENC):
+    the charts' soundings (SOUNDG; metres below the chart datum, low lake level) with the vertices of their 6 and 12 ft
+    depth curves (DEPCNT) and the charted shoreline at 0 (the edge of the depth areas, DEPARE), gridded over the
+    whole lake (50 m, linear) into contours. The lake's deepest sounding and mean depth are the whole lake's, whichever
+    map shows part of it; the contours are cut to the lake as this area stores it."""
+    me = lk[lk["name"].fillna("").eq("Lake Champlain")]
+    if not len(me):
+        return [], {}
+    os.environ["OGR_S57_OPTIONS"] = ("SPLIT_MULTIPOINT=ON,ADD_SOUNDG_DEPTH=ON,UPDATES=APPLY,RETURN_PRIMITIVES=OFF,"
+                                     "RETURN_LINKAGES=OFF,LNAM_REFS=OFF")
+    snd, cnt, are = [], [], []
+    for cell in _enc_cells(CHAMPLAIN_LL):
+        z = f"{ENC_DIR}/{cell}.zip"
+        try:
+            if not os.path.exists(z):
+                r = requests.get(ENC_ZIP.format(cell), timeout=300, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+                r.raise_for_status()
+                with open(z + ".part", "wb") as f:
+                    f.write(r.content)
+                os.replace(z + ".part", z)
+            src = f"/vsizip/{z}/ENC_ROOT/{cell}/{cell}.000"
+            snd.append(gpd.read_file(src, layer="SOUNDG")[["DEPTH", "geometry"]])
+            cnt.append(gpd.read_file(src, layer="DEPCNT")[["VALDCO", "geometry"]])
+            are.append(gpd.read_file(src, layer="DEPARE")[["geometry"]])
+        except Exception as ex:
+            print(f"  NOAA ENC cell {cell} not read: {str(ex)[:100]}")
+    if not snd:
+        return [], {}
+    w, s, e, n = CHAMPLAIN_LL
+    ll = lambda parts: gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=4326).cx[w:e, s:n].to_crs(CRS)
+    snd, cnt, are = ll(snd), ll(cnt), ll(are)
+    snd = snd[snd.DEPTH.notna() & (snd.DEPTH >= 0)]
+    water = shapely.union_all(shapely.make_valid(are.geometry.values)).buffer(1).buffer(-1)
+    water = max(getattr(water, "geoms", [water]), key=lambda g: g.area)          # the lake, not a pond beside it
+    pts = [np.c_[snd.geometry.x, snd.geometry.y, snd.DEPTH]]
+    for g, v in zip(cnt.geometry, cnt.VALDCO):
+        if pd.notna(v) and g is not None and not g.is_empty:
+            xy = shapely.get_coordinates(shapely.segmentize(g, 50.0))
+            pts.append(np.c_[xy, np.full(len(xy), float(v))])
+    sh = shapely.get_coordinates(shapely.segmentize(water.boundary, 50.0))
+    pts.append(np.c_[sh, np.zeros(len(sh))])
+    P = pd.DataFrame(np.vstack(pts), columns=list("xyz")).round({"x": 1, "y": 1}).groupby(["x", "y"], as_index=False).z.mean().values
+    res = 50.0
+    x0, y0, x1, y1 = water.bounds
+    W, H = int(np.ceil((x1 - x0) / res)), int(np.ceil((y1 - y0) / res))
+    T = from_origin(x0, y1, res, res)
+    inside = features.geometry_mask([water], out_shape=(H, W), transform=T, invert=True)
+    from scipy.interpolate import LinearNDInterpolator
+    rr, cc = np.nonzero(inside)
+    z = np.full((H, W), np.nan)
+    z[rr, cc] = LinearNDInterpolator(P[:, :2], P[:, 2])(x0 + (cc + 0.5) * res, y1 - (rr + 0.5) * res)
+    d_ft = z / FT
+    dmax = float(snd.DEPTH.max()) / FT
+    mean_ft = float(np.nanmean(d_ft))
+    deep = snd.loc[snd.DEPTH.idxmax()].geometry
+    deep_ll = gpd.GeoSeries([deep], crs=CRS).to_crs(4326).iloc[0]
+    print(f"  Lake Champlain: {len(snd):,} chart soundings in {len(set(_enc_cells(CHAMPLAIN_LL)))} cells; gridded {np.isfinite(z).sum() * res * res / 1e6:,.0f} km2, "
+          f"{np.nansum(z) * res * res / 1e9:.1f} km3 (the Lake Champlain Basin Program gives 1,127 km2 and 25.8 km3); deepest sounding "
+          f"{dmax:.0f} ft at {deep_ll.y:.4f}, {deep_ll.x:.4f}; mean {mean_ft:.0f} ft below low lake level")
+    if not (300 <= dmax <= 420):          # the lake's deepest point is about 400 ft: anything else is a unit or datum error
+        print("  Lake Champlain: the deepest sounding isn't near 400 ft; left out")
+        return [], {}
+    import contourpy
+    step = step_ft(dmax)
+    src = "NOAA chart soundings (NOAA ENC, lake surveys of 1870-1939)"
+    lid, lake = me.lid.iloc[0], shapely.make_valid(me.geometry.iloc[0]).buffer(30)
+    gen = contourpy.contour_generator(z=d_ft, name="serial")
+    rows = []
+    for lv in np.arange(step, dmax, step):
+        for ln in gen.lines(lv):
+            if len(ln) >= 3:
+                geo = shapely.simplify(shapely.LineString(np.column_stack([x0 + (ln[:, 0] + 0.5) * res, y1 - (ln[:, 1] + 0.5) * res])), 15.0)
+                for part in shapely.get_parts(shapely.intersection(geo, lake)):
+                    if part.geom_type == "LineString" and part.length >= 300:
+                        rows.append(dict(lid=lid, depth_ft=float(lv), depth_m=round(lv * FT, 1), major=bool(lv % (step * 2) == 0),
+                                         src=src, geometry=part))
+    facts = {lid: dict(max_ft=dmax, mean_ft=mean_ft, src=src,
+                       note=f"{len(snd):,} soundings with the charts' {ft(1.8)} and {ft(3.6)} curves; depth below low lake level "
+                            f"({CHAMPLAIN_LLL_FT:g} ft above sea level, the chart datum; the lake usually stands 2 to 3 ft higher); "
+                            f"from NOAA ENC charts (charts.noaa.gov, user agreement: {ENC_TERMS}); not for navigation")}
+    return rows, facts
+
+
+ADAPTERS = {"ne_ct": [ct_contours], "central_vt": [vt_soundings, noaa_champlain], "la": [usgs_little_rock],
+            "se_pa": [dcnr_bands, usgs_chambers], "adk_high_peaks": [noaa_champlain], "adk_southeast": [noaa_champlain]}
 
 
 def main():

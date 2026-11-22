@@ -1,0 +1,141 @@
+######## rA
+#### score_root
+reaches 4302 (project 4284); matched within 30 m 4284, 30-200 m 6, none within 200 m 12
+wrote rA/output/lexington_va/stream_reaches_ranked.csv 4302
+#### standing
+lexington_va (rA)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ maury_goshen     2211           0.0                   16             0                      0.22      560.1
+blue_ridge_va     2091           0.0                    0             0                      0.28      551.7
+#### lake_outlets
+lexington_va (project): lakes with an outlet line 9; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+lexington_va: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+lexington_va: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 2 / 7 | pass 1 + big-creek pass: 3 / 7
+  on smaller drainages:   pass 1: 12 / 14 | pass 1 + big-creek pass: 12 / 14
+  all:                    pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+
+by range:
+                                                   falls  pass1  both
+region                                                               
+Blue Ridge: St. Mary's, Irish Creek & South River     19     14    15
+Maury River, Goshen Pass & Buffalo Creek               2      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                                           region          name   area     d1     d2
+         Maury River, Goshen Pass & Buffalo Creek    Lace Falls   34.0 1277.0 1135.0
+         Maury River, Goshen Pass & Buffalo Creek Balcony Falls 1769.0  291.0 8216.0
+Blue Ridge: St. Mary's, Irish Creek & South River Panther Falls   66.0  697.0 1354.0
+
+every precisely placed known fall, any source: pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+lexington_va (rA): known falls 27: found pass 1 15, both passes 16 | OSM/NHD-mapped 22: pass 1 14, both 15
+  drops: pass 1 206 {'steep reach': 106, 'cascade / knickpoint': 96, 'waterfall-like step': 4}; big-creek pass 47
+  waterfall candidates by status: {'steep reach': 98, 'unmapped cascade': 73, 'likely DEM artifact': 34, 'unmapped short fall (big creek)': 23, 'matches mapped waterfall': 12, 'dam / weir': 6, 'unmapped waterfall-like step': 4}
+#### straddle
+lexington_va    reaches   4302 | flagged in-lake    38 (   15.5 km), outside every drawn lake    1.2 km:    6 reaches with 100+ m outside (   1.0 km),   0 untouched by a drawn lake | not flagged:    3.0 km inside counted lakes (6 reaches with 100+ m),   19.9 km inside any drawn lake
+#### v2_ends
+no_reach         36      13         4     15
+under_half        7       3         1      1
+under_quarter     2       2         1      1
+over_double      45       8         3      1
+#### piece_water
+lexington_va    pieces ending above where carried water joins their link: 1 (0.5 km); creek pieces 1 (0.5 km), of them with 10x more water below 0
+######## rD
+#### score_root
+reaches 4320 (project 4284); matched within 30 m 4302, 30-200 m 6, none within 200 m 12
+wrote rD/output/lexington_va/stream_reaches_ranked.csv 4320
+#### standing
+lexington_va (rD)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ maury_goshen     2217           0.0                   16             0                      0.22      560.1
+blue_ridge_va     2103           0.0                    0             0                      0.28      551.7
+#### lake_outlets
+lexington_va (project): lakes with an outlet line 9; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+lexington_va: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+lexington_va: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 2 / 7 | pass 1 + big-creek pass: 3 / 7
+  on smaller drainages:   pass 1: 12 / 14 | pass 1 + big-creek pass: 12 / 14
+  all:                    pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+
+by range:
+                                                   falls  pass1  both
+region                                                               
+Blue Ridge: St. Mary's, Irish Creek & South River     19     14    15
+Maury River, Goshen Pass & Buffalo Creek               2      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                                           region          name   area     d1     d2
+         Maury River, Goshen Pass & Buffalo Creek    Lace Falls   34.0 1277.0 1135.0
+         Maury River, Goshen Pass & Buffalo Creek Balcony Falls 1769.0  291.0 8216.0
+Blue Ridge: St. Mary's, Irish Creek & South River Panther Falls   66.0  697.0 1354.0
+
+every precisely placed known fall, any source: pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+lexington_va (rD): known falls 27: found pass 1 15, both passes 16 | OSM/NHD-mapped 22: pass 1 14, both 15
+  drops: pass 1 209 {'steep reach': 106, 'cascade / knickpoint': 99, 'waterfall-like step': 4}; big-creek pass 51
+  waterfall candidates by status: {'steep reach': 98, 'unmapped cascade': 73, 'likely DEM artifact': 34, 'unmapped short fall (big creek)': 24, 'matches mapped waterfall': 12, 'dam / weir': 9, 'unmapped waterfall-like step': 4}
+#### straddle
+lexington_va    reaches   4320 | flagged in-lake    48 (   17.7 km), outside every drawn lake    0.1 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.2 km inside counted lakes (0 reaches with 100+ m),   16.6 km inside any drawn lake
+#### v2_ends
+no_reach         36      13         4     15
+under_half        7       3         1      1
+under_quarter     2       2         1      1
+over_double      45       8         3      1
+#### piece_water
+lexington_va    pieces ending above where carried water joins their link: 1 (0.5 km); creek pieces 1 (0.5 km), of them with 10x more water below 0
+######## compare rD against rA
+lexington_va: A rA
+   B rD
+fish scores  A: {'n': 4302, 'km': 3458, 'mean': np.float64(58.41), '>=40': 4010, '>=60': 1911, '>=80': 407, 'km60': np.float64(1400.6)}
+             B: {'n': 4320, 'km': 3458, 'mean': np.float64(58.42), '>=40': 4028, '>=60': 1923, '>=80': 410, 'km60': np.float64(1402.5)}
+B reaches matched to an A reach within 30 m: 4320 of 4320 (0 unmatched, 0.0 km); A reaches no B reach matched: 0
+  drainage +20% or more: 0, -20% or more: 0; x2 or more: 0, /2 or less: 0
+  flow class changed: 30; name changed: 19
+  fish score up 10+: 25, down 10+: 11; any change: 40; crossing 60: up 12, down 0
+  biggest moves:
+              sid_b                   name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+blue_ridge_va:s1440             Pedlar River  80.50  80.16   1.00     reservoir    year-round          24.0          80.0  56.0
+  maury_goshen:s279 Little Calfpasture River 218.37 218.28   1.00     reservoir    year-round          22.0          72.0  50.0
+   maury_goshen:s16        Calfpasture River   1.01   1.01   1.00 usually flows    year-round          27.0          74.0  47.0
+blue_ridge_va:s1471          Thrashers Creek  17.28  16.95   0.98     reservoir    year-round          18.0          61.0  43.0
+ maury_goshen:s1381              Moore Creek   5.50   5.50   1.00     reservoir    year-round          18.0          60.0  42.0
+blue_ridge_va:s1478      Swapping Camp Creek   4.78   4.78   1.00    year-round     reservoir          58.0          17.0 -41.0
+blue_ridge_va:s1420              Maury River   1.01   1.01   1.00      seasonal    year-round          13.0          54.0  41.0
+blue_ridge_va:s1531               Mill Creek  12.14  12.04   0.99     reservoir    year-round          17.0          57.0  40.0
+blue_ridge_va:s1488          Thrashers Creek  17.90  17.90   1.00     reservoir    year-round          16.0          55.0  39.0
+blue_ridge_va:s1455         Stonehouse Creek   9.32   9.32   1.00    year-round     reservoir          55.0          16.0 -39.0
+blue_ridge_va:s1451          Stonewall Creek   2.63   2.63   1.00    year-round     reservoir          53.0          15.0 -38.0
+ maury_goshen:s1138            Simpson Creek   1.10   1.10   1.00 usually flows    year-round          24.0          62.0  38.0
+  maury_goshen:s273               Mill Creek   1.07   1.07   1.00    year-round    year-round          48.0          85.0  37.0
+blue_ridge_va:s1495                      NaN   1.76   1.76   1.00    year-round     reservoir          51.0          15.0 -36.0
+blue_ridge_va:s1295              Maury River   1.18   1.18   1.00      seasonal    year-round          23.0          59.0  36.0
+blue_ridge_va:s1467                      NaN   2.75   2.75   1.00    year-round     reservoir          50.0          15.0 -35.0
+ maury_goshen:s1088                      NaN   1.88   1.88   1.00    year-round     reservoir          49.0          14.0 -35.0
+blue_ridge_va:s1537                      NaN   1.33   1.33   1.00    year-round     reservoir          46.0          13.0 -33.0
+blue_ridge_va:s2101       Higginbotham Creek   3.01   3.01   1.00    year-round     reservoir          46.0          14.0 -32.0
+  maury_goshen:s314        Calfpasture River   1.01   1.01   1.00 usually flows    year-round          33.0          65.0  32.0
+  maury_goshen:s670              Maury River   1.51   1.51   1.00 usually flows    year-round          30.0          61.0  31.0
+  maury_goshen:s323                      NaN   1.86   1.86   1.00     reservoir    year-round          14.0          44.0  30.0
+  maury_goshen:s295                      NaN   1.39   1.39   1.00     reservoir    year-round          12.0          40.0  28.0
+  blue_ridge_va:s10 Little Calfpasture River   1.35   1.35   1.00       no data    year-round          53.0          80.0  27.0
+  maury_goshen:s486               Hays Creek   1.03   1.03   1.00    year-round    year-round          31.0          55.0  24.0
+lexington_va: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  2513.3           0.0           0.0
+10-100     684.1           0.0           0.0
+100+       260.9           0.0           0.0
+total km 3458.2 | moved 20+ m 0.0 | 50+ m 0.0

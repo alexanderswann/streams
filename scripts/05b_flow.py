@@ -12,8 +12,9 @@ Evidence per reach:
   3. Reservoirs and reaches below a dam are flagged: the model is for unimpaired flow, the real flow there
      depends on releases. A reach lies in a reservoir when half its length is in the water; one lying outside it on
      a model line that runs mostly through the lake is a creek, below the dam only on the line's stretch below it.
-     The water is NHD's lakes of 8 ha or more and, where NHD maps a lake as river or leaves it out, the lakes layer's
-     (05d_lakes.py, which run_mid.sh runs before this step).
+     The water is NHD's lakes of 8 ha or more, with the shore the lakes layer draws where it drew the lake from the
+     lidar, and, where NHD maps a lake as river or leaves it out, the lakes layer's (05d_lakes.py, which run_mid.sh
+     runs before 05_score.py: that step cuts the stream links at the same shores, flowlib.lake_water).
   4. Reaches below a gauged diversion (flowlib.DIVERSIONS) are flagged with the record of the USGS gauge on the creek
      below it: the share of summers it kept FLOWING_CFS, since 2011 where it has 5+ of them, else over its record.
      Near the diversion (until tributaries add a quarter more drainage), a recent record is also passed on as
@@ -33,7 +34,8 @@ from config import *
 from flowpath import CODES as D8
 from crossbox import dam_links
 from flowlib import (FLOW, DIVERSIONS, match_points, below_dam_comids, below_diversion_comids, gauge_summers, water_term,
-                     FLOWING_CFS, reservoirs, MIN_RESERVOIR_KM2)
+                     FLOWING_CFS, reservoirs, MIN_RESERVOIR_KM2, lakes_layer, layer_counted, as_drawn)
+from flowlib import wet_lakes as pit_lakes
 
 v2 = gpd.read_file(f"{FLOW}/nhdplus_v2.gpkg")
 nf = pd.read_csv(f"{FLOW}/natural_flows.csv")
@@ -54,7 +56,8 @@ div = below_diversion_comids(v2)
 div_gauge = gauge_summers([g for _, _, g in DIVERSIONS.values()]).reindex([g for _, _, g in DIVERSIONS.values()])
 div_gauge.index = list(DIVERSIONS)                                   # by diversion name
 
-s = gpd.read_file(f"{OUT}/streams_scored.gpkg")[["sid", "area_km2", "flow", "geometry"]].to_crs(CRS)
+s = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
+s = s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid",) if c_ in s]]
 # Drainage area with the water that flows in from neighbouring boxes (05c_drainages.py, crossbox.py): this box's DEM
 # starts a creek that crosses in from the next box with no area, which scaled its modelled flow down to almost
 # nothing (Lytle Creek in the San Bernardino box: 2 km2 of its 120). Water from above a dam is left out: the model
@@ -76,8 +79,15 @@ mid = s.geometry.interpolate(0.5, normalized=True)
 # half in any one, and scored 80 as a river (the only such reach over the 12 areas, 2026-11-20). Whether the lake
 # holds water is still read from the piece holding most of the reach (lake_of): counted over the whole lake, 7 reaches
 # in the Adirondacks lying in a piece with no level water of its own would also have changed.
+# A reach's length in a lake is measured against the shore the map draws: NHD's outline cut to the lidar's where the
+# lakes layer drew that lake from the lidar (flowlib.as_drawn; wbd_). Against NHD's own outline a side creek at Lower
+# Slide Lake's head (324 m, half inside NHD's outline, none of it in the water the lidar shows) and Emma Matilda Lake's
+# outlet creek between its ponds read "reservoir" and drew as lake where the map has none: 158 reaches, 84 km, over the
+# 12 maps (2026-11-21). NHD's own outlines still say which pieces are one lake, which hold a pit, and where a model
+# line leaves the lake (wb_).
 wb_ = reservoirs()
 wb_ = wb_.assign(geometry=shapely.make_valid(wb_.geometry.values))
+ll_all_ = lakes_layer()
 lake_name, lake_share = pd.Series(None, index=s.index, dtype=object), pd.Series(0.0, index=s.index)
 lake_of = pd.Series(-1, index=s.index)
 if len(wb_):
@@ -85,9 +95,10 @@ if len(wb_):
                               crs=CRS)
     g_ = gpd.sjoin(wb_[["geometry"]], whole_, predicate="intersects")
     wb_["lake"] = g_[~g_.index.duplicated()].index_right.reindex(wb_.index).values
-    j_ = gpd.sjoin(s[["geometry"]], wb_[["gnis_name", "lake", "geometry"]], predicate="intersects")
+    wbd_ = wb_.assign(geometry=as_drawn(wb_, ll_all_).values)
+    j_ = gpd.sjoin(s[["geometry"]], wbd_[["gnis_name", "lake", "geometry"]], predicate="intersects")
     if len(j_):
-        share = (shapely.length(shapely.intersection(j_.geometry.values, wb_.geometry.reindex(j_.index_right).values))
+        share = (shapely.length(shapely.intersection(j_.geometry.values, wbd_.geometry.reindex(j_.index_right).values))
                  / j_.geometry.length.values)
         j_ = j_.assign(share=share)
         j_["whole"] = j_.groupby([j_.index, "lake"]).share.transform("sum")
@@ -98,13 +109,7 @@ if len(wb_):
 in_lake = (lake_share >= 0.5).values
 # Which of those lakes hold water: 03b_stitch.py ends paths at the outlet of every lake with 2+ ha of its outline at
 # one level in the DEM (a pit, fdir 254); one without (a marsh or meadow NHD maps as a pond, a dry basin) has none
-with rasterio.open(f"{DERIVED}/flowdir.tif") as src:
-    rr_, cc_ = np.nonzero(src.read(1) == 254)
-    xs_, ys_ = src.transform * (cc_ + 0.5, rr_ + 0.5)
-wet_lakes = set()
-if len(wb_) and len(rr_):
-    pits_ = gpd.GeoDataFrame(geometry=gpd.points_from_xy(xs_, ys_), crs=CRS)
-    wet_lakes = set(gpd.sjoin(pits_, wb_[["geometry"]], predicate="within").index_right.tolist())
+wet_lakes = pit_lakes(wb_, REGION)
 in_wet_lake = in_lake & lake_of.isin(wet_lakes).values
 # ---- and the lakes layer (05d_lakes.py: NHD, agency and OpenStreetMap outlines, checked against the lidar), where NHD
 # maps a lake as river area, leaves it out, or draws it smaller than the water: the Little Tennessee inside Cheoah
@@ -114,14 +119,8 @@ in_wet_lake = in_lake & lake_of.isin(wet_lakes).values
 # overgrown bed; not drawn down or drained), not intermittent, and not a lagoon (as reservoirs()); a reach at least
 # half inside one lies in it. 05d_lakes.py runs before this step (run_mid.sh): it reads 05c's drainages, nothing of 05b's.
 in_layer_lake, layer_name = np.zeros(len(s), dtype=bool), pd.Series(None, index=s.index, dtype=object)
-if os.path.exists(f"{SHARED_DERIVED}/lakes.gpkg"):
-    ll_ = gpd.read_file(f"{SHARED_DERIVED}/lakes.gpkg").to_crs(CRS)
-    note_ = ll_.water_note.fillna("").astype(str).str.strip().str.lower()
-    ll_ = ll_[ll_.lidar_kind.isin(["flattened", "level, not flattened"]) & ~note_.str.startswith("little level water")
-              & ~note_.str.contains("drawn down|drained") & ~ll_.intermittent.fillna(False).astype(bool)
-              & ~ll_["name"].fillna("").str.contains("Lagoon")
-              & (ll_.ha.fillna(ll_.geometry.area / 1e4) >= MIN_RESERVOIR_KM2 * 100)]
-    ll_ = ll_.assign(geometry=shapely.make_valid(ll_.geometry.values))
+if ll_all_ is not None:
+    ll_ = layer_counted(ll_all_)
     j_ = gpd.sjoin(s[["geometry"]], ll_[["name", "geometry"]], predicate="intersects") if len(ll_) else []
     if len(j_):
         share = (shapely.length(shapely.intersection(j_.geometry.values, ll_.geometry.reindex(j_.index_right).values))
@@ -597,6 +596,20 @@ if lk2_.any():
     ev.loc[lk2_, "below_dam"] = "in:" + layer_name[lk2_]
     ev.loc[lk2_, "water"], ev.loc[lk2_, "water_class"] = 0.3, "reservoir"
     print(f"reaches in a lake of the lakes layer (none on NHD, or a smaller one), now reservoir: {int(lk2_.sum())}")
+# A side channel of a river (05_score.py's side_of: a small reach along the river's own NHD lines, beside the reach
+# that carries the river) is the river's water in another arm. On its own few km2 it matched no line of the river and
+# took a brook's flow or none ("no data", "seasonal" beside a year-round river); it takes the flow evidence of the
+# river reach beside it (side_sid). Not where either of the two lies in a lake.
+side_row = np.full(len(s), -1)
+if "side_sid" in s:
+    side_row = s.side_sid.map(pd.Series(np.arange(len(s)), index=s.sid.values)).fillna(-1).astype(int).values
+    take_ = (side_row >= 0) & ev.water_class.ne("reservoir").values
+    take_ &= ev.water_class.values[np.maximum(side_row, 0)] != "reservoir"
+    side_row = np.where(take_, side_row, -1)
+    if take_.any():
+        for c_ in ev.columns:
+            ev.loc[take_, c_] = ev[c_].values[side_row[take_]]
+    print(f"side channels given the flow evidence of the river reach beside them: {int(take_.sum())}")
 on_ = ev.comid.map(dam).fillna("").str.startswith("in:").values & ev.flow_src.eq("model").values & ~in_lake & ~lk2_
 if on_.any():
     print(f"reaches outside a lake on a model line that runs mostly through it, read as creeks: {int(on_.sum())} "
@@ -606,7 +619,7 @@ if on_.any():
 # and the record of a USGS gauge on the reach's own creek (flowlib.gauge_record). scoring.py decides, one-sided: it
 # lowers a creek only where the evidence agrees and no trout are known, and lets a gauge raise one (Piru Creek below
 # Pyramid Dam flows every summer on its releases; the natural-flow model rated it seasonal).
-from flowlib import channel_green, creek_gauges, gauge_record, gauge_reach_comids
+from flowlib import channel_green, creek_gauges, gauge_record, gauge_reach_comids, gauge_own_lines
 extra = channel_green(s.geometry.values, REGION)
 extra.index = s.index
 area_full_ = area_box.copy()
@@ -615,8 +628,11 @@ if os.path.exists(f"{OUT}/area_streams.csv"):
 cg_ = creek_gauges(v2)
 comid_ = ev.comid.astype(float).values
 near_ = gauge_reach_comids(cg_, s.geometry.values, area_full_.values, comid_)
+# (a side channel stands for its river: a gauge on the river is matched on the river's drainage)
+area_full_ = pd.Series(np.where(side_row >= 0, area_full_.values[np.maximum(side_row, 0)], area_full_.values), index=s.index)
 gr_ = gauge_record(mid.values, area_full_.values, comid_, ev.flow_src.values,
-                   ev.below_dam.fillna("").astype(str).str.startswith("in:").values, cg_, near_)
+                   ev.below_dam.fillna("").astype(str).str.startswith("in:").values, cg_, near_,
+                   gauge_own_lines(cg_, v2, near_))
 gr_.index = s.index
 extra = extra.join(gr_)
 print(f"late-summer channel greenness for {int(extra.green_p90.notna().sum())} of {len(s)} reaches; the record of a gauge "
@@ -634,7 +650,7 @@ if miss.any():      # drops on channels below the 1 km2 map floor: match the mod
     m.loc[~m.comid.isin(low.index), "comid"] = np.nan
     m["flow_src"] = np.where(m.comid.notna(), "model", "none")
     m["pt"] = m.geometry.values
-    m["inside"] = m.index.isin(gpd.sjoin(m[["geometry"]], wb_[["geometry"]], predicate="within").index) if len(wb_) else False
+    m["inside"] = m.index.isin(gpd.sjoin(m[["geometry"]], wbd_[["geometry"]], predicate="within").index) if len(wb_) else False
     kpe.loc[miss, cols] = evidence(m, box_div)[cols].values
 pd.concat([kp[["did"]], kpe], axis=1).to_csv(f"{OUT}/flow_drops.csv", index=False)
 

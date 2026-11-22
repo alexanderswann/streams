@@ -84,14 +84,36 @@ s["area_km2"] = sample(area, own_end).round(2)
 # Oswegatchie, the Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet, Emma Matilda Lake's outlet).
 # area_km2 stays the link's own area; 05c adds the carried water where this samples it, so the two agree.
 import crossbox
-carried = sample(crossbox.carried_km2(REGION).reshape(area.shape), own_end)
+carried_grid = crossbox.carried_km2(REGION).reshape(area.shape)
+carried = sample(carried_grid, own_end)
 sea = np.array([np.mean(sample(dem, shapely.points(np.asarray(g.coords))) <= 0.5) for g in s.geometry])
 keep = (s.area_km2 + carried >= MAP_MIN_KM2) & (sea < 0.5) & areaclip.inside(s.geometry.values)
 by_carried = keep & (s.area_km2 < MAP_MIN_KM2)
 print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reaches them from elsewhere (below a lake's "
       f"outlet, in from outside the map): {int(by_carried.sum())}, {s.length[by_carried].sum() / 1000:.1f} km")
 s = s[keep].copy()
-mid, own_end, starts = mid[s.index], own_end[s.index], starts[s.index]
+# A link is cut where it crosses a lake's shore. pysheds draws one line per link between confluences, so a link that
+# runs from a creek into a lake, or out of one, is part creek and part lake water. 05b_flow.py reads a reach as lying
+# in a lake when half its length does, and the whole link took the lake's class or the creek's: Taggart Creek's last
+# 161 m above Taggart Lake scored as lake (fish 29 against 99 above), 710 m of Indian Creek above Palisades Reservoir
+# too, and over the 12 maps 352 km of creek read as lake and 339 km of lake water as creek (2026-11-21). Each link is
+# now cut at the shores of the lakes a reach can lie in (flowlib.lake_water: the outlines 05b_flow.py reads, from
+# 05d_lakes.py, which run_mid.sh runs before this step), so every reach is creek or lake. A stretch under
+# LAKE_PIECE_M on one side of a shore stays with its neighbour (a line clipping a point or a cove). A piece keeps its
+# link's place on the map (the floor above is the link's), and is measured on its own cells like any link.
+from flowlib import lake_water, cut_at_shores
+_pieces, _src, _wet = cut_at_shores(s.geometry.values, lake_water(REGION))
+print(f"links cut at lake shores: {len(_pieces) - len(s)} cuts on {int((pd.Series(_src).value_counts() > 1).sum())} "
+      f"of {len(s)} links")
+s = gpd.GeoDataFrame(s.drop(columns="geometry").iloc[_src].reset_index(drop=True), geometry=_pieces, crs=CRS)
+own_end = gpd.GeoSeries([shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g.coords[0]) for g in s.geometry],
+                        index=s.index, crs=CRS)
+starts = gpd.GeoSeries([shapely.Point(g.coords[0]) for g in s.geometry], index=s.index, crs=CRS)
+mid = gpd.GeoSeries([vert(g, 0.5) for g in s.geometry], index=s.index, crs=CRS)
+s["area_km2"] = sample(area, own_end).round(2)
+# each piece's drainage with the water that reaches it from elsewhere (the floor's `carried`, on the piece's own cells)
+full_km2 = s["area_km2"].to_numpy(float) + sample(carried_grid, own_end)
+in_water = np.array(_wet, bool)
 s["order"] = sample(strahler, mid)
 s["elev_m"] = sample(dem, mid).round(0)
 s["len_m"] = s.length.round(0)
@@ -136,11 +158,28 @@ end_key = lambda c: (round(c[0], 1), round(c[1], 1))
 ends = {}
 for i, g in enumerate(geoms):
     ends.setdefault(end_key(g.coords[-1]), []).append(i)
-km2 = s["area_km2"].to_numpy(float)
+# A lake ends its paths at its outlet (03b_stitch.py), and the creek below starts in the next cell, so its first reach
+# has no reach running into it: the lake's last reach ends one cell short. For the names, that reach counts as running
+# into it (a reach end within a cell and a half of the start, where no reach starts): without it the river's first
+# stretch below a lake kept whatever the vote gave it, often nothing (Richland Creek's 300 m below Lake Junaluska),
+# since the rule below needs a reach above and one below. Unnamed creek reaches carrying 100+ km2: 251 -> 232 over
+# the 12 maps. Not where the lake's water goes on from a cell further off: below Palisades Dam crossbox puts it in at
+# NHD's cell, 480 m from the lake's last reach, and the Snake's first 580 m keeps no name.
+_starts = {end_key(g.coords[0]) for g in geoms}
+_end_tree = shapely.STRtree(shapely.points([g.coords[-1][:2] for g in geoms]))
+def donors_of(i):
+    """The reaches running into reach i: those ending at its start, else a lake's last reach ending a cell short."""
+    d = ends.get(end_key(geoms[i].coords[0]), [])
+    if not d:
+        d = [int(j) for j in _end_tree.query(shapely.Point(geoms[i].coords[0][:2]), predicate="dwithin", distance=1.5 * RES)
+             if j != i and end_key(geoms[j].coords[-1]) not in _starts]
+    return d
+km2 = full_km2      # sizes are compared with the water carried past dams (since 2026-11-21: below a dam a river's own
+                    # count starts again near nothing, and on it the main stem above a junction could be a side creek)
 voted = s["name"].to_numpy(object)
 main_up, down = np.full(len(s), -1), np.full(len(s), -1)
 for i, g in enumerate(geoms):
-    donors = ends.get(end_key(g.coords[0]), [])
+    donors = donors_of(i)
     if donors:
         main_up[i] = max(donors, key=lambda j: km2[j])
     down[donors] = i
@@ -166,6 +205,77 @@ for i in range(len(s)):
 s["name"] = [renamed.get(i, n) for i, n in enumerate(voted)]
 print(f"names along rivers: {len(renamed)} reaches take the river's name "
       f"({sum(isinstance(voted[i], str) for i in renamed)} had another stream's, the rest none)")
+
+# A small reach beside a river carries the river's name only if it is a channel of that river. The vote names a reach
+# after the nearest NHD line at two of three points, and a creek's last stretch often runs along the river before it
+# joins: Cottonwood Creek's last 1.4 km (203 km2) read "Snake River" beside the Snake's 4,250, and so did the ends of
+# Taylor, Pritchard and Tag Alder creeks and of dozens of unnamed creeks. And D8 sends a split river's water down one
+# arm, so its other arm is a reach of a few km2 with the river's name (a side creek at Lower Slide Lake's head read
+# "Gros Ventre River", 2 km2). Over the 12 maps about 720 reaches (2026-11-21). A reach is looked at when reaches of its
+# name that drain SIDE_RATIO times as much, and SIDE_RIVER_KM2 or more, run within SIDE_NEAR_M along SIDE_ALONG of its
+# length (the river is beside it), and it isn't lake water. Then, up its main stem:
+# - a reach of another name within 6 reaches, not much smaller than it: it is that creek's lower end, and takes its name;
+# - else, where the stem up to its head lies along NHD's lines of the river (SIDE_ON_RIVER of its length within 150 m):
+#   a side channel of the river. It keeps the name and is marked (side_of, the river reach beside it in side_sid, that
+#   reach's drainage in river_km2): 05b_flow.py gives it the river's flow evidence, scoring.py the river's size, and
+#   the maps call it a side channel;
+# - else it is the lower end of a creek with no name, and has none.
+# Decided on the names as they stand here, so nothing is renamed back and forth.
+SIDE_RATIO, SIDE_RIVER_KM2, SIDE_NEAR_M, SIDE_ALONG, SIDE_ON_RIVER = 10.0, 50.0, 250.0, 0.6, 0.6
+names0 = s["name"].to_numpy(object)
+is_named = np.array([isinstance(n, str) for n in names0])
+stem_up = np.full(len(s), -1)                 # the biggest reach running in, by full drainage (main_up above)
+for i, g in enumerate(geoms):
+    donors = donors_of(i)
+    if donors:
+        stem_up[i] = max(donors, key=lambda j: full_km2[j])
+big = np.flatnonzero(is_named & (full_km2 >= SIDE_RIVER_KM2) & ~in_water)
+big_tree = shapely.STRtree(geoms[big]) if len(big) else None
+_zone = {}
+def river_zone(river):
+    """150 m around NHD's lines of that name (the river's own lines, its braids included)."""
+    if river not in _zone:
+        ln = nhd_k.geometry[nhd_k.gnis_name.eq(river).values]
+        _zone[river] = shapely.union_all(ln.values).buffer(150) if len(ln) else None
+    return _zone[river]
+new_name, side = {}, {}
+for i in (np.flatnonzero(is_named & ~in_water) if big_tree is not None else []):
+    near = big[big_tree.query(geoms[i].buffer(SIDE_NEAR_M))]
+    sib = near[(names0[near] == names0[i]) & (full_km2[near] >= SIDE_RATIO * full_km2[i])]
+    if not len(sib):
+        continue
+    beside = shapely.union_all(shapely.buffer(geoms[sib], SIDE_NEAR_M))
+    if geoms[i].intersection(beside).length < SIDE_ALONG * geoms[i].length:
+        continue
+    j, other = stem_up[i], None
+    for _ in range(6):
+        if j < 0 or (names0[j] == names0[i] and full_km2[j] >= SIDE_RATIO * full_km2[i]):
+            break                                 # the head, or the river itself comes in above
+        if isinstance(names0[j], str) and names0[j] != names0[i]:
+            other = j
+            break
+        j = stem_up[j]
+    if other is not None and full_km2[i] <= 3 * full_km2[other]:
+        new_name[i] = names0[other]
+        continue
+    zone, tot, inn, j = river_zone(names0[i]), 0.0, 0.0, i
+    for _ in range(30):
+        if j < 0:
+            break
+        tot += geoms[j].length
+        inn += geoms[j].intersection(zone).length if zone is not None else 0.0
+        j = stem_up[j]
+    if inn >= SIDE_ON_RIVER * tot:
+        side[i] = sib[int(np.argmax(full_km2[sib]))]
+    else:
+        new_name[i] = None
+s["name"] = [new_name.get(i, n) for i, n in enumerate(names0)]
+s["side_of"] = [names0[i] if i in side else None for i in range(len(s))]
+s["side_row"] = [side.get(i, -1) for i in range(len(s))]        # the river reach beside it (its row; a sid below)
+s["river_km2"] = [round(float(full_km2[side[i]]), 2) if i in side else np.nan for i in range(len(s))]
+print(f"small reaches named after the river beside them: {sum(v is not None for v in new_name.values())} take the name of "
+      f"the creek they end, {sum(v is None for v in new_name.values())} end an unnamed creek and lose the name, "
+      f"{len(side)} are side channels of the river")
 
 # Fishability score 0-100 (heuristic, tuned for SoCal trout water)
 def band(x, lo, hi, soft):  # 1 inside [lo,hi], linear falloff over `soft`
@@ -199,6 +309,26 @@ kp["road_m"] = kp.distance(road_u).round(0)
 kp["trail_m"] = kp.distance(trail_u).round(0)
 kp["known_fall_m"] = kp.distance(known_falls.geometry.union_all()).round(0) if len(known_falls) else np.nan
 kp["dam_m"] = kp.distance(dams.union_all()).round(0) if len(dams) else np.inf
+# A drop that starts at the outlet of a dammed lake is its dam, wherever the dam's point is mapped. The drop detectors
+# count the water carried past dams since 2026-11-21 (04_knickpoints.py), so they scan the river from the dam on, and
+# found the dams themselves: Buford Dam as a 49.5 m "waterfall-like step" on the Chattahoochee (its mapped point is
+# 506 m off), Carters Dam as a 115 m cascade, Five Falls and Hinckley dams. A dammed lake is a reservoir or a lake with
+# a dam on its shore (05d_lakes.py's `regulated`); the drop is its dam where the top lies within DAM_LAKE_M of the
+# lake's outline and at its level (3 m below to 6 m above: the crest) and the step ends 3 m or more below that level.
+# A fall where a creek comes into a reservoir ends at the lake's level and stays a fall (the Tallulah's above
+# Tallulah Falls Lake).
+DAM_LAKE_M = 100
+kp["dam_lake"] = False
+_lakes_p = f"{SHARED_DERIVED}/lakes.gpkg"
+if os.path.exists(_lakes_p) and len(kp):
+    _lk = gpd.read_file(_lakes_p).to_crs(CRS)
+    _lk = _lk[(_lk.regulated.fillna(False).astype(bool) | _lk.ftype.eq("reservoir")) & _lk.elev_m.notna()]
+    if len(_lk):
+        _j = gpd.sjoin_nearest(kp[["elev_m", "drop_m", "geometry"]], _lk[["elev_m", "geometry"]].rename(columns={"elev_m": "lake_m"}),
+                               max_distance=DAM_LAKE_M, how="inner")
+        _j = _j[~_j.index.duplicated()]
+        _at = (_j.elev_m >= _j.lake_m - 3) & (_j.elev_m <= _j.lake_m + 6) & (_j.elev_m - _j.drop_m <= _j.lake_m - 3)
+        kp.loc[_j.index[_at.values], "dam_lake"] = True
 # A road fakes a drop where it crosses the channel: an embankment over a culvert, or a bridge deck the DEM kept, makes
 # the lip, so the step's top sits on it. One that only runs beside the creek does not, and gorges are often walled by
 # one: with a drivable road within 40 m of the top as the test, Texas Falls, Huntington Gorge and Sterling Falls Gorge
@@ -225,7 +355,7 @@ kp["road_crossing"] = [crosses(z) for z in zone]
 on_fall = known_falls[known_falls.precise]
 kp["fall_on_step"] = (shapely.distance(step, on_fall.geometry.union_all()) <= 50) if len(on_fall) else False
 kp["status"] = np.select(
-    [kp.dam_m < 250, kp.fall_on_step, kp.road_crossing | kp.artifact_risk, kp.known_fall_m < 200,
+    [(kp.dam_m < 250) | kp.dam_lake, kp.fall_on_step, kp.road_crossing | kp.artifact_risk, kp.known_fall_m < 200,
      kp.kind == "waterfall-like step", kp.kind == "cascade / knickpoint",
      kp.kind == "short fall / pool (big creek)"],
     ["dam / weir", "matches mapped waterfall", "likely DEM artifact", "matches mapped waterfall",
@@ -248,6 +378,7 @@ kp_ll.insert(0, "region", LABEL)
 s_ll.insert(0, "region", LABEL)
 # stable keys so later scripts (08-11) can attach attributes
 s_ll.insert(0, "sid", [f"{REGION}:s{i}" for i in range(len(s_ll))])
+s_ll["side_sid"] = [f"{REGION}:s{j}" if j >= 0 else None for j in s_ll.pop("side_row")]
 kp_ll.insert(0, "did", [f"{REGION}:d{i}" for i in range(len(kp_ll))])
 cols = ["did", "region"] + cols
 kp_ll[cols].to_csv(f"{os_}/waterfall_candidates.csv", index=False)

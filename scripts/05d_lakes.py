@@ -1,6 +1,7 @@
 """Lakes and ponds as places to go: outline, size, surface elevation, depth, fish, inlets and outlets, drainage.
-AREA only. Run after 05c_drainages.py and before 08_hike.py, which reads the outlines: a lake blocks walking, and
-each lake gets an approach time to its nearest shore. 06_map.py adds access, drive times and trout sightings and draws
+AREA only. Run before 05_score.py, which cuts the stream links at the lakes' shores (and so before 05b_flow.py and
+08_hike.py, which read the outlines too: a lake blocks walking, and each lake gets an approach time to its nearest
+shore). Nothing here reads the reaches or their drainages, so the lakes can be built first (run_mid.sh). 06_map.py adds access, drive times and trout sightings and draws
 them. Built so far for the areas in BUILT (the Jackson pilot, 2026-11-19); elsewhere the script says so and stops.
 
 Each attribute comes from the best source there is for it, and the sources are checked against each other:
@@ -23,7 +24,8 @@ Each attribute comes from the best source there is for it, and the sources are c
   bathymetry where a survey exists (lake_bathymetry.py).
 - Inlets and outlets: NHD HR flowlines that end or start at the shore (they are drawn downstream), with the creek
   names; lakes with neither are isolated.
-- Drainage and fork: 05c_drainages.py's outlines, at the lake's outlet (or inside the lake when it has none).
+- Drainage and fork: looked up when the map is drawn (maplakes.py), in 05c_drainages.py's outlines at the lake's
+  label point: its outlet, or a point inside the lake when it has none (label_x, label_y here).
 Writes data/derived/<area>/_shared/lakes.gpkg (one row per lake, the area's CRS) and prints the cross-checks.
 """
 import os, re, json, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
@@ -813,14 +815,13 @@ lk["connection"] = np.select([(lk.inlets > 0) & (lk.outlets > 0), lk.outlets > 0
                              ["inlet and outlet", "outlet only", "inlet only"], "no mapped inlet or outlet (NHD)")
 print("connection:", lk.connection.value_counts().to_dict())
 
-# ---- 5. drainage and fork (05c) at the outlet ----
-dr = pd.concat([gpd.read_file(f"{out_dir(r)}/drainages.gpkg") for r in REGIONS if os.path.exists(f"{out_dir(r)}/drainages.gpkg")],
-               ignore_index=True)
-dr = gpd.GeoDataFrame(dr, crs=CRS)
+# ---- 5. where the lake's drainage and fork are read: at its outlet, else a point inside it ----
+# maplakes.py looks the two up in 05c_drainages.py's outlines when the map is drawn. They were read here until
+# 2026-11-21, which made this step wait for the reaches (05_score.py, 05c): now the reaches are cut at these lakes'
+# shores, so the lakes come first.
 at = gpd.GeoSeries([p if p is not None else g.representative_point() for p, g in zip(opt, lk.geometry)], crs=CRS)
-j = gpd.sjoin(gpd.GeoDataFrame(geometry=at), dr[["drainage", "fork", "geometry"]], how="left", predicate="within")
-j = j[~j.index.duplicated()]
-lk["drainage"], lk["fork"] = j.drainage.values, j.fork.values
+lk["label_x"], lk["label_y"] = at.x.round(1).values, at.y.round(1).values
+lk["drainage"], lk["fork"] = None, None
 
 
 # ---- 6. dated fish records at the lake (GBIF: agency surveys, iNaturalist, USGS NAS, museums) ----
@@ -1085,6 +1086,7 @@ cols = ["lid", "name", "name_src", "gnis_name", "agency_name", "nhd_id", "osm_id
         "lidar_dates", "lidar_ql", "lidar_share", "level_share", "dem_cells", "water_note", "agency", "agency_id",
         "lake_type", "game_fish", "common_fish", "private_shore", "regs_area", "depth_max_m", "depth_mean_m",
         "depth_src", "depth_note", "inlets", "inlet_names", "outlets", "outlet_name", "connection", "drainage", "fork",
+        "label_x", "label_y",
         "land", "land_access", "access", "rules", "designation", "links", "n_records", "records", "also_recorded", "survey", "conflict", "match", "geometry"]
 for c in cols:
     if c not in lk:

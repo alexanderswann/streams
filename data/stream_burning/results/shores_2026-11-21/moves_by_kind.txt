@@ -1,0 +1,22 @@
+                                                               la  jackson  n_georgia  central_vt  ne_ct  lexington_va  se_pa  smokies  adk_high_peaks  adk_northwest  adk_southwest  adk_southeast   all
+cause                                                                                                                                                                                                    
+D1 lake water: now lake, 90%+ inside a drawn lake              14       86        130          77    103            10     12       83             249            343            234            338  1679
+D2 now lake, 50-90% inside a drawn lake                         2        5          7           3      8             1      2        1              12             15              8             25    89
+D4 less drainage                                                4        4          0           3      5             0      0        2               2             11              3             17    51
+D5 flow class fell                                             16        1          0           0      1             0      0        0               0              4              0              0    22
+D6 other                                                        1        2          3           0      0             0      0        2             105             88            136              5   342
+U1 creek: was lake, now creek, under 10% inside a drawn lake   22       54         82          30     66             5     14       44             121            204            136            175   953
+U2 was lake, now creek, 10%+ inside a drawn lake                5        6         14          10     14             3      1        3              30             43             26             33   188
+U3 more drainage                                                1        0          0           1      1             0      0        0               0              0              0              1     4
+U4 flow class rose                                            131        1          0          10     11            11      0        0               1              0              1              2   168
+U5 other                                                        1       16         24          11      1             6     15       17              14             15             14             15   149
+D1 lake water: now lake, 90%+ inside a drawn lake: 1679 reaches, 508.9 km; of that inside drawn lakes 504.7 km, outside 4.2 km
+D2 now lake, 50-90% inside a drawn lake: 89 reaches, 14.6 km; of that inside drawn lakes 12.2 km, outside 2.4 km
+D4 less drainage: 51 reaches, 37.9 km; of that inside drawn lakes 1.0 km, outside 36.9 km
+D5 flow class fell: 22 reaches, 8.5 km; of that inside drawn lakes 0.2 km, outside 8.3 km
+D6 other: 342 reaches, 213.1 km; of that inside drawn lakes 7.4 km, outside 205.7 km
+U1 creek: was lake, now creek, under 10% inside a drawn lake: 953 reaches, 285.9 km; of that inside drawn lakes 3.2 km, outside 282.7 km
+U2 was lake, now creek, 10%+ inside a drawn lake: 188 reaches, 33.8 km; of that inside drawn lakes 10.2 km, outside 23.6 km
+U3 more drainage: 4 reaches, 1.1 km; of that inside drawn lakes 0.0 km, outside 1.1 km
+U4 flow class rose: 168 reaches, 73.3 km; of that inside drawn lakes 7.0 km, outside 66.3 km
+U5 other: 149 reaches, 29.5 km; of that inside drawn lakes 0.0 km, outside 29.5 km

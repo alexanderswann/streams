@@ -1,0 +1,151 @@
+######## rA
+#### score_root
+reaches 10553 (project 10499); matched within 30 m 10503, 30-200 m 20, none within 200 m 30
+wrote rA/output/jackson/stream_reaches_ranked.csv 10553
+#### standing
+jackson (rA)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1637           0.0                   10             0                      0.48      506.4
+ gros_ventre     1432           0.0                   12             0                      0.15      326.6
+      hoback     2024           0.0                    0             0                      0.32      553.5
+jackson_lake     2461           0.0                   20             0                      0.34      700.4
+buffalo_fork      165           0.0                    1             0                      0.02       42.7
+teton_valley     1750           0.0                    8             0                      0.51      562.4
+   palisades     1084           0.0                    5             0                      1.40      256.4
+#### lake_outlets
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+jackson: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 4 | pass 1 + big-creek pass: 3 / 4
+  on smaller drainages:   pass 1: 9 / 17 | pass 1 + big-creek pass: 9 / 17
+  all:                    pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Gros Ventre                                                1      1     1
+Hoback & Snake River Canyon                                2      1     1
+Jackson Lake, Jenny Lake & the northern Tetons            10      6     6
+Palisades Reservoir & Alpine                               1      0     0
+Teton Valley, Idaho: Driggs, Victor & the Teton River      1      0     0
+Tetons & Snake River                                       6      4     4
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+jackson (rA): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2461 {'steep reach': 1752, 'cascade / knickpoint': 630, 'waterfall-like step': 79}; big-creek pass 90
+  waterfall candidates by status: {'steep reach': 1736, 'unmapped cascade': 579, 'unmapped waterfall-like step': 72, 'likely DEM artifact': 60, 'unmapped short fall (big creek)': 52, 'matches mapped waterfall': 21}
+#### straddle
+jackson         reaches  10553 | flagged in-lake   386 (  269.7 km), outside every drawn lake   20.0 km:   47 reaches with 100+ m outside (  18.6 km),   6 untouched by a drawn lake | not flagged:    6.8 km inside counted lakes (21 reaches with 100+ m),   68.4 km inside any drawn lake
+#### v2_ends
+no_reach         77      48        41     55
+under_half       45      18        23     21
+under_quarter     9      15        21     21
+over_double      54      34        12      1
+#### piece_water
+jackson         pieces ending above where carried water joins their link: 2 (1.8 km); creek pieces 2 (1.8 km), of them with 10x more water below 2
+######## rD
+#### score_root
+reaches 10713 (project 10499); matched within 30 m 10657, 30-200 m 24, none within 200 m 32
+wrote rD/output/jackson/stream_reaches_ranked.csv 10713
+#### standing
+jackson (rD)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1648           0.0                   10             0                      0.48      506.4
+ gros_ventre     1455           0.0                   12             0                      0.15      326.6
+      hoback     2028           0.0                    0             0                      0.32      553.5
+jackson_lake     2532           0.0                   20             0                      0.34      700.4
+buffalo_fork      166           0.0                    1             0                      0.02       42.7
+teton_valley     1751           0.0                    8             0                      0.51      562.4
+   palisades     1133           0.0                    5             0                      1.40      256.4
+#### lake_outlets
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+jackson: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 4 | pass 1 + big-creek pass: 3 / 4
+  on smaller drainages:   pass 1: 9 / 17 | pass 1 + big-creek pass: 9 / 17
+  all:                    pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Gros Ventre                                                1      1     1
+Hoback & Snake River Canyon                                2      1     1
+Jackson Lake, Jenny Lake & the northern Tetons            10      6     6
+Palisades Reservoir & Alpine                               1      0     0
+Teton Valley, Idaho: Driggs, Victor & the Teton River      1      0     0
+Tetons & Snake River                                       6      4     4
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+jackson (rD): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2480 {'steep reach': 1756, 'cascade / knickpoint': 642, 'waterfall-like step': 82}; big-creek pass 93
+  waterfall candidates by status: {'steep reach': 1740, 'unmapped cascade': 590, 'unmapped waterfall-like step': 75, 'likely DEM artifact': 61, 'unmapped short fall (big creek)': 53, 'matches mapped waterfall': 21, 'dam / weir': 1}
+#### straddle
+jackson         reaches  10713 | flagged in-lake   476 (  280.0 km), outside every drawn lake    1.3 km:    1 reaches with 100+ m outside (   0.1 km),   0 untouched by a drawn lake | not flagged:    0.6 km inside counted lakes (0 reaches with 100+ m),   40.0 km inside any drawn lake
+#### v2_ends
+no_reach         77      48        41     55
+under_half       45      18        23     21
+under_quarter     9      15        21     21
+over_double      54      34        12      1
+#### piece_water
+jackson         pieces ending above where carried water joins their link: 1 (0.4 km); creek pieces 1 (0.4 km), of them with 10x more water below 1
+######## compare rD against rA
+jackson: A rA
+   B rD
+fish scores  A: {'n': 10553, 'km': 9210, 'mean': np.float64(68.71), '>=40': 9512, '>=60': 7145, '>=80': 3869, 'km60': np.float64(5593.3)}
+             B: {'n': 10713, 'km': 9210, 'mean': np.float64(68.3), '>=40': 9569, '>=60': 7200, '>=80': 3901, 'km60': np.float64(5589.9)}
+B reaches matched to an A reach within 30 m: 10711 of 10713 (2 unmatched, 0.6 km); A reaches no B reach matched: 1
+  drainage +20% or more: 0, -20% or more: 32; x2 or more: 0, /2 or less: 10
+  flow class changed: 161; name changed: 98
+  fish score up 10+: 77, down 10+: 98; any change: 234; crossing 60: up 53, down 58
+  biggest moves:
+             sid_b              name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+  teton_snake:s132       Taggart Creek  13.46  13.45   1.00    year-round     reservoir          99.0          17.0 -82.0
+  gros_ventre:s394   Gros Ventre River   2.05   2.05   1.00     reservoir    year-round          18.0          90.0  72.0
+      hoback:s1141        Bailey Creek   7.04   7.04   1.00    year-round     reservoir          99.0          29.0 -70.0
+jackson_lake:s1543   North Moran Creek  27.68  26.62   0.96     reservoir    year-round          31.0         100.0  69.0
+   teton_snake:s59 Garnet Canyon Creek   7.42   7.42   1.00    year-round     reservoir          98.0          29.0 -69.0
+  teton_snake:s130       Taggart Creek  13.46  13.40   1.00    year-round     reservoir          99.0          30.0 -69.0
+  teton_snake:s150       Taggart Creek  13.36  13.34   1.00     reservoir    year-round          29.0          98.0  69.0
+jackson_lake:s2075   Paintbrush Canyon  11.17  11.17   1.00    year-round     reservoir         100.0          31.0 -69.0
+jackson_lake:s2147                 NaN  62.23  62.23   1.00     reservoir    year-round          32.0         100.0  68.0
+  teton_snake:s146       Taggart Creek  11.53  11.53   1.00    year-round     reservoir          97.0          29.0 -68.0
+  teton_snake:s148       Taggart Creek  13.36  12.10   0.91     reservoir    year-round          29.0          97.0  68.0
+jackson_lake:s1964                 NaN  52.16  52.03   1.00     reservoir    year-round          20.0          88.0  68.0
+jackson_lake:s2466                 NaN  42.94  42.94   1.00    year-round     reservoir         100.0          33.0 -67.0
+jackson_lake:s1287         Moose Creek  64.75  64.38   0.99     reservoir    year-round          33.0         100.0  67.0
+jackson_lake:s2472    Cottonwood Creek 116.27 116.27   1.00     reservoir    year-round          33.0         100.0  67.0
+jackson_lake:s2088                 NaN  64.04  63.18   0.99     reservoir    year-round          33.0         100.0  67.0
+jackson_lake:s1223                 NaN  11.05  11.05   1.00    year-round     reservoir          94.0          28.0 -66.0
+ jackson_lake:s933                 NaN  94.89  94.89   1.00    year-round     reservoir         100.0          34.0 -66.0
+jackson_lake:s1820                 NaN  44.50  44.50   1.00    year-round     reservoir         100.0          35.0 -65.0
+ gros_ventre:s1025          Flat Creek  53.78  53.78   1.00    year-round     reservoir         100.0          35.0 -65.0
+jackson_lake:s1734                 NaN   3.44   3.44   1.00    year-round     reservoir          91.0          27.0 -64.0
+      hoback:s1008        Bailey Creek   2.52   2.52   1.00    year-round     reservoir          90.0          26.0 -64.0
+jackson_lake:s1408                 NaN 124.24 124.24   1.00    year-round     reservoir          91.0          27.0 -64.0
+jackson_lake:s1225                 NaN  11.54  11.53   1.00     reservoir    year-round          27.0          91.0  64.0
+    palisades:s489          Bear Creek 203.82 203.82   1.00    year-round     reservoir          88.0          26.0 -62.0
+jackson: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  6595.5           0.6           0.5
+10-100    1931.6           0.0           0.0
+100+       683.1           0.0           0.0
+total km 9210.3 | moved 20+ m 0.6 | 50+ m 0.5

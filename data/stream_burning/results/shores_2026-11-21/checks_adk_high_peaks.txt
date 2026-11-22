@@ -1,0 +1,155 @@
+######## rA
+#### score_root
+reaches 9306 (project 9087); matched within 30 m 9094, 30-200 m 100, none within 200 m 112
+wrote rA/output/adk_high_peaks/stream_reaches_ranked.csv 9306
+#### standing
+adk_high_peaks (rA)
+       box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+high_peaks     2018           0.0                    5             0                      0.33      497.8
+    boquet      784           0.0                    0             0                      0.25      204.0
+   saranac     1082           0.0                   19             0                      0.17      250.5
+wilmington     1842           0.0                   19             0                      0.52      448.0
+ champlain     1031           0.0                    2             0                      0.21      320.4
+chateaugay     2549           0.0                   19             0                      0.56      675.3
+#### lake_outlets
+adk_high_peaks (project): lakes with an outlet line 182; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+adk_high_peaks: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_high_peaks: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 13 / 25 | pass 1 + big-creek pass: 21 / 25
+  on smaller drainages:   pass 1: 20 / 28 | pass 1 + big-creek pass: 20 / 28
+  all:                    pass 1: 33 / 53 | pass 1 + big-creek pass: 41 / 53
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Ausable Chasm, Keeseville, Willsboro & Westport            5      2     3
+Boquet, Elizabethtown, Moriah & Port Henry                 1      0     1
+High Peaks, Keene Valley, Newcomb & the Cold River        31     21    23
+Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake      2      0     2
+Saranac Lakes, Lake Placid, Keene & Jay                   14     10    12
+
+named mapped falls on big creeks that both passes miss: 
+                                            region            name   area     d1      d2
+High Peaks, Keene Valley, Newcomb & the Cold River   Millers Falls   68.0 2316.0 18263.0
+           Saranac Lakes, Lake Placid, Keene & Jay  Monument Falls  230.0  843.0  8385.0
+   Ausable Chasm, Keeseville, Willsboro & Westport Horseshoe Falls 1019.0  224.0  1158.0
+
+every precisely placed known fall, any source: pass 1: 32 / 59 | pass 1 + big-creek pass: 41 / 59
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_high_peaks (rA): known falls 87: found pass 1 49, both passes 59 | OSM/NHD-mapped 55: pass 1 33, both 41
+  drops: pass 1 456 {'cascade / knickpoint': 235, 'steep reach': 214, 'waterfall-like step': 7}; big-creek pass 114
+  waterfall candidates by status: {'steep reach': 189, 'unmapped cascade': 183, 'likely DEM artifact': 72, 'matches mapped waterfall': 64, 'unmapped short fall (big creek)': 42, 'dam / weir': 13, 'unmapped waterfall-like step': 2}
+#### straddle
+adk_high_peaks  reaches   9306 | flagged in-lake   931 (  468.4 km), outside every drawn lake   40.8 km:  108 reaches with 100+ m outside (  36.8 km),   9 untouched by a drawn lake | not flagged:   57.7 km inside counted lakes (166 reaches with 100+ m),  166.3 km inside any drawn lake
+#### v2_ends
+no_reach         39      12         9     15
+under_half       20       5         2      1
+under_quarter     7       2         2      1
+over_double      21       9         4      0
+#### piece_water
+adk_high_peaks  pieces ending above where carried water joins their link: 4 (4.0 km); creek pieces 3 (3.6 km), of them with 10x more water below 0
+######## rD
+#### score_root
+reaches 9739 (project 9087); matched within 30 m 9506, 30-200 m 115, none within 200 m 118
+wrote rD/output/adk_high_peaks/stream_reaches_ranked.csv 9739
+#### standing
+adk_high_peaks (rD)
+       box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+high_peaks     2129           0.0                    5             0                      0.33      497.8
+    boquet      807           0.0                    0             0                      0.25      204.0
+   saranac     1160           0.0                   19             0                      0.17      250.5
+wilmington     1957           0.0                   19             0                      0.52      448.0
+ champlain     1058           0.0                    2             0                      0.21      320.4
+chateaugay     2628           0.0                   19             0                      0.56      675.3
+#### lake_outlets
+adk_high_peaks (project): lakes with an outlet line 182; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+adk_high_peaks: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_high_peaks: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 13 / 25 | pass 1 + big-creek pass: 21 / 25
+  on smaller drainages:   pass 1: 20 / 28 | pass 1 + big-creek pass: 20 / 28
+  all:                    pass 1: 33 / 53 | pass 1 + big-creek pass: 41 / 53
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Ausable Chasm, Keeseville, Willsboro & Westport            5      2     3
+Boquet, Elizabethtown, Moriah & Port Henry                 1      0     1
+High Peaks, Keene Valley, Newcomb & the Cold River        31     21    23
+Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake      2      0     2
+Saranac Lakes, Lake Placid, Keene & Jay                   14     10    12
+
+named mapped falls on big creeks that both passes miss: 
+                                            region            name   area     d1      d2
+High Peaks, Keene Valley, Newcomb & the Cold River   Millers Falls   68.0 2316.0 15384.0
+           Saranac Lakes, Lake Placid, Keene & Jay  Monument Falls  230.0  843.0  8385.0
+   Ausable Chasm, Keeseville, Willsboro & Westport Horseshoe Falls 1019.0  224.0  1158.0
+
+every precisely placed known fall, any source: pass 1: 32 / 59 | pass 1 + big-creek pass: 42 / 59
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_high_peaks (rD): known falls 87: found pass 1 49, both passes 61 | OSM/NHD-mapped 55: pass 1 33, both 41
+  drops: pass 1 460 {'cascade / knickpoint': 239, 'steep reach': 214, 'waterfall-like step': 7}; big-creek pass 149
+  waterfall candidates by status: {'steep reach': 189, 'unmapped cascade': 186, 'likely DEM artifact': 82, 'matches mapped waterfall': 64, 'unmapped short fall (big creek)': 56, 'dam / weir': 23, 'unmapped waterfall-like step': 2}
+#### straddle
+adk_high_peaks  reaches   9739 | flagged in-lake  1197 (  505.3 km), outside every drawn lake    3.8 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    3.0 km inside counted lakes (0 reaches with 100+ m),   92.6 km inside any drawn lake
+#### v2_ends
+no_reach         39      12         9     15
+under_half       20       5         2      1
+under_quarter     7       2         2      1
+over_double      21       9         4      0
+#### piece_water
+adk_high_peaks  pieces ending above where carried water joins their link: 5 (5.0 km); creek pieces 3 (4.6 km), of them with 10x more water below 1
+######## compare rD against rA
+adk_high_peaks: A rA
+   B rD
+fish scores  A: {'n': 9306, 'km': 7562, 'mean': np.float64(65.89), '>=40': 8198, '>=60': 6298, '>=80': 2822, 'km60': np.float64(5064.1)}
+             B: {'n': 9739, 'km': 7561, 'mean': np.float64(64.2), '>=40': 8324, '>=60': 6336, '>=80': 2780, 'km60': np.float64(4993.8)}
+B reaches matched to an A reach within 30 m: 9737 of 9739 (2 unmatched, 0.2 km); A reaches no B reach matched: 2
+  drainage +20% or more: 0, -20% or more: 92; x2 or more: 0, /2 or less: 25
+  flow class changed: 417; name changed: 83
+  fish score up 10+: 166, down 10+: 368; any change: 1190; crossing 60: up 88, down 235
+  biggest moves:
+           sid_b                        name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+ high_peaks:s532                    Cold River   9.64   9.64   1.00    year-round     reservoir         100.0          15.0 -85.0
+wilmington:s1584 West Branch Saint Regis River  23.02  22.81   0.99     reservoir    year-round          18.0          95.0  77.0
+wilmington:s1723 West Branch Saint Regis River  12.08  12.08   1.00    year-round     reservoir         100.0          28.0 -72.0
+wilmington:s1668 West Branch Saint Regis River  17.80  17.80   1.00    year-round     reservoir         100.0          30.0 -70.0
+   saranac:s1014                 Saranac River 300.56 300.56   1.00    year-round     reservoir         100.0          30.0 -70.0
+    saranac:s954                 Saranac River 179.00 178.70   1.00    year-round     reservoir         100.0          31.0 -69.0
+    saranac:s959                 Saranac River 184.21 184.21   1.00    year-round     reservoir         100.0          31.0 -69.0
+ high_peaks:s388               Ampersand Brook  23.55  23.55   1.00    year-round     reservoir          98.0          29.0 -69.0
+ high_peaks:s295                   Moose Creek   9.92   9.92   1.00     reservoir    year-round          29.0          98.0  69.0
+high_peaks:s1513              White Lily Brook  17.52  17.52   1.00    year-round     reservoir         100.0          31.0 -69.0
+high_peaks:s1399                    East Inlet  21.41  21.14   0.99     reservoir    year-round          31.0         100.0  69.0
+ high_peaks:s724     East Branch Ausable River  61.90  61.86   1.00    year-round     reservoir         100.0          32.0 -68.0
+     saranac:s26                           NaN  14.85  14.85   1.00    year-round     reservoir         100.0          32.0 -68.0
+    saranac:s117                   Falls Brook   5.51   5.45   0.99    year-round     reservoir          95.0          28.0 -67.0
+high_peaks:s1736                 Newcomb River  44.91  44.91   1.00     reservoir    year-round          28.0          95.0  67.0
+    saranac:s119                   Falls Brook   5.51   5.51   1.00    year-round     reservoir          95.0          28.0 -67.0
+high_peaks:s1230                           NaN   4.27   4.27   1.00    year-round     reservoir          94.0          28.0 -66.0
+high_peaks:s1432                   Casey Brook   6.55   6.55   1.00    year-round     reservoir          95.0          29.0 -66.0
+high_peaks:s1210              Stillwater Inlet  33.37  33.37   1.00    year-round     reservoir         100.0          34.0 -66.0
+high_peaks:s1004     East Branch Ausable River  61.76  57.61   0.93     reservoir    year-round          34.0         100.0  66.0
+high_peaks:s1378             Guide Board Brook   3.28   3.28   1.00    year-round     reservoir          92.0          27.0 -65.0
+high_peaks:s1632                           NaN   4.73   4.73   1.00    year-round     reservoir          92.0          27.0 -65.0
+high_peaks:s2035                 Goodnow River  16.52  16.42   0.99    year-round     reservoir          90.0          25.0 -65.0
+chateaugay:s1935             Middle Kiln Brook  72.07  72.07   1.00    year-round     reservoir          92.0          28.0 -64.0
+high_peaks:s1434              Stillwater Inlet  12.23  11.71   0.96     reservoir    year-round          28.0          92.0  64.0
+adk_high_peaks: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  5658.8           0.1           0.0
+10-100    1516.4           0.0           0.0
+100+       385.4           0.0           0.0
+total km 7561.0 | moved 20+ m 0.1 | 50+ m 0.0

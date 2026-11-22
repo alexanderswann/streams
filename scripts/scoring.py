@@ -21,13 +21,20 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              0.05 + 0.95 x its share of summers flowing. It raises a reach anywhere (Piru Creek below Pyramid Dam flows
              every summer on its releases), and lowers one only at or below the gauge and where no trout are known on
              the creek it stands for. (3) A tailwater (TAILWATERS) with no gauge record on the reach: full, since its
-             dam's releases keep it flowing every summer, which the natural-flow model can't see
+             dam's releases keep it flowing every summer, which the natural-flow model can't see. (4) Below a lake or
+             dam that holds at least DAM_HELD of a reach's drainage (where the flows are natural flows: LA), the
+             model's figure is for the creek's own ground below it, since 05b_flow.py leaves the water from above a
+             dam out. That is a floor (what seeps, spills or is released comes on top), not evidence that the creek
+             dries, so it doesn't put the reach below NHD's class: perennial 1.0, intermittent 0.35. A gauge record on
+             the reach (2) still stands, and so does a channel bare in late summer (the greenness test of (1))
   size       drainage area, log scale: 1 km^2 -> 0, 50+ km^2 -> 1. The full area (05c_drainages.py, area_streams.csv):
              with what flows in from neighbouring boxes and from above reservoirs, which each box's DEM routing
-             misses (a creek crossing in from the next box, or leaving a dam, started again near nothing)
+             misses (a creek crossing in from the next box, or leaving a dam, started again near nothing). A side
+             channel of a river (05_score.py) takes the drainage of the river reach beside it
   thermal    0.5 water temperature + 0.35 summer shade + 0.15 mountainside northness (south-facing -0.15 ->
              north-facing +0.15). Water temperature is the reach's estimated July-August daytime water temperature
-             (watertemp.py: fitted per area to measured creeks; in LA on August air + elevation): full credit up to
+             (watertemp.py: fitted per area to measured creeks; in LA on August air + elevation; in three of the
+             Adirondack maps with the share of a creek's water that comes through a lake upstream): full credit up to
              WATER_FULL, none from WATER_ZERO, the same cutoffs in every area because a trout's limits are water
              temperatures. No penalty for cold. Where there's no estimate the term is neutral (0.5). Shade combines
              the terrain's shade (share of mid-July daylight) with the tree canopy along the reach (USFS canopy
@@ -62,6 +69,7 @@ Critical habitat, wilderness and non-Forest-Service land are flags, not score te
 """
 import datetime as dt, os, numpy as np, pandas as pd, geopandas as gpd
 import watertemp
+from config import has
 
 THIS_YEAR = dt.date.today().year
 
@@ -133,6 +141,8 @@ GREEN_STRIP = 0.2              # a channel this much greener than the slopes aro
                                # palms: 0.31; it flows every summer)
 GREEN_BURN_SINCE = 2018        # a fire strips the riparian green for years: not read where the reach burned since
 GREEN_SEASONAL = 0.35          # a bare channel's water term: "seasonal", as NHD's intermittent, never lower
+DAM_HELD = 0.5                 # water (4): a lake or dam holds this share of a reach's drainage or more (as
+                               # flowlib.below_dam_comids follows a reservoir down while it controls half the drainage)
 # Thermal term: estimated July-August daytime water temperature (watertemp.py), C. Trout feed and grow well up to
 # about 20 C and can't hold out in water that stays at 25 C. On LA's trout records (1,566 reaches) this gives the same
 # mean credit as the 700-2300 m elevation band it replaced (0.91), and none of them zero
@@ -242,17 +252,41 @@ def score(s):
     tw_up = tailwater(s).ne("") & (water < 1.0) & ~rec
     water = water.where(~tw_up, 1.0)
     cls2[tw_up], rule[tw_up] = "year-round", "tailwater releases"
+    # (4) below a lake or dam that holds most of a creek's drainage, the natural-flow figure is for the creek's own
+    # ground below it (05b_flow.py scales the model's flow by the drainage without the water from above dams: a dam can
+    # hold it back). That is the least that runs there, not evidence that the creek dries: seepage, spills and releases
+    # come on top, and a natural lake passes its water on. So it doesn't put a reach below NHD's class. Willow Creek
+    # below Lake Arrowhead, intermittent on NHD and green along its channel in late summer, went from seasonal to
+    # mostly dry (fish 33-39 -> 3-11) when the routing stopped counting the lake's shores as its own ground
+    # (03b_stitch.route_lake, 2026-11-21); Bear Creek below Big Bear Dam (trout water, perennial on NHD) read seasonal on
+    # 4 km2 of its 193. Not where a gauge on the reach has a record (2), nor where the channel is bare in late summer
+    # (the greenness test of (1)): those are evidence. Only where the flows are natural flows (LA): elsewhere the
+    # flow table has the dams in it and 05b scales by the full drainage.
+    held = (num(s, "area_full_km2") - num(s, "area_edge_km2")) >= DAM_HELD * num(s, "area_full_km2")
+    bare_ch = ((green < GREEN_BARE) & (num(s, "green_p90_max") < GREEN_BARE_ANY_YEAR)
+               & (green - num(s, "green_sur") < GREEN_STRIP))
+    dam_up = (has("tnc_flows") & held & cls.isin(["mostly dry", "seasonal", "usually flows", "year-round"])
+              & (water < nhd_water - 1e-9) & gsh.isna() & ~tw_up & ~bare_ch & ~bare)
+    water = water.where(~dam_up, nhd_water)
+    cls2[dam_up] = pd.cut(nhd_water[dam_up], [-1, 0.24, 0.525, 0.8575, 1.0],
+                          labels=["mostly dry", "seasonal", "usually flows", "year-round"]).astype(str)
+    rule[dam_up] = "below a dam"
     # below a gauged diversion the model can't see the canal: where the gauge just below kept flowing in under half
     # its summers since 2011 (05b_flow.py's div_water) and no trout are known here, its record is the water term
     gw = num(s, "div_water")
     by_gauge = (gw < 0.5) & ~(trout_signs(s)[0] | s.trout_water.notna())
     water = water.where(~by_gauge, 0.05 + 0.95 * gw)
-    size = np.clip(np.log10(num(s, "area_full_km2").fillna(s.area_km2)) / np.log10(50), 0, 1)
+    # a side channel of a river (05_score.py's side_of) is sized as the river beside it (river_km2): D8 sends a split
+    # river's water down one arm, and the other arm's own few km2 say nothing of the water in it
+    big = np.fmax(num(s, "area_full_km2").fillna(s.area_km2), num(s, "river_km2").fillna(0))
+    size = np.clip(np.log10(big) / np.log10(50), 0, 1)
     terrain, canopy = s.shade_pct.fillna(20) / 100, np.clip(num(s, "canopy_pct").fillna(0) / 100, 0, 1)
     shade = np.clip((1 - (1 - terrain) * (1 - 0.8 * canopy)) / 0.45, 0, 1)
     north = np.clip((s.northness.fillna(0) + 0.15) / 0.30, 0, 1)
     tw = tailwater(s)
-    wt = pd.Series(watertemp.estimate(num(s, "air_aug"), s.elev_m, num(s, "area_full_km2").fillna(s.area_km2)), index=s.index)
+    wt = pd.Series(watertemp.estimate(num(s, "air_aug"), s.elev_m, big,
+                                      pd.Series(watertemp.lake_share(num(s, "area_edge_km2"), num(s, "area_full_km2")),
+                                                index=s.index).fillna(0.0)), index=s.index)
     # no estimate: where the area's fit has no skill, its measured sites' mean stands for every creek (the model the
     # skill test compares with: a cold area stays cold); with no measured sites at all, neutral
     avg = watertemp.area_mean()

@@ -1,0 +1,133 @@
+######## rA
+#### score_root
+reaches 4638 (project 4612); matched within 30 m 4613, 30-200 m 12, none within 200 m 13
+wrote rA/output/se_pa/stream_reaches_ranked.csv 4638
+#### standing
+se_pa (rA)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   brandywine     2704           0.0                   15             0                      9.00      716.2
+ridley_valley     1934           0.0                    0             0                     52.63      601.3
+#### lake_outlets
+se_pa (project): lakes with an outlet line 23; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+se_pa: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+se_pa: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 3 | pass 1 + big-creek pass: 0 / 3
+  on smaller drainages:   pass 1: 0 / 8 | pass 1 + big-creek pass: 0 / 8
+  all:                    pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+
+by range:
+                                                      falls  pass1  both
+region                                                                  
+Brandywine, French Creek & White Clay                     4      0     0
+Ridley, Crum & Darby, Valley Creek & the Wissahickon      7      0     0
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+se_pa (rA): known falls 13: found pass 1 0, both passes 0 | OSM/NHD-mapped 11: pass 1 0, both 0
+  drops: pass 1 36 {'cascade / knickpoint': 36}; big-creek pass 46
+  waterfall candidates by status: {'likely DEM artifact': 33, 'unmapped cascade': 18, 'dam / weir': 16, 'unmapped short fall (big creek)': 9}
+#### straddle
+se_pa           reaches   4638 | flagged in-lake    57 (   34.5 km), outside every drawn lake    5.6 km:   13 reaches with 100+ m outside (   5.3 km),   1 untouched by a drawn lake | not flagged:    1.8 km inside counted lakes (7 reaches with 100+ m),   23.2 km inside any drawn lake
+#### v2_ends
+no_reach         43      31        34     19
+under_half       15       5         6      3
+under_quarter     7       4         6      3
+over_double      48      18         5      0
+#### piece_water
+se_pa           pieces ending above where carried water joins their link: 2 (1.2 km); creek pieces 2 (1.2 km), of them with 10x more water below 1
+######## rD
+#### score_root
+reaches 4673 (project 4612); matched within 30 m 4648, 30-200 m 12, none within 200 m 13
+wrote rD/output/se_pa/stream_reaches_ranked.csv 4673
+#### standing
+se_pa (rD)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   brandywine     2727           0.0                   15             0                      9.00      716.2
+ridley_valley     1946           0.0                    0             0                     52.63      601.3
+#### lake_outlets
+se_pa (project): lakes with an outlet line 23; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+se_pa: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+se_pa: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 3 | pass 1 + big-creek pass: 0 / 3
+  on smaller drainages:   pass 1: 0 / 8 | pass 1 + big-creek pass: 0 / 8
+  all:                    pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+
+by range:
+                                                      falls  pass1  both
+region                                                                  
+Brandywine, French Creek & White Clay                     4      0     0
+Ridley, Crum & Darby, Valley Creek & the Wissahickon      7      0     0
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+se_pa (rD): known falls 13: found pass 1 0, both passes 0 | OSM/NHD-mapped 11: pass 1 0, both 0
+  drops: pass 1 40 {'cascade / knickpoint': 40}; big-creek pass 51
+  waterfall candidates by status: {'likely DEM artifact': 36, 'dam / weir': 21, 'unmapped cascade': 18, 'unmapped short fall (big creek)': 10}
+#### straddle
+se_pa           reaches   4673 | flagged in-lake    70 (   32.1 km), outside every drawn lake    0.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.2 km inside counted lakes (0 reaches with 100+ m),   20.2 km inside any drawn lake
+#### v2_ends
+no_reach         43      31        34     19
+under_half       15       5         6      3
+under_quarter     7       4         6      3
+over_double      48      18         5      0
+#### piece_water
+se_pa           pieces ending above where carried water joins their link: 2 (1.2 km); creek pieces 2 (1.2 km), of them with 10x more water below 1
+######## compare rD against rA
+se_pa: A rA
+   B rD
+fish scores  A: {'n': 4638, 'km': 3728, 'mean': np.float64(57.63), '>=40': 4359, '>=60': 1981, '>=80': 370, 'km60': np.float64(1392.2)}
+             B: {'n': 4673, 'km': 3728, 'mean': np.float64(57.6), '>=40': 4383, '>=60': 1999, '>=80': 377, 'km60': np.float64(1392.2)}
+B reaches matched to an A reach within 30 m: 4673 of 4673 (0 unmatched, 0.0 km); A reaches no B reach matched: 0
+  drainage +20% or more: 0, -20% or more: 5; x2 or more: 0, /2 or less: 0
+  flow class changed: 29; name changed: 31
+  fish score up 10+: 30, down 10+: 14; any change: 53; crossing 60: up 12, down 7
+  biggest moves:
+              sid_b                       name_b  af_a  af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+   brandywine:s1094 West Branch Brandywine Creek 50.91 49.20   0.97    year-round     reservoir          86.0          26.0 -60.0
+    brandywine:s374              Allegheny Creek 38.74 38.70   1.00    year-round     reservoir          81.0          24.0 -57.0
+ridley_valley:s1441                   Crum Creek 44.40 44.40   1.00    year-round     reservoir          80.0          24.0 -56.0
+ridley_valley:s1439                   Crum Creek 44.40 44.25   1.00    year-round     reservoir          80.0          24.0 -56.0
+ ridley_valley:s890              Pickering Creek 86.80 86.80   1.00    year-round     reservoir          79.0          24.0 -55.0
+ ridley_valley:s894              Pickering Creek 95.29 95.29   1.00     reservoir    year-round          24.0          79.0  55.0
+ ridley_valley:s892              Pickering Creek 91.59 91.59   1.00     reservoir    year-round          24.0          78.0  54.0
+ridley_valley:s1417                   Hunter Run  4.20  4.20   1.00    year-round     reservoir          63.0          18.0 -45.0
+ ridley_valley:s935                          NaN  4.57  4.57   1.00    year-round     reservoir          63.0          18.0 -45.0
+    brandywine:s920                  Marsh Creek 36.88 36.88   1.00     reservoir    year-round          19.0          63.0  44.0
+    brandywine:s930                  Marsh Creek 37.80 37.76   1.00     reservoir    year-round          18.0          59.0  41.0
+   brandywine:s1372                     Rock Run 14.36 13.52   0.94     reservoir    year-round          17.0          57.0  40.0
+    brandywine:s330                 French Creek  4.75  4.75   1.00    year-round     reservoir          55.0          16.0 -39.0
+   brandywine:s1121                          NaN  1.16  1.16   1.00    year-round     reservoir          53.0          15.0 -38.0
+   brandywine:s1137                          NaN  1.26  1.26   1.00    year-round     reservoir          54.0          16.0 -38.0
+    brandywine:s500                          NaN  2.71  2.71   1.00    year-round     reservoir          52.0          15.0 -37.0
+   brandywine:s1355    East Branch Chester Creek  5.66  5.28   0.93     reservoir    year-round          15.0          51.0  36.0
+ ridley_valley:s860              Pickering Creek  3.64  3.64   1.00    year-round     reservoir          51.0          15.0 -36.0
+   brandywine:s2362                          NaN  5.19  5.19   1.00     reservoir    year-round          15.0          50.0  35.0
+    brandywine:s563                 French Creek  1.02  1.02   1.00    year-round    year-round          48.0          83.0  35.0
+   brandywine:s1028                          NaN  3.43  2.82   0.82     reservoir    year-round          15.0          49.0  34.0
+ ridley_valley:s327       Little Neshaminy Creek  2.05  2.01   0.98    year-round     reservoir          48.0          14.0 -34.0
+   brandywine:s2270                          NaN  1.53  1.46   0.95     reservoir    year-round          13.0          44.0  31.0
+   brandywine:s2279                    Broad Run  2.38  2.35   0.99     reservoir    year-round          13.0          44.0  31.0
+    brandywine:s793 East Branch Brandywine Creek  3.25  2.84   0.87     reservoir    year-round          14.0          45.0  31.0
+se_pa: B's lines against A's (rD vs rA)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  2620.4           0.0           0.0
+10-100     798.4           0.0           0.0
+100+       308.9           0.0           0.0
+total km 3727.8 | moved 20+ m 0.0 | 50+ m 0.0

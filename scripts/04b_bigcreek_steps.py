@@ -27,6 +27,10 @@ z = src.read(1).astype("float64").ravel()
 zf = rasterio.open(f"{DERIVED}/dem_filled.tif").read(1).astype("float64").ravel()
 fdir = rasterio.open(f"{DERIVED}/flowdir.tif").read(1)
 area = rasterio.open(f"{DERIVED}/area_km2.tif").read(1).ravel()
+# with the water that reaches each channel from elsewhere (over a dam, past a pond, in from outside the map), as in
+# 04_knickpoints.py: a river below a dam is a big creek from the dam on, not from where 10 km2 has gathered again
+import crossbox
+area = area + crossbox.carried_km2(REGION)
 fill = rasterio.open(f"{DERIVED}/fill_depth.tif").read(1).ravel()
 H, W = fdir.shape
 down, step, up = pointers(fdir, area, BIG_AREA * 0.25)
