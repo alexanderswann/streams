@@ -1,0 +1,50 @@
+#### adk_southwest checked 11-21 21:38:57
+#### failed steps in the last run of each log
+rebuild: == DONE adk_southwest 11-21 21:38:56
+mid: == DONE adk_southwest 11-21 21:36:23
+late: == DONE adk_southwest 11-21 21:38:56
+#### 03b
+moose + west_canada_lakes + west_canada + speculator: 9340 x 8520 cells, 818600 stream cells, max order 8, 226 of 255 lakes end paths at their outlet (226 routed to it along NHD's lines; 92.9 km of stream line added below outlets), 1 drain off the map through their water and carry no stream lines (unnamed)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 94, 72.0 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 22, 18.4 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 25, 17.1 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 91, 63.4 km
+#### verify_install (hydro)
+adk_southwest
+  moose | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  west_canada_lakes | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  west_canada | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  speculator | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+adk_southwest (/Users/mac/Fishing)
+              box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+            moose     2583           0.0                   17             0                      0.65      763.7
+west_canada_lakes      570           0.0                    3             0                      0.15      130.9
+      west_canada     1811           0.0                    6             0                      0.44      555.4
+       speculator     2035           0.0                    0             0                      0.44      477.8
+#### check_flow_drops
+adk_southwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 7 | pass 1 + big-creek pass: 5 / 7
+  on smaller drainages:   pass 1: 1 / 3 | pass 1 + big-creek pass: 1 / 3
+  all:                    pass 1: 4 / 10 | pass 1 + big-creek pass: 6 / 10
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls      2      1     1
+Piseco, Speculator, Caroga & the West Branch Sacandaga             8      3     5
+
+named mapped falls on big creeks that both passes miss: 
+                                                region                    name  area     d1     d2
+Piseco, Speculator, Caroga & the West Branch Sacandaga West Stoney Creek Falls  15.0 1767.0 8908.0
+
+every precisely placed known fall, any source: pass 1: 7 / 20 | pass 1 + big-creek pass: 11 / 20
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+adk_southwest (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 233, 171.0 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

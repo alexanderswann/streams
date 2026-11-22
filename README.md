@@ -185,9 +185,9 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    landed on the first line it met and was counted along that whole link, a side creek's included: Lower Slide Lake's
    1,539 km² on a 2.7 km creek beside the Gros Ventre, Leigh Lake's on a creek beside String Lake (120 such creeks over
    the 12 maps). Measured on all 12 maps before it went in (`data/stream_burning/`): drops, known falls, flow drops and
-   edge dead ends unchanged or better; lake outlets reading under half of NHDPlus 45 → 39. That measurement compared
-   the reaches both builds had and missed the lines that vanished below lake outlets (5., the size floor). The
-   folder also keeps the
+   edge dead ends unchanged or better; lake outlets reading under half of NHDPlus 45 → 39 (26 with 5.'s size floor).
+   That measurement compared the reaches both builds had and missed the lines that vanished below lake outlets (5.,
+   the size floor). The folder also keeps the
    experiment this came from, NHD's lines burned into the DEM itself, which is not used: burned everywhere they lost
    waterfall-like steps in the mountains, burned on flat ground only they reshuffled braided rivers' arms.
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
@@ -227,7 +227,7 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    (`crossbox.carried_km2`, the same water `05c` adds for `area_full_km2`; `area_km2` stays the link's own area).
    Until 2026-11-21 only its own area counted. A lake ends its paths at its outlet, so the creek below starts again
    near nothing, and the map had no line below the outlet until the creek had gathered 1 km² again or met one that
-   had: 1,088 km of stream line on 1,520 links over the 12 maps, 95% of it along NHD's stream lines, 185 of the links
+   had: 1,092 km of stream line on 1,610 links over the 12 maps, 95% of it along NHD's stream lines, 199 of the links
    carrying 100 km² or more (rivers below dams, and rivers where they enter a map: the first kilometre of the Salt,
    Greys and Hoback rivers). Where there had been a line, a path had leaked across the lake and left it beside the
    outlet; when `03b` sent every lake cell to the outlet (3.) those 103 km went too (1.5 km of the Oswegatchie, the

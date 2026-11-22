@@ -1,0 +1,46 @@
+#### ne_ct checked 11-21 20:29:01
+#### failed steps in the last run of each log
+rebuild: == DONE ne_ct 11-21 20:28:56
+mid: == DONE ne_ct 11-21 20:26:48
+late: == DONE ne_ct 11-21 20:28:56
+#### 03b
+natchaug + quinebaug: 5300 x 5800 cells, 388127 stream cells, max order 7, 147 of 175 lakes end paths at their outlet (147 routed to it along NHD's lines; 58.3 km of stream line added below outlets), 6 drain off the map through their water and carry no stream lines (Hamilton Reservoir, Leadmine Pond, McDonald Pond, Little Grass Pond, Lake Chaubunagungamaug, Larner Pond)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 77, 46.6 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 78, 50.1 km
+#### verify_install (hydro)
+ne_ct
+  natchaug | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  quinebaug | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+ne_ct (/Users/mac/Fishing)
+      box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ natchaug     1751           0.0                   18             0                      0.25      413.4
+quinebaug     1837           0.0                    0             0                      0.39      462.1
+#### check_flow_drops
+ne_ct: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+ne_ct: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 9 | pass 1 + big-creek pass: 4 / 9
+  on smaller drainages:   pass 1: 0 / 14 | pass 1 + big-creek pass: 0 / 14
+  all:                    pass 1: 0 / 23 | pass 1 + big-creek pass: 4 / 23
+
+by range:
+                                falls  pass1  both
+region                                            
+Natchaug, Fenton & Willimantic     20      0     4
+Quinebaug, Five Mile & Moosup       3      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                        region                   name  area      d1     d2
+Natchaug, Fenton & Willimantic     Diana's Pool Falls 143.0  4914.0 2113.0
+ Quinebaug, Five Mile & Moosup          Cargill Falls  16.0  3087.0  766.0
+ Quinebaug, Five Mile & Moosup Spencer Rock Waterfall  34.0 15157.0 8061.0
+
+every precisely placed known fall, any source: pass 1: 0 / 25 | pass 1 + big-creek pass: 4 / 25
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+ne_ct (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 155, 96.7 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

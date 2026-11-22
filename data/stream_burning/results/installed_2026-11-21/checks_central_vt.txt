@@ -1,0 +1,54 @@
+#### central_vt checked 11-21 20:45:16
+#### failed steps in the last run of each log
+rebuild: == DONE central_vt 11-21 20:45:00
+mid: == DONE central_vt 11-21 20:41:24
+late: == DONE central_vt 11-21 20:45:00
+#### 03b
+stowe_lamoille + mad_winooski + white_river: 8000 x 10500 cells, 949378 stream cells, max order 7, 55 of 88 lakes end paths at their outlet (55 routed to it along NHD's lines; 19.2 km of stream line added below outlets), 7 drain off the map through their water and carry no stream lines (Lake Champlain, Greenwood Lake, Wolcott Pond, Lake George, Chittenden Reservoir, Lake Hortonia, Echo Lake)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 25, 14.4 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 14, 11.7 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 24, 19.4 km
+#### verify_install (hydro)
+central_vt
+  stowe_lamoille | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  mad_winooski | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  white_river | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+central_vt (/Users/mac/Fishing)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+stowe_lamoille     2756           0.0                   21             0                      6.18      786.4
+  mad_winooski     2717           0.0                   15             0                     22.29      725.1
+   white_river     2885           0.0                    0             0                     12.50      816.4
+#### check_flow_drops
+central_vt: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+central_vt: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 10 / 23 | pass 1 + big-creek pass: 16 / 23
+  on smaller drainages:   pass 1: 4 / 7 | pass 1 + big-creek pass: 4 / 7
+  all:                    pass 1: 14 / 30 | pass 1 + big-creek pass: 20 / 30
+
+by range:
+                                           falls  pass1  both
+region                                                       
+Mad River, Winooski & New Haven River          6      1     2
+Middlebury River, Breadloaf & White River      7      5     7
+Stowe & upper Lamoille                        17      8    11
+
+named mapped falls on big creeks that both passes miss: 
+                               region              name   area     d1     d2
+               Stowe & upper Lamoille    Winooski Falls 1665.0  268.0 4419.0
+               Stowe & upper Lamoille     Sloping Falls  109.0 2659.0 1960.0
+Mad River, Winooski & New Haven River    Dog Team Falls  302.0 2069.0 3642.0
+Mad River, Winooski & New Haven River    Moretown Falls  337.0 2599.0 2658.0
+Mad River, Winooski & New Haven River Putnamville Falls  122.0 1986.0 9256.0
+
+every precisely placed known fall, any source: pass 1: 20 / 66 | pass 1 + big-creek pass: 38 / 66
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+central_vt (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 68, 47.7 km; not drawn as a reach (under half within 30 m of one): 4, 1.0 km; of those along an NHD stream line (half or more): 4, 1.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+         box  len_m  own  linked  nhd  drawn  old  old_fish old_name   lat    lon
+ white_river 623.55 0.84   22.65  1.0    0.0  0.0       NaN     None 43.87 -73.43
+ white_river 174.85 0.29   22.65  1.0    0.0  0.0       NaN     None 43.87 -73.44
+ white_river 168.99 0.30  145.31  1.0    0.0  0.0       NaN     None 43.96 -73.44
+mad_winooski  78.28 0.27  261.86  1.0    0.0  0.0       NaN     None 44.32 -73.43

@@ -1,0 +1,43 @@
+#### se_pa checked 11-21 20:38:01
+#### failed steps in the last run of each log
+rebuild: == DONE se_pa 11-21 20:37:56
+mid: == DONE se_pa 11-21 20:35:10
+late: == DONE se_pa 11-21 20:37:56
+#### 03b
+brandywine + ridley_valley: 6900 x 6700 cells, 517459 stream cells, max order 7, 25 of 44 lakes end paths at their outlet (25 routed to it along NHD's lines; 8.2 km of stream line added below outlets), 1 drain off the map through their water and carry no stream lines (unnamed)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 18, 11.0 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 8, 3.9 km
+#### verify_install (hydro)
+se_pa
+  brandywine | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  ridley_valley | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+se_pa (/Users/mac/Fishing)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   brandywine     2704           0.0                   15             0                      9.00      716.2
+ridley_valley     1934           0.0                    0             0                     52.63      601.3
+#### check_flow_drops
+se_pa: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+se_pa: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 3 | pass 1 + big-creek pass: 0 / 3
+  on smaller drainages:   pass 1: 0 / 8 | pass 1 + big-creek pass: 0 / 8
+  all:                    pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+
+by range:
+                                                      falls  pass1  both
+region                                                                  
+Brandywine, French Creek & White Clay                     4      0     0
+Ridley, Crum & Darby, Valley Creek & the Wissahickon      7      0     0
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+se_pa (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 29, 16.9 km; not drawn as a reach (under half within 30 m of one): 3, 2.0 km; of those along an NHD stream line (half or more): 2, 1.4 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+          box  len_m  own  linked  nhd  drawn  old  old_fish old_name   lat    lon
+ridley_valley 880.12 0.45    6.04 1.00    0.0  0.0       NaN     None 39.85 -75.17
+ridley_valley 556.98 0.77   14.11 0.83    0.0  0.0       NaN     None 39.86 -75.18
+ridley_valley 550.83 0.75    0.89 0.39    0.0  0.0       NaN     None 39.84 -75.28

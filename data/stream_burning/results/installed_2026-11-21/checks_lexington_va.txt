@@ -1,0 +1,46 @@
+#### lexington_va checked 11-21 20:33:09
+#### failed steps in the last run of each log
+rebuild: == DONE lexington_va 11-21 20:32:54
+mid: == DONE lexington_va 11-21 20:30:47
+late: == DONE lexington_va 11-21 20:32:54
+#### 03b
+maury_goshen + blue_ridge_va: 6400 x 5800 cells, 486324 stream cells, max order 7, 9 of 9 lakes end paths at their outlet (9 routed to it along NHD's lines; 4.0 km of stream line added below outlets)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 11, 6.9 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 7, 6.7 km
+#### verify_install (hydro)
+lexington_va
+  maury_goshen | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  blue_ridge_va | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+lexington_va (/Users/mac/Fishing)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ maury_goshen     2211           0.0                   16             0                      0.22      560.1
+blue_ridge_va     2091           0.0                    0             0                      0.28      551.7
+#### check_flow_drops
+lexington_va: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+lexington_va: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 2 / 7 | pass 1 + big-creek pass: 3 / 7
+  on smaller drainages:   pass 1: 12 / 14 | pass 1 + big-creek pass: 12 / 14
+  all:                    pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+
+by range:
+                                                   falls  pass1  both
+region                                                               
+Blue Ridge: St. Mary's, Irish Creek & South River     19     14    15
+Maury River, Goshen Pass & Buffalo Creek               2      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                                           region          name   area     d1     d2
+         Maury River, Goshen Pass & Buffalo Creek    Lace Falls   34.0 1277.0 1135.0
+         Maury River, Goshen Pass & Buffalo Creek Balcony Falls 1769.0  291.0 8216.0
+Blue Ridge: St. Mary's, Irish Creek & South River Panther Falls   66.0  697.0 1354.0
+
+every precisely placed known fall, any source: pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+lexington_va (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 18, 13.6 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

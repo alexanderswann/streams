@@ -1,0 +1,60 @@
+#### adk_northwest checked 11-21 21:48:15
+#### failed steps in the last run of each log
+rebuild: == DONE adk_northwest 11-21 21:48:03
+mid: == DONE adk_northwest 11-21 21:44:59
+late: == DONE adk_northwest 11-21 21:48:03
+#### 03b
+beaver + long_lake + tupper + st_regis + lake_ozonia: 8520 x 11120 cells, 959046 stream cells, max order 8, 367 of 470 lakes end paths at their outlet (369 routed to it along NHD's lines; 141.2 km of stream line added below outlets) (2 more flow on: outlet on an edge between boxes), 8 drain off the map through their water and carry no stream lines (Lyons Marsh, Queer Lake, Chain Ponds, Twin Ponds,
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 142, 103.8 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 114, 80.6 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 52, 40.7 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 40, 26.4 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 7, 5.0 km
+#### verify_install (hydro)
+adk_northwest
+  beaver | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  long_lake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  tupper | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  st_regis | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  lake_ozonia | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+adk_northwest (/Users/mac/Fishing)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     2777           0.0                    8             0                      0.83      744.3
+  long_lake     1925           0.0                    0             0                      0.40      414.1
+     tupper     1346           0.0                   17             0                      0.52      353.9
+   st_regis     1298           0.0                   16             0                      0.41      347.4
+lake_ozonia     1146           0.0                    6             0                      0.37      377.9
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_northwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 24 | pass 1 + big-creek pass: 18 / 24
+  on smaller drainages:   pass 1: 0 / 9 | pass 1 + big-creek pass: 0 / 9
+  all:                    pass 1: 3 / 33 | pass 1 + big-creek pass: 18 / 33
+
+by range:
+                                                                  falls  pass1  both
+region                                                                              
+Carry Falls, the Raquette reservoirs & the St. Regis                  5      1     4
+Lake Ozonia, the Deer and Little Salmon rivers                        3      1     3
+Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper          6      0     2
+Stillwater, Beaver River, Cranberry Lake & Five Ponds                11      0     3
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls      8      1     6
+
+named mapped falls on big creeks that both passes miss: 
+                                                          region            name  area      d1      d2
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Upper Falls  70.0  4365.0  4910.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Lower Falls  70.0  4429.0  5719.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper  Raquette Falls  70.0  4415.0  5499.0
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls Jamestown Falls 165.0 24776.0 19653.0
+            Carry Falls, the Raquette reservoirs & the St. Regis Augerhole Falls  69.0 28294.0  7923.0
+
+every precisely placed known fall, any source: pass 1: 4 / 44 | pass 1 + big-creek pass: 23 / 44
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+adk_northwest (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 356, 256.6 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

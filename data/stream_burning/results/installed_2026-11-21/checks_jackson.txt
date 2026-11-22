@@ -1,0 +1,61 @@
+#### jackson checked 11-21 20:22:31
+#### failed steps in the last run of each log
+rebuild: == DONE jackson 11-21 20:22:23
+mid: == DONE jackson 11-21 20:19:09
+late: == DONE jackson 11-21 20:22:23
+#### 03b
+teton_snake + gros_ventre + hoback + jackson_lake + buffalo_fork + teton_valley + palisades: 8200 x 11900 cells, 1245455 stream cells, max order 8, 32 of 44 lakes end paths at their outlet (32 routed to it along NHD's lines; 12.2 km of stream line added below outlets), 1 drain off the map through their water and carry no stream lines (Brewster Lake)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 6, 4.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 9, 6.3 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 8, 5.9 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 22, 10.9 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 2, 1.2 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 3, 1.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 4, 2.7 km
+#### verify_install (hydro)
+jackson
+  teton_snake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  gros_ventre | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  hoback | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  jackson_lake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  buffalo_fork | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  teton_valley | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  palisades | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+jackson (/Users/mac/Fishing)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1637           0.0                   10             0                      0.48      506.4
+ gros_ventre     1432           0.0                   12             0                      0.15      326.6
+      hoback     2024           0.0                    0             0                      0.32      553.5
+jackson_lake     2461           0.0                   20             0                      0.34      700.4
+buffalo_fork      165           0.0                    1             0                      0.02       42.7
+teton_valley     1750           0.0                    8             0                      0.51      562.4
+   palisades     1084           0.0                    5             0                      1.40      256.4
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+jackson: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 4 | pass 1 + big-creek pass: 3 / 4
+  on smaller drainages:   pass 1: 9 / 17 | pass 1 + big-creek pass: 9 / 17
+  all:                    pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Gros Ventre                                                1      1     1
+Hoback & Snake River Canyon                                2      1     1
+Jackson Lake, Jenny Lake & the northern Tetons            10      6     6
+Palisades Reservoir & Alpine                               1      0     0
+Teton Valley, Idaho: Driggs, Victor & the Teton River      1      0     0
+Tetons & Snake River                                       6      4     4
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+jackson (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 54, 33.1 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

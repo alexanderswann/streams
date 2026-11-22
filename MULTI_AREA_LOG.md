@@ -3165,4 +3165,32 @@ the user's rule (mark a stream down only when near-certain). Details and the per
   evening: it takes 05b's in-lake rule (NHD's outline against the lakes layer's lidar outline) and cutting reaches at
   lake shores, and rebuilds after this session has published.
 - **Rebuild:** the other 11 maps from 20:24 (ne_ct, lexington_va, se_pa, central_vt through mid and late; smokies,
-  n_georgia, la and the four Adirondack maps from 03b).
+  n_georgia, la and the four Adirondack maps from 03b), the last done 22:04. No failed step.
+- **All 12 against the builds before either change** (`data/stream_burning/results/installed_2026-11-21/`; the
+  per-map table is in `data/stream_burning/README.md`, "Installed on all 12 maps"):
+  - 1,610 links, 1,092 km kept on carried water. Every stream link below an outlet is drawn but 7 (3 km): three
+    tidal ones on the Delaware and four on Lake Champlain's New York shore, which other rules leave out.
+  - Reaches 105,478 → 106,609; km of fish 60+ 42,159 → 42,721, up on every map.
+  - 1,196 new creek reaches (983 km) against 121 gone (174 km). 19 of the gone (27 km) lie along an NHD line and are
+    headwater creeks now under the floor (0.52-0.99 km² where they end): a new line joins them and ends the link there.
+  - Lake outlets reading under half of NHDPlus: 45 → 26. Lake Junaluska, Little Rock Reservoir and The Vly are right.
+  - No reach ends dead on an edge between boxes; no sudden flow drops; 03b's rasters equal the measured builds.
+  - Stream line drawn with a lake's values outside the lakes the map draws: 390 → 173 km.
+- **The 10+ point moves down, 454** (290 up):
+  - 284 read "reservoir" now (half or more in a lake), 37 of them with 200+ m of creek outside every lake outline;
+  - 101 had carried a lake's water (34 of the 40 with an NHDPlus V2 line now fit it, against 6);
+  - 69 other: 48 are reaches cut where a newly drawn line joins them, each piece then scored on its own trout
+    record, gradient and shade (the Opalescent 100 → 88, Kunjamuk River 92 → 74); 17 in LA (Willow Creek below Lake
+    Arrowhead, the South Fork San Jacinto below Lake Hemet, creeks leaving a lake's outline, one Piru Creek reach
+    that now takes its gauge's record); 4 in the Smokies for a shorter way in.
+- **Checked on the rendered maps:** adk_northwest (Salmon Lake, South Pond and Cage Lake outlets, the Raquette from
+  Raquette Lake to Forked Lake), ne_ct (four pond outlets), la (Piru Creek), jackson (above).
+- **Published 22:18** (site commit 6875118, all 12 maps and the all-areas page; nothing outside `streams/`), live
+  files equal to the local ones by checksum at 22:22. `streams/` is 628 MB of Pages' 1 GB. Phone copies refreshed.
+- **Left open:**
+  - Lower Piru Creek below Lake Piru now reads year-round on the tailwater floor (right: 7 cfs or more every
+    July-September day on record since 2011 at USGS 11109800), but its popup credits Pyramid Lake's releases, since
+    `scoring.tailwater()` doesn't stop at Lake Piru. A `TAILWATERS` entry for Lake Piru would name the right dam.
+  - The 48 creek pieces newly drawn with a lake's values (22.5 km) and the 37 lake reaches with creek outside the
+    lake wait for the in-lake rule the side-effects session is changing.
+  - 31 short adk_northwest reaches (4.9 km) carry a river's stream order with a creek's drainage; 29 did before.

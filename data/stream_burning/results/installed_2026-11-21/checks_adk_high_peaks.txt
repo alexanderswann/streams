@@ -1,0 +1,61 @@
+#### adk_high_peaks checked 11-21 21:56:53
+#### failed steps in the last run of each log
+rebuild: == DONE adk_high_peaks 11-21 21:56:37
+mid: == DONE adk_high_peaks 11-21 21:53:21
+late: == DONE adk_high_peaks 11-21 21:56:37
+#### 03b
+high_peaks + boquet + saranac + wilmington + champlain + chateaugay: 9310 x 10540 cells, 1050906 stream cells, max order 7, 221 of 292 lakes end paths at their outlet (221 routed to it along NHD's lines; 81.7 km of stream line added below outlets), 4 drain off the map through their water and carry no stream lines (Round Pond, Lake Champlain, Square Pond, Turtle Pond), 2 cells on loops ended in pit
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 67, 33.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 18, 9.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 31, 19.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 51, 37.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 15, 9.0 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 37, 22.6 km
+#### verify_install (hydro)
+adk_high_peaks
+  high_peaks | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  boquet | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  saranac | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  wilmington | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  champlain | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  chateaugay | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+adk_high_peaks (/Users/mac/Fishing)
+       box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+high_peaks     2018           0.0                    5             0                      0.33      497.8
+    boquet      784           0.0                    0             0                      0.25      204.0
+   saranac     1082           0.0                   19             0                      0.17      250.5
+wilmington     1842           0.0                   19             0                      0.52      448.0
+ champlain     1031           0.0                    2             0                      0.21      320.4
+chateaugay     2549           0.0                   19             0                      0.56      675.3
+#### check_flow_drops
+adk_high_peaks: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_high_peaks: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 13 / 25 | pass 1 + big-creek pass: 21 / 25
+  on smaller drainages:   pass 1: 20 / 28 | pass 1 + big-creek pass: 20 / 28
+  all:                    pass 1: 33 / 53 | pass 1 + big-creek pass: 41 / 53
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Ausable Chasm, Keeseville, Willsboro & Westport            5      2     3
+Boquet, Elizabethtown, Moriah & Port Henry                 1      0     1
+High Peaks, Keene Valley, Newcomb & the Cold River        31     21    23
+Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake      2      0     2
+Saranac Lakes, Lake Placid, Keene & Jay                   14     10    12
+
+named mapped falls on big creeks that both passes miss: 
+                                            region            name   area     d1      d2
+High Peaks, Keene Valley, Newcomb & the Cold River   Millers Falls   68.0 2316.0 18263.0
+           Saranac Lakes, Lake Placid, Keene & Jay  Monument Falls  230.0  843.0  8385.0
+   Ausable Chasm, Keeseville, Willsboro & Westport Horseshoe Falls 1019.0  224.0  1158.0
+
+every precisely placed known fall, any source: pass 1: 32 / 59 | pass 1 + big-creek pass: 41 / 59
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+adk_high_peaks (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 219, 131.5 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

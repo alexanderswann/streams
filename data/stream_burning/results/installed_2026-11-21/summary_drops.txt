@@ -1,0 +1,49 @@
+== 10+ point fish-score moves of matched reaches, by cause (lake_out200: lake-group reaches with 200+ m outside every lake outline)
+          area  down  lake  carried  drainage  flow  other  up  left lake  gained  drainage+  flow+  other+  lake_out200
+adk_high_peaks    79    53       20         3     0      3  33         27       2          2      0       2            4
+ adk_northwest    91    63       18         6     0      4  51         44       3          4      0       0           11
+ adk_southeast    92    63       19         2     0      8  60         53       0          2      0       5            8
+ adk_southwest    43    31        9         0     0      3  31         28       0          3      0       0            2
+    central_vt    14     6        6         0     0      2   3          3       0          0      0       0            0
+       jackson    27    18        5         2     2      0  29         24       3          0      0       2            4
+            la    21     4        0         2     8      7  36          2       0          8     22       4            0
+  lexington_va     1     1        0         0     0      0   1          1       0          0      0       0            1
+     n_georgia    29    21        5         0     0      3  15         14       1          0      0       0            5
+         ne_ct    42    16       17         3     2      4  14          6       0          1      0       7            1
+         se_pa     1     1        0         0     0      0   4          3       1          0      0       0            0
+       smokies    14     7        2         0     0      5  13         13       0          0      0       0            1
+           ALL   454   284      101        18    12     39 290        218      10         20     22      20           37
+
+== stream line the map draws with a lake's values outside the lakes it draws (km), and the 100+ m pieces
+          area  old_km  new_km  old_pieces  new_pieces  put_right  put_right_km  newly_marked  newly_marked_km  newly_marked_fish40
+adk_high_peaks    42.2    24.9        95.0        65.0       29.0          14.7           6.0              1.9                  6.0
+ adk_northwest   104.0    38.6       188.0        93.0      103.0          68.9           9.0              6.1                  9.0
+ adk_southeast    83.3    33.3       151.0        84.0       73.0          49.8          13.0              6.2                 12.0
+ adk_southwest    69.1    23.3       132.0        59.0       72.0          44.6           4.0              1.1                  4.0
+    central_vt     9.5     3.7        21.0        11.0       10.0           6.0           1.0              0.4                  1.0
+       jackson    22.0    11.6        26.0        22.0       12.0          12.5           4.0              2.4                  4.0
+            la    11.0     9.1        29.0        24.0        4.0           2.1           2.0              1.1                  1.0
+  lexington_va     0.5     0.2         1.0         0.0        1.0           0.3           0.0              0.0                  0.0
+     n_georgia    12.5    10.3        31.0        26.0        7.0           4.1           4.0              2.1                  3.0
+         ne_ct    23.4     9.4        51.0        27.0       24.0          14.7           3.0              0.7                  3.0
+         se_pa     3.2     1.9         4.0         5.0        1.0           1.5           0.0              0.0                  0.0
+       smokies     9.3     6.5        17.0        15.0        5.0           3.4           2.0              0.5                  2.0
+           ALL   390.0   172.8       746.0       431.0      341.0         222.6          48.0             22.5                 45.0
+
+== creek lines only one build has (not lake reaches, 200+ m outside every lake outline); stream links below outlets
+          area  gone  gone_km  gone_on_nhd  gone_on_nhd_km  gone_on_nhd_60_km    new  new_km  new_60_km  outlet_links  outlet_km  undrawn  undrawn_km
+adk_high_peaks  16.0     21.7          4.0             5.0                1.2  141.0   113.2       99.5         219.0      131.5      0.0         0.0
+ adk_northwest  25.0     40.5          4.0             6.2                6.2  251.0   209.6      174.5         356.0      256.6      0.0         0.0
+ adk_southeast  23.0     36.8          2.0             3.9                3.9  233.0   197.4      138.7         298.0      205.5      0.0         0.0
+ adk_southwest  20.0     28.4          2.0             3.5                1.4  184.0   152.1      130.3         233.0      171.0      0.0         0.0
+    central_vt   5.0      6.2          3.0             4.0                1.0   52.0    39.9       28.6          68.0       47.7      4.0         1.0
+       jackson   2.0      2.4          1.0             2.1                0.0   45.0    39.3       25.8          54.0       33.1      0.0         0.0
+            la  11.0     14.0          1.0             2.5                0.0   46.0    40.6        0.0          65.0       43.7      0.0         0.0
+  lexington_va   0.0      0.0          0.0             0.0                0.0   16.0    13.4        6.3          18.0       13.6      0.0         0.0
+     n_georgia  10.0     13.2          3.0             4.4                0.0   86.0    66.5       28.3         105.0       68.6      0.0         0.0
+         ne_ct   9.0     10.4          0.0             0.0                0.0  107.0    86.9       43.1         155.0       96.7      0.0         0.0
+         se_pa   0.0      0.0          0.0             0.0                0.0   19.0    12.1        9.5          29.0       16.9      3.0         2.0
+       smokies   0.0      0.0          0.0             0.0                0.0   16.0    11.6        9.9          22.0       14.8      0.0         0.0
+           ALL 121.0    173.6         20.0            31.6               13.7 1196.0   982.6      694.5        1622.0     1099.7      7.0         3.0
+
+named cases written to <scratch>/drops2/named.csv: drawn as lake, was creek 48, other 39, line gone, on an NHD line 20, drainage 18, flow 12

@@ -102,6 +102,80 @@ reaches, 200+ m outside every lake outline.
 - **Lesson for the next routing change:** run `drops.py` against the build before. A reach count that falls
   (105,478 → 104,999 here) is lines lost, whatever the matched reaches say.
 
+## Installed on all 12 maps (2026-11-21; live 22:18, site commit 6875118)
+Both changes, the lake routing and the floor that counts carried water, built into every map and checked against the
+builds before either (`results/installed_2026-11-21/`). Jackson by mid and late steps from 20:13; ne_ct,
+lexington_va, se_pa and central_vt the same way from 20:24; smokies, n_georgia, la and the four Adirondack maps from
+03b (`SKIP_03=1 run_rebuild_a.sh`), the last done 22:04.
+
+| map | links kept on carried water | km | reaches, before → now | km of fish 60+ | 10+ points down (lake / lost a lake's water / other) | up |
+|---|---|---|---|---|---|---|
+| jackson | 54 | 33.0 | 10,528 → 10,553 | 5,588 → 5,607 | 27 (18 / 5 / 4) | 29 |
+| ne_ct | 155 | 96.7 | 3,419 → 3,588 | 1,189 → 1,204 | 42 (16 / 17 / 9) | 14 |
+| lexington_va | 18 | 13.6 | 4,287 → 4,302 | 1,397 → 1,402 | 1 (1 / 0 / 0) | 1 |
+| se_pa | 26 | 14.9 | 4,623 → 4,638 | 1,392 → 1,402 | 1 (1 / 0 / 0) | 4 |
+| central_vt | 63 | 45.5 | 8,298 → 8,358 | 3,489 → 3,507 | 14 (6 / 6 / 2) | 3 |
+| smokies | 21 | 12.9 | 8,947 → 8,921 | 3,800 → 3,812 | 14 (7 / 2 / 5) | 13 |
+| n_georgia | 104 | 67.5 | 14,912 → 14,945 | 5,379 → 5,399 | 29 (21 / 5 / 3) | 15 |
+| la | 65 | 43.8 | 17,805 → 17,867 | 1,389 → 1,396 | 21 (4 / 0 / 17) | 36 |
+| adk_southwest | 232 | 170.9 | 6,815 → 6,999 | 4,493 → 4,608 | 43 (31 / 9 / 3) | 31 |
+| adk_northwest | 355 | 256.5 | 8,279 → 8,492 | 4,747 → 4,899 | 91 (63 / 18 / 10) | 51 |
+| adk_high_peaks | 219 | 131.6 | 9,138 → 9,306 | 5,055 → 5,129 | 79 (53 / 20 / 6) | 33 |
+| adk_southeast | 298 | 205.5 | 8,427 → 8,640 | 4,241 → 4,357 | 92 (63 / 19 / 10) | 60 |
+| all 12 | 1,610 | 1,092 | 105,478 → 106,609 | 42,159 → 42,721 | 454 (284 / 101 / 69) | 290 |
+
+- **Every build check passes on all 12:** no failed step; 03b's rasters and drops equal the measured lake-routing
+  builds (`verify_install.py <root> hydro`); no reach ends dead on an edge between boxes; no sudden flow drops;
+  mapped falls found as in the measured builds.
+- **Stream links below outlets** (`outlet_gaps.py`): 1,622 links, 1,100 km (95% along NHD's stream lines, 199
+  carrying 100+ km²); all drawn but 7 (3.0 km): three at sea level on the tidal Delaware (se_pa) and four west of
+  Vermont's line in Lake Champlain's New York shore (central_vt), which other rules leave out.
+- **Lake outlets reading under half of NHDPlus** (`lake_outlets.py`): 45 before, 39 with the lake routing alone,
+  26 now. Lake Junaluska (0.96 of NHDPlus), Little Rock Reservoir (1.00) and The Vly (1.00), which the lake routing
+  alone had made worse, are right.
+- **Stream line drawn with a lake's values outside the lakes the map draws** (`drawn_lake_values.py`): 390 → 173 km.
+  341 pieces (223 km) of creek are put right; 48 pieces (22.5 km) are newly marked down, 45 of them fish 40+ before:
+  headwater reaches lying half or more in a lake. Theirs is 05b's 50%-in-lake rule, which the session "Fix the
+  lake-routing side effects and open items" is changing.
+- **Creek lines only one build has** (not lake reaches, 200+ m outside every lake outline): 1,196 new (983 km, 695 km
+  of it fish 60+) against 121 gone (174 km).
+  - Of the gone, 20 (32 km, 14 km fish 60+) lie along an NHD stream line with no reach of the new build nearby
+    (`why_gone.py`). One is the Lamoille's line inside Arrowhead Mountain Lake, now a lake reach, with the river
+    drawn from the dam.
+  - The other 19 are headwater creeks whose own drainage is 0.52-0.99 km² where they now end, with no water carried
+    to them: under the floor. The build before drew each as part of a longer link that reached 1 km² further down;
+    a new line (a lake's outlet line, NHD's line through a lake) now joins it and ends the link there, or lake
+    cells that had padded it drain to the lake's outlet. Finkle Brook's upper 1.4 km (0.86 km²) is one.
+- **The 10+ point moves down, 454** (`drops.py` against the builds before, `why_moved.py` for the terms):
+  - 284 now read "reservoir": half or more of the reach lies in a lake. 185 of them were fish 60+. 37 have 200+ m
+    outside every lake outline (24 km of creek in all).
+  - 101 had carried a lake's water that belongs to another line. Where NHDPlus V2 has a line by the reach (40 of
+    them), the new drainage is within 0.5-2x of V2's on 34; the old was on 6. 46 of the 101 still score 60+.
+  - 69 other (18 lost drainage another way, 12 changed flow class, 39 neither). 48 of them are reaches cut
+    differently: a newly drawn line joins the creek, the reach ends there, and each piece is scored on its own.
+    - 11 pieces no longer touch the trout record the whole reach touched (a state trout-water line, a brook trout
+      patch, a survey point) and lose the 1.2 factor: the Opalescent 100 → 88, Kunjamuk River 92 → 74, Stewart
+      Brook 88 → 74, the Oswegatchie 83 → 70, West Branch Sacandaga 82 → 68, Doyle Brook 84 → 70.
+    - 12 are short flat open pieces beside a lake (20-700 m) that lose gradient and shade credit.
+    - The rest are upper pieces with less drainage than the whole reach had at its lower end.
+  - LA, 17: Willow Creek below Lake Arrowhead (7 reaches) and the South Fork San Jacinto below Lake Hemet (2): LA's
+    flows leave out water held behind a dam, and both lakes now end at theirs. 4 small creeks that left a lake's
+    outline and read mostly dry like their neighbours. One Piru Creek reach just above its gauge above Lake Piru
+    (73 → 25): its drainage crossed the size at which the gauge's record (flowing 31% of summers) applies, as it
+    does on the 7 reaches below it. Three more are small pieces, two of them inside lakes.
+  - Smokies, 4 (Mingo Creek): the way in is 31 minutes shorter (no ride), which lowers remoteness. Not routing.
+  - 244 reaches in all went from 60+ to under 60 (lake 185, lost a lake's water 44, other 15); 154 went the other way.
+- **Checked on the rendered maps:** adk_northwest (Salmon Lake Outlet 100, South Pond Outlet 89, Cage Lake Outlet
+  91, the Raquette from Raquette Lake to Forked Lake at 114 sq mi), ne_ct (four pond outlets), la (Piru Creek),
+  jackson (Emma Matilda Lake's outlet, Taggart Creek, the Snake below Palisades Dam).
+- **Left open:**
+  - Lower Piru Creek below Lake Piru (19 reaches) now reads year-round, fish 64-73, where it read mostly dry: the
+    tailwater floor reaches it because `scoring.tailwater()` takes Piru Creek by name below 700 m and doesn't stop at
+    Lake Piru. The rating is right (USGS 11109800 below Santa Felicia Dam: 7 cfs or more on every July-September
+    day on record since 2011), but the popup credits Pyramid Lake's releases. A `TAILWATERS` entry for Lake Piru would name the right dam.
+  - 31 short reaches in adk_northwest (4.9 km) carry a river's stream order with a creek's drainage; 29 did before.
+  - The first 0.4 mi of the Snake below Palisades Dam has no name on it.
+
 ## The question
 In flat ground the 10 m DEM's D8 routing can send a creek's water somewhere other than where NHD's stream network
 sends it. The idea: lower ("burn") NHD HR's stream lines into the DEM before routing. Does that fix those places,
@@ -257,6 +331,9 @@ $H/compare.sh /private/tmp/burn/r0 /private/tmp/burn/r3e adk_northwest
     line a map draws with a lake's values outside the lakes it draws, in two versions of its `map3d_data.js`);
     `summarize_drops.py` (their CSVs over the areas); `verify_install.py <root> hydro` compares only 03b's rasters
     and the drops.
+  - `why_moved.py` (which score terms moved for the moves in a cause group, and whether the reach was cut
+    differently); `why_gone.py` (what 03b has now along a creek line only the older build draws); `totals.py`
+    (reaches, km, km of fish 60+ per area for any builds).
   - Since 2026-11-21, `lake_outlets.py` takes the reach carrying the most water within 150 m of NHDPlus's outlet
     point (the nearest one was often a side creek), and `standing.py` counts a reach that starts in the same box as
     continuing a reach end on an edge.
@@ -264,3 +341,5 @@ $H/compare.sh /private/tmp/burn/r0 /private/tmp/burn/r3e adk_northwest
   - `checks_r0_*` baseline, `checks_r3e_*` the burn above, `checks_r3_adk_northwest` the same without the edge rule.
   - `compare_*` the comparisons; `hragree_live_6_areas.txt`; `classify_short_live_12_areas.txt`.
   - `lakes_2026-11-21/`: the lake routing's 12-area summary and per-area checks and comparisons.
+  - `installed_2026-11-21/`: the 12 installed builds (lake routing and the carried-water floor) against the builds
+    before: totals, moves by cause, the named cases, lines gone, lake outlets, each area's checks.

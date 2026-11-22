@@ -1,0 +1,73 @@
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+
+ne_ct (project): lakes with an outlet line 140; below them under half of NHDPlus: 5
+                    lake   ha  nhd_km2   ours             sid      reach_name  ratio
+               Acme Pond 13.8    289.9 135.75  quinebaug:s368    French River   0.47
+North Grosvenordale Pond 23.8    256.7 102.74  quinebaug:s197    French River   0.40
+       unnamed reservoir  9.0     10.4   4.95  quinebaug:s532 Wappoquia Brook   0.48
+             Arnold Pond 30.5      9.7   3.87 quinebaug:s1271   Roaring Brook   0.40
+              Clark Pond  8.2      3.0   1.19  quinebaug:s967    Moosup River   0.40
+
+lexington_va (project): lakes with an outlet line 9; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+
+se_pa (project): lakes with an outlet line 23; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+
+central_vt (project): lakes with an outlet line 58; below them under half of NHDPlus: 2
+                 lake    ha  nhd_km2  ours                 sid reach_name  ratio
+    unnamed reservoir   9.5     40.0 18.12 stowe_lamoille:s952  The Creek   0.45
+Green River Reservoir 240.1     37.9  2.30 stowe_lamoille:s252        NaN   0.06
+
+smokies (project): lakes with an outlet line 19; below them under half of NHDPlus: 2
+          lake   ha  nhd_km2   ours              sid    reach_name  ratio
+    Lake Emory 33.6    801.1  20.79  tuckasegee:s746 Watauga Creek   0.03
+Lake Junaluska 81.2    164.3 157.81 cataloochee:s997           NaN   0.96
+
+n_georgia (project): lakes with an outlet line 89; below them under half of NHDPlus: 1
+             lake   ha  nhd_km2  ours         sid reach_name  ratio
+unnamed reservoir 10.0     68.3   5.0 rabun:s3554        NaN   0.07
+
+la (project): lakes with an outlet line 40; below them under half of NHDPlus: 4
+                     lake     ha  nhd_km2    ours                  sid    reach_name  ratio
+Prado Flood Control Basin  171.5   5680.0 2502.82   santa_ana_mtns:s26           NaN   0.44
+            Lake Elsinore 1277.1   1866.3    2.87 santa_ana_mtns:s1038 Temescal Wash   0.00
+    Little Rock Reservoir   43.0    165.1  165.59     san_gabriel:s235           NaN   1.00
+               Quail Lake  101.8     77.4   10.28            piru:s433           NaN   0.13
+
+adk_southwest (project): lakes with an outlet line 216; below them under half of NHDPlus: 4
+             lake   ha  nhd_km2  ours               sid              reach_name  ratio
+unnamed reservoir 24.7     58.3  3.87   west_canada:s23                     NaN   0.07
+        Pine Lake 67.3     28.9 12.20  speculator:s1388                     NaN   0.42
+    Tamarack Lake 13.1      6.6  3.23       moose:s1002 Middle Settlement Creek   0.49
+unnamed reservoir 11.7      5.1  1.46 west_canada:s1250                     NaN   0.29
+
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 7
+       lake   ha  nhd_km2  ours             sid         reach_name  ratio
+ Lower Pond 63.9     12.4  5.38 long_lake:s1806 Browns Tract Inlet   0.43
+ Slang Pond 21.2     11.0  1.68      tupper:s33                NaN   0.15
+Graves Pond  9.2     10.0  3.87     beaver:s723                NaN   0.39
+ Upper Pond 21.1      8.9  2.28 long_lake:s1822                NaN   0.26
+Turtle Pond 28.7      8.4  1.03      tupper:s36                NaN   0.12
+   Dog Pond 10.1      5.9  1.67     beaver:s419                NaN   0.28
+  Long Pond 22.3      3.4  1.44   st_regis:s621   Long Pond Outlet   0.42
+
+adk_high_peaks (project): lakes with an outlet line 182; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+
+adk_southeast (project): lakes with an outlet line 216; below them under half of NHDPlus: 4
+        lake   ha  nhd_km2  ours              sid    reach_name  ratio
+Thurman Pond 50.8      9.7  1.76 lake_george:s740           NaN   0.18
+ Grassy Pond 14.7      6.2  2.98     minerva:s354           NaN   0.48
+Unknown Pond 15.1      4.5  1.71     minerva:s550           NaN   0.38
+     The Vly 10.0      4.0  4.01 indian_lake:s641 Halfway Brook   1.00
+

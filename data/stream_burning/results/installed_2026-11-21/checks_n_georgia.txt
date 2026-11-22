@@ -1,0 +1,58 @@
+#### n_georgia checked 11-21 21:09:56
+#### failed steps in the last run of each log
+rebuild: == DONE n_georgia 11-21 21:09:48
+mid: == DONE n_georgia 11-21 21:00:50
+late: == DONE n_georgia 11-21 21:09:48
+#### 03b
+hooch_tailwater: 4200 x 4600 cells, 228830 stream cells, max order 7, 23 of 33 lakes end paths at their outlet (23 routed to it along NHD's lines; 6.6 km of stream line added below outlets), 3 drain off the map through their water and carry no stream lines (Stone Mountain Park Lake-South, Lake Sidney Lanier, Atlanta City Water Works Reservoir Number One)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 29, 23.7 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 19, 10.8 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 28, 19.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 28, 13.5 km
+#### verify_install (hydro)
+n_georgia
+  cohutta | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  blue_ridge | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  rabun | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  hooch_tailwater | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+n_georgia (/Users/mac/Fishing)
+            box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+        cohutta     4222           0.0                    8             0                      0.52     1315.1
+     blue_ridge     4301           0.0                   16             0                      0.55     1254.0
+          rabun     4142           0.0                    1             0                      0.65     1160.8
+hooch_tailwater     2280           0.0                    0             0                      0.36      559.2
+#### check_flow_drops
+n_georgia: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+n_georgia: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 18 / 38 | pass 1 + big-creek pass: 30 / 38
+  on smaller drainages:   pass 1: 81 / 155 | pass 1 + big-creek pass: 81 / 155
+  all:                    pass 1: 99 / 193 | pass 1 + big-creek pass: 111 / 193
+
+by range:
+                                                 falls  pass1  both
+region                                                             
+Chattahoochee tailwater (Buford Dam to Atlanta)      5      0     1
+Cohutta, Conasauga & Jacks                           8      4     5
+Rabun, Chattooga & Tallulah                        133     70    77
+Toccoa, Blue Ridge & Chattahoochee headwaters       47     25    28
+
+named mapped falls on big creeks that both passes miss: 
+                                       region                  name  area     d1     d2
+                   Cohutta, Conasauga & Jacks Tumbling Waters Falls  42.0 2296.0 2775.0
+Toccoa, Blue Ridge & Chattahoochee headwaters          Etowah Falls 170.0 4886.0 1624.0
+                  Rabun, Chattooga & Tallulah           Final Falls 410.0  279.0 4748.0
+                  Rabun, Chattooga & Tallulah         Homer's Falls 581.0  708.0 2405.0
+                  Rabun, Chattooga & Tallulah    Bulls Sluice Falls 419.0 2542.0 2805.0
+                  Rabun, Chattooga & Tallulah     First Falls Rapid 591.0  681.0 4083.0
+                  Rabun, Chattooga & Tallulah      Seven Foot Falls 435.0  947.0 1246.0
+
+every precisely placed known fall, any source: pass 1: 362 / 857 | pass 1 + big-creek pass: 407 / 857
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+n_georgia (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 105, 68.6 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

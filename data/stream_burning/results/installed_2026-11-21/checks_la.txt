@@ -1,0 +1,65 @@
+#### la checked 11-21 21:32:54
+#### failed steps in the last run of each log
+rebuild: == DONE la 11-21 21:32:46
+mid: == DONE la 11-21 21:23:33
+late: == DONE la 11-21 21:32:46
+#### 03b
+santa_ana_mtns: 3600 x 4500 cells, 220529 stream cells, max order 6, 8 of 15 lakes end paths at their outlet (8 routed to it along NHD's lines; 2.5 km of stream line added below outlets), 1 drain off the map through their water and carry no stream lines (Lake Elsinore)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 6, 3.1 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 10, 4.3 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 7, 7.8 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 4, 2.8 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 14, 10.0 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 1, 0.7 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 14, 9.2 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 9, 5.9 km
+#### verify_install (hydro)
+la
+  san_gabriel | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  santa_monica | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  san_bernardino | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  sespe | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  piru | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  sierra_pelona | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  san_jacinto | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  santa_ana_mtns | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+la (/Users/mac/Fishing)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   san_gabriel     3969           0.0                   14             0                      1.11     1126.3
+  santa_monica      691           0.0                    0             0                     36.96      214.1
+san_bernardino     3227           0.0                    0             0                      1.74      914.7
+         sespe     3481           0.0                   14             0                      0.40      884.6
+          piru     2409           0.0                    7             0                      0.73      667.6
+ sierra_pelona      621           0.0                   12             0                      0.61      171.9
+   san_jacinto     1686           0.0                    0             0                      0.40      464.4
+santa_ana_mtns     1783           0.0                    0             0                      0.17      492.1
+#### check_flow_drops
+la: sudden flow drops (flow per km2 of area_edge_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+la: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 36 / 54 | pass 1 + big-creek pass: 46 / 54
+  on smaller drainages:   pass 1: 81 / 158 | pass 1 + big-creek pass: 81 / 158
+  all:                    pass 1: 117 / 212 | pass 1 + big-creek pass: 127 / 212
+
+by range:
+                             falls  pass1  both
+region                                         
+Piru Creek & Castaic             1      0     0
+San Bernardino Mountains        15     11    13
+San Gabriel Mountains           69     39    43
+San Jacinto Mountains           28     21    21
+Santa Ana Mountains             46     15    16
+Santa Monica Mountains          21     11    14
+Sespe, Topatopa & Mt. Pinos     32     20    20
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 123 / 219 | pass 1 + big-creek pass: 134 / 219
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 49 / 172 | pass 1 + big-creek pass: 51 / 172
+#### outlet_gaps
+la (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 65, 43.7 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []

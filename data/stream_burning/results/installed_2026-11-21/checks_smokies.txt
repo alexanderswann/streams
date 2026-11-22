@@ -1,0 +1,83 @@
+#### smokies checked 11-21 20:53:50
+#### failed steps in the last run of each log
+rebuild: == DONE smokies 11-21 20:53:45
+mid: == DONE smokies 11-21 20:49:22
+late: == DONE smokies 11-21 20:53:45
+#### 03b
+cades_cove + le_conte + cataloochee + tellico + snowbird + nantahala + tuckasegee: 12600 x 8600 cells, 967317 stream cells, max order 8, 13 of 34 lakes end paths at their outlet (13 routed to it along NHD's lines; 5.0 km of stream line added below outlets), 2 drain off the map through their water and carry no stream lines (Tellico Lake, unnamed)
+#### 05_score floor
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 3, 2.1 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 1, 0.3 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 5, 2.6 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 4, 2.5 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 0, 0.0 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 2, 0.7 km
+links under 1 km2 of their own kept on the water that reaches them from elsewhere (below a lake's outlet, in from outside the map): 6, 4.7 km
+#### verify_install (hydro)
+smokies
+  cades_cove | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  le_conte | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  cataloochee | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  tellico | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  snowbird | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  nantahala | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+  tuckasegee | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek =
+#### standing
+smokies (/Users/mac/Fishing)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ cades_cove     1844           0.0                    9             0                      0.22      536.7
+   le_conte     2077           0.0                    9             0                      0.28      625.2
+cataloochee     1417           0.0                    7             0                      0.16      337.7
+    tellico     1165           0.0                   11             0                      0.18      302.5
+   snowbird      511           0.0                    1             0                      0.06      160.4
+  nantahala      892           0.0                    7             0                      0.19      224.8
+ tuckasegee     1015           0.0                    0             0                      0.15      264.1
+#### check_flow_drops
+smokies: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+smokies: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 15 / 45 | pass 1 + big-creek pass: 25 / 45
+  on smaller drainages:   pass 1: 72 / 111 | pass 1 + big-creek pass: 72 / 111
+  all:                    pass 1: 87 / 156 | pass 1 + big-creek pass: 97 / 156
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Abrams Creek, Cades Cove, Little River & Twentymile               19      8    12
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee     48     23    25
+Nantahala Lake, Gorge & Wesser                                    29     13    16
+Raven Fork, Cosby, Big Creek, Cataloochee & Maggie Valley         24     17    17
+Snowbird, Santeetlah & Joyce Kilmer                               12     10    10
+Tellico River, Bald River & Citico Creek                           5      3     4
+Tuckasegee, Alarka & Dillsboro                                    19     13    13
+
+named mapped falls on big creeks that both passes miss: 
+                                                       region                      name  area     d1      d2
+          Abrams Creek, Cades Cove, Little River & Twentymile          Bear Creek Falls 100.0  790.0  1126.0
+          Abrams Creek, Cades Cove, Little River & Twentymile Bear Creek Falls (Cheoah)  88.0  932.0  1273.0
+          Abrams Creek, Cades Cove, Little River & Twentymile           Lynn Camp Falls  30.0 1052.0   309.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee          Tom Branch Falls 103.0  502.0   732.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee  Little River Upper Falls  15.0 1823.0 10259.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Fish Camp Cascades  29.0  809.0 10958.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Cliff Branch Falls  36.0 1232.0  7837.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee   Lower Enloe Creek Falls  10.0  214.0   456.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee             Pothole Falls  47.0  507.0   207.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Big Rock Falls  47.0  415.0   279.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee               Raven Falls  51.0  506.0   453.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Island Slide Falls  51.0  232.0   726.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Buckshot Falls  52.0  423.0  1353.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        War Branch Cascade  27.0  786.0 10473.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Cataract Falls  15.0 1551.0  4827.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Hitchin Post Falls  33.0 1076.0  5713.0
+                               Nantahala Lake, Gorge & Wesser           Nantahala Falls 151.0 1327.0   611.0
+                               Nantahala Lake, Gorge & Wesser         Jagged Rock Falls  94.0  235.0   327.0
+                               Nantahala Lake, Gorge & Wesser The Cascades on Nantahala  94.0  549.0   430.0
+                               Nantahala Lake, Gorge & Wesser         Camp Branch Falls  99.0  205.0  1357.0
+
+every precisely placed known fall, any source: pass 1: 99 / 187 | pass 1 + big-creek pass: 116 / 187
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### outlet_gaps
+smokies (/Users/mac/Fishing): stream links under 1 km2 of their own that carry a lake's water to 1 km2 or more: 22, 14.8 km; not drawn as a reach (under half within 30 m of one): 0, 0.0 km; of those along an NHD stream line (half or more): 0, 0.0 km; drawn by the build before (half or more, not as a lake reach): 0, 0.0 km, of that fish 60+ before 0.0 km
+Empty DataFrame
+Columns: [box, len_m, own, linked, nhd, drawn, old, old_fish, old_name, lat, lon]
+Index: []
