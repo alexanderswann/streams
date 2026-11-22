@@ -233,12 +233,16 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    1 km² or more, counting the water that reaches it from elsewhere: over a dam, past a pond, in from outside the map
    (`crossbox.carried_km2`, the same water `05c` adds for `area_full_km2`; `area_km2` stays the link's own area).
    Until 2026-11-21 only its own area counted. A lake ends its paths at its outlet, so the creek below starts again
-   near nothing, and the map had no line below the outlet until the creek had gathered 1 km² again or met one that
+   near nothing, and there was no reach below the outlet until the creek had gathered 1 km² again or met one that
    had: 1,092 km of stream line on 1,610 links over the 12 maps, 95% of it along NHD's stream lines, 199 of the links
    carrying 100 km² or more (rivers below dams, and rivers where they enter a map: the first kilometre of the Salt,
-   Greys and Hoback rivers). Where there had been a line, a path had leaked across the lake and left it beside the
-   outlet; when `03b` sent every lake cell to the outlet (3.) those 103 km went too (1.5 km of the Oswegatchie, the
-   Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet), which is how the gap was found. `run_mid.sh`
+   Greys and Hoback rivers). The map drew most of that line all along: `06_map.py` draws a creek through from a dam
+   to the next reach with that reach's values, 927 km of it here. What those stretches gained is a reach of their
+   own, with their own drainage, flow and score; measured on the drawn layer the 12 maps gained 131 mi of line and
+   lost 149 (`data/stream_burning/README.md`, "On the drawn maps"). Where there had been a reach, a path had leaked
+   across the lake and left it beside the outlet; when `03b` sent every lake cell to the outlet (3.) those 103 km of
+   reaches went too (1.5 km of the Oswegatchie, the Raquette between Raquette Lake and Forked Lake, Salmon Lake
+   Outlet), which is how the gap was found. `run_mid.sh`
    runs `02b_download_flow.py` before this step for it (`crossbox.py` needs the reservoir list and NHDPlus's lines).
    **A link is cut where it crosses a lake's shore** (since 2026-11-21). pysheds draws one line per link between
    confluences, so a link running from a creek into a lake was part creek and part lake water, and `05b_flow.py`'s

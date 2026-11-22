@@ -70,6 +70,9 @@ reaches, 200+ m outside every lake outline.
   102 links, 103 km over the 12 maps (83 km of it fish 60+). North-west Adirondacks: 1.5 km of the Oswegatchie, the
   Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet, South Pond Outlet, Cage Lake Outlet. Jackson
   (published 19:49 with it): Emma Matilda Lake's outlet and three more, 3.4 km.
+  - **Corrected 2026-11-21, late:** these went as reaches, not as lines. `06_map.py` draws a creek through from a dam
+    to the next reach, so the Jackson map published at 19:49 still drew all four, with the next reach's values. See
+    *On the drawn maps*.
 - **The gap behind it** (`checks/outlet_gaps.py`, on the 12 lake-routing builds): stream links (`dem_streams.gpkg`)
   under 1 km² of their own that carry 1 km² or more with the water crossbox links to them, and that no reach covers.
 
@@ -108,7 +111,10 @@ builds before either (`results/installed_2026-11-21/`). Jackson by mid and late 
 lexington_va, se_pa and central_vt the same way from 20:24; smokies, n_georgia, la and the four Adirondack maps from
 03b (`SKIP_03=1 run_rebuild_a.sh`), the last done 22:04.
 
-| map | links kept on carried water | km | reaches, before → now | km of fish 60+ | 10+ points down (lake / lost a lake's water / other) | up |
+**Every figure in this section is from the reach tables.** The map draws more than its reaches, so "new" and "gone"
+here are reaches, not lines: the next section has what the maps draw.
+
+| map | links kept on carried water | km | reaches, before → now | km of fish 60+ (reach tables) | 10+ points down (lake / lost a lake's water / other) | up |
 |---|---|---|---|---|---|---|
 | jackson | 54 | 33.0 | 10,528 → 10,553 | 5,588 → 5,607 | 27 (18 / 5 / 4) | 29 |
 | ne_ct | 155 | 96.7 | 3,419 → 3,588 | 1,189 → 1,204 | 42 (16 / 17 / 9) | 14 |
@@ -137,8 +143,8 @@ lexington_va, se_pa and central_vt the same way from 20:24; smokies, n_georgia, 
   341 pieces (223 km) of creek are put right; 48 pieces (22.5 km) are newly marked down, 45 of them fish 40+ before:
   headwater reaches lying half or more in a lake. Theirs is 05b's 50%-in-lake rule, which the session "Fix the
   lake-routing side effects and open items" is changing.
-- **Creek lines only one build has** (not lake reaches, 200+ m outside every lake outline): 1,196 new (983 km, 695 km
-  of it fish 60+) against 121 gone (174 km).
+- **Creek reaches only one build has** (not lake reaches, 200+ m outside every lake outline): 1,196 new (983 km,
+  695 km of it fish 60+) against 121 gone (174 km). Most of the new ones were lines on the map already.
   - Of the gone, 20 (32 km, 14 km fish 60+) lie along an NHD stream line with no reach of the new build nearby
     (`why_gone.py`). One is the Lamoille's line inside Arrowhead Mountain Lake, now a lake reach, with the river
     drawn from the dam.
@@ -175,6 +181,113 @@ lexington_va, se_pa and central_vt the same way from 20:24; smokies, n_georgia, 
     day on record since 2011), but the popup credits Pyramid Lake's releases. A `TAILWATERS` entry for Lake Piru would name the right dam.
   - 31 short reaches in adk_northwest (4.9 km) carry a river's stream order with a creek's drainage; 29 did before.
   - The first 0.4 mi of the Snake below Palisades Dam has no name on it.
+
+## On the drawn maps, and two faults found after publishing (2026-11-21, late)
+The overview session measured what the published maps draw (the Lakes-on layer of `map3d_data.js`, site 855954f
+against 6875118) and found my figures above didn't describe it, and one lake's water put back in 530 m from its
+outlet. Measured again here (`checks/drawn_cmp.py`, `checks/putin.py`; `results/installed_2026-11-21/`).
+
+### The reach tables are not the map
+`06_map.py` (`draw_through`) has drawn a creek through below every dam, pond and map edge since before this work: from
+the cell where crossbox puts the water in, down the D8 path to the next reach, with that reach's values.
+- Of the 1,622 stream links below outlets (1,100 km), the maps published before already drew 927 km (a line within
+  40 m of the link's middle); 61 km were drawn only with Lakes off; 111 km were not drawn.
+- So the floor change gave those stretches a reach of their own (their own drainage, flow, score and popup), not a
+  line.
+- The "creeks that vanished" from the measured lake-routing builds had vanished from the tables. On the Jackson map
+  published at 19:49 all four were drawn, with the next reach's values: Emma Matilda Lake's outlet creek read fish
+  58 there, where it had read 65 and reads 66 now. I told the user they were missing from the map without looking
+  at that map.
+
+| drawn by default, miles | line before → now | fish 60+ before → now | new line | gone line |
+|---|---|---|---|---|
+| jackson | 5,307 → 5,314 | 3,330.5 → 3,330.3 | 10.7 | 5.0 |
+| ne_ct | 1,529 → 1,532 | 712.3 → 701.5 | 11.1 | 9.6 |
+| lexington_va | 2,035 → 2,037 | 834.1 → 831.7 | 1.4 | 0.6 |
+| se_pa | 2,181 → 2,182 | 827.6 → 830.2 | 2.1 | 1.6 |
+| central_vt | 3,956 → 3,956 | 2,079.7 → 2,078.5 | 3.1 | 4.9 |
+| smokies | 4,044 → 4,044 | 2,256.9 → 2,256.2 | 1.7 | 2.3 |
+| n_georgia | 6,998 → 7,004 | 3,206.2 → 3,207.1 | 13.9 | 9.7 |
+| la | 9,440 → 9,440 | 829.8 → 832.8 | 9.8 | 10.0 |
+| adk_southwest | 3,374 → 3,371 | 2,654.7 → 2,675.7 | 15.5 | 20.6 |
+| adk_northwest | 3,685 → 3,680 | 2,798.4 → 2,836.4 | 23.5 | 31.3 |
+| adk_high_peaks | 4,134 → 4,129 | 2,970.0 → 2,973.9 | 12.8 | 20.2 |
+| adk_southeast | 3,753 → 3,750 | 2,523.9 → 2,540.4 | 26.0 | 32.9 |
+| all 12 | 50,436 → 50,438 | 25,024 → 25,095 | 131.5 | 148.6 |
+
+- "New" and "gone" line: nothing of the other version drawn within 40 m. 54 mi of the new line and 66 mi of the gone
+  line score 60+.
+- Fish 60+ on the drawn map is up 71 mi over the 12 maps and down on five of them (ne_ct 10.8 mi, lexington_va 2.4,
+  central_vt 1.2, smokies 0.7, jackson 0.2). "Up on every map" was true of the reach tables only. In ne_ct the pond
+  outlets had been drawn with the score of the brook below and now score lower on their own flat ground.
+- On line both versions draw, the score fell 10+ points on 154 mi and rose 10+ on 240 mi; 93 mi went from 60+ to
+  under 60 and 165 mi the other way.
+- The overview session sorted the gone line (its own scripts; stretches of 0.2+ mi that weren't lake pieces, 87 mi):
+  15 mi in 33 lines lie along an NHD stream line and drained 0.8+ sq mi, 15 mi in 24 lines along one and drained
+  less (the headwater creeks under the floor), 57 mi in 119 lines along no NHD line. I haven't re-derived that split.
+  The first group holds lake outlet channels, which is the next fault.
+
+### Fault 1: a lake's water put back in away from its own outlet
+Seventh Lake (adk_southwest, with Sixth Lake): the outlet channel to Fifth Lake, 16.9 sq mi and fish 87 on the maps
+before, isn't drawn; the lake's 43.5 km² goes in 555 m away in the woods and runs 570 m to Fifth Lake's shore where
+NHD has no line.
+- **Why.** Two steps each decide where a lake's water goes on, and nothing ties them together.
+  - `03b_stitch.py` ends the lake at one outlet cell, a pit, and makes the D8 path below it a stream line
+    (`outflow_streams`): the routed way out.
+  - `crossbox.py` (`_dam_links`) walks NHDPlus V2's 1:100,000 outlet line from the lake's edge, 50 m at a time, to
+    the first cell whose D8 path doesn't lead back into the lake's dead ends, and puts the water in there.
+  - Before `route_lake`, paths leaked out of a lake beside its outlet, so a cell at the shore whose path ran into the
+    lake and out through the leak counted as leading on: the water went in at the shore and ran out down the real
+    channel. With every lake cell sent to the pit, such a cell leads back, and the walk goes on along V2's coarse
+    line until it finds a cell on some other slope.
+  - The outlet channel then carries none of the lake's water. Its links are under 05_score's floor and not drawn.
+- **How many** (`checks/putin.py` on the published hydrology, 1,430 lakes with a link, `putin_12_maps.csv`):
+
+  | how much of the way out misses the lake's water | pit at NHD's outlet | pit 100+ m from it | no NHD outlet line | all |
+  |---|---|---|---|---|
+  | none: the put-in is on it | 233 | 4 | 0 | 237 |
+  | under 100 m | 856 | 10 | 4 | 870 |
+  | 100-199 m | 96 | 33 | 2 | 131 |
+  | 200+ m | 52 | 82 | 3 | 137 |
+  | all of it: the put-in's path never joins | 19 | 34 | 2 | 55 |
+  | all | 1,256 | 163 | 11 | 1,430 |
+
+  - "Pit at NHD's outlet": within 100 m of where a detailed NHD (HR) stream line leaves the lake.
+  - The firm cases, like Seventh Lake: pit at NHD's outlet, put-in 200+ m from it, 200+ m of channel missed.
+    31 lakes carrying 1,041 km²: adk_southwest 10, adk_northwest 6, ne_ct 5, adk_southeast 3, adk_high_peaks 2,
+    la 2, se_pa 2, central_vt 1. Soft Maple Reservoir (597 km², 520 m of channel), Lake Mathews (112 km²), Merino
+    Pond (76 km², 1.8 km), Marsh Creek Reservoir (52 km², 910 m), Seventh Lake, Sand Lake (35 km²), Spy Lake.
+  - The 870 "under 100 m" are the short stubs at outlets that still read as lake or small.
+  - Below Palisades Dam the put-in's own path runs 790 m beside the way out before joining it, which is likely the
+    first 0.4 mi of the Snake there with no name on it.
+  - A put-in under 100 m from its pit that "never joins" is usually the check reading another stream link that
+    starts by the pit (Chilhowee Lake): look before counting those.
+- **What would fix it.** Where the pit sits at NHD's outlet (1,256 of 1,430 lakes), the routed way out is the lake's
+  real outlet channel: put the water in at its top, whatever V2's line does.
+  - The side-effects session's crossbox (d06b50b, `_at_outflow`) moves a put-in to the top of the way out where
+    V2's cell lies within 100 m of the way out and its path joins it. On the published hydrology that is 1,269 of
+    the 1,430: every stub, and 50 of the 192. It leaves 29 of the 31 firm cases: Seventh Lake's put-in is 458 m from
+    its way out.
+  - The lakes neither test moves (pit 100+ m from NHD's outlet) are fault 2's, and V2's cell is right for them.
+
+### Fault 2: the outlet 03b picks is not always the lake's outlet
+03b's lake rule ends a lake's paths at "the cell inside with the most water". Where the flat water's routing doesn't
+carry the main inflow across the lake, that cell is where the biggest inflow enters.
+- 77 lakes (20,200 ha) have their pit 300+ m from NHD's outlet, 20 of them 1 km or more: Raquette Lake 9.1 km (at
+  South Inlet's mouth), Upper Saranac Lake 6.8 km, Arrowhead Mountain Lake 5.3 km, Rainbow Lake 2.2 km.
+- The rule is older than this work, but then only the path that gathered the most water ended at that cell.
+  `route_lake` now sends the whole lake there: every line inside such a lake (Lakes off) runs to the wrong end.
+- Below the lake little shows: in 53 of the 77, crossbox's put-in lies within 100 m of NHD's outlet, so the river
+  goes on from the right place (the Raquette below Raquette Lake reads 114 sq mi).
+- **What would fix both faults at the root:** in 03b take the lake cell nearest NHD's outlet point as the outlet
+  wherever a detailed NHD line leaves the lake (1,419 of 1,430 lakes have one), keep "most water" for the rest, and
+  have crossbox put the water in at the top of that pit's way out. Then one step decides where a lake drains.
+
+### Lesson
+- Measure a change on what the map draws (`drawn_cmp.py` on two versions of `map3d_data.js`) before saying what the
+  map gained or lost. `drops.py` and `outlet_gaps.py` compare reaches, and 06_map draws lines that aren't reaches.
+- Look at the published map before saying something is missing from it.
+- After a routing change, run `putin.py`: a put-in away from the way out is a channel without its lake's water.
 
 ## The question
 In flat ground the 10 m DEM's D8 routing can send a creek's water somewhere other than where NHD's stream network
@@ -334,6 +447,9 @@ $H/compare.sh /private/tmp/burn/r0 /private/tmp/burn/r3e adk_northwest
   - `why_moved.py` (which score terms moved for the moves in a cause group, and whether the reach was cut
     differently); `why_gone.py` (what 03b has now along a creek line only the older build draws); `totals.py`
     (reaches, km, km of fish 60+ per area for any builds).
+  - `drawn_cmp.py` (what two versions of the published map draw by default: line, fish 60+, new and gone line, score
+    moves; takes folders of `<area>.js` or site commits); `putin.py` (each lake's put-in against its routed way out
+    and NHD's outlet).
   - Since 2026-11-21, `lake_outlets.py` takes the reach carrying the most water within 150 m of NHDPlus's outlet
     point (the nearest one was often a side creek), and `standing.py` counts a reach that starts in the same box as
     continuing a reach end on an edge.

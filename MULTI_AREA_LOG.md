@@ -3194,3 +3194,34 @@ the user's rule (mark a stream down only when near-certain). Details and the per
   - The 48 creek pieces newly drawn with a lake's values (22.5 km) and the 37 lake reaches with creek outside the
     lake wait for the in-lake rule the side-effects session is changing.
   - 31 short adk_northwest reaches (4.9 km) carry a river's stream order with a creek's drainage; 29 did before.
+
+## 2026-11-21, late: what the maps draw against the reach tables; lake put-ins (stream-burning session)
+The overview session measured the drawn layer of the published maps and one lake outlet, and both of its findings
+hold. Detail, tables and the lake list: `data/stream_burning/README.md`, "On the drawn maps, and two faults found
+after publishing"; `data/stream_burning/results/installed_2026-11-21/`.
+- **My figures were from the reach tables, and I gave them as the map's.** `06_map.py` (`draw_through`) already drew
+  a creek through below every dam and pond with the next reach's values: 927 of the 1,100 km of stream links below
+  outlets were lines on the maps before. The floor change made them reaches of their own; it added little line.
+  - Drawn by default, site 855954f → 6875118, all 12 maps: line 50,436 → 50,438 mi; new line 131.5 mi, gone line
+    148.6 mi (nothing of the other version within 40 m); fish 60+ 25,024 → 25,095 mi, down on five maps (ne_ct
+    10.8 mi, lexington_va 2.4, central_vt 1.2, smokies 0.7, jackson 0.2).
+  - The four Jackson creeks I reported missing from the map published at 19:49 were drawn on it, with the next
+    reach's values. They were missing from the tables.
+- **Fault 1, lake put-ins.** crossbox finds where a lake's water goes on by walking NHDPlus V2's coarse outlet line
+  to the first cell that doesn't drain back to the lake; 03b ends the lake at a pit and draws the way out below it.
+  Since `route_lake` no path leaks out beside the outlet, so the walk runs on to some other slope. Seventh Lake's
+  43.5 km² goes in 555 m from its outlet, and the channel to Fifth Lake (16.9 sq mi, fish 87 before) isn't drawn.
+  - `checks/putin.py`, 1,430 lakes with a link: 192 put their water in so that 200+ m of the way out misses it.
+    31 are firm (pit at NHD's detailed outlet, put-in 200+ m off), carrying 1,041 km²: adk_southwest 10,
+    adk_northwest 6, ne_ct 5, adk_southeast 3, adk_high_peaks 2, la 2, se_pa 2, central_vt 1.
+- **Fault 2, the outlet itself.** 03b's outlet is the lake cell with the most water, which in 77 lakes lies 300+ m
+  from NHD's outlet, at an inflow (Raquette Lake 9.1 km, Upper Saranac 6.8 km, Arrowhead Mountain Lake 5.3 km).
+  `route_lake` sends the whole lake there, so the lines inside those lakes run to the wrong end. Below them the river
+  mostly starts in the right place, since crossbox puts the water in by NHD's outlet in 53 of the 77.
+- **Fix proposed, not made here** (the side-effects session edits 03b and crossbox): take NHD's outlet point as the
+  lake's outlet in 03b where a detailed line leaves the lake, and put the water in at the top of that pit's way out.
+  - That session's `_at_outflow` (d06b50b) already moves a put-in to the top of the way out where NHDPlus's cell lies
+    within 100 m of it: on the published hydrology 1,269 of the 1,430, every short stub at an outlet. It leaves 29 of
+    the 31 firm cases (Seventh Lake's put-in is 458 m from its way out); testing "the pit is at NHD's outlet" instead
+    catches them.
+- **New checks:** `drawn_cmp.py`, `putin.py`.
