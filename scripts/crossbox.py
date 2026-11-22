@@ -10,8 +10,10 @@ and downhill helpers to give a basin cut by an edge the drainage it continues in
 pysheds can't route water across a big flat lake surface either, so every large reservoir ends its D8 paths in pits
 and the creek below the dam starts again near nothing (San Gabriel Reservoir, Castaic, Pyramid, Big Tujunga, Lake
 Hemet...). With through_dams, inflows() also carries a reservoir's area to the cell below its dam where the water
-goes on, found on the NHDPlus flowlines leaving the lake, or for a pond NHDPlus has no flowline for, on the detailed
-NHD stream line leaving it. Drainages still end at dams; only areas use this.
+goes on. Since 2026-11-22 that is the first cell of the way out 03b_stitch.py lays where NHD's stream network leaves
+the lake (lake_outlets.json), for every lake it ends there. For the rest it is found here, on the NHDPlus flowlines
+leaving the lake, or for a pond NHDPlus has no flowline for, on the detailed NHD stream line leaving it. Drainages
+still end at dams; only areas use this.
 
 A river that enters from outside every box (the Maury above Goshen Pass, Otter Creek, the Chattahoochee below Lake
 Lanier, the Snake) started with nothing too. Where an NHDPlus V2 river crosses the outer boundary flowing in, its
@@ -25,7 +27,7 @@ from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_di
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 17
+VERSION = 20
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 OUTSIDE_MIN_KM2 = 10   # a river entering from outside every box brings at least this much, or it isn't carried
 OUTFLOW_NEAR_M = 100   # the cell found below a dam lies on the lake's routed way out within this distance of it
@@ -203,7 +205,8 @@ def walk(fd, r, c):
 def _key(regions):
     from flowlib import FLOW
     files = [fdir_path(r) for r in regions] + [f"{raw_dir(r)}/nhd_flowlines.gpkg" for r in regions] + [
-        f"{FLOW}/reservoirs.gpkg", f"{FLOW}/nhdplus_v2.gpkg", f"{SHARED_DERIVED}/stitched.json"]
+        f"{FLOW}/reservoirs.gpkg", f"{FLOW}/nhdplus_v2.gpkg", f"{SHARED_DERIVED}/stitched.json",
+        f"{SHARED_DERIVED}/lake_outlets.json"]
     return {"version": VERSION, **{f: [os.path.getmtime(f), os.path.getsize(f)] for f in files if os.path.exists(f)}}
 
 
@@ -259,8 +262,21 @@ def _pond_outflow(fd, T, lake, dead, detailed):
     return None
 
 
-def _dam_links(fd, T, sinks, lakes, v2, by_seq, detailed=None, ponds=None, pond_dead=None):
+def _lake_tops(region, W):
+    """{a lake's outlet cell (flat index): (row, col) of the first cell of its way out}, from 03b_stitch.py's
+    lake_outlets.json: the lakes it ended at NHD's outlet, where it laid the way out along NHD's outflow line."""
+    p = f"{SHARED_DERIVED}/lake_outlets.json"
+    if not os.path.exists(p):
+        return {}
+    with open(p) as f:
+        return {int(pr) * W + int(pc): (int(tr), int(tc)) for pr, pc, tr, tc in json.load(f).get("tops", {}).get(region, [])}
+
+
+def _dam_links(fd, T, sinks, lakes, v2, by_seq, detailed=None, ponds=None, pond_dead=None, tops=None, closed=None):
     """{sink outlet: (row, col)} for dead ends inside a reservoir: the cell below its dam where the water goes on.
+    Where 03b_stitch.py ended the lake at NHD's outlet, that is the first cell of the way out it laid there (`tops`,
+    from _lake_tops): one step decides where a lake drains. Until 2026-11-22 this function looked for the place
+    itself for every lake, as it still does for the rest:
     NHDPlus says whether the lake has an outflow and where: its outlet flowline (the most drainage inside the lake)
     and the flowlines below it. Walk down them from where the outlet flowline leaves the lake, 50 m at a time for up to
     3 km, to the first cell whose D8 path doesn't lead back into the lake's dead ends. A dead end counts for a lake
@@ -287,6 +303,13 @@ def _dam_links(fd, T, sinks, lakes, v2, by_seq, detailed=None, ponds=None, pond_
         entry, done = None, False
         ins = v2[v2.intersects(lake)]
         ins = ins[ins.geometry.intersection(lake).length >= 0.25 * ins.length]   # silted-up Matilija: 49 %
+        known = next((tops[o] for o in sorted(dead) if o in tops), None) if tops else None
+        if known:               # a pond still counts as one where NHDPlus has no flowline in it
+            if not len(ins) and ponds is not None:
+                ponds.append(known)
+                pond_dead.update(dead)
+            out.update({o: known for o in dead})
+            continue
         lines = []
         if len(ins):
             fl = ins.loc[ins.totdasqkm.idxmax()]
@@ -329,6 +352,9 @@ def _dam_links(fd, T, sinks, lakes, v2, by_seq, detailed=None, ponds=None, pond_
                 pond_dead.update(dead)
         if entry:
             out.update({o: entry for o in dead})
+        elif closed is not None:        # its water goes nowhere: no way on found, or the creek leaves the box first
+            name = lakes.gnis_name.iloc[li]
+            closed.append((name if isinstance(name, str) else "unnamed", round(lake.area / 1e4, 1), len(dead)))
     return out
 
 
@@ -406,7 +432,9 @@ def _build(regions):
     edges = shared_edges(regions)
     fds, exits, own, links = {}, {}, {}, []      # own: (region, outlet) -> its basin km2; links: (src, region, row, col, kind)
     ponds, pond_dead = [], set()                  # the cells below the ponds whose way on comes from the detailed lines
-    n_moved = 0                                   # dead ends whose water goes on from the top of the routed way out
+    n_moved = n_top = 0                           # dead ends whose water goes on from the top of the routed way out
+    put_in = defaultdict(list)                    # per box: (x, y of a lake's dead end, row, col where its water goes on)
+    closed = []                                   # lakes whose dead ends are carried nowhere: (name, ha, dead ends)
     for r in regions:
         with rasterio.open(fdir_path(r)) as src:
             fds[r] = (src.read(1), src.transform)
@@ -432,11 +460,29 @@ def _build(regions):
         own.update({(r, int(o)): float(a) for o, a in zip(uo[sink], km2[sink])})
         own.update({(r, int(o)): (0.0 if r in stitched() else float(a)) for o, a in zip(uo[exit_ & ~sink], km2[exit_ & ~sink])})
         sinks = {int(o): T * (c + 0.5, rr + 0.5) for o, rr, c in zip(uo[sink], orow[sink], ocol[sink])}
-        below = _dam_links(fd, T, sinks, lakes, v2, by_seq, _outflow_lines(r), ponds, pond_dead)
-        moved = _at_outflow(r, fd, below, {int(o): float(a) for o, a in zip(uo[sink], km2[sink])})
-        n_moved += sum(tuple(moved[o]) != tuple(below[o]) for o in below)
+        tops = _lake_tops(r, W)
+        below = _dam_links(fd, T, sinks, lakes, v2, by_seq, _outflow_lines(r), ponds, pond_dead, tops, closed)
+        top_cells = set(tops.values())
+        at_top = {o for o, rc in below.items() if tuple(rc) in top_cells}       # 03b's: already at the top of the way out
+        n_top += len(at_top)
+        moved = _at_outflow(r, fd, {o: rc for o, rc in below.items() if o not in at_top},
+                            {int(o): float(a) for o, a in zip(uo[sink], km2[sink])})
+        n_moved += sum(tuple(moved[o]) != tuple(below[o]) for o in moved)
+        moved.update({o: below[o] for o in at_top})
         for o, (row, col) in moved.items():
             links.append(((r, o), r, row, col, "pond" if o in pond_dead else "dam"))
+            put_in[r].append((*sinks[o], int(row), int(col)))
+        # A lake's water put in on a path that leaves the box goes on with it, however little ground that path gathers
+        # itself. A basin under MIN_KM2 is no exit otherwise, and the water stopped at the box's edge: Grass Pond's
+        # 6 km2, put in 80 m from the wilmington box's south edge, never reached Grass Pond Outlet in the next box
+        # (seven lakes on the 12 maps, six of them before the put-ins moved to the lakes' own outlets; 2026-11-22)
+        for rc in {(int(row), int(col)) for row, col in moved.values()}:
+            e = int(walk(fd, *rc))
+            if e not in exits[r] and (r, e) not in own:
+                x_, y_ = exit_points(fd, T, [e])
+                if not np.isnan(x_[0]):
+                    exits[r][e] = (float(x_[0]), float(y_[0]))
+                    own[(r, e)] = 0.0 if r in stitched() else float(km2[np.searchsorted(uo, e)])
     # each exit -> the cell in the neighbouring box where its creek heads away from the edge
     for r in regions:
         for o, (x, y) in exits[r].items():
@@ -517,6 +563,14 @@ def _build(regions):
                     break
             if hit is None:
                 continue
+            # ... and goes in where that lake's own water does: the top of its way out (03b_stitch.py's, since
+            # 2026-11-22). The first point of NHDPlus's line past the lake lies beside that channel as often as on
+            # it, and the first reach below the dam read the lake's water without the river's (Little Neshaminy Creek
+            # below Bradford Reservoir 2.7 km2 for NHDPlus's 28; a 115 m stub beside the Hiwassee below Chatuge Dam)
+            at = [(np.hypot(row_ - hit[0], col_ - hit[1]), (row_, col_)) for x_, y_, row_, col_ in put_in.get(b, [])
+                  if lk.distance(shapely.Point(x_, y_)) <= 400]
+            if at:
+                hit = min(at)[1]
         if hit is None:
             hit = next(crossing(b, fd_b, T_b, pt.x, pt.y, away), None)
         if hit is None:
@@ -621,7 +675,11 @@ def _build(regions):
     dams = [l for l in links if l[4] in ("dam", "pond")]
     print(f"crossbox: {sum(l[4] == 'edge' for l in links)} edge links, {len(dams)} reservoir dead ends carried past "
           f"their dams ({len(ponds)} ponds NHDPlus has no flowline for, by the detailed NHD stream line leaving them; "
-          f"{n_moved} put in at the top of the lake's routed way out)")
+          f"{n_top} put in at the top of the way out 03b_stitch.py laid at NHD's outlet, {n_moved} more moved to the "
+          f"top of the lake's routed way out)")
+    if closed:        # never listed before 2026-11-22: 59 pitted lakes of the 12 maps passed nothing on, unseen
+        print(f"crossbox: {len(closed)} lakes whose dead ends are carried nowhere (NHD shows no way out of them, or it "
+              "leaves the box first): " + ", ".join(f"{n} ({ha:g} ha)" for n, ha, _ in sorted(closed, key=lambda q: -q[1])))
     # the dead ends themselves, for dam_links(): {region: [[dead-end cell, row, col of the cell below the dam]]}
     out["dams"] = {r: [[int(src[1]), int(row), int(col)] for src, b, row, col, kind in dams
                        if b == r and src[0] == r] for r in regions}

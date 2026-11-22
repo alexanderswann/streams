@@ -1,0 +1,15 @@
+                                               reaches    mi  lost_km2   v2_max                     fish  old_putin_off_m     old_miss  hr_outlets  pit_moved_m  putin_moved_m             new_pit
+area          lake                                                                                                                                                                                
+adk_northwest ?                                      3  0.03   1130.14  1242.78  87->69; 100->87; 97->83              NaN          NaN         NaN          NaN            NaN                 NaN
+              Simon Pond (315.4 ha)                  1  0.01   1226.88      NaN                   83->46             60.0  under 100 m         3.0         14.0           40.0  44.19858,-74.47169
+              Soft Maple Reservoir (136.7 ha)        1  0.20    585.68     5.34                   27->17            248.0       200+ m         2.0        239.0           30.0  43.91841,-75.22302
+              unnamed reservoir (27.4 ha)            1  0.29    671.65     3.50                   74->53            769.0       200+ m         1.0        732.0           28.0  44.26645,-75.19176
+adk_southeast Gooseneck Pond (31.8 ha)               1  0.22      2.19     2.79                   50->39             70.0       200+ m         1.0         94.0           31.0  43.86719,-73.59949
+              Loughberry Lake (31 ha)                1  0.23     11.33      NaN                   65->55            144.0       200+ m         1.0         67.0           72.0  43.09224,-73.76743
+adk_southwest Spy Lake (154.5 ha)                    1  0.22     10.10      NaN                   61->48           1803.0  never joins         1.0          0.0         1803.0  43.38882,-74.52162
+jackson       ?                                      1  0.03      1.69      NaN                   72->62              NaN          NaN         NaN          NaN            NaN                 NaN
+n_georgia     King Lake (9.7 ha)                     1  1.49     25.06     1.92                   60->40            184.0    100-199 m         1.0        142.0           40.0  34.15661,-84.30385
+ne_ct         ?                                      1  0.09   1020.96     9.59                   71->29              NaN          NaN         NaN          NaN            NaN                 NaN
+              Merino Pond (30.4 ha)                  2  2.05     76.37    80.19           71->33; 70->53            835.0       200+ m         1.0         10.0          832.0  42.04936,-71.89413
+              Mono Pond (43.7 ha)                    1  1.06      2.95     4.89                   56->33           2151.0  never joins         1.0          0.0         2150.0  41.67939,-72.31083
+              West Thompson Lake (81.2 ha)           1  0.27    421.56      NaN                   76->35            291.0    100-199 m         1.0        271.0           31.0  41.94518,-71.90113

@@ -1,0 +1,142 @@
+== build and standing checks (pub = the published build, new = this build)
+          area  failed  tracebacks  dead_pub  dead_new  drops_pub  drops_new                                                      falls_pub                                                      falls_new  low_pub  low_new
+adk_high_peaks       0           0         0         0          0          0                                                          41/53                                                          41/53        0        1
+ adk_northwest       0           0         0         0          0          0                                                          24/33                                                          24/33        9        8
+ adk_southeast       0           0         0         0          0          0                                                          37/66                                                          38/68        3        2
+ adk_southwest       0           0         0         0          0          0                                                           6/10                                                           7/11        3        3
+    central_vt       0           0         0         0          0          0                                                          20/30                                                          20/32        1        1
+       jackson       0           0         0         0          0          0                                                          12/21                                                          12/21        1        0
+            la       0           0         0         0          0          0                                                        127/212                                                        128/213        4        4
+  lexington_va       0           0         0         0          0          0                                                          15/21                                                          15/21        0        0
+     n_georgia       0           0         0         0          0          0                                                        115/193                                                        115/193        0        0
+         ne_ct       0           0         0         0          0          0                                                           4/23                                                           4/23        6        6
+         se_pa       0           0         0         0          0          0                                                           0/11                                                           0/11        0        2
+       smokies       0           0         0         0          0          0                                                         99/156                                                         99/156        0        0
+           ALL       0           0         0         0          0          0 41/5324/3337/666/1020/3012/21127/21215/21115/1934/230/1199/156 41/5324/3338/687/1120/3212/21128/21315/21115/1934/230/1199/156       27       27
+
+== drawn by default, miles (published -> this build)
+          area  line_pub  line_new  f60_pub  f60_new  new_line  gone_line  down10  up10  lakeval_pub  lakeval_new  outlets_lost  outlets_gained
+adk_high_peaks    4126.2    4125.9   2956.0   2960.2       4.0        4.5     1.4   3.0          NaN          NaN             0               9
+ adk_northwest    3674.4    3672.0   2809.5   2816.8       6.5        8.6     1.5   2.2          1.6          1.1             4              10
+ adk_southeast    3736.0    3734.1   2526.4   2527.0       3.9        6.0     1.3   0.1          1.1          1.1             1               5
+ adk_southwest    3369.1    3371.2   2658.2   2659.4       7.3        5.0     0.8   0.1          1.0          0.7             1               7
+    central_vt    3955.1    3954.0   2081.4   2080.6       0.2        1.1     0.0   0.1          NaN          NaN             1               0
+       jackson    5312.9    5313.4   3332.2   3331.8       1.8        1.4     0.4   0.0          NaN          NaN             0               4
+            la    9439.8    9439.3    850.2    849.7       3.6        4.2     0.2   1.0          NaN          NaN             1               5
+  lexington_va    2036.3    2035.7    832.6    832.9       0.3        0.9     0.0   0.0          NaN          NaN             0               1
+     n_georgia    7001.2    6996.9   3208.3   3205.3       2.9        6.8     1.8   0.0          NaN          NaN             0               9
+         ne_ct    1527.0    1524.1    701.0    697.9       3.8        6.7     3.3   2.5          NaN          NaN             4              10
+         se_pa    2181.4    2180.5    831.0    829.8       0.5        1.4     0.4   0.0          NaN          NaN             4               1
+       smokies    4039.9    4039.6   2256.5   2256.4       0.0        0.3     0.0   0.2          NaN          NaN             0               0
+           ALL   50399.3   50386.6  25043.3  25047.8      34.9       46.8    11.2   9.1          3.7          2.9            16              61
+
+== put-ins (1431 lakes with a link)
+pit_at          100+ m from it  NHD's outlet  no NHD outlet line   All
+misses                                                                
+100-199 m                    1             0                   1     2
+200+ m                       4             1                   1     6
+never joins                  1             8                   0     9
+on the way out               3          1402                   9  1414
+All                          9          1411                  11  1431
+misses          100-199 m  200+ m  never joins  on the way out   All
+area                                                                
+adk_high_peaks          0       0            2             201   203
+adk_northwest           0       2            1             348   351
+adk_southeast           0       0            2             265   267
+adk_southwest           0       1            0             222   223
+central_vt              0       1            0              53    54
+jackson                 0       0            1              30    31
+la                      1       1            0              32    34
+lexington_va            0       0            1               8     9
+n_georgia               0       0            0              81    81
+ne_ct                   1       1            1             142   145
+se_pa                   0       0            0              20    20
+smokies                 0       0            1              12    13
+All                     2       6            9            1414  1431
+reason                03b left it at the terrain's cell: the terrain takes the wat  LOOK  at the top of 03b's way out  at the top of 03b's way out, straight into the next lake   All
+misses                                                                                                                                                                               
+100-199 m          0                                                             1     1                            0                                                         0     2
+200+ m             0                                                             5     1                            0                                                         0     6
+never joins        0                                                             1     0                            4                                                         4     9
+on the way out  1414                                                             0     0                            0                                                         0  1414
+All             1414                                                             7     2                            4                                                         4  1431
+
+-- the 17 put-ins the check doesn't find on the way out, each with its reason
+          area            box                lake    ha      km2      misses             pit_at  pit_to_putin_m  joins_after_m  down_the_way_m  pit_to_hr_outlet_m  putin_to_hr_outlet_m  pit_lat    pit_lon                   putin_in                                                                                                                                            reason
+adk_high_peaks     chateaugay          Eagle Pond  16.7    2.622 never joins     100+ m from it            1135            NaN             NaN               794.0                 349.0 44.67120  -74.26985                                                              03b left it at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_northwest      long_lake    Burntbridge Pond  23.4    2.465      200+ m     100+ m from it            1352         1440.0          5460.0               846.0                 526.0 44.20819  -74.71819                                                              03b left it at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_northwest         beaver    Huckleberry Pond   8.5    1.145      200+ m     100+ m from it             372         1520.0           710.0               465.0                 782.0 43.94681  -74.99470                                                              03b left it at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_southwest     speculator         Ferris Lake  48.7   16.602      200+ m     100+ m from it            1916         1480.0          5210.0              1130.0                 822.0 43.31089  -74.63297                                                              03b left it at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m
+    central_vt   mad_winooski   unnamed reservoir   8.1   10.625      200+ m     100+ m from it            2464        19800.0         24580.0               674.0                1797.0 44.24371  -73.15037                                                              03b left it at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m
+         ne_ct      quinebaug           Long Pond   8.4    1.287   100-199 m     100+ m from it             484          520.0           170.0               171.0                 317.0 42.02141  -71.82050                                                              03b left it at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m
+         ne_ct      quinebaug      Tetreault Pond  15.8   10.698      200+ m       NHD's outlet            2427        16010.0         12770.0                40.0                2004.0 41.79771  -71.84976                            03b left it at the terrain's cell: the terrain takes the water on down none of the outflow lines NHD names within 300 m, only down an unnamed one
+            la san_bernardino        Baldwin Lake 413.8   59.865   100-199 m no NHD outlet line             108          170.0           120.0                 NaN                   NaN 34.26791 -116.82983                                                                                                                                                                         LOOK
+            la           piru         Castac Lake  84.8   24.720      200+ m no NHD outlet line             235         1040.0           980.0                 NaN                   NaN 34.83601 -118.84839                                                                                                                                                                         LOOK
+ adk_northwest         beaver    Witchhopple Lake  39.1   18.747 never joins       NHD's outlet              10            NaN             NaN                 8.0                   4.0 43.96335  -74.92577                                                                                                                                                  at the top of 03b's way out
+       jackson   buffalo_fork          Tracy Lake  27.2    1.465 never joins       NHD's outlet              14            NaN             NaN                23.0                  11.0 43.84897 -110.36332                                                                                                                                                  at the top of 03b's way out
+  lexington_va   maury_goshen Lexington Reservoir   9.1    5.503 never joins       NHD's outlet              10            NaN             NaN                10.0                   1.0 37.74797  -79.64613                                                                                                                                                  at the top of 03b's way out
+         ne_ct      quinebaug     Chase Reservoir  29.9    2.871 never joins       NHD's outlet              10            NaN             NaN                 4.0                   7.0 41.84600  -71.83739                                                                                                                                                  at the top of 03b's way out
+adk_high_peaks        saranac           Hoel Pond 187.0    6.536 never joins       NHD's outlet              10            NaN             NaN                 6.0                   5.0 44.35808  -74.35946        Turtle Pond (29 ha)                                                                                          at the top of 03b's way out, straight into the next lake
+ adk_southeast    lake_george   unnamed reservoir 500.9  117.266 never joins       NHD's outlet              10            NaN             NaN                 3.0                   8.0 43.58268  -73.42725 Lake Champlain (112106 ha)                                                                                          at the top of 03b's way out, straight into the next lake
+ adk_southeast    lake_george   unnamed reservoir  22.6    8.230 never joins       NHD's outlet              10            NaN             NaN                 7.0                   4.0 43.63129  -73.42648 Lake Champlain (112106 ha)                                                                                          at the top of 03b's way out, straight into the next lake
+       smokies        tellico      Chilhowee Lake 680.7 5079.917 never joins       NHD's outlet              10            NaN             NaN                 7.0                   3.0 35.54591  -84.04984     Tellico Lake (6143 ha)                                                                                          at the top of 03b's way out, straight into the next lake
+
+-- pits 300+ m from NHD's outlet: 8
+          area          box              lake   ha    km2         misses  pit_to_hr_outlet_m  putin_to_hr_outlet_m  pit_lat   pit_lon
+ adk_southeast      siamese   Livingston Lake 74.7  5.766 on the way out              2380.0                2393.0 43.38237 -74.02983
+ adk_southwest   speculator       Ferris Lake 48.7 16.602         200+ m              1130.0                 822.0 43.31089 -74.63297
+ adk_northwest    long_lake  Burntbridge Pond 23.4  2.465         200+ m               846.0                 526.0 44.20819 -74.71819
+ adk_southeast      siamese         Lens Lake 21.7  4.324 on the way out               804.0                 808.0 43.39252 -74.01572
+ adk_southwest        moose unnamed reservoir 17.9  7.250 on the way out               485.0                 495.0 43.77264 -75.43943
+adk_high_peaks   chateaugay        Eagle Pond 16.7  2.622    never joins               794.0                 349.0 44.67120 -74.26985
+ adk_northwest       beaver  Huckleberry Pond  8.5  1.145         200+ m               465.0                 782.0 43.94681 -74.99470
+    central_vt mad_winooski unnamed reservoir  8.1 10.625         200+ m               674.0                1797.0 44.24371 -73.15037
+
+== lakes 03b left at the cell with the most water though NHD has an outflow line: 12
+          area             box                lake    ha                                                                                                            why
+     n_georgia hooch_tailwater Stone Mountain Lake 133.6                                        NHD's outflow line leaves the map before the terrain takes the water on
+         ne_ct       quinebaug        Badluck Lake  38.9                                        NHD's outflow line leaves the map before the terrain takes the water on
+ adk_southeast         siamese     Livingston Lake  74.7 NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line
+ adk_southeast         siamese           Lens Lake  21.7 NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line
+adk_high_peaks      chateaugay          Eagle Pond  16.7                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_northwest          beaver    Huckleberry Pond   8.5                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_northwest       long_lake    Burntbridge Pond  23.4                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_southwest           moose             unnamed  17.9                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+ adk_southwest      speculator         Ferris Lake  48.7                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+    central_vt    mad_winooski             unnamed   8.1                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+         ne_ct       quinebaug           Long Pond   8.4                                   the terrain takes the water on down none of NHD's outflow lines within 300 m
+         ne_ct       quinebaug      Tetreault Pond  15.8 the terrain takes the water on down none of the outflow lines NHD names within 300 m, only down an unnamed one
+
+== gone line in stretches of 300+ m that weren't lake pieces: 67, 27.5 mi
+                                        lines    mi
+cls                                                
+not on an NHD line, 0.8+ sq mi             32  12.1
+not on an NHD line, under 0.8 sq mi        10   3.6
+on an NHD stream line, 0.8+ sq mi          18   7.8
+on an NHD stream line, under 0.8 sq mi      7   4.0
+          area    mi  on_nhd   big   f60                         name   sqmi  fish    lat      lon                                    cls
+         ne_ct 1.489    True False False                          NaN   0.39    24 41.629  -72.039 on an NHD stream line, under 0.8 sq mi
+            la 1.019    True  True False                Castaic Creek 144.49     2 34.518 -118.615      on an NHD stream line, 0.8+ sq mi
+            la 0.702    True  True  True                   Piru Creek 422.46    70 34.457 -118.755      on an NHD stream line, 0.8+ sq mi
+            la 0.693    True  True False                          NaN   3.97     3 34.770 -118.761      on an NHD stream line, 0.8+ sq mi
+adk_high_peaks 0.651    True False False                          NaN   0.34    54 44.249  -74.292 on an NHD stream line, under 0.8 sq mi
+ adk_northwest 0.616    True  True  True                          NaN   1.87    74 44.202  -74.964      on an NHD stream line, 0.8+ sq mi
+         se_pa 0.586    True  True  True                          NaN  20.28    72 40.053  -75.715      on an NHD stream line, 0.8+ sq mi
+         ne_ct 0.583    True  True False                          NaN   3.11    59 41.920  -71.783      on an NHD stream line, 0.8+ sq mi
+ adk_northwest 0.549    True False False                          NaN   0.75    57 44.099  -75.172 on an NHD stream line, under 0.8 sq mi
+         ne_ct 0.463    True  True  True East Branch Stonehouse Brook   1.43    71 41.827  -72.121      on an NHD stream line, 0.8+ sq mi
+ adk_northwest 0.434    True  True False                          NaN   1.35    57 44.413  -75.099      on an NHD stream line, 0.8+ sq mi
+ adk_northwest 0.385    True False False                          NaN   0.75    57 44.100  -75.169 on an NHD stream line, under 0.8 sq mi
+ adk_southeast 0.381    True  True False                          NaN   1.19    51 43.361  -73.733      on an NHD stream line, 0.8+ sq mi
+ adk_southwest 0.336    True False  True                          NaN   0.78    72 43.669  -74.758 on an NHD stream line, under 0.8 sq mi
+ adk_northwest 0.312    True False False                          NaN   0.15    49 43.900  -75.054 on an NHD stream line, under 0.8 sq mi
+ adk_northwest 0.309    True  True  True                 Beaver River 230.56    96 43.919  -75.229      on an NHD stream line, 0.8+ sq mi
+ adk_northwest 0.296    True  True  True                          NaN  17.19    69 44.172  -74.993      on an NHD stream line, 0.8+ sq mi
+            la 0.277    True  True False                          NaN  63.93     3 34.486 -118.021      on an NHD stream line, 0.8+ sq mi
+adk_high_peaks 0.277    True  True False                          NaN   1.50    58 43.966  -74.176      on an NHD stream line, 0.8+ sq mi
+ adk_northwest 0.276    True False  True                          NaN   0.60    86 43.993  -75.013 on an NHD stream line, under 0.8 sq mi
+ adk_northwest 0.269    True  True  True                          NaN   2.38    81 44.001  -74.316      on an NHD stream line, 0.8+ sq mi
+ adk_northwest 0.247    True  True  True                          NaN   1.55    88 44.004  -74.935      on an NHD stream line, 0.8+ sq mi
+ adk_southwest 0.246    True  True  True                          NaN   4.32    79 43.635  -74.548      on an NHD stream line, 0.8+ sq mi
+         se_pa 0.245    True  True  True                          NaN   0.99    61 40.197  -75.864      on an NHD stream line, 0.8+ sq mi
+         ne_ct 0.206    True  True  True East Branch Stonehouse Brook   1.43    71 41.831  -72.117      on an NHD stream line, 0.8+ sq mi

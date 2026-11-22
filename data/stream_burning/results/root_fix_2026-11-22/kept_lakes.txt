@@ -1,0 +1,26 @@
+adk_high_peaks/chateaugay Eagle Pond (16.7 ha), terrain's cell 44.67120,-74.26985, level 446.2 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 460) leaving at 44.66853,-74.27914, 794 m from the terrain's cell; followed 1500 m: highest ground +5.2 m against the lake at 360 m; below the lake for good from 380 m; within 300 m 60 of 60 cells lead back into the lake
+adk_northwest/beaver Huckleberry Pond (8.5 ha), terrain's cell 43.94681,-74.99470, level 626.7 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 460) leaving at 43.94508,-74.99997, 465 m from the terrain's cell; followed 1500 m: highest ground +67.5 m against the lake at 705 m; never stays below the lake; within 300 m 60 of 60 cells lead back into the lake
+adk_northwest/long_lake Burntbridge Pond (23.4 ha), terrain's cell 44.20819,-74.71819, level 490.3 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 460, named) leaving at 44.21273,-74.70969, 846 m from the terrain's cell; followed 1500 m: highest ground +2.4 m against the lake at 765 m; below the lake for good from 830 m; within 300 m 60 of 60 cells lead back into the lake
+adk_southwest/moose unnamed (17.9 ha), terrain's cell 43.77264,-75.43943, level 224.2 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 460) leaving at 43.77272,-75.44546, 485 m from the terrain's cell; followed 1500 m: highest ground +2.3 m against the lake at 310 m; never stays below the lake; within 300 m 56 of 56 cells lead back into the lake
+adk_southwest/speculator Ferris Lake (48.7 ha), terrain's cell 43.31089,-74.63297, level 524.8 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 460) leaving at 43.30073,-74.63347, 1130 m from the terrain's cell; followed 1500 m: highest ground +6.1 m against the lake at 790 m; below the lake for good from 975 m; within 300 m 61 of 61 cells lead back into the lake
+adk_southeast/siamese Livingston Lake (74.7 ha), terrain's cell 43.38237,-74.02983, level 563.7 m: NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line
+   NHD outflow line (type 460, named) leaving at 43.36484,-74.04672, 2380 m from the terrain's cell; followed 1500 m: highest ground +3.1 m against the lake at 140 m; below the lake for good from 315 m; within 300 m 11 of 60 cells lead back into the lake
+adk_southeast/siamese Lens Lake (21.7 ha), terrain's cell 43.39252,-74.01572, level 559.8 m: NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line
+   NHD outflow line (type 460, named) leaving at 43.39866,-74.01046, 804 m from the terrain's cell; followed 1500 m: highest ground +0.7 m against the lake at 0 m; below the lake for good from 25 m; within 300 m 0 of 61 cells lead back into the lake
+central_vt/mad_winooski unnamed (8.1 ha), terrain's cell 44.24371,-73.15037, level 120.3 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 460) leaving at 44.24958,-73.14823, 674 m from the terrain's cell; followed 1500 m: highest ground +1.4 m against the lake at 1490 m; never stays below the lake; within 300 m 61 of 61 cells lead back into the lake
+n_georgia/hooch_tailwater Stone Mountain Lake (133.6 ha), terrain's cell 33.79679,-84.12454, level 254.6 m: NHD's outflow line leaves the map before the terrain takes the water on
+   NHD outflow line (type 460) leaving at 33.79551,-84.12618, 208 m from the terrain's cell: 1660 m long, off this box's grid at once
+   NHD outflow line (type 460) leaving at 33.79578,-84.12478, 114 m from the terrain's cell: 3050 m long, off this box's grid at once
+ne_ct/quinebaug Badluck Lake (38.9 ha), terrain's cell 42.05529,-71.76975, level 200.2 m: NHD's outflow line leaves the map before the terrain takes the water on
+   NHD outflow line (type 558) leaving at 42.05560,-71.76966, 36 m from the terrain's cell: 2284 m long, off this box's grid at once
+ne_ct/quinebaug Tetreault Pond (15.8 ha), terrain's cell 41.79771,-71.84976, level 113.8 m: the terrain takes the water on down none of the outflow lines NHD names within 300 m, only down an unnamed one
+   NHD outflow line (type 558) leaving at 41.79807,-71.84970, 40 m from the terrain's cell; followed 1500 m: highest ground +3.8 m against the lake at 220 m; below the lake for good from 300 m; within 300 m 0 of 61 cells lead back into the lake
+   NHD outflow line (type 460, named) leaving at 41.79383,-71.84430, 627 m from the terrain's cell; followed 1500 m: highest ground +1.9 m against the lake at 530 m; below the lake for good from 555 m; within 300 m 60 of 60 cells lead back into the lake
+ne_ct/quinebaug Long Pond (8.4 ha), terrain's cell 42.02141,-71.82050, level 145.3 m: the terrain takes the water on down none of NHD's outflow lines within 300 m
+   NHD outflow line (type 558) leaving at 42.02008,-71.82155, 171 m from the terrain's cell; followed 1500 m: highest ground +1.0 m against the lake at 1490 m; never stays below the lake; within 300 m 60 of 60 cells lead back into the lake

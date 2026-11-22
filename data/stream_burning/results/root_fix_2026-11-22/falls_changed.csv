@@ -1,0 +1,7 @@
+name_o,kind_o,precise_o,m_o,status_o,drop_ft_o,name_n,kind_n,precise_n,m_n,status_n,drop_ft_n,area
+Clarks Falls,cascade,True,1104,unmapped cascade,40,Clarks Falls,cascade,True,26,dam / weir,27,central_vt
+Mansfield Hollow Cascades,cascade,True,154,dam / weir,30,Mansfield Hollow Cascades,cascade,True,76,dam / weir,14,ne_ct
+Meacham Falls,cascade,False,58,likely DEM artifact,14,Meacham Falls,cascade,False,44,matches mapped waterfall,17,adk_high_peaks
+Effley Falls,cascade,True,922,dam / weir,31,Effley Falls,cascade,True,78,dam / weir,35,adk_northwest
+Penfield Pond Outlet Falls,cascade,False,14,dam / weir,11,Penfield Pond Outlet Falls,cascade,False,342,matches mapped waterfall,23,adk_southeast
+Virgin Falls,waterfall,False,205,unmapped cascade,33,Virgin Falls,waterfall,False,630,unmapped cascade,36,adk_southeast

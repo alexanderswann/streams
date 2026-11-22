@@ -1,0 +1,57 @@
+points 13949; ratio moved by 10 %+: 88; better 53, worse 35
+                better  worse
+area                         
+adk_high_peaks       2      1
+adk_northwest       37     11
+adk_southeast        2      2
+adk_southwest        3      7
+jackson              2      3
+la                   3      1
+n_georgia            1      1
+ne_ct                3      8
+se_pa                0      1
+within 10 % old 10283 new 10310 of 13949
+within 25 % old 11331 new 11357 of 13949
+under half old 836 new 829
+
+worse, largest point per named stream:
+          area           nhd_name_old  sq_mi  ratio_old  ratio_new  lat_old  lon_old         reach_name_new
+       jackson                    NaN  795.0      1.015      4.870   43.169 -111.056            Snake River
+ adk_southeast                    NaN  739.0      0.005      0.004   43.631  -73.425                    NaN
+       jackson      Gros Ventre River  410.0      0.997      0.002   43.583 -110.324       Devils Dip Creek
+ adk_southwest                    NaN  229.0      0.022      0.016   43.374  -74.938          Mad Tom Brook
+            la          Castaic Creek  137.0      1.051      0.030   34.512 -118.613     Grasshopper Canyon
+ adk_northwest                    NaN  103.0      0.011      0.009   43.859  -74.650                    NaN
+ adk_northwest           Beaver River   84.0      1.089      1.233   43.923  -74.912           Beaver River
+     n_georgia              Big Creek   55.0      0.902      0.815   34.085  -84.240              Big Creek
+         ne_ct           Potash Brook   30.0      0.989      0.018   42.044  -71.902           Potash Brook
+adk_high_peaks                    NaN   29.0      0.137      0.027   44.304  -74.350                    NaN
+ adk_northwest           Bridge Brook   12.0      0.648      0.522   44.162  -74.571           Bridge Brook
+         se_pa Little Neshaminy Creek   11.0      0.919      0.077   40.229  -75.159 Little Neshaminy Creek
+         ne_ct         Bartlett Brook   10.0      0.890      0.777   41.592  -72.262         Bartlett Brook
+ adk_northwest             Dead Creek    8.0      1.525      1.706   44.221  -74.620             Dead Creek
+ adk_northwest             Mink Creek    7.0      0.828      0.750   44.086  -75.212             Mink Creek
+         ne_ct       Stonehouse Brook    7.0      1.003      0.846   41.773  -72.148       Stonehouse Brook
+ adk_southwest    Little Moose Outlet    7.0      0.989      0.871   43.653  -74.957    Little Moose Outlet
+         ne_ct                    NaN    6.0      0.840      0.662   41.619  -72.290                    NaN
+ adk_southwest             Mill Creek    5.0      0.975      1.255   43.398  -74.860             Mill Creek
+ adk_southwest            Cedar River    5.0      0.922      0.163   43.642  -74.531                    NaN
+         ne_ct         Giffords Brook    5.0      1.026      1.272   41.691  -72.276         Giffords Brook
+ adk_southwest          Mad Tom Brook    4.0      1.120      0.799   43.378  -74.935          Mad Tom Brook
+
+better, largest point per named stream:
+          area         nhd_name_old  sq_mi  ratio_old  ratio_new  lat_old  lon_old       reach_name_new
+       jackson          Snake River 3917.0      0.206      0.989   43.174 -111.044          Snake River
+ adk_southeast                  NaN  425.0      0.001      1.005   43.569  -73.402      Champlain Canal
+            la           Piru Creek  420.0      0.002      1.009   34.452 -118.753           Piru Creek
+ adk_northwest         Beaver River  160.0      0.755      0.831   43.902  -74.998         Beaver River
+ adk_northwest                  NaN  123.0      0.007      0.924   43.886  -74.587                  NaN
+ adk_northwest         Little River   74.0      0.696      0.929   44.209  -75.066         Little River
+adk_high_peaks                  NaN   69.0      0.058      0.610   44.265  -74.325                  NaN
+         ne_ct         French River   60.0      0.018      0.508   42.047  -71.888         French River
+         ne_ct         Little River   37.0      1.099      0.989   41.620  -72.044         Little River
+ adk_northwest Shingle Shanty Brook   34.0      0.638      0.998   43.997  -74.741 Shingle Shanty Brook
+         ne_ct                  NaN    5.0      1.623      1.023   41.631  -71.797           Wood River
+ adk_southwest                  NaN    5.0      2.567      0.963   43.579  -74.988                  NaN
+ adk_northwest     Sand Lake Outlet    5.0      0.852      0.941   44.006  -75.023     Sand Lake Outlet
+     n_georgia          Caney Creek    5.0     10.794      1.000   34.083  -84.240          Caney Creek

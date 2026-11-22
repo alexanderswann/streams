@@ -11,10 +11,20 @@ surface:
   - A lake that holds water still ends the paths that enter it, at the cell where its water leaves (flowlib.
     still_water; "holds water" read off the DEM, at least LEVEL_HA of the outline at one elevation). A lake lying
     across a shared edge now has one outlet, not one in each box. crossbox.py carries the area on past the dam.
+    That cell is where NHD's detailed stream network leaves the lake (lake_outlet), not the cell that gathers the
+    most water on the DEM, which in 77 lakes of the 12 maps lay 300 m or more from NHD's outlet, at an inflow or at a
+    low spot the filled surface spills over (Raquette Lake's 9.1 km away, at South Inlet's mouth). Of several NHD
+    outlets the one NHD names is taken (the river's own bed, not the canal beside it), else the one NHDPlus's
+    1:100,000 line leaves by, else the one nearest that cell. The cell with the most water stays where NHD has no
+    outflow line, where the terrain doesn't let the water out along it, and where NHDPlus and the terrain agree on
+    another place than NHD's detailed line (lake_outlet).
     Every cell of such a lake drains to that outlet, along NHD's lines through the lake where they run (route_lake):
     the flat water's own directions let a path other than the biggest leave the lake on its own. Below the outlet the
     way the water takes is a stream line down to the first stream it meets (outflow_streams), so that the lake's water,
-    which crossbox.py puts back in there, lands on the river below the junction, not on a side creek's line.
+    which crossbox.py puts back in there, lands on the river below the junction, not on a side creek's line. That way
+    starts on NHD's outflow line, across the dam where there is one, and <area>/_shared/lake_outlets.json hands
+    crossbox.py its first cell: until 2026-11-22 crossbox.py looked for the place itself, along NHDPlus's 1:100,000
+    line, and put Seventh Lake's water in 555 m from its outlet.
   - Each box was conditioned with only HALO of its neighbours (03_hydrology.py), so a lake or filled basin reaching
     further across a shared edge can be filled and drained one way on each side, and its water stops in a dead end
     on the edge. mend_seams() conditions a piece of DEM around each such dead end again, whole, and routes it on.
@@ -32,18 +42,25 @@ Each box still gets its own files, as the later steps expect them:
 and <area>/_shared/stitched.json lists the boxes done this way (crossbox.py then takes the crossings as exact).
 """
 import json, os, sys
-import numpy as np, rasterio, rasterio.features, rasterio.windows, shapely, geopandas as gpd
+import numpy as np, rasterio, rasterio.features, rasterio.windows, shapely, shapely.ops, geopandas as gpd
 from numba import njit
 if not hasattr(np, "in1d"):  # pysheds still calls np.in1d, removed in NumPy 2.4
     np.in1d = np.isin
 from config import *
 from crossbox import shared_edges
-from flowlib import still_water
+from flowlib import still_water, FLOW
 
 STREAM_KM2 = 0.25    # channel initiation (2,500 cells at 10 m)
 LEVEL_HA = 2
 LINE_PULL = 5.0      # route_lake: a step through a lake off NHD's lines costs this many steps along them
+WAY_MAX = 300        # m: an NHD outflow line is a lake's outlet when the terrain takes the water on within this far down it
+FOLLOW_M, FOLLOW_TOL, FOLLOW_SHARE = 200, 40, 0.8    # the way out is the terrain's from the first cell whose own D8 path
+                                                     # stays on NHD's outflow line: this share of its next FOLLOW_M
+                                                     # m within FOLLOW_TOL m of the line
 LAKE_LINE_FTYPES = (460, 558, 334)   # NHD HR StreamRiver, ArtificialPath (lake and river centrelines), Connector
+BUILT_FTYPES = (336, 428)            # NHD HR CanalDitch and Pipeline: a lake's way out where no stream line leaves it
+BUILT_MAX = 1000     # m: ... and only one that runs into a stream line within this much pipe or ditch (through a dam)
+V_AT = 100           # m: NHDPlus's line leaves a lake "where the terrain does" within this far of the cell with the most water
 SEAM_KM2 = STREAM_KM2  # a dead end on an edge between two boxes gathering this much is mended (mend_seams)
 MEND_R = (300, 3000)   # cells: the piece of DEM conditioned again around it reaches 3 km each way at first, 30 at most
 MEND_EDGE = 150        # cells: a band inside the piece's own edges (not the map's), where its paths aren't taken
@@ -338,18 +355,18 @@ for code, (dr, dc) in zip(CODES, OFFS):
     CODE_OF[(dr + 1) * 3 + dc + 1] = code
 
 
-def nhd_lines(group):
+def nhd_lines(group, ftypes=LAKE_LINE_FTYPES):
     """NHD HR stream lines of the group's boxes (each box's nhd_flowlines.gpkg reaches past its box): StreamRiver,
-    ArtificialPath and Connector, not canals, pipelines or coastline."""
+    ArtificialPath and Connector, not canals, pipelines or coastline (or the types given), with their type and name."""
     import pandas as pd
     parts = []
     for r in group:
         p = f"{raw_dir(r)}/nhd_flowlines.gpkg"
         if os.path.exists(p):
-            g = gpd.read_file(p, columns=["ftype"])
-            parts.append(g[g.ftype.isin(LAKE_LINE_FTYPES)].to_crs(CRS))
+            g = gpd.read_file(p, columns=["ftype", "gnis_name"])
+            parts.append(g[g.ftype.isin(ftypes)].to_crs(CRS))
     if not parts:
-        return gpd.GeoDataFrame(geometry=[], crs=CRS)
+        return gpd.GeoDataFrame({"ftype": [], "gnis_name": []}, geometry=[], crs=CRS)
     g = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS)
     return g[g.geometry.notna() & ~g.geometry.is_empty].reset_index(drop=True)
 
@@ -411,6 +428,336 @@ def route_lake(fd, geom, outlet, T, lines):
     p = pred[k]
     view[rr[k], cc[k]] = CODE_OF[(rr[p] - rr[k] + 1) * 3 + (cc[p] - cc[k] + 1)]
     return len(k)
+
+
+def outflow_index(lines):
+    """NHD's lines (nhd_lines, with their ftype and name) as single parts, each part's ftype, an index over them, the
+    parts that start at each point, and whether NHD names each part: (parts, ftypes, tree, begins, named)."""
+    from collections import defaultdict
+    parts, kinds, named = [], [], []
+    for g, k, nm in zip(shapely.force_2d(lines.geometry.values), lines.ftype.values, lines.gnis_name.values):
+        new = [q for q in getattr(g, "geoms", [g]) if q.geom_type == "LineString" and q.length > 1]
+        parts += new
+        kinds += [int(k)] * len(new)
+        named += [isinstance(nm, str) and bool(nm.strip())] * len(new)
+    begins = defaultdict(list)
+    for i, q in enumerate(parts):
+        begins[(round(q.coords[0][0]), round(q.coords[0][1]))].append(i)
+    return parts, kinds, (shapely.STRtree(parts) if parts else None), begins, named
+
+
+def lake_cells(fd, geom, T):
+    """(r0, c0, mask): a lake's cells (centres inside its outline, with ground) in a window of the grid starting at
+    (r0, c0), as route_lake takes them; None where the outline lies off the grid."""
+    H, W = fd.shape
+    gx0, gy0, gx1, gy1 = geom.bounds
+    ca, ra = ~T * (gx0, gy1)
+    cb, rb = ~T * (gx1, gy0)
+    r0, c0 = max(int(np.floor(ra)) - 1, 0), max(int(np.floor(ca)) - 1, 0)
+    r1, c1 = min(int(np.ceil(rb)) + 1, H), min(int(np.ceil(cb)) + 1, W)
+    if r1 <= r0 or c1 <= c0:
+        return None
+    mask = rasterio.features.geometry_mask([geom], (r1 - r0, c1 - c0), T * rasterio.Affine.translation(c0, r0),
+                                           invert=True) & (fd[r0:r1, c0:c1] > 0)
+    return r0, c0, mask
+
+
+def leads_back(fd, r, c, win, avoid=(), limit=500000):
+    """True if the D8 path from (r, c) runs into the lake whose cells `win` holds (lake_cells), through one of the
+    cells in `avoid`, or never ends."""
+    r0, c0, mask = win
+    H, W = fd.shape
+    h, w = mask.shape
+    for _ in range(limit):
+        if (0 <= r - r0 < h and 0 <= c - c0 < w and mask[r - r0, c - c0]) or (r, c) in avoid:
+            return True
+        k = int(fd[r, c])
+        if k not in CODE_SET:
+            return False
+        r, c = r + int(DR[k]), c + int(DC[k])
+        if not (0 <= r < H and 0 <= c < W):
+            return False
+    return True
+
+
+def follows(fd, r, c, T, line, wet):
+    """True if the D8 path from (r, c) stays on `line` (NHD's outflow line): FOLLOW_SHARE of its next FOLLOW_M m
+    within FOLLOW_TOL m of it, as far as the next lake (`wet`: the cells of the lakes that hold water). A path that
+    ends or reaches a lake within three cells counts as following."""
+    H, W = fd.shape
+    pts = []
+    for _ in range(int(FOLLOW_M / RES)):
+        k = int(fd[r, c])
+        if k not in CODE_SET:
+            break
+        r, c = r + int(DR[k]), c + int(DC[k])
+        if not (0 <= r < H and 0 <= c < W) or fd[r, c] == 0 or wet[r, c]:
+            break
+        pts.append(shapely.Point(*(T * (c + 0.5, r + 0.5))))
+    if len(pts) < 3:
+        return True
+    return float(np.mean(shapely.distance(line, pts) <= FOLLOW_TOL)) >= FOLLOW_SHARE
+
+
+def cell_line(a, b):
+    """The cells on the straight line from cell a to cell b, both included, each one a neighbour of the last."""
+    (r, c), (r1, c1) = a, b
+    out = [(r, c)]
+    while (r, c) != (r1, c1):
+        r += (r1 > r) - (r1 < r)
+        c += (c1 > c) - (c1 < c)
+        out.append((r, c))
+    return out
+
+
+def nhd_outlets(fd, geom, T, win, index, ftypes, wet):
+    """NHD's outlets of a lake: [{exit: the point where an outflow line leaves the water, cells: the grid cells from
+    the lake along the line to the first one the terrain takes on from, or None, on_line: whether the terrain's way
+    from that cell stays on NHD's line, named: whether NHD names the outflow line, off_map: the line left the map
+    before the terrain took the water on}].
+    An outflow line is one of NHD's detailed lines of the given types that starts in the lake (within 30 m of its
+    outline: the lines are drawn downstream, and one that ends in the lake is an inflow) and ends outside it. A pipe
+    or a ditch counts only where NHD's stream network goes on from it within BUILT_MAX (the pipe through Bouquet
+    Reservoir's dam, which Bouquet Creek starts from 400 m on; not the Los Angeles Aqueduct's, which leaves the same
+    reservoir for 5 km of pipe and took the creek's water with it). It is
+    followed from where it leaves the water, half a cell at a time, into the line it runs into where it ends (the
+    stream line, where a ditch branches off there too), for
+    WAY_MAX m: the first cell outside the lake whose D8 path doesn't lead back into the lake is where the terrain
+    takes the water on (the cell right at the shore for 88% of the 1,502 outflow lines on the 12 maps, within 50 m for
+    96%: the rest cross a dam or a sill the DEM holds the lake behind). cells is None where there is no such cell
+    within WAY_MAX: the terrain doesn't let the water out that way, whatever the line says (a line 30 m from the
+    outline that belongs to the next pond; Ferris Lake's outlet stream, which the DEM runs back into the lake for
+    800 m).
+    A line that starts at the shore or just off it is reached from the lake cell nearest its start, straight, and
+    those cells are judged like the ones under the line: a path that comes back through a cell already passed leads
+    back as well (below Doaneville Pond's dam the cell under NHD's line drains through the cell between it and the
+    pond, and pointing that one at the line closed a loop of three cells).
+    A cell of another lake that holds water (`wet`) is where the way out ends in any case: that lake's routing takes
+    the water on, and its cells are never pointed along this lake's line.
+    The cell taken is the first whose D8 path also stays on NHD's line (follows): below Leonard Pond the first cell
+    that leads on leaves NHD's outlet stream within 200 m, and the way out is pointed along the line for another
+    110 m, to a cell whose path stays on it (13 of the 348 lakes at NHD's outlet on the north-west Adirondack map).
+    Where no cell within WAY_MAX does (NHD's line drawn 50 m beside the channel the DEM has), the first cell that
+    leads on is taken, as the terrain has it."""
+    parts, kinds, tree, begins, named = index
+    if tree is None:
+        return []
+    r0, c0, mask = win
+    H, W = fd.shape
+    h, w = mask.shape
+    inside = lambda rc: 0 <= rc[0] - r0 < h and 0 <= rc[1] - c0 < w and bool(mask[rc[0] - r0, rc[1] - c0])
+    lk = geom.buffer(30)
+    nexts = lambda q, seen: sorted((k for k in begins.get((round(q.coords[-1][0]), round(q.coords[-1][1])), []) if k not in seen),
+                                   key=lambda k: kinds[k] not in LAKE_LINE_FTYPES)      # the stream line first
+
+    def to_stream(j):           # a pipe or ditch that NHD's stream network goes on from, within BUILT_MAX of built line
+        cur, seen, length = parts[j], {j}, parts[j].length
+        while length <= BUILT_MAX:
+            nx = nexts(cur, seen)
+            if not nx or kinds[nx[0]] in LAKE_LINE_FTYPES:
+                return bool(nx)
+            cur = parts[nx[0]]
+            seen.add(nx[0])
+            length += cur.length
+        return False
+
+    out = []
+    for j in tree.query(lk, predicate="intersects"):
+        g = parts[j]
+        if kinds[j] not in ftypes:
+            continue
+        if lk.contains(shapely.Point(g.coords[-1])) or not lk.contains(shapely.Point(g.coords[0])):
+            continue
+        if kinds[j] in BUILT_FTYPES and not to_stream(j):
+            continue
+        ins = g.intersection(geom)
+        t0 = 0.0 if ins.is_empty else max(g.project(shapely.Point(xy)) for q in getattr(ins, "geoms", [ins])
+                                          if q.geom_type in ("LineString", "Point") for xy in q.coords)
+        # the line from where it leaves the water, with the lines it runs into: far enough to judge a path on
+        chain, cur, seen, length = [shapely.ops.substring(g, t0, g.length)], g, {j}, g.length - t0
+        while length < WAY_MAX + FOLLOW_M + 100:
+            nx = nexts(cur, seen)
+            if not nx:
+                break
+            cur = parts[nx[0]]
+            seen.add(nx[0])
+            chain.append(cur)
+            length += cur.length
+        line = shapely.union_all(chain)
+
+        off = []                                        # set where the line leaves the map within WAY_MAX
+
+        def along():                                    # the cells under the line, from where it leaves the water
+            gone = 0.0
+            for part in chain:
+                for d in np.arange(0, part.length, RES / 2):
+                    if gone + d > WAY_MAX:
+                        return
+                    cc, rr = ~T * part.interpolate(d).coords[0]
+                    rc = (int(np.floor(rr)), int(np.floor(cc)))
+                    if not (0 <= rc[0] < H and 0 <= rc[1] < W) or fd[rc] == 0:
+                        off.append(True)                # the line leaves the map first
+                        return
+                    yield rc
+                gone += part.length
+
+        cells, first, found, ended = [], None, None, False
+        for rc in along():
+            step = [rc]
+            if not cells and not inside(rc):            # the line starts at the shore, or up to 30 m off it: from the
+                rr, cc = np.nonzero(mask)               # lake cell nearest its start, straight to it
+                k = int(np.argmin((rr + r0 - rc[0]) ** 2 + (cc + c0 - rc[1]) ** 2))
+                step = cell_line((int(rr[k]) + r0, int(cc[k]) + c0), rc)
+            for rc in step:
+                if cells and cells[-1] == rc:
+                    continue
+                cells.append(rc)
+                if inside(rc):
+                    continue
+                back = leads_back(fd, rc[0], rc[1], win, set(cells[:-1]))
+                if wet[rc]:                             # the next lake of a chain: its own routing takes the water on
+                    found = None if back else len(cells)
+                    ended = True
+                    break
+                if back:
+                    continue
+                if first is None:
+                    first = len(cells)
+                if follows(fd, rc[0], rc[1], T, line, wet):
+                    found = len(cells)
+                    break
+            if found is not None or ended:
+                break
+        n = found if found is not None else first
+        out.append(dict(exit=g.interpolate(t0), cells=cells[:n] if n else None, on_line=found is not None, named=named[j],
+                        off_map=bool(off) and not n))
+    return out
+
+
+def nhdplus(group):
+    """NHDPlus V2's flowlines (02b_download_flow.py's nhdplus_v2.gpkg) and the same by hydroseq, or None where that
+    step hasn't run yet: lake_outlet then goes by NHD's names and the terrain alone. The drivers run it first, and a
+    run of this script stops before it writes anything where the file is missing, unless NO_NHDPLUS=1 says to go on."""
+    p = f"{FLOW}/nhdplus_v2.gpkg"
+    if not os.path.exists(p):
+        return None
+    v2 = gpd.read_file(p, columns=["hydroseq", "dnhydroseq", "totdasqkm"]).to_crs(CRS)
+    v2 = v2[v2.geometry.notna() & ~v2.geometry.is_empty].reset_index(drop=True)
+    return v2, v2.drop_duplicates("hydroseq").set_index("hydroseq")
+
+
+def nhdplus_exit(lake, v2):
+    """Where NHDPlus's line leaves a lake: the flowline that drains the most ground among those lying in the lake (a
+    quarter of their length or more, as crossbox.py counts them), followed downstream to the one that ends outside
+    the lake; its last point inside the outline. None where NHDPlus has no line in the lake, or none that leaves it.
+    The 1:100,000 line can leave the outline hundreds of metres from the outlet (550 m at Seventh Lake): it says
+    which of NHD's detailed outflow lines the lake drains by, not where the outlet is."""
+    if v2 is None:
+        return None
+    lines, by_seq = v2
+    ins = lines.iloc[lines.sindex.query(lake, predicate="intersects")]
+    if len(ins):
+        ins = ins[ins.geometry.intersection(lake).length >= 0.25 * ins.geometry.length]
+    if not len(ins):
+        return None
+    fl, near = ins.loc[ins.totdasqkm.idxmax()], lake.buffer(30)
+    for _ in range(12):
+        g = shapely.line_merge(fl.geometry)
+        if g.geom_type != "LineString":                 # NHDPlus stores flowlines as (usually one-part) multilines
+            g = shapely.LineString([c for part in g.geoms for c in part.coords])
+        if not near.contains(shapely.Point(g.coords[-1])):
+            inside = g.intersection(lake)
+            if inside.is_empty:
+                return shapely.Point(g.coords[0])
+            return g.interpolate(max(g.project(shapely.Point(c)) for q in getattr(inside, "geoms", [inside])
+                                     if q.geom_type in ("LineString", "Point") for c in q.coords))
+        if fl.dnhydroseq not in by_seq.index:
+            return None
+        fl = by_seq.loc[fl.dnhydroseq]
+    return None
+
+
+def lake_outlet(fd, geom, T, dem_cell, index, wet, v=None):
+    """Where a lake's water leaves it, from NHD: (outlet cell, [cells of the way out below it], why), or
+    (None, None, why) where the cell that gathers the most water on the DEM (`dem_cell`) stays the outlet. `v` is
+    where NHDPlus's line leaves the lake (nhdplus_exit), or None.
+    NHD's detailed network says where a lake drains (nhd_outlets): by a stream line (LAKE_LINE_FTYPES), and where no
+    stream line the terrain takes on from leaves the lake, by a pipe or a ditch that a stream line goes on from
+    (BUILT_FTYPES): the network goes on through Palisades Dam and Stark Falls Dam as a pipeline, and out of Two Ocean
+    Lake by a ditch (six lakes on the 12 maps; an aqueduct or a drain that leads to no stream is no outlet).
+    With two or three outflow lines (61 lakes on the 12 maps):
+      - the one NHD names is the river's own channel: below Soft Maple Reservoir the Beaver River's bed, beside the
+        unnamed power canal 230 m along the dam where the terrain spills the lake (31 of the 61 have one named line);
+      - where none or all are named, the one NHDPlus's line leaves by (within WAY_MAX of it): NHD gives Lake Mathews
+        a connector through its north dike, where the terrain spills it, and Cajalco Creek on the west, where
+        NHDPlus and the two Temescal Creek gauges have its water. The maps before put the water on NHDPlus's line,
+        so this is also the outlet they drew (Crooked Lake's, Woodhull Lake's);
+      - else the one nearest dem_cell: the terrain says which of NHD's outlets the water spills by.
+    D8 sends a lake's water down one way out: the other arm is drawn only where it gathers a creek's ground of its
+    own.
+    The DEM's cell stays, and crossbox.py's own search carries the lake's water as before:
+      - where NHD has no outflow line: a lake with no outlet;
+      - where the terrain doesn't take the water on within WAY_MAX down any of NHD's outflow lines: the DEM's ground
+        stands above the lake along them (2.4 m for 830 m below Burntbridge Pond, 67 m below Huckleberry Pond, where
+        the line is an inflow drawn the wrong way round);
+      - where each of them runs off the map first (Stone Mountain Lake, at the map's edge);
+      - where the terrain takes the water on only down another line than the ones NHD names (with no name: than the
+        ones NHDPlus's line leaves by): Snake Meadow Brook runs through Tetreault Pond and out of its south end,
+        where the DEM's ground stands 1.9 m above the pond 530 m down the brook and every cell before it drains
+        back; the DEM spills the pond west, into Fall Brook's valley, where NHD has a second line. Ended there, the
+        pond took Snake Meadow Brook's 10.7 km2 to Fall Brook;
+      - where NHDPlus's line leaves the lake at dem_cell (within V_AT) and NHD's detailed outflow lines are WAY_MAX
+        or more away: two against one on which creek the lake feeds. Livingston Lake and Lens Lake sit on the divide
+        between Paul Creek, where the terrain spills them and NHDPlus has them, and Sand Creek and Roaring Branch,
+        where NHD's detailed lines send them (Sand Creek across 60 m of ground 3 m above Livingston Lake, which
+        stands 5.6 m above the pond NHD draws flowing into it).
+    The outlet cell is the last cell of the lake on NHD's line; the way out is the cells after it down to the first
+    one the terrain's own D8 path is taken from (often none but that one: the cell at the shore)."""
+    win = lake_cells(fd, geom, T)
+    if win is None or not win[2].any():
+        return None, None, "no cells"
+    geom = shapely.make_valid(geom)
+    cands = nhd_outlets(fd, geom, T, win, index, LAKE_LINE_FTYPES, wet)
+    ok = [q for q in cands if q["cells"]]
+    built = ""
+    if not ok:                  # no stream line the terrain takes on from: a pipe through the dam, a ditch
+        cands += nhd_outlets(fd, geom, T, win, index, BUILT_FTYPES, wet)
+        ok = [q for q in cands if q["cells"]]
+        built = ", a pipe or ditch"
+    if not cands:
+        return None, None, "NHD has no outflow line"
+    if not ok and all(q["off_map"] for q in cands):     # a lake at the map's edge: its outlet stream runs off the map
+        return None, None, "NHD's outflow line leaves the map before the terrain takes the water on"
+    if not ok:
+        return None, None, f"the terrain takes the water on down none of NHD's outflow lines within {WAY_MAX} m"
+    x, y = T * (dem_cell[1] + 0.5, dem_cell[0] + 0.5)
+    dem = shapely.Point(x, y)
+    near_v = lambda q: v is not None and q["exit"].distance(v) <= WAY_MAX
+    # the lake's own outlet stream: the outflow lines NHD names, else the ones NHDPlus's line leaves by
+    named = [q for q in cands if q["named"]]
+    main = named or [q for q in cands if near_v(q)]
+    if main and not any(q["cells"] for q in main):
+        return None, None, (f"the terrain takes the water on down none of the outflow lines "
+                            + ("NHD names" if named else "NHDPlus's line leaves by") + f" within {WAY_MAX} m, only down "
+                            + ("an unnamed one" if named else "another"))
+    if (v is not None and not any(near_v(q) for q in ok) and v.distance(dem) <= V_AT
+            and all(q["exit"].distance(dem) > WAY_MAX for q in ok)):
+        return None, None, (f"NHDPlus's line leaves the lake at the cell with the most water, {WAY_MAX} m or more from "
+                            "NHD's detailed outflow line")
+    pool = [q for q in main if q["cells"]] or ok
+    by_v = [q for q in pool if near_v(q)]
+    pick = min(by_v, key=lambda q: q["exit"].distance(v)) if by_v else min(pool, key=lambda q: q["exit"].distance(dem))
+    how = ""
+    if len(ok) > 1:
+        how = (f", the named one of {len(ok)}" if named and len(pool) < len(ok) else
+               f", the one of {len(ok)} that NHDPlus's line leaves by" if by_v else f", the nearest of {len(ok)}")
+    why = "NHD's outflow line" + built + how + ("" if pick["on_line"] else "; the terrain's way on leaves NHD's line")
+    r0, c0, mask = win
+    h, w = mask.shape
+    lake = lambda rc: 0 <= rc[0] - r0 < h and 0 <= rc[1] - c0 < w and bool(mask[rc[0] - r0, rc[1] - c0])
+    seq = pick["cells"]
+    last = max(k for k, rc in enumerate(seq[:-1]) if lake(rc))
+    return seq[last], seq[last + 1:], why
 
 
 def outflow_streams(fd, stream, outflow, max_cells=3000):
@@ -528,7 +875,9 @@ def run(group):
         if len(across):
             print("note: lakes across an edge between two boxes (check the drainage below each dam against NHDPlus): "
                   + ", ".join(f"{n if isinstance(n, str) else 'unnamed'} ({a / 1e4:.0f} ha)" for n, a in zip(across.gnis_name, across.area)))
-    n_wet = n_through = n_routed = 0
+    n_wet = n_routed = n_nhd = 0
+    through = []                                        # lakes that flow on at an edge between two boxes
+    tops, kept, far, loose = [], [], [], []             # lake_outlets.json and the log: see the lake loop
     outflow = []                                        # (row, col, direction) of each pitted lake's outlet
     off_map = []                                        # lakes whose water leaves the map through their own surface
     if len(lakes):
@@ -558,9 +907,25 @@ def run(group):
         for (i, v), k in level.items():
             most[i] = max(most.get(i, 0), k)
         lines = nhd_lines(group)
+        index = outflow_index(nhd_lines(group, LAKE_LINE_FTYPES + BUILT_FTYPES))
+        v2 = nhdplus(group)
+        if v2 is None:                                  # only with NO_NHDPLUS=1: without it the run stopped at its start
+            print("NOTE: no NHDPlus lines (02b_download_flow.py) and NO_NHDPLUS is set: lakes with several outflow lines "
+                  "go by NHD's names and the terrain alone; run 03b_stitch.py again once they are there")
+
+        def box_of(r__, c__):
+            return next((b for b in group if where[b][0].start <= r__ < where[b][0].stop
+                         and where[b][1].start <= c__ < where[b][1].stop), None)
+
+        # (a) every lake ends at the cell with the most water, as all of them did until 2026-11-22
+        pitted = []                                     # (lake, its place in `outflow`) of the lakes ended in a pit
+        wet = np.zeros(fd.shape, bool)                  # the cells of the lakes that hold water
         for i, (a, r_, c_) in best.items():
             if most.get(i, 0) * RES * RES / 1e4 < LEVEL_HA:
                 continue
+            win_ = lake_cells(fd, lakes.geometry.iloc[i - 1], T)
+            if win_ is not None:
+                wet[win_[0]:win_[0] + win_[2].shape[0], win_[1]:win_[1] + win_[2].shape[1]] |= win_[2]
             # one whose water gathers most on the map's rim leaves the map through its own surface (step 4)
             ring = fd[max(r_ - 1, 0):r_ + 2, max(c_ - 1, 0):c_ + 2]
             if not (0 < r_ < H - 1 and 0 < c_ < W - 1 and (ring > 0).all()):
@@ -572,11 +937,67 @@ def run(group):
             # on a box's rim as water leaving the box, and carries a lake past its dam only within one box (Raquette
             # Pond's water leaves it 13 m from the tupper box, through tupper's sliver of the pond)
             if near_shared_edge(r_, c_, group, where):
-                n_through += 1
+                through.append(i)                       # unless (b) ends it at NHD's outlet, away from the edge
                 continue
             outflow.append((r_, c_, int(fd[r_, c_])))     # the way its water takes out of the lake, before the pit
             fd[r_, c_] = PIT
+            pitted.append((i, len(outflow) - 1))
             n_wet += 1
+        # (b) then at NHD's outlet, where NHD has one the terrain takes the water on from (lake_outlet). Decided for
+        # every lake on the one surface (a) leaves, before any is moved: taken one by one as they came, a lake whose
+        # outflow line runs through the next pond of a chain was judged on that pond's flat water, which led back
+        # into it until the pond was routed itself (Rainbow Lake, Fish Creek Ponds and Grass Pond stayed 1-2 km from
+        # their outlets that way)
+        moves = []
+        for i, k in pitted + [(i, None) for i in through]:
+            r_, c_ = best[i][1], best[i][2]
+            geom, name = lakes.geometry.iloc[i - 1], lakes.gnis_name.iloc[i - 1]
+            name = name if isinstance(name, str) else "unnamed"
+            cell, way, why = lake_outlet(fd, geom, T, (r_, c_), index, wet, nhdplus_exit(shapely.make_valid(geom), v2))
+            if cell is not None:
+                rc_, cc_ = cell
+                edge = (not (0 < rc_ < H - 1 and 0 < cc_ < W - 1 and (fd[rc_ - 1:rc_ + 2, cc_ - 1:cc_ + 2] > 0).all())
+                        or near_shared_edge(rc_, cc_, group, where) or box_of(rc_, cc_) is None
+                        or box_of(*way[0]) != box_of(rc_, cc_))
+                if edge:      # crossbox.py carries a lake past its dam only within one box: as before for these
+                    cell, way, why = None, None, "NHD's outlet lies on an edge between two boxes or on the map's edge"
+            if cell is not None:
+                moves.append((i, k, geom, name, cell, way, why))
+            elif why != "NHD has no outflow line":
+                x_, y_ = T * (c_ + 0.5, r_ + 0.5)
+                kept.append((box_of(r_, c_), name, round(geom.area / 1e4, 1), why, round(x_), round(y_)))
+        # (c) the lakes taken to NHD's outlet: routed there, the way out pointed along NHD's line to the cell the
+        # terrain goes on from (a dam's crest, a sill, the head of a side channel), the outlet a pit
+        for i, k, geom, name, cell, way, why in moves:
+            r_, c_ = best[i][1], best[i][2]
+            if k is not None:           # the cell with the most water is no dead end any more. Where the lake's cells
+                fd[r_, c_] = outflow[k][2]      # don't all join NHD's outlet through the lake (two pieces at this
+            route_lake(fd, geom, cell, T, lines)        # cell size), that piece flows on as the terrain has it
+            for k_, rc in enumerate(way[:-1]):
+                fd[rc] = CODE_OF[(way[k_ + 1][0] - rc[0] + 1) * 3 + (way[k_ + 1][1] - rc[1] + 1)]
+            out_ = (cell[0], cell[1], int(CODE_OF[(way[0][0] - cell[0] + 1) * 3 + (way[0][1] - cell[1] + 1)]))
+            if k is None:                               # it flowed on at an edge between two boxes; NHD's outlet is off it
+                outflow.append(out_)
+                through.remove(i)
+                n_wet += 1
+            else:
+                outflow[k] = out_
+            fd[cell] = PIT
+            n_nhd += 1
+            b_ = box_of(*cell)
+            tops.append((b_, cell[0] - where[b_][0].start, cell[1] - where[b_][1].start,
+                         way[0][0] - where[b_][0].start, way[0][1] - where[b_][1].start))
+            if "leaves NHD's line" in why:
+                loose.append((name, round(geom.area / 1e4, 1)))
+            d_ = RES * float(np.hypot(cell[0] - r_, cell[1] - c_))
+            if d_ >= 300:
+                far.append((name, round(geom.area / 1e4, 1), round(d_), RES * (len(way) - 1), why))
+        # each way out was judged before any lake was moved: none may lead back into its lake now that all are
+        back = [name for i, k, geom, name, cell, way, why in moves
+                if leads_back(fd, way[0][0], way[0][1], lake_cells(fd, geom, T))]
+        if back:
+            print("  WARNING: the way out leads back into the lake, which carries its water nowhere: " + ", ".join(back))
+        del wet
         acc, more = accumulate(fd, DR, DC)
         if more:                                        # a flowing-on lake's outlet pointing back into the lake
             fd[acc < 0] = PIT
@@ -605,13 +1026,24 @@ def run(group):
             del wet
     order = strahler(fd, stream, DR, DC)
     print(f"{' + '.join(group)}: {W} x {H} cells, {int(stream.sum())} stream cells, max order {int(order.max())}, "
-          f"{n_wet} of {len(lakes)} lakes end paths at their outlet ({n_routed} routed to it along NHD's lines; "
+          f"{n_wet} of {len(lakes)} lakes end paths at their outlet ({n_nhd} at NHD's outlet, {len(far)} of them 300 m "
+          f"or more from the cell with the most water; {n_routed} routed to it along NHD's lines; "
           f"{n_out} km of stream line added below outlets)"
-          + (f" ({n_through} more flow on: outlet on an edge between boxes)" if n_through else "")
+          + (f" ({len(through)} more flow on: outlet on an edge between boxes: "
+             + ", ".join(n if isinstance(n, str) else "unnamed" for n in lakes.gnis_name.iloc[[i - 1 for i in through]]) + ")"
+             if through else "")
           + (f", {len(off_map)} drain off the map through their water and carry no stream lines ("
              + ", ".join(n if isinstance(n, str) else "unnamed" for n in lakes.gnis_name.iloc[[i - 1 for i in off_map]]) + ")"
              if off_map else "")
           + (f", {loops} cells on loops ended in pits" if loops else ""))
+    for name, ha, d_, across, why in sorted(far, key=lambda q: -q[2]):
+        print(f"  outlet moved to NHD's: {name} ({ha:g} ha), {d_:,} m from the cell with the most water"
+              + (f", {across} m of way out across a dam or sill" if across else "") + f" ({why})")
+    for _, name, ha, why, x_, y_ in kept:
+        print(f"  outlet left at the cell with the most water: {name} ({ha:g} ha) at ({x_}, {y_}): {why}")
+    if loose:
+        print(f"  below {len(loose)} outlets the terrain's way on leaves NHD's outflow line within {FOLLOW_M} m, and is "
+              "taken as the terrain has it: " + ", ".join(f"{n} ({ha:g} ha)" for n, ha in sorted(loose, key=lambda q: -q[1])))
     # 5. each box's files
     from pysheds.grid import Grid
     from pysheds.sview import Raster, ViewFinder
@@ -661,22 +1093,49 @@ def run(group):
         n_on = int(ex.sum())
         g.to_file(f"{derived_dir(r)}/dem_streams.gpkg")
         print(f"  {r}: stream cells {int(st.sum())}, links {len(g)}, max order {int(od.max())}, {n_on} lines run on into the next box")
-    return left
+    return (left, {r: [list(map(int, q[1:])) for q in tops if q[0] == r] for r in group},
+            {r: [list(q[1:]) for q in kept if q[0] == r] for r in group})
 
 
 if __name__ == "__main__":
     only = set(sys.argv[1:])                            # box names: just the groups that hold one of them
-    done, left = [], []
+    # NHDPlus's lines have to be there before anything is written. Without them the lakes whose outflow lines NHD
+    # doesn't name drain by the nearest line instead of the one NHDPlus leaves by (9 lakes on the 12 maps of
+    # 2026-11-22, Lake Mathews among them), and a failed download would move them with only a note in a log.
+    no_v2 = not os.path.exists(f"{FLOW}/nhdplus_v2.gpkg")
+    if no_v2 and not os.environ.get("NO_NHDPLUS"):
+        sys.exit(f"03b_stitch.py stopped, nothing written: {FLOW}/nhdplus_v2.gpkg is missing. NHDPlus's lines say which "
+                 f"of a lake's outflow lines it drains by. Run AREA={AREA} 02b_download_flow.py first (run_base.sh and "
+                 "run_rebuild_a.sh do), or set NO_NHDPLUS=1 to go on without them: a lake with several outflow lines "
+                 "that NHD doesn't name then takes the one nearest the cell with the most water.")
+    done, left, tops, kept = [], [], {}, {}
     for group in groups():
         if only and not only & set(group):
             continue
-        left += run(group)
+        left_, tops_, kept_ = run(group)
+        left += left_
+        tops.update(tops_)
+        kept.update(kept_)
         done += group
+    # the lakes' outlets, for crossbox.py: "tops" {box: [[outlet row, col, row, col of the first cell of the way out]]}
+    # in each box's own grid; and "kept" {box: [[name, ha, why, x, y]]}, the lakes left at the cell with the most water
+    # though NHD has an outflow line
+    path = f"{SHARED_DERIVED}/lake_outlets.json"
+    os.makedirs(SHARED_DERIVED, exist_ok=True)
+    old = json.load(open(path)) if os.path.exists(path) else {"tops": {}, "kept": {}}
+    old["tops"] = {**{b: v for b, v in old.get("tops", {}).items() if b not in done}, **tops}
+    old["kept"] = {**{b: v for b, v in old.get("kept", {}).items() if b not in done}, **kept}
+    with open(path + ".tmp", "w") as fh:
+        json.dump(old, fh)
+    os.replace(path + ".tmp", path)
     path = f"{SHARED_DERIVED}/stitched.json"
     old = json.load(open(path)) if os.path.exists(path) else []
     os.makedirs(SHARED_DERIVED, exist_ok=True)
     with open(path, "w") as fh:
         json.dump(sorted(set(old) | set(done)), fh)
+    if no_v2:
+        print("NOTE: this routing was made WITHOUT NHDPlus's lines (NO_NHDPLUS=1): lakes with several outflow lines that "
+              "NHD doesn't name drain by the nearest one. Run 02b_download_flow.py and this script again.")
     if left:      # the files are written; the exit status marks the run FAILED in the run_*.sh logs
         print("FAILED: dead ends left on edges between boxes, where water stops short of its outlet: "
               + ", ".join(f"({x:.0f}, {y:.0f}) {a:,.1f} km2" for x, y, a in left))

@@ -1,0 +1,128 @@
+area,box,lake,ha,n,cand,cand_name,own_name,fed_name,ftype,exit_to_dem_m,cells,on_line,nearest,named,drawn_pub,routed_now,lat,lon
+adk_high_peaks,saranac,Lower Saranac Lake,869.9,2,0,Saranac River,,,460,761,20,True,False,False,0.0,0.0,44.28845,-74.1952
+adk_high_peaks,saranac,Lower Saranac Lake,869.9,2,1,Saranac River,Saranac River,Saranac River,558,18,2,True,True,True,,,44.29528,-74.19558
+adk_high_peaks,wilmington,Lower Saint Regis Lake,185.4,2,0,Saint Regis River,,,460,8,2,True,True,False,0.92,0.92,44.43157,-74.299
+adk_high_peaks,wilmington,Lower Saint Regis Lake,185.4,2,1,Saint Regis River,Saint Regis River,Saint Regis River,460,73,2,True,False,True,1.0,1.0,44.43173,-74.29988
+adk_high_peaks,chateaugay,unnamed,43.8,3,0,,,,558,9,2,True,True,False,,,44.71261,-74.34122
+adk_high_peaks,chateaugay,unnamed,43.8,3,1,,,,460,495,30,True,False,False,0.67,1.0,44.71592,-74.34547
+adk_high_peaks,chateaugay,unnamed,43.8,3,2,,,,460,760,9,True,False,False,0.0,0.0,44.71891,-74.34514
+adk_high_peaks,chateaugay,Twin Ponds,78.7,2,0,,,,334,1335,2,True,False,False,0.0,0.0,44.71288,-74.34117
+adk_high_peaks,chateaugay,Twin Ponds,78.7,2,1,Little Salmon River,Little Salmon River,,460,8,2,True,True,True,1.0,1.0,44.71643,-74.35735
+adk_northwest,beaver,Fifth Creek Pond,10.6,2,0,,,,460,16,2,True,True,False,1.0,1.0,43.84116,-75.08245
+adk_northwest,beaver,Fifth Creek Pond,10.6,2,1,Sunday Creek,,,460,179,2,True,False,False,0.0,0.0,43.84232,-75.08062
+adk_northwest,beaver,Taylorville Pond,44.7,2,0,Beaver River,,,460,94,2,True,False,False,1.0,1.0,43.92636,-75.31013
+adk_northwest,beaver,Taylorville Pond,44.7,2,1,Beaver River,Beaver River,Beaver River,460,73,2,True,True,True,1.0,1.0,43.92771,-75.31073
+adk_northwest,beaver,unnamed,39.7,2,0,Beaver River,,,558,31,2,True,True,False,1.0,0.0,43.91707,-75.22501
+adk_northwest,beaver,unnamed,39.7,2,1,Beaver River,,,558,31,2,True,False,False,1.0,0.0,43.91707,-75.22501
+adk_northwest,beaver,Soft Maple Reservoir,136.7,2,0,Beaver River,,,558,35,2,True,True,False,1.0,0.0,43.91708,-75.22589
+adk_northwest,beaver,Soft Maple Reservoir,136.7,2,1,Beaver River,Beaver River,Beaver River,460,229,3,True,False,True,1.0,1.0,43.91837,-75.22313
+adk_northwest,beaver,Crooked Lake,54.0,2,0,,,,460,948,2,True,False,False,1.0,1.0,44.00206,-74.93713
+adk_northwest,beaver,Crooked Lake,54.0,2,1,,,,460,7,2,True,True,False,0.0,0.0,43.99663,-74.94638
+adk_northwest,beaver,unnamed,97.1,2,0,Little River,Little River,Little River,460,1249,3,True,False,True,0.83,0.75,44.16107,-74.97315
+adk_northwest,beaver,unnamed,97.1,2,1,,,,460,6,2,True,True,False,0.58,0.42,44.16789,-74.96064
+adk_northwest,beaver,Rock Lake,23.3,2,0,Sand Lake Outlet,,,558,51,3,True,True,False,0.33,0.42,44.00947,-75.01968
+adk_northwest,beaver,Rock Lake,23.3,2,1,Sand Lake Outlet,Sand Lake Outlet,,558,347,2,True,False,True,0.25,1.0,44.00968,-75.01495
+adk_northwest,long_lake,Moonshine Pond,8.5,2,0,,,,460,534,15,True,False,False,0.0,0.0,44.04724,-74.51002
+adk_northwest,long_lake,Moonshine Pond,8.5,2,1,,,,460,35,2,True,True,False,1.0,1.0,44.04597,-74.50323
+adk_northwest,long_lake,Minnow Pond,44.7,2,0,,,,460,1,2,True,True,False,1.0,1.0,43.87684,-74.44218
+adk_northwest,long_lake,Minnow Pond,44.7,2,1,,,,460,571,23,True,False,False,0.0,0.0,43.88184,-74.44384
+adk_northwest,long_lake,Bum Pond,15.6,2,0,,,,460,2,2,False,True,False,0.25,1.0,44.00106,-74.67291
+adk_northwest,long_lake,Bum Pond,15.6,2,1,,,,460,7,2,True,False,False,1.0,1.0,44.00107,-74.67281
+adk_northwest,long_lake,Simon Pond,315.4,2,0,Raquette River,Raquette River,Raquette River,558,27,2,True,True,True,,,44.19865,-74.4719
+adk_northwest,long_lake,Simon Pond,315.4,2,1,Raquette River,,,460,289,3,True,False,False,,,44.20121,-74.47082
+adk_northwest,long_lake,Grass Pond,1135.3,2,0,,,,460,38,2,True,True,False,,,44.10186,-74.68425
+adk_northwest,long_lake,Grass Pond,1135.3,2,1,,,,460,44,2,True,False,False,,,44.10234,-74.68458
+adk_northwest,long_lake,Round Lake,304.7,2,0,Round Lake Outlet,,,558,37,2,True,True,False,1.0,0.67,44.08715,-74.58224
+adk_northwest,long_lake,Round Lake,304.7,2,1,Round Lake Outlet,Round Lake Outlet,Round Lake Outlet,460,139,6,True,False,True,0.5,1.0,44.08718,-74.5809
+adk_northwest,tupper,Round Pond,11.9,2,0,,,,460,69,2,True,False,False,1.0,1.0,44.26001,-75.07012
+adk_northwest,tupper,Round Pond,11.9,2,1,,,,460,36,2,True,True,False,1.0,1.0,44.26056,-75.0691
+adk_northwest,tupper,unnamed,13.4,2,0,,,,460,44,3,True,False,False,0.5,0.42,44.2936,-75.12525
+adk_northwest,tupper,unnamed,13.4,2,1,,,,460,14,2,True,True,False,1.0,1.0,44.29409,-75.12539
+adk_southeast,indian_lake,Owl Pond,27.8,2,0,,,,460,10,2,True,True,False,1.0,1.0,43.60491,-74.32116
+adk_southeast,indian_lake,Owl Pond,27.8,2,1,,,,460,449,12,True,False,False,0.0,0.0,43.60864,-74.3234
+adk_southeast,minerva,Hewitt Pond,68.5,2,0,Stony Pond Brook,,,460,1067,9,True,False,False,0.0,0.0,43.86747,-73.9857
+adk_southeast,minerva,Hewitt Pond,68.5,2,1,Hewitt Pond Brook,Hewitt Pond Brook,Hewitt Pond Brook,460,33,2,True,True,True,0.67,1.0,43.86627,-73.97239
+adk_southeast,siamese,Middle Flow,13.5,2,0,Paul Creek,,,460,11,2,True,True,False,1.0,1.0,43.38415,-74.02325
+adk_southeast,siamese,Middle Flow,13.5,2,1,Sand Creek,,,460,440,23,True,False,False,1.0,1.0,43.38351,-74.02848
+adk_southeast,sacandaga,Keenan Reservoir,18.4,2,0,Clendon Brook,Clendon Brook,Clendon Brook,460,1,29,True,True,True,0.58,1.0,43.32596,-73.75631
+adk_southeast,sacandaga,Keenan Reservoir,18.4,2,1,Clendon Brook,,,460,242,2,True,False,False,0.0,0.0,43.32733,-73.75397
+adk_southeast,lake_george,Buttermilk Pond,8.8,2,0,,,,460,26,2,True,True,False,1.0,1.0,43.71621,-73.6207
+adk_southeast,lake_george,Buttermilk Pond,8.8,2,1,,,,460,328,17,True,False,False,0.0,0.0,43.71475,-73.62457
+adk_southeast,lake_george,Butler Pond,41.7,2,0,,,,460,1782,3,True,False,False,1.0,0.0,43.36355,-73.73254
+adk_southeast,lake_george,Butler Pond,41.7,2,1,,,,460,11,2,True,True,False,0.0,1.0,43.37912,-73.73793
+adk_southeast,lake_george,Lakes Pond,30.0,2,0,Mount Hope Brook,,,460,170,3,True,False,False,0.0,0.08,43.48494,-73.55018
+adk_southeast,lake_george,Lakes Pond,30.0,2,1,Mount Hope Brook,Mount Hope Brook,Mount Hope Brook,460,12,2,True,True,True,1.0,1.0,43.48593,-73.54846
+adk_southeast,lake_george,Perch Pond,10.2,2,0,,,,460,8,2,True,True,False,1.0,1.0,43.74897,-73.2817
+adk_southeast,lake_george,Perch Pond,10.2,2,1,,,,460,523,14,True,False,False,0.0,0.14,43.75293,-73.27802
+adk_southwest,moose,Woodhull Lake,440.1,2,0,,,,460,17,2,True,True,False,0.0,0.0,43.58346,-74.99074
+adk_southwest,moose,Woodhull Lake,440.1,2,1,,,,460,112,2,True,False,False,1.0,1.0,43.5824,-74.99007
+adk_southwest,west_canada_lakes,Beaver Pond,36.1,2,0,Cedar River,Cedar River,Cedar River,558,8,2,True,True,True,,,43.62671,-74.55002
+adk_southwest,west_canada_lakes,Beaver Pond,36.1,2,1,,,,460,792,20,True,False,False,1.0,0.0,43.63374,-74.55197
+adk_southwest,speculator,The Floe,40.5,2,0,South Branch West Canada Creek,South Branch West Canada Creek,South Branch West Canada Creek,558,43,2,True,True,True,1.0,1.0,43.4007,-74.71297
+adk_southwest,speculator,The Floe,40.5,2,1,South Branch West Canada Creek,,,558,72,13,True,False,False,0.83,0.83,43.40108,-74.71271
+adk_southwest,speculator,Peck Lake,573.5,3,0,Peck Creek,Peck Creek,Peck Creek,460,145,2,True,True,True,1.0,1.0,43.10116,-74.4342
+adk_southwest,speculator,Peck Lake,573.5,3,1,West Stony Creek,West Stony Creek,West Stony Creek,460,3566,2,True,False,True,0.0,0.0,43.12855,-74.41096
+adk_southwest,speculator,Peck Lake,573.5,3,2,West Stony Creek,,,558,3685,2,True,False,False,0.0,0.0,43.1293,-74.40977
+central_vt,stowe_lamoille,Valley Lake,37.4,2,0,,,,460,10,2,True,True,False,1.0,1.0,44.44369,-72.43757
+central_vt,stowe_lamoille,Valley Lake,37.4,2,1,,,,460,350,7,True,False,False,0.0,0.17,44.4463,-72.43529
+central_vt,white_river,Perch Pond,10.2,2,0,,,,460,523,14,True,False,False,1.0,0.14,43.75293,-73.27802
+central_vt,white_river,Perch Pond,10.2,2,1,,,,460,8,2,True,True,False,0.0,1.0,43.74897,-73.2817
+jackson,palisades,Palisades Reservoir,395.9,2,0,Salt River,Salt River,Salt River,558,1009,2,True,False,True,,,43.16691,-111.06422
+jackson,palisades,Palisades Reservoir,395.9,2,1,Snake River,Snake River,Snake River,558,985,2,True,True,True,,,43.1671,-111.06385
+jackson,palisades,Palisades Reservoir,376.0,2,0,Salt River,Salt River,Salt River,558,2061,2,True,False,True,,,43.16689,-111.06417
+jackson,palisades,Palisades Reservoir,376.0,2,1,Snake River,Snake River,Snake River,558,2028,2,True,True,True,,,43.1671,-111.06385
+la,san_gabriel,Morris Reservoir,114.7,2,0,San Gabriel River,,,334,67,2,True,True,False,0.67,0.75,34.17404,-117.8803
+la,san_gabriel,Morris Reservoir,114.7,2,1,San Gabriel River,San Gabriel River,San Gabriel River,334,172,21,True,False,True,1.0,1.0,34.17579,-117.88178
+la,santa_monica,Lake Sherwood,55.9,3,0,Potrero Valley Creek,,,460,111,2,True,False,False,0.58,0.58,34.13935,-118.85728
+la,santa_monica,Lake Sherwood,55.9,3,1,Potrero Valley Creek,Potrero Valley Creek,,460,21,2,True,True,True,1.0,1.0,34.13982,-118.85813
+la,santa_monica,Lake Sherwood,55.9,3,2,Potrero Valley Creek,,,460,68,2,True,False,False,0.0,0.0,34.14009,-118.859
+la,piru,Castaic Lake,812.5,2,0,Castaic Creek,Castaic Creek,Castaic Creek,334,322,12,True,False,True,0.0,1.0,34.52192,-118.61173
+la,piru,Castaic Lake,812.5,2,1,,,,558,79,2,True,True,False,1.0,0.0,34.52406,-118.61324
+la,san_jacinto,Lake Hemet,137.6,2,0,South Fork San Jacinto River,,,460,339,2,True,False,False,0.5,0.5,33.66147,-116.70621
+la,san_jacinto,Lake Hemet,137.6,2,1,South Fork San Jacinto River,,,460,9,2,True,True,False,1.0,1.0,33.66456,-116.70682
+la,santa_ana_mtns,Lake Mathews,868.0,3,0,,,,558,1428,30,True,False,False,0.33,1.0,33.84235,-117.46033
+la,santa_ana_mtns,Lake Mathews,868.0,3,1,,,,334,72,5,True,True,False,0.0,0.0,33.85265,-117.44999
+la,santa_ana_mtns,Lake Mathews,868.0,3,2,,,,334,72,5,False,False,False,0.0,0.0,33.85265,-117.44999
+n_georgia,cohutta,unnamed,39.8,2,0,Conasauga River,,,460,679,2,False,False,False,0.42,0.5,34.86314,-84.83121
+n_georgia,cohutta,unnamed,39.8,2,1,Conasauga River,,,460,137,2,True,True,False,0.0,1.0,34.86775,-84.82726
+n_georgia,rabun,Lake Rabun,292.8,2,0,Tallulah River,Tallulah River,Tallulah River,558,94,2,True,True,True,1.0,1.0,34.76564,-83.41632
+n_georgia,rabun,Lake Rabun,292.8,2,1,Tallulah River,,,334,641,7,True,False,False,0.5,0.5,34.77144,-83.4189
+ne_ct,natchaug,Breakneck Pond,38.6,2,0,Breakneck Brook,,,460,128,6,True,False,False,0.33,0.5,42.02941,-72.10328
+ne_ct,natchaug,Breakneck Pond,38.6,2,1,Breakneck Brook,Breakneck Brook,Breakneck Brook,460,11,2,True,True,True,1.0,1.0,42.03011,-72.10189
+ne_ct,natchaug,Hatchet Pond,15.2,2,0,Hatchet Brook,Hatchet Brook,Hatchet Brook,460,55,2,True,True,True,1.0,1.0,42.02595,-72.08792
+ne_ct,natchaug,Hatchet Pond,15.2,2,1,,,,460,251,2,True,False,False,0.0,0.0,42.02834,-72.0894
+ne_ct,natchaug,Knowlton Pond,44.9,2,0,,,,460,13,2,True,True,False,1.0,1.0,41.83557,-72.19208
+ne_ct,natchaug,Knowlton Pond,44.9,2,1,,,,460,718,2,True,False,False,0.0,0.11,41.84196,-72.19229
+ne_ct,natchaug,McLaughlin Pond,8.3,2,0,Mount Hope River,,,460,13,2,True,True,False,1.0,1.0,41.82655,-72.18026
+ne_ct,natchaug,McLaughlin Pond,8.3,2,1,Mount Hope River,,,460,244,2,True,False,False,0.0,0.0,41.82785,-72.17803
+ne_ct,natchaug,Number Five Reservoir,12.7,2,0,Hatchet Brook,,,460,24,2,True,True,False,1.0,0.0,42.04145,-72.08025
+ne_ct,natchaug,Number Five Reservoir,12.7,2,1,Hatchet Brook,Hatchet Brook,Hatchet Brook,460,192,2,True,False,True,1.0,1.0,42.04292,-72.08123
+ne_ct,natchaug,Number Four Reservoir,27.2,2,0,Hatchet Brook,,,460,54,15,True,True,False,0.82,0.82,42.05088,-72.07709
+ne_ct,natchaug,Number Four Reservoir,27.2,2,1,Hatchet Brook,Hatchet Brook,Hatchet Brook,460,85,2,True,False,True,1.0,1.0,42.05111,-72.0757
+ne_ct,natchaug,Baltic Reservoir,10.1,2,0,Shetucket River,,,460,143,2,True,False,False,1.0,0.0,41.62232,-72.07631
+ne_ct,natchaug,Baltic Reservoir,10.1,2,1,,,,460,12,2,True,True,False,0.0,1.0,41.62232,-72.07447
+ne_ct,natchaug,Fairview Reservoir,27.0,2,0,Bobbin Mill Brook,,,460,1805,27,True,False,False,0.5,1.0,41.57486,-72.0723
+ne_ct,natchaug,Fairview Reservoir,27.0,2,1,Bobbin Mill Brook,Bobbin Mill Brook,Bobbin Mill Brook,460,22,2,True,True,True,1.0,1.0,41.5602,-72.08197
+ne_ct,quinebaug,Morse Pond,9.4,2,0,,,,460,391,27,False,False,False,0.0,0.0,42.0412,-71.74988
+ne_ct,quinebaug,Morse Pond,9.4,2,1,Centerville Brook,Centerville Brook,,460,9,3,True,True,True,1.0,1.0,42.04418,-71.74718
+ne_ct,quinebaug,Beachdale Pond,15.1,2,0,Pachaug River,Pachaug River,Pachaug River,558,8,2,True,True,True,1.0,1.0,41.57879,-71.8622
+ne_ct,quinebaug,Beachdale Pond,15.1,2,1,Pachaug River,,,558,33,5,True,False,False,0.92,0.92,41.57847,-71.86209
+ne_ct,quinebaug,Fivemile Pond,14.3,2,0,Fivemile River,Fivemile River,Fivemile River,460,18,2,True,True,True,1.0,1.0,41.80429,-71.88632
+ne_ct,quinebaug,Fivemile Pond,14.3,2,1,Fivemile River,,,558,24,2,True,False,False,1.0,1.0,41.80416,-71.88609
+ne_ct,quinebaug,unnamed,8.4,2,0,Billings Brook,Billings Brook,Billings Brook,558,109,3,True,False,True,,,41.54895,-71.89647
+ne_ct,quinebaug,unnamed,8.4,2,1,Billings Brook,,,558,50,3,True,True,False,,,41.54949,-71.89482
+ne_ct,quinebaug,Stone Hill Reservoir,11.7,2,0,Reservoir Brook,Reservoir Brook,Reservoir Brook,460,58,11,True,False,True,1.0,1.0,41.6296,-71.90073
+ne_ct,quinebaug,Stone Hill Reservoir,11.7,2,1,Reservoir Brook,,,460,37,2,True,True,False,0.67,0.67,41.6304,-71.90097
+se_pa,brandywine,Coatesville Reservoir,22.3,2,0,,,,460,52,2,True,False,False,1.0,1.0,40.0051,-75.85287
+se_pa,brandywine,Coatesville Reservoir,22.3,2,1,,,,460,11,2,True,True,False,1.0,1.0,40.00535,-75.85322
+se_pa,brandywine,Marsh Creek Reservoir,202.2,3,0,Marsh Creek,Marsh Creek,Marsh Creek,334,301,11,True,False,True,0.75,1.0,40.05585,-75.71742
+se_pa,brandywine,Marsh Creek Reservoir,202.2,3,1,Marsh Creek,,,460,131,6,True,False,False,0.92,0.0,40.05792,-75.71401
+se_pa,brandywine,Marsh Creek Reservoir,202.2,3,2,Marsh Creek,,,460,38,26,True,True,False,1.0,0.0,40.05801,-75.71594
+se_pa,brandywine,Glen Morgan Lake,50.5,2,0,,,,334,14,2,True,True,False,1.0,0.0,40.18933,-75.86368
+se_pa,brandywine,Glen Morgan Lake,50.5,2,1,,,,460,201,11,True,False,False,1.0,1.0,40.189,-75.86597
+se_pa,brandywine,Green Hills Lake,9.2,2,0,Allegheny Creek,,,460,30,2,True,True,False,1.0,1.0,40.26177,-75.90656
+se_pa,brandywine,Green Hills Lake,9.2,2,1,Allegheny Creek,Allegheny Creek,Allegheny Creek,460,131,2,True,False,True,0.92,1.0,40.26321,-75.90671
+se_pa,brandywine,West Chester Reservoir,26.1,2,0,East Branch Chester Creek,,,460,10,2,True,True,False,1.0,1.0,39.98454,-75.5719
+se_pa,brandywine,West Chester Reservoir,26.1,2,1,East Branch Chester Creek,East Branch Chester Creek,East Branch Chester Creek,460,42,2,True,False,True,1.0,1.0,39.98498,-75.57194
+smokies,cataloochee,Lake Junaluska,81.2,2,0,Richland Creek,Richland Creek,Richland Creek,558,62,16,True,True,True,1.0,1.0,35.52762,-82.96374
+smokies,cataloochee,Lake Junaluska,81.2,2,1,Richland Creek,Richland Creek,Richland Creek,558,62,2,True,False,False,1.0,1.0,35.52762,-82.96374

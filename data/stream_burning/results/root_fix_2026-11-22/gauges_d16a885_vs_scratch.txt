@@ -1,0 +1,14 @@
+gauges: old 516 new 516 | only old 0 only new 0
+Empty DataFrame
+Columns: [area, site_no, station_old, station_new, gauge_km2_old, map_km2_old, gauge_km2_new, map_km2_new]
+Index: []
+
+gauges whose map/gauge area ratio moved by 0.02+: 5 (better 4, worse 1)
+         area  site_no                                    station_old  sq_mi  ratio_old  ratio_new  dist_m_old  dist_m_new                    reach_name_old    reach_name_new  lat_old  lon_old verdict
+           la 11071900            TEMESCAL C A CORONA LK NR CORONA CA   57.9      0.935      0.860     108.033       7.289                     Temescal Wash     Temescal Wash   33.750 -117.446   WORSE
+adk_northwest 04257000 BEAVER R BLW STILLWATER DAM NR BEAVER RIVER NY  171.0      0.934      1.005      57.249      81.607                               NaN      Beaver River   43.899  -75.052  better
+adk_northwest 04262000          OSWEGATCHIE RIVER NEAR OSWEGATCHIE NY  259.0      0.944      1.010       2.661       2.661                 Oswegatchie River Oswegatchie River   44.223  -75.074  better
+      jackson 13028500                  SALT RIVER AT WY-ID STATELINE  890.0      0.006      0.906     168.166      89.934                        Salt River        Salt River   43.164 -111.065  better
+           la 11108135       CASTAIC LAGOON PARSHALL FL NR CASTAIC CA  138.0      0.004      1.050     127.246     127.246 State Water Project - West Branch     Castaic Creek   34.510 -118.609  better
+within 10 % old 417 new 419 of 516
+within 25 % old 459 new 462 of 516

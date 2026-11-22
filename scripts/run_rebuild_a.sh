@@ -28,6 +28,9 @@ for a in "$@"; do
     rmdir $LOCK
   done
   if [[ -z $SKIP_03B ]]; then
+    # 03b_stitch.py asks NHDPlus's lines which of a lake's outflow lines it drains by: fetch them first if they are
+    # not there yet (run_mid.sh refreshes the flow data in any case)
+    [[ -f ../data/raw/$a/_shared/flow/nhdplus_v2.gpkg ]] || step "" 02b_download_flow
     until mkdir $LOCK 2>/dev/null; do sleep 5; done
     step "" 03b_stitch
     rmdir $LOCK

@@ -20,6 +20,11 @@ written for crossbox VERSION 16's cache):
                         is what is off, a pit far from it says 03b's outlet (the lake cell with the most water) is not
                         the lake's outlet: Raquette Lake's sat 9.1 km away, where South Inlet enters
   putin_to_hr_outlet_m  the same for the put-in cell
+  at_top                the put-in cell is the first cell of the way out 03b_stitch.py laid at NHD's outlet
+                        (<area>/_shared/lake_outlets.json, since 2026-11-22): on the way out by construction
+  putin_in              another lake the put-in cell lies in (within 15 m): the water goes straight into the next
+                        lake, and no stream link starts by the pit for this check to find
+  kept_why              why 03b_stitch.py left the outlet at the cell with the most water, where it did
 A put-in under 100 m from the pit that "never joins" is usually this check picking another stream link that starts by
 the pit: look before counting it.
 AREA=<area> python putin.py <root|-> [out.csv]"""
@@ -35,6 +40,7 @@ area = config.AREA
 Q = f"{ROOT}/data/derived/{area}"
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 cache = json.load(open(f"{Q}/_shared/inflows.json"))
+lo = json.load(open(f"{Q}/_shared/lake_outlets.json")) if os.path.exists(f"{Q}/_shared/lake_outlets.json") else {}
 lakes = reservoirs()
 lg = shapely.make_valid(lakes.geometry.values)
 lt = shapely.STRtree(lg)
@@ -43,6 +49,8 @@ for box, dams in cache["dams"].items():
     with rasterio.open(f"{Q}/{box}/flowdir.tif") as src:
         fd, T = src.read(1), src.transform
     H, W = fd.shape
+    tops = {(pr_, pc_): (tr_, tc_) for pr_, pc_, tr_, tc_ in lo.get("tops", {}).get(box, [])}
+    kept = {(n_, ha_): why_ for n_, ha_, why_, *_ in lo.get("kept", {}).get(box, [])}
     km = {(r_, c_): (k, kind) for r_, c_, k, _, kind in cache["full"].get(box, []) if kind in ("dam", "pond")}
     ds = gpd.read_file(f"{Q}/{box}/dem_streams.gpkg").to_crs(config.CRS)
     st = shapely.STRtree(shapely.points([g.coords[0][:2] for g in ds.geometry.values]))
@@ -102,12 +110,17 @@ for box, dams in cache["dams"].items():
                 else:
                     outs.append(g.interpolate(max(g.project(shapely.Point(c)) for part in getattr(ins, "geoms", [ins])
                                                   if part.geom_type in ("LineString", "Point") for c in part.coords)))
+        lname = "unnamed" if not isinstance(name, str) or name.startswith("unnamed") else name     # 03b's names
+        nxt = [j for j in lt.query(shapely.Point(ex, ey).buffer(15), predicate="intersects") if not len(li) or j != li[0]]
+        nxt = ", ".join(sorted({(lakes.gnis_name.iloc[j] if isinstance(lakes.gnis_name.iloc[j], str) else "unnamed")
+                                + f" ({lg[j].area / 1e4:.0f} ha)" for j in nxt}))
         d_hr = lambda x, y: round(min(shapely.Point(x, y).distance(s) for s in outs)) if outs else np.nan
         rows.append(dict(area=area, box=box, lake=name if isinstance(name, str) else "unnamed", ha=ha, kind=kind, km2=k,
                          pit_to_putin_m=round(float(np.hypot(ex - px, ey - py))), way_out=n_way,
                          on_way=bool(join and join[0] == 0), joins_after_m=(join[0] * 10 if join else np.nan),
                          down_the_way_m=(join[1] * 10 if join else np.nan), putin_to_way_m=to_way, hr_outlets=len(outs),
                          pit_to_hr_outlet_m=d_hr(px, py), putin_to_hr_outlet_m=d_hr(ex, ey),
+                         at_top=tops.get((pr, pc)) == (row, col), putin_in=nxt, kept_why=kept.get((lname, ha), ""),
                          pit_x=px, pit_y=py, putin_x=ex, putin_y=ey))
 t = pd.DataFrame(rows)
 for k_ in ("pit", "putin"):

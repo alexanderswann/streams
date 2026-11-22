@@ -25,12 +25,14 @@ for a in "$@"; do
     step $r 03_hydrology
     rmdir $LOCK
   done
+  # the flow data before the routing is put together and before the drops: 03b_stitch.py asks NHDPlus's lines which
+  # of a lake's outflow lines it drains by (2026-11-22), 04 and 04b count the water crossbox.py carries past dams (a
+  # river is a channel from the dam on), and crossbox.py needs the reservoir list and NHDPlus's lines (2026-11-21);
+  # run_mid.sh runs it too
+  step "" 02b_download_flow
   until mkdir $LOCK 2>/dev/null; do sleep 5; done
   step "" 03b_stitch
   rmdir $LOCK
-  # the flow data before the drops: 04 and 04b count the water crossbox.py carries past dams (a river is a channel
-  # from the dam on), and crossbox.py needs the reservoir list and NHDPlus's lines (2026-11-21); run_mid.sh runs it too
-  step "" 02b_download_flow
   for r in $ranges; do step $r 04_knickpoints; step $r 04b_bigcreek_steps; done
   echo "== DONE $a $(date '+%m-%d %H:%M:%S')" >> $LOG
 done

@@ -1,9 +1,12 @@
 """For every lake (flowlib.reservoirs) with an NHDPlus outlet line: NHDPlus's drainage where the line leaves the lake,
-against the full drainage (area_streams.csv) of the reach nearest that spot outside the lake (within 150 m).
-AREA=adk_northwest python lake_outlets.py <area tables dir or 'project'>"""
-import sys, os
+against the full drainage (area_streams.csv) of the reach carrying the most water below the lake: within 150 m of
+that spot outside the lake, or of the cell where the build puts the lake's water back in (the link cache's dam
+links). NHDPlus's 1:100,000 line can leave the outline hundreds of metres from the outlet (1 km at Spy Lake), and
+since 2026-11-22 the water goes on from NHD's detailed outlet, so the first spot alone read a side creek there.
+ROOT=<build root, default the project> AREA=adk_northwest python lake_outlets.py <area tables dir or 'project'>"""
+import sys, os, json
 ROOT = os.environ.get("ROOT", "/Users/mac/Fishing"); sys.path.insert(0, f"{ROOT}/scripts"); os.chdir(f"{ROOT}/scripts")
-import numpy as np, pandas as pd, geopandas as gpd, shapely
+import numpy as np, pandas as pd, geopandas as gpd, shapely, rasterio
 import config
 from flowlib import reservoirs, FLOW
 
@@ -18,6 +21,18 @@ for r in config.REGIONS:
     parts.append(g.merge(pd.read_csv(p), on="sid"))
 st = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=config.CRS)
 tree = shapely.STRtree(st.geometry.values)
+# where the build puts each lake's water back in: (the lake's dead end, the cell the water goes on from)
+pits, tops = [], []
+cache = f"{config.SHARED_DERIVED}/inflows.json"
+if os.path.exists(cache):
+    for box, dams in json.load(open(cache)).get("dams", {}).items():
+        with rasterio.open(f"{config.derived_dir(box)}/flowdir.tif") as s_:
+            T_, W_ = s_.transform, s_.width
+        for o, row, col in dams:
+            pr, pc = divmod(int(o), W_)
+            pits.append(shapely.Point(*(T_ * (pc + 0.5, pr + 0.5))))
+            tops.append(shapely.Point(*(T_ * (col + 0.5, row + 0.5))))
+pit_tree = shapely.STRtree(pits) if pits else None
 rows = []
 for _, lk in wb.iterrows():
     lake = shapely.make_valid(lk.geometry)
@@ -44,6 +59,9 @@ for _, lk in wb.iterrows():
     else:
         pt = g.interpolate(min(t_end + 100, g.length))
     cand = [i for i in tree.query(pt, predicate="dwithin", distance=150)]
+    if pit_tree is not None:
+        for k in pit_tree.query(lake.buffer(20), predicate="intersects"):
+            cand += [i for i in tree.query(tops[k], predicate="dwithin", distance=150)]
     cand = [i for i in cand if st.geometry.values[i].intersection(lake).length < 0.5 * st.geometry.values[i].length]
     if not cand:
         rows.append(dict(lake=lk.gnis_name, ha=round(lake.area / 1e4, 1), nhd_km2=round(fl.totdasqkm, 1), ours=np.nan, sid=None))
