@@ -3473,9 +3473,13 @@ check, the other eleven in two streams. No failed step.
   a dry record isn't carried upstream.
 - Warm rivers below Adirondack lakes keep full thermal credit (the fade), and the lake-fed creeks of three
   Adirondack maps are marked down on an estimate that misses single sites by about 3 C.
-- Found on the way and not changed: North Georgia's fit (elevation only) reads its cold tailwaters warm. Its 17
-  measured sites on lake-fed rivers of 200+ km2 read 2.6 C below the fit, and the Chattahoochee below Buford Dam
-  (14.3 C) is left out as an outlier. `TAILWATERS` has entries for LA only.
+- Corrected 23:55: this item first said that North Georgia's cold tailwaters read warm and that `TAILWATERS` has
+  entries for LA only. That was wrong. `TAILWATERS` in `scoring.py` already covers the Chattahoochee below Lake
+  Lanier and Bull Sluice Lake, the Toccoa and Ocoee below Blue Ridge Lake (218 reaches, 116 km, with the
+  water-temperature part in full) and the Nantahala. What holds: North Georgia's fit itself (elevation only) reads its
+  17 measured sites on lake-fed rivers of 200+ km2 2.6 C too warm, and 192 reaches (131 km) below other lakes and
+  dams carry an estimate above 20 C without being on the list: the Coosawattee below Carters Lake (43 km, 24.1 C),
+  the Nottely below Nottely Lake (20 km, 20.9 C), the Tallulah below Lake Burton (18 km, 20.9 C). Not changed.
 - Lower Piru Creek's popup credits Pyramid Lake's releases (the stream-burning session's note above).
 - One Jackson creek piece under the floor (palisades, 0.86 km2) went from usually flows to seasonal on its own
   smaller drainage (0.12 -> 0.10 cfs, at the 0.1 cfs line). Four unmapped pieces between the Beaver River's
