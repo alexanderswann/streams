@@ -793,14 +793,20 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
 - **gradient:** 1–8% best.
 - **remoteness:** typical bike+hike approach along the reach, 0 → 120+ min, with each minute ridden counted twice
   (`RIDE_REMOTENESS` in `scoring.py`). Most anglers walk in, so a road closed to cars keeps most of them out.
-- **burn:** fire since 2016, ×0.4 if ≤2 years ago, ×0.7 if 3–5, ×0.9 if 6–9. Where the Forest Service mapped the
-  fire's soil burn severity (BAER), the penalty is scaled by it: high 100%, moderate 75%, low 40%, very low 15%.
-  A channel also takes the ash and sediment of the burned slopes above it, so the USGS post-fire debris-flow hazard
-  sets a floor (high 100%, moderate 75%, low 40%), and a reach below a recent burn that didn't burn itself is
-  penalised from the hazard's fire year.
-- **trout:** ×1.2 with evidence of trout (found in the last 10 years by a CDFW survey, CDFW stocking or an iNaturalist
-  sighting, with no later survey finding none) or on a CDFW Wild/Heritage Trout Water; ×0.5 when the latest CDFW
-  survey found no trout (e.g. Mill, Hemlock and East Twin creeks, Big Santa Anita Canyon in 2023–24).
+- **burn:** fire since 2016, ×0.4 if ≤2 years ago, ×0.7 if 3–5, ×0.9 if 6–9, scaled by the fire's soil burn severity
+  where the Forest Service mapped it (BAER): high 100%, moderate 75%, low 40%, very low 15%. A channel also takes the
+  ash and sediment of the burned slopes above it, so the USGS post-fire debris-flow hazard sets a floor (high 100%,
+  moderate 75%, low 40%), and a reach below a recent burn that didn't burn itself is penalised from the hazard's fire
+  year. Where neither maps the severity, the fire marks nothing down (until 2026-11-22 it counted as the worst): a
+  burn of unknown severity is no near-certain harm. The BAER layer holds only recent fires, so this is most of LA's
+  2017–2022 fires (Thomas, Bobcat, Woolsey) and every fire outside LA; on LA's burned creeks with no severity map,
+  trout were recorded after the fire on 12% of those draining 4 sq mi or more, against 9% of unburned ones.
+- **trout:** ×1.2 with evidence of trout (found in the last 10 years by a state survey, stocking or an iNaturalist
+  sighting, with no later survey finding none) or on a designated trout water or wild trout patch. A survey that found
+  no trout marks nothing down (until 2026-11-22 the latest one halved the score): where a later survey sampled the
+  same reach, it found trout after 80% of empty samples in NE Connecticut and 56% in the Smokies, and after two empty
+  samples in a row 83% and 53%. The popups still list the empty samples (e.g. Mill Creek and Big Santa Anita Canyon,
+  empty in 2023 and 2024).
 - **heat (desert gate):** only where the water is near-certainly too warm for trout. When unsure, a possible trout
   stream stays in. ×1 where the August mean air temperature (PRISM 1991–2020 normal, 800 m) is ≤29 °C, falling
   linearly to ×0.2 at 30.5 °C and above. Never applied to a reach with trout evidence (above) or below a dam (its

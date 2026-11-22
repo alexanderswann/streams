@@ -149,17 +149,17 @@ panel(ax, "W  water", "0.05 + 0.95 × flow share  (below a gauged diversion: the
 pos = ax.get_position(); ax.set_position([pos.x0, pos.y0, pos.width * 0.66, pos.height])
 
 ax = fig.add_subplot(gs[3, 2:4])
-sevs = [("high", 1.0), ("moderate", 0.75), ("low", 0.4), ("very low", 0.15)]
+sevs = [("high", 1.0), ("moderate", 0.75), ("low", 0.4), ("very low", 0.15), ("not mapped", 0.0)]
 yrs = [("≤ 2 yr", 0.4), ("3–5 yr", 0.7), ("6–9 yr", 0.9), ("10+ / none", 1.0)]
 grid = np.array([[1 - (1 - b) * s for _, b in yrs] for _, s in sevs])
 cmap = LinearSegmentedColormap.from_list("seq", ["#3d3c39", "#f4f3f0"])
 ax.imshow(grid, cmap=cmap, vmin=0.35, vmax=1.05, aspect="auto")
-for i in range(4):
+for i in range(len(sevs)):
     for j in range(4):
         ax.text(j, i, f"{grid[i, j]:.2f}", ha="center", va="center", fontsize=10,
                 color=SURF if grid[i, j] < 0.7 else INK, weight="bold")
 ax.set_xticks(range(4)); ax.set_xticklabels([y for y, _ in yrs])
-ax.set_yticks(range(4)); ax.set_yticklabels([s for s, _ in sevs])
+ax.set_yticks(range(len(sevs))); ax.set_yticklabels([s for s, _ in sevs])
 ax.set_xlabel("years since fire (fires since 2016)"); ax.set_ylabel("burn severity / debris hazard")
 for sp in ax.spines.values(): sp.set_visible(False)
 ax.tick_params(length=0, labelsize=8.8)
@@ -169,12 +169,12 @@ ax.text(0, 1.03, "1 − (1 − age factor) × severity;  max of BAER severity an
 pos = ax.get_position(); ax.set_position([pos.x0 + 0.02, pos.y0, pos.width * 0.8, pos.height])
 
 ax = fig.add_subplot(gs[3, 4])
-labs = ["latest survey\nfound none", "no evidence", "trout found /\nwild trout water"]
-vals = [0.5, 1.0, 1.2]
-ax.bar(range(3), vals, width=0.55, color=MULT, lw=0)
+labs = ["no evidence /\nsurvey found none", "trout found /\ntrout water"]
+vals = [1.0, 1.2]
+ax.bar(range(2), vals, width=0.55, color=MULT, lw=0)
 for i, v in enumerate(vals):
     ax.text(i, v + 0.04, f"×{v:g}", ha="center", fontsize=10, weight="bold", color=INK)
-ax.set_xticks(range(3)); ax.set_xticklabels(labs, fontsize=8.2); ax.set_ylim(0, 1.4)
+ax.set_xticks(range(2)); ax.set_xticklabels(labs, fontsize=8.2); ax.set_ylim(0, 1.4)
 ax.axhline(1, color=MUTED, lw=0.8, ls=":")
 panel(ax, "F  trout evidence", "last 10 years; score still capped at 100", MULT)
 

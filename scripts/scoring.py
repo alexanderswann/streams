@@ -46,14 +46,17 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
   gradient   1-8% best (pool-riffle to step-pool), falling off over 10%
   remoteness typical bike+hike approach along the reach, 0 -> 120+ minutes, each minute ridden counted RIDE_REMOTENESS
              times: most anglers walk in, so a road closed to cars keeps most of them out
-  burn       fire since 2016: <=2 years ago x0.4, 3-5 x0.7, 6-9 x0.9. Where the Forest Service mapped the fire's
-             soil burn severity (BAER), the penalty is scaled by it: high 100%, moderate 75%, low 40%, very low 15%.
-             A channel also takes the ash and sediment of the burned slopes above it, so the USGS post-fire debris-flow
-             hazard sets a floor (high 100%, moderate 75%, low 40%), and a reach below a recent burn that didn't burn
-             itself is penalised from the hazard's fire year
-  trout      evidence of trout, x1.2: trout found in the last 10 years (CDFW survey, CDFW stocking, iNaturalist
-             sighting) with no later survey finding none, or a CDFW Wild / Heritage Trout Water; x0.5 when the latest
-             CDFW survey (last 10 years) found no trout. Capped at 100
+  burn       fire since 2016: <=2 years ago x0.4, 3-5 x0.7, 6-9 x0.9, scaled by the fire's soil burn severity where the
+             Forest Service mapped it (BAER): high 100%, moderate 75%, low 40%, very low 15%. A channel also takes the
+             ash and sediment of the burned slopes above it, so the USGS post-fire debris-flow hazard sets a floor (high
+             100%, moderate 75%, low 40%), and a reach below a recent burn that didn't burn itself is penalised from the
+             hazard's fire year. Where neither maps the severity, the fire marks nothing down (burn_factor): a burn of
+             unknown severity is no near-certain harm. On LA's burned creeks with no severity map (the 2017-2022 fires:
+             the BAER layer holds only recent ones) trout were recorded after the fire on 12% of those draining 10 km2
+             or more, against 9% of unburned ones (2026-11-22)
+  trout      evidence of trout, x1.2: trout found in the last 10 years (a state survey or stocking, an iNaturalist
+             sighting) with no later survey finding none, or a designated trout water or wild trout patch. A survey
+             that found none marks nothing down (trout_factor). Capped at 100
   heat       desert heat gate, only where the water is near-certainly too warm (when unsure, a possible trout
              stream stays in): 1 up to an August mean air temperature (PRISM 1991-2020 normal, 800 m) of HEAT_START,
              falling to HEAT_FLOOR at HEAT_FULL and above. No creek in these ranges with a trout record is above
@@ -120,9 +123,11 @@ def attach(gdf, key, region_dirs, kind):
 
 
 def burn_factor(year, sev=None):
+    """The burn term from the fire's year and its severity (0-1, BAER or the debris-flow hazard). A severity nobody
+    mapped counts as none: the fire marks nothing down (module docstring)."""
     yrs = THIS_YEAR - year
     f = np.where(pd.isna(year), 1.0, np.select([yrs <= 2, yrs <= 5, yrs <= 9], [0.4, 0.7, 0.9], 1.0))
-    return f if sev is None else 1 - (1 - f) * np.where(pd.isna(sev), 1.0, sev)
+    return f if sev is None else 1 - (1 - f) * np.where(pd.isna(sev), 0.0, sev)
 
 
 DEBRIS = {"high": 1.0, "moderate": 0.75, "low": 0.4}
@@ -199,8 +204,11 @@ def trout_signs(s):
 
 
 def trout_factor(s):
-    pos, neg = trout_signs(s)
-    return np.select([pos, neg, s.trout_water.notna()], [1.2, 0.5, 1.2], 1.0)
+    """x1.2 with trout found (trout_signs) or on a designated trout water, else 1. A survey that found none marks
+    nothing down: an empty sample is no near-certainty. Where a later survey sampled the same reach it found trout
+    after 80% of empty samples in NE Connecticut (on 40 of 54 creeks) and 56% in the Smokies (2 of 3 creeks), and
+    after two empty samples in a row 83% and 53%; in LA on one of the three creeks sampled again (2026-11-22)."""
+    return np.where(trout_signs(s)[0] | s.trout_water.notna(), 1.2, 1.0)
 
 
 ARTIFICIAL = (r"(?i)\b(channel|canal|aqueduct|diversion|ditch|flume|drain|conduit|penstock|spillway|outfall|"
