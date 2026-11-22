@@ -1,0 +1,50 @@
+adk_southeast: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 8427, 'km': 7124, 'mean': np.float64(60.57), '>=40': 6989, '>=60': 5031, '>=80': 1735, 'km60': np.float64(4240.8)}
+             B: {'n': 8342, 'km': 6927, 'mean': np.float64(61.33), '>=40': 7039, '>=60': 5062, '>=80': 1741, 'km60': np.float64(4199.9)}
+B reaches matched to an A reach within 30 m: 7699 of 8342 (643 unmatched, 443.3 km); A reaches no B reach matched: 886
+  drainage +20% or more: 142, -20% or more: 75; x2 or more: 75, /2 or less: 41
+  flow class changed: 117; name changed: 101
+  fish score up 10+: 60, down 10+: 85; any change: 406; crossing 60: up 33, down 55
+  biggest moves:
+            sid_b                  name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+ lake_george:s409                     NaN  19.89   1.34   0.07    year-round     reservoir          78.0          16.0 -62.0
+     minerva:s679                     NaN  17.60  17.61   1.00     reservoir    year-round          26.0          87.0  61.0
+ lake_george:s443                     NaN  11.23  10.93   0.97     reservoir    year-round          26.0          87.0  61.0
+indian_lake:s1062                     NaN  17.24  17.23   1.00     reservoir    year-round          26.0          86.0  60.0
+indian_lake:s1500                     NaN   7.21   7.68   1.07    year-round     reservoir          83.0          24.0 -59.0
+ indian_lake:s729                     NaN   2.19   3.72   1.70    year-round     reservoir          86.0          27.0 -59.0
+     siamese:s762            Tenant Creek   2.59  10.08   3.89    year-round     reservoir          88.0          30.0 -58.0
+  sacandaga:s1162              Hans Creek  43.42  42.61   0.98    year-round     reservoir          82.0          24.0 -58.0
+ indian_lake:s797         John Mack Brook   1.29   2.01   1.56    year-round     reservoir          83.0          26.0 -57.0
+ indian_lake:s374     Beaver Meadow Brook  14.54  14.56   1.00     reservoir    year-round          24.0          81.0  57.0
+lake_george:s2030                     NaN   1.87   2.33   1.25     reservoir    year-round          24.0          80.0  56.0
+ lake_george:s581                     NaN   1.21   1.08   0.89     reservoir    year-round          24.0          80.0  56.0
+lake_george:s1119                     NaN  14.64  13.67   0.93    year-round     reservoir          79.0          23.0 -56.0
+ lake_george:s492           Schroon River 613.04 613.19   1.00     reservoir    year-round          23.0          78.0  55.0
+ lake_george:s627            Putnam Creek  19.89  19.68   0.99    year-round     reservoir          78.0          23.0 -55.0
+ indian_lake:s591             Buell Brook  19.81  19.77   1.00     reservoir    year-round          23.0          78.0  55.0
+ indian_lake:s855                     NaN  11.48   1.54   0.13    year-round     reservoir          71.0          16.0 -55.0
+     minerva:s499                     NaN   2.40   1.82   0.76    year-round     reservoir          77.0          22.0 -55.0
+lake_george:s2123                     NaN   3.26   3.52   1.08    year-round     reservoir          77.0          23.0 -54.0
+     minerva:s284                     NaN   2.87   2.71   0.94     reservoir    year-round          24.0          78.0  54.0
+   sacandaga:s493        East Stony Creek 244.82 244.81   1.00     reservoir    year-round          23.0          77.0  54.0
+  sacandaga:s1509         Frenchman Creek  28.55  28.87   1.01     reservoir    year-round          23.0          76.0  53.0
+ lake_george:s400             Alder Creek  22.97  22.98   1.00    year-round     reservoir          73.0          21.0 -52.0
+lake_george:s1433                     NaN   9.29   9.73   1.05    year-round     reservoir          73.0          21.0 -52.0
+     minerva:s271 West Branch Trout Brook   4.59   5.21   1.14    year-round     reservoir          73.0          22.0 -51.0
+adk_southeast: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  5184.4         301.6         207.0
+10-100    1330.8         152.2         102.3
+100+       411.5          91.7          69.1
+total km 6926.6 | moved 20+ m 545.5 | 50+ m 378.4
+adk_southeast (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 107 runs, 45.2 km (18.5 km on 10+ km2); in lakes 436 runs, 275.9 km; of 7124 km drawn
+adk_southeast (/Users/mac/Fishing): known falls 143: found pass 1 37, both passes 61 | OSM/NHD-mapped 70: pass 1 19, both 37
+  drops: pass 1 353 {'cascade / knickpoint': 237, 'steep reach': 108, 'waterfall-like step': 8}; big-creek pass 127
+  waterfall candidates by status: {'unmapped cascade': 170, 'steep reach': 101, 'likely DEM artifact': 85, 'unmapped short fall (big creek)': 47, 'matches mapped waterfall': 45, 'dam / weir': 21, 'unmapped waterfall-like step': 5}
+adk_southeast (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 98 runs, 40.9 km (17.0 km on 10+ km2); in lakes 108 runs, 54.6 km; of 6927 km drawn
+adk_southeast (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 143: found pass 1 37, both passes 61 | OSM/NHD-mapped 70: pass 1 19, both 37
+  drops: pass 1 351 {'cascade / knickpoint': 235, 'steep reach': 108, 'waterfall-like step': 8}; big-creek pass 125
+  waterfall candidates by status: {'unmapped cascade': 169, 'steep reach': 101, 'likely DEM artifact': 84, 'matches mapped waterfall': 45, 'unmapped short fall (big creek)': 45, 'dam / weir': 21, 'unmapped waterfall-like step': 5}

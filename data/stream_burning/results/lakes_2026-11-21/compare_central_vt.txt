@@ -1,0 +1,46 @@
+central_vt: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 8298, 'km': 6770, 'mean': np.float64(61.86), '>=40': 7709, '>=60': 4675, '>=80': 1334, 'km60': np.float64(3488.9)}
+             B: {'n': 8295, 'km': 6762, 'mean': np.float64(61.87), '>=40': 7708, '>=60': 4669, '>=80': 1335, 'km60': np.float64(3474.2)}
+B reaches matched to an A reach within 30 m: 8222 of 8295 (73 unmatched, 35.0 km); A reaches no B reach matched: 102
+  drainage +20% or more: 9, -20% or more: 15; x2 or more: 5, /2 or less: 9
+  flow class changed: 9; name changed: 8
+  fish score up 10+: 3, down 10+: 12; any change: 45; crossing 60: up 0, down 10
+  biggest moves:
+               sid_b                      name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+   mad_winooski:s118 North Branch Winooski River  33.67 163.53   4.86    year-round     reservoir          81.0          25.0 -56.0
+stowe_lamoille:s1206              Lamoille River  19.77  19.78   1.00    year-round     reservoir          78.0          23.0 -55.0
+  mad_winooski:s1533                Martin Brook   3.98   3.54   0.89    year-round     reservoir          70.0          20.0 -50.0
+stowe_lamoille:s2496                         NaN  11.51  11.51   1.00    year-round     reservoir          62.0          18.0 -44.0
+   white_river:s1631                         NaN   1.16   2.05   1.77    year-round     reservoir          53.0          17.0 -36.0
+   white_river:s2574                         NaN   2.84   2.04   0.72     reservoir       no data          16.0          52.0  36.0
+stowe_lamoille:s2328                Little River 282.29   1.14   0.00    year-round    year-round          86.0          51.0 -35.0
+stowe_lamoille:s2334                         NaN   1.27   1.04   0.82     reservoir    year-round          13.0          42.0  29.0
+   white_river:s1424                         NaN   1.21   1.21   1.00     reservoir    year-round          13.0          42.0  29.0
+stowe_lamoille:s2351                         NaN   1.27  18.43  14.51    year-round     reservoir          48.0          20.0 -28.0
+   mad_winooski:s123                         NaN  11.31   1.56   0.14    year-round    year-round          75.0          57.0 -18.0
+stowe_lamoille:s2322                         NaN  22.31   3.46   0.16    year-round    year-round          63.0          49.0 -14.0
+stowe_lamoille:s2100                         NaN   5.13   1.03   0.20    year-round    year-round          72.0          58.0 -14.0
+stowe_lamoille:s2447                         NaN  11.51   2.11   0.18    year-round    year-round          62.0          49.0 -13.0
+   white_river:s2367                         NaN   6.41   1.60   0.25       no data       no data          57.0          46.0 -11.0
+ stowe_lamoille:s256                         NaN   2.57   1.03   0.40    year-round    year-round          61.0          53.0  -8.0
+stowe_lamoille:s1046                         NaN  21.49   2.69   0.13     reservoir     reservoir          20.0          15.0  -5.0
+ stowe_lamoille:s241              Lamoille River   2.47  11.26   4.56     reservoir     reservoir          12.0          16.0   4.0
+stowe_lamoille:s2442                         NaN   1.02   3.54   3.47     reservoir     reservoir          13.0          16.0   3.0
+stowe_lamoille:s2353                Little River  18.60 279.04  15.00     reservoir     reservoir          18.0          20.0   2.0
+stowe_lamoille:s2445                         NaN  17.06   8.43   0.49     reservoir     reservoir          18.0          17.0  -1.0
+central_vt: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  4865.6          38.2          23.4
+10-100    1227.8          11.2           6.1
+100+       668.6           8.2           2.2
+total km 6762.0 | moved 20+ m 57.6 | 50+ m 31.7
+central_vt (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 99 runs, 41.0 km (20.0 km on 10+ km2); in lakes 34 runs, 15.1 km; of 6769 km drawn
+central_vt (/Users/mac/Fishing): known falls 119: found pass 1 40, both passes 65 | OSM/NHD-mapped 38: pass 1 14, both 20
+  drops: pass 1 511 {'cascade / knickpoint': 336, 'steep reach': 166, 'waterfall-like step': 9}; big-creek pass 194
+  waterfall candidates by status: {'unmapped cascade': 232, 'steep reach': 149, 'likely DEM artifact': 139, 'unmapped short fall (big creek)': 70, 'matches mapped waterfall': 60, 'dam / weir': 27, 'unmapped waterfall-like step': 4}
+central_vt (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 98 runs, 40.6 km (19.7 km on 10+ km2); in lakes 13 runs, 6.3 km; of 6762 km drawn
+central_vt (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 119: found pass 1 40, both passes 65 | OSM/NHD-mapped 38: pass 1 14, both 20
+  drops: pass 1 511 {'cascade / knickpoint': 336, 'steep reach': 166, 'waterfall-like step': 9}; big-creek pass 194
+  waterfall candidates by status: {'unmapped cascade': 232, 'steep reach': 149, 'likely DEM artifact': 139, 'unmapped short fall (big creek)': 70, 'matches mapped waterfall': 60, 'dam / weir': 27, 'unmapped waterfall-like step': 4}

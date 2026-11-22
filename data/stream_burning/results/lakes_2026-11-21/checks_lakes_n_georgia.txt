@@ -1,0 +1,62 @@
+#### score_root
+reaches 14841 (project 14912); matched within 30 m 14604, 30-200 m 209, none within 200 m 28
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/n_georgia/stream_reaches_ranked.csv 14841
+#### standing
+n_georgia (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+            box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+        cohutta     4193           0.0                    8             0                      0.52     1315.1
+     blue_ridge     4282           0.0                   16             0                      0.55     1254.0
+          rabun     4114           0.0                    1             0                      0.65     1160.8
+hooch_tailwater     2252           0.0                    0             0                      0.37      559.2
+#### short_named
+{"area": "n_georgia", "reaches": 14841, "named_on_their_line": 3544, "under_quarter": 65, "outside_lakes": 64, "km": 18.7, "fish_60_plus": 4, "top": {"Chattahoochee River": 6, "Big Creek": 5, "Holly Creek": 4, "Oostanaula River": 3}}
+#### classify_short
+{"area": "n_georgia", "total": 64, "side arm (main arm beside)": {"n": 56.0, "km": 15.1, "fish60": 3.0}, "water routed elsewhere": {"n": 8.0, "km": 3.6, "fish60": 1.0}, "elsewhere_top": {"Cheatam Creek": 3, "East Branch Long Swamp Creek": 2, "Oostanaula River": 2, "Hiwassee River": 1}}
+#### v2_ends
+n_georgia (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 3107; ours under half of V2 at the line's lower end: 49, under a quarter 20, over double 141, no reach within 60 m 193
+size           5-20  20-100  100-1000  1000+
+lines          1500     904       584    119
+no_reach        111      54        22      6
+under_half       37       9         3      0
+under_quarter    11       6         3      0
+over_double      86      46         8      1
+#### hragree
+n_georgia (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 20023, D8 misses 29 (0.1 %)
+size        <2 km    2-10   10-50  50+ km
+lines     10896.0  4677.0  2408.0  2042.0
+miss         15.0    10.0     4.0     0.0
+miss_pct      0.1     0.2     0.2     0.0
+#### lake_outlets
+n_georgia (project): lakes with an outlet line 89; below them under half of NHDPlus: 3
+             lake   ha  nhd_km2  ours           sid reach_name  ratio
+unnamed reservoir 10.0     68.3  5.00   rabun:s3535        NaN   0.07
+   Amakanata Lake 16.7      4.9  1.64 cohutta:s3524        NaN   0.33
+     Leisure Lake  9.7      3.3  1.55  cohutta:s367        NaN   0.47
+#### check_flow_drops
+n_georgia: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+n_georgia: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 18 / 38 | pass 1 + big-creek pass: 30 / 38
+  on smaller drainages:   pass 1: 81 / 155 | pass 1 + big-creek pass: 81 / 155
+  all:                    pass 1: 99 / 193 | pass 1 + big-creek pass: 111 / 193
+
+by range:
+                                                 falls  pass1  both
+region                                                             
+Chattahoochee tailwater (Buford Dam to Atlanta)      5      0     1
+Cohutta, Conasauga & Jacks                           8      4     5
+Rabun, Chattooga & Tallulah                        133     70    77
+Toccoa, Blue Ridge & Chattahoochee headwaters       47     25    28
+
+named mapped falls on big creeks that both passes miss: 
+                                       region                  name  area     d1     d2
+                   Cohutta, Conasauga & Jacks Tumbling Waters Falls  42.0 2296.0 2775.0
+Toccoa, Blue Ridge & Chattahoochee headwaters          Etowah Falls 170.0 4886.0 1624.0
+                  Rabun, Chattooga & Tallulah           Final Falls 410.0  279.0 4748.0
+                  Rabun, Chattooga & Tallulah         Homer's Falls 581.0  708.0 2405.0
+                  Rabun, Chattooga & Tallulah    Bulls Sluice Falls 419.0 2542.0 2805.0
+                  Rabun, Chattooga & Tallulah     First Falls Rapid 591.0  681.0 4083.0
+                  Rabun, Chattooga & Tallulah      Seven Foot Falls 435.0  947.0 1246.0
+
+every precisely placed known fall, any source: pass 1: 362 / 857 | pass 1 + big-creek pass: 407 / 857
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

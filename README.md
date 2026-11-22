@@ -117,7 +117,7 @@ To build another area, from `scripts/`: `./run_base.sh <area>` (DEM, NHD + OSM, 
 `./run_mid.sh <area>` (reach scoring, flow, drainages, trails, access roads, the long trail), then
 `./run_late.sh <area>` (road closures, approach times, sun, drive times, context, water-temperature fit, maps,
 profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes 03, 03b and the drops, then runs `run_mid.sh` and
-`run_late.sh`. `./phone_sync.sh` copies every area's maps to `phone/` with an index page.
+`run_late.sh` (`SKIP_03=1` starts at 03b, after a change to `03b_stitch.py` only: 03's surface stays as it is). `./phone_sync.sh` copies every area's maps to `phone/` with an index page.
 `data/validate_flow_areas.py` checks an area's flow table against its gauges. Logs go to `data/base_<area>.log`,
 `mid_<area>.log` and `late_<area>.log`. Run long builds under `caffeinate -i` (a sleeping Mac froze two downloads).
 OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass server second.
@@ -172,7 +172,21 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    the DEM was flown (San Gabriel Reservoir, Cogswell, Devil's Gate). A lake whose water leaves the map through its
    own surface (where most of its water gathers is on the map's edge: Lake Champlain, Tellico, Hartwell) carries no
    stream lines since 2026-11-20: its flat water had drained to the edge along dozens of parallel made-up creeks.
-   The creeks end at its shore, and `03b` lists such lakes per box (`lakes_off_map.gpkg`) for `05c`
+   The creeks end at its shore, and `03b` lists such lakes per box (`lakes_off_map.gpkg`) for `05c`.
+   Since 2026-11-21 every cell of a lake that holds water drains to its outlet along NHD HR's lines through the lake
+   where they run (`route_lake`: a least-cost path over the lake's cells, a step off the lines counting five along
+   them), and the way the water takes below the outlet is a stream line down to the first stream it meets
+   (`outflow_streams`). Only the path that gathered the most water used to end at the outlet. The flat water's own
+   directions let other paths cross the lake and leave it on their own: Pilgrim Creek's ran to Jackson Lake Dam beside
+   the Snake's outlet, so the line across the lake and over the dam was Pilgrim Creek's, and Palisades Reservoir's
+   crossing read Trout Creek. They drew 986 km of straight made-up lines across lakes over the 12 maps (now 266 km).
+   And with no line of its own below the outlet, the lake's water, which `crossbox.py` puts back in below the dam,
+   landed on the first line it met and was counted along that whole link, a side creek's included: Lower Slide Lake's
+   1,539 km² on a 2.7 km creek beside the Gros Ventre, Leigh Lake's on a creek beside String Lake (120 such creeks over
+   the 12 maps). Measured on all 12 maps before it went in (`data/stream_burning/`): drops, known falls, flow drops and
+   edge dead ends unchanged or better; lake outlets reading under half of NHDPlus 45 → 39. The folder also keeps the
+   experiment this came from, NHD's lines burned into the DEM itself, which is not used: burned everywhere they lost
+   waterfall-like steps in the mountains, burned on flat ground only they reshuffled braided rivers' arms.
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
    with the channel 200 m above and below. Classes:
    - **waterfall-like step**: max slope ≥ 0.6 and ≥ 2.5× steeper than the neighbouring channel
@@ -260,7 +274,9 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
      have at that spot, is carried down the creek the same way. One that comes in through a reservoir (the
      Chattahoochee in Lake Lanier) is handed to the cell below the dam.
    - **Past dams**: every lake and reservoir ends its D8 paths at its outlet (`03b_stitch.py`; not one whose outlet is
-     on an edge between two boxes), so the creek below the dam starts again near nothing. `crossbox.py` links each reservoir's dead
+     on an edge between two boxes), so the creek below the dam starts again near nothing (since 2026-11-21 on a line of
+     its own from the outlet down to the first stream it meets, so the lake's water lands on the river below that
+     junction, not along a side creek's line: see 3.). `crossbox.py` links each reservoir's dead
      ends to the cell below its dam where the water goes on, found by walking down the NHDPlus flowlines leaving the
      lake (Morris 533 km², Pyramid 514, Castaic Lagoon 412, Big Tujunga 212, Littlerock 165, Lake Hemet 143, Big Bear
      137, Matilija 132). Lakes with no outflow (Baldwin Lake) and dead ends away from lakes (desert fans, the sea)
@@ -611,7 +627,11 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
   on the creek it stands for. Measured before installing: none of the 221 gauged creeks that flow most summers is
   lowered, 13 of the 35 dry ones rated flowing are caught, and the summers since 2011 called flowing while the gauge
   was dry fall from 82% to 13%; it changes 636 LA reaches (33 of them up), 69 in Jackson and 13 on Dead Creek, and no
-  others. Popups say which rule set the class and why. The
+  others. (3) A **tailwater** (see *thermal* below) with no gauge record on the reach: full water, since its dam's
+  releases keep it flowing every summer, which the natural-flow model can't see (since 2026-11-21). Piru Creek below
+  Pyramid Dam had read mostly dry or seasonal on 28 of its reaches, against the gauge just below the dam, which ran
+  in 11 of 11 summers; the gauge above Lake Piru (31% of summers) still sets the reaches it stands for. Popups say
+  which rule set the class and why. The
   model and NHD
   often disagree: of NHD's 2,430 "perennial" reaches the model has 619 drying in some or most summers, and 850 NHD
   "ephemeral" reaches flowing through most summers. Popups show the model's typical and drought-year low flow.

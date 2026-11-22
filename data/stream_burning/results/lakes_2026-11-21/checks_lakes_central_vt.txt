@@ -1,0 +1,57 @@
+#### score_root
+reaches 8295 (project 8298); matched within 30 m 8222, 30-200 m 64, none within 200 m 9
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/central_vt/stream_reaches_ranked.csv 8295
+#### standing
+central_vt (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+stowe_lamoille     2731           0.0                   21             0                      6.21      786.4
+  mad_winooski     2703           0.0                   15             0                     22.29      725.1
+   white_river     2861           0.0                    0             0                     12.50      816.4
+#### short_named
+{"area": "central_vt", "reaches": 8295, "named_on_their_line": 2178, "under_quarter": 119, "outside_lakes": 111, "km": 51.6, "fish_60_plus": 47, "top": {"Lamoille River": 9, "Winooski River": 6, "Otter Creek": 6, "Lemon Fair River": 5}}
+#### classify_short
+{"area": "central_vt", "total": 111, "side arm (main arm beside)": {"n": 51.0, "km": 11.8, "fish60": 13.0}, "water routed elsewhere": {"n": 60.0, "km": 39.8, "fish60": 34.0}, "elsewhere_top": {"Lemon Fair River": 5, "Seymour River": 5, "Jones Brook": 5, "Kingsbury Brook": 5, "Cox Brook": 4, "Lewis Creek": 3}}
+#### v2_ends
+central_vt (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 1053; ours under half of V2 at the line's lower end: 27, under a quarter 15, over double 52, no reach within 60 m 99
+size           5-20  20-100  100-1000  1000+
+lines           411     306       228    108
+no_reach         32      22        30     15
+under_half       13      11         2      1
+under_quarter     2      10         2      1
+over_double      25      17        10      0
+#### hragree
+central_vt (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 22555, D8 misses 264 (1.2 %)
+size        <2 km    2-10   10-50  50+ km
+lines     14338.0  4428.0  1921.0  1868.0
+miss        190.0    55.0    17.0     2.0
+miss_pct      1.3     1.2     0.9     0.1
+#### lake_outlets
+central_vt (project): lakes with an outlet line 58; below them under half of NHDPlus: 2
+                 lake    ha  nhd_km2  ours                 sid reach_name  ratio
+    unnamed reservoir   9.5     40.0 18.12 stowe_lamoille:s945  The Creek   0.45
+Green River Reservoir 240.1     37.9  2.30 stowe_lamoille:s249        NaN   0.06
+#### check_flow_drops
+central_vt: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+central_vt: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 10 / 23 | pass 1 + big-creek pass: 16 / 23
+  on smaller drainages:   pass 1: 4 / 7 | pass 1 + big-creek pass: 4 / 7
+  all:                    pass 1: 14 / 30 | pass 1 + big-creek pass: 20 / 30
+
+by range:
+                                           falls  pass1  both
+region                                                       
+Mad River, Winooski & New Haven River          6      1     2
+Middlebury River, Breadloaf & White River      7      5     7
+Stowe & upper Lamoille                        17      8    11
+
+named mapped falls on big creeks that both passes miss: 
+                               region              name   area     d1     d2
+               Stowe & upper Lamoille    Winooski Falls 1665.0  268.0 4419.0
+               Stowe & upper Lamoille     Sloping Falls  109.0 2659.0 1960.0
+Mad River, Winooski & New Haven River    Dog Team Falls  302.0 2069.0 3642.0
+Mad River, Winooski & New Haven River    Moretown Falls  337.0 2599.0 2658.0
+Mad River, Winooski & New Haven River Putnamville Falls  122.0 1986.0 9256.0
+
+every precisely placed known fall, any source: pass 1: 20 / 66 | pass 1 + big-creek pass: 38 / 66
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

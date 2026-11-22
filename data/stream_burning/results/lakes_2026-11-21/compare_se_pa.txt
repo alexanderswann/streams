@@ -1,0 +1,30 @@
+se_pa: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 4623, 'km': 3715, 'mean': np.float64(57.52), '>=40': 4335, '>=60': 1972, '>=80': 366, 'km60': np.float64(1391.6)}
+             B: {'n': 4612, 'km': 3713, 'mean': np.float64(57.64), '>=40': 4336, '>=60': 1973, '>=80': 368, 'km60': np.float64(1390.2)}
+B reaches matched to an A reach within 30 m: 4593 of 4612 (19 unmatched, 12.0 km); A reaches no B reach matched: 39
+  drainage +20% or more: 4, -20% or more: 0; x2 or more: 1, /2 or less: 0
+  flow class changed: 4; name changed: 1
+  fish score up 10+: 3, down 10+: 1; any change: 13; crossing 60: up 2, down 0
+  biggest moves:
+             sid_b                 name_b  af_a  af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+   brandywine:s363        Allegheny Creek 38.77 38.74   1.00     reservoir    year-round          24.0          81.0  57.0
+  brandywine:s1180              Birch Run  7.94  7.89   0.99     reservoir    year-round          20.0          69.0  49.0
+ridley_valley:s324 Little Neshaminy Creek  1.94  2.58   1.33    year-round     reservoir          48.0          15.0 -33.0
+   brandywine:s293             Scotts Run  1.13  1.05   0.93     reservoir    year-round          12.0          40.0  28.0
+   brandywine:s365        Allegheny Creek  4.01 42.80  10.67     reservoir     reservoir          16.0          21.0   5.0
+se_pa: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  2605.5           9.1           3.8
+10-100     798.4           8.9           2.9
+100+       308.9           0.0           0.0
+total km 3712.9 | moved 20+ m 18.0 | 50+ m 6.7
+se_pa (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 59 runs, 25.1 km (11.1 km on 10+ km2); in lakes 9 runs, 4.4 km; of 3715 km drawn
+se_pa (/Users/mac/Fishing): known falls 13: found pass 1 0, both passes 0 | OSM/NHD-mapped 11: pass 1 0, both 0
+  drops: pass 1 36 {'cascade / knickpoint': 36}; big-creek pass 46
+  waterfall candidates by status: {'likely DEM artifact': 33, 'unmapped cascade': 18, 'dam / weir': 16, 'unmapped short fall (big creek)': 9}
+se_pa (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 58 runs, 24.4 km (9.5 km on 10+ km2); in lakes 2 runs, 0.7 km; of 3713 km drawn
+se_pa (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 13: found pass 1 0, both passes 0 | OSM/NHD-mapped 11: pass 1 0, both 0
+  drops: pass 1 36 {'cascade / knickpoint': 36}; big-creek pass 46
+  waterfall candidates by status: {'likely DEM artifact': 33, 'unmapped cascade': 18, 'dam / weir': 16, 'unmapped short fall (big creek)': 9}

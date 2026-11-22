@@ -1,0 +1,57 @@
+#### score_root
+reaches 6767 (project 6815); matched within 30 m 6411, 30-200 m 296, none within 200 m 60
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/adk_southwest/stream_reaches_ranked.csv 6767
+#### standing
+adk_southwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+              box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+            moose     2489           0.0                   16             0                      0.68      763.7
+west_canada_lakes      548           0.0                    3             0                      0.18      130.9
+      west_canada     1786           0.0                    6             0                      0.45      555.4
+       speculator     1944           0.0                    0             0                      0.50      477.8
+#### short_named
+{"area": "adk_southwest", "reaches": 6767, "named_on_their_line": 1597, "under_quarter": 41, "outside_lakes": 40, "km": 15.5, "fish_60_plus": 23, "top": {"Cincinnati Creek": 8, "Black River": 6, "West Canada Creek": 6, "Independence River": 4}}
+#### classify_short
+{"area": "adk_southwest", "total": 40, "side arm (main arm beside)": {"n": 28.0, "km": 5.6, "fish60": 15.0}, "water routed elsewhere": {"n": 12.0, "km": 9.9, "fish60": 8.0}, "elsewhere_top": {"Cincinnati Creek": 6, "Independence River": 3, "Otter Brook": 2, "Ash Creek": 1}}
+#### v2_ends
+adk_southwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 1497; ours under half of V2 at the line's lower end: 31, under a quarter 17, over double 117, no reach within 60 m 107
+size           5-20  20-100  100-1000  1000+
+lines           738     393       283     83
+no_reach         70      28         9      0
+under_half       23       2         6      0
+under_quarter    10       2         5      0
+over_double      79      32         6      0
+#### hragree
+adk_southwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 7875, D8 misses 87 (1.1 %)
+size       <2 km    2-10   10-50  50+ km
+lines     3714.0  2093.0  1054.0  1014.0
+miss        57.0    20.0     8.0     2.0
+miss_pct     1.5     1.0     0.8     0.2
+#### lake_outlets
+adk_southwest (project): lakes with an outlet line 216; below them under half of NHDPlus: 6
+             lake    ha  nhd_km2  ours               sid reach_name  ratio
+    Lake Pleasant 596.8     86.5  1.50    speculator:s22        NaN   0.02
+unnamed reservoir  24.7     58.3  3.87   west_canada:s23        NaN   0.07
+         Vly Lake  16.6     35.9  1.58   speculator:s112        NaN   0.04
+   Half Moon Pond   8.5      5.3  1.77        moose:s333        NaN   0.33
+unnamed reservoir  11.7      5.1  1.46 west_canada:s1228        NaN   0.29
+   Good Luck Lake  38.9      5.1  2.42  speculator:s1040        NaN   0.47
+#### check_flow_drops
+adk_southwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 7 | pass 1 + big-creek pass: 5 / 7
+  on smaller drainages:   pass 1: 1 / 3 | pass 1 + big-creek pass: 1 / 3
+  all:                    pass 1: 4 / 10 | pass 1 + big-creek pass: 6 / 10
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls      2      1     1
+Piseco, Speculator, Caroga & the West Branch Sacandaga             8      3     5
+
+named mapped falls on big creeks that both passes miss: 
+                                                region                    name  area     d1     d2
+Piseco, Speculator, Caroga & the West Branch Sacandaga West Stoney Creek Falls  15.0 1767.0 8908.0
+
+every precisely placed known fall, any source: pass 1: 7 / 20 | pass 1 + big-creek pass: 11 / 20
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

@@ -1,0 +1,50 @@
+adk_high_peaks: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 9138, 'km': 7519, 'mean': np.float64(65.68), '>=40': 7999, '>=60': 6176, '>=80': 2785, 'km60': np.float64(5055.4)}
+             B: {'n': 9087, 'km': 7430, 'mean': np.float64(66.14), '>=40': 8024, '>=60': 6195, '>=80': 2789, 'km60': np.float64(5014.5)}
+B reaches matched to an A reach within 30 m: 8637 of 9087 (450 unmatched, 261.3 km); A reaches no B reach matched: 630
+  drainage +20% or more: 111, -20% or more: 61; x2 or more: 52, /2 or less: 27
+  flow class changed: 76; name changed: 67
+  fish score up 10+: 29, down 10+: 71; any change: 298; crossing 60: up 19, down 50
+  biggest moves:
+           sid_b                        name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+ high_peaks:s555                           NaN   9.27   9.34   1.01    year-round     reservoir         100.0          30.0 -70.0
+high_peaks:s1192                   Casey Brook   6.55   4.79   0.73    year-round     reservoir          95.0          28.0 -67.0
+chateaugay:s1835             Middle Kiln Brook  72.07  78.02   1.08    year-round     reservoir          92.0          28.0 -64.0
+high_peaks:s1685                           NaN   2.39   1.58   0.66    year-round     reservoir          88.0          25.0 -63.0
+high_peaks:s1711                 Fishing Brook 145.56 145.59   1.00    year-round     reservoir          90.0          27.0 -63.0
+ high_peaks:s554                           NaN   5.96   6.57   1.10    year-round     reservoir          91.0          29.0 -62.0
+    saranac:s570                           NaN   7.90   8.38   1.06    year-round     reservoir          89.0          27.0 -62.0
+    saranac:s487                           NaN   2.96   4.63   1.56    year-round     reservoir          89.0          28.0 -61.0
+ high_peaks:s245                   Moose Creek   2.99   8.79   2.94    year-round     reservoir          91.0          30.0 -61.0
+    saranac:s208                           NaN  39.84  40.09   1.01    year-round     reservoir          85.0          25.0 -60.0
+    saranac:s701                           NaN   3.92   3.25   0.83     reservoir    year-round          26.0          86.0  60.0
+chateaugay:s1394                           NaN  37.90  39.24   1.04    year-round     reservoir          86.0          26.0 -60.0
+wilmington:s1011 East Branch Saint Regis River 137.74 138.10   1.00    year-round     reservoir          86.0          26.0 -60.0
+  high_peaks:s77               Ampersand Brook   3.33   3.32   1.00     reservoir    year-round          26.0          86.0  60.0
+wilmington:s1102                  Osgood River  18.12  18.12   1.00    year-round     reservoir          84.0          25.0 -59.0
+high_peaks:s1536              Clear Pond Inlet   1.97   2.35   1.19    year-round     reservoir          85.0          26.0 -59.0
+chateaugay:s1100                  Branch Brook  48.83  48.80   1.00     reservoir    year-round          25.0          83.0  58.0
+chateaugay:s2270                    Deer River  37.93  37.84   1.00     reservoir    year-round          24.0          82.0  58.0
+    saranac:s152               Whiteface Brook   9.62   9.66   1.00     reservoir    year-round          24.0          81.0  57.0
+ chateaugay:s863               Half Mile Brook  39.52  39.47   1.00     reservoir    year-round          24.0          81.0  57.0
+    saranac:s356                           NaN   7.54   9.30   1.23    year-round     reservoir          81.0          24.0 -57.0
+    saranac:s355                           NaN   7.54   7.91   1.05    year-round     reservoir          81.0          24.0 -57.0
+high_peaks:s1403                           NaN   1.75   1.57   0.90     reservoir    year-round          24.0          80.0  56.0
+high_peaks:s1830                    Flat Brook 129.25 122.05   0.94     reservoir    year-round          24.0          80.0  56.0
+     boquet:s593                 Paradox Creek   8.58  10.32   1.20    year-round     reservoir          78.0          23.0 -55.0
+adk_high_peaks: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  5528.4         211.3         134.1
+10-100    1516.4         110.0          62.1
+100+       385.4           8.4           5.8
+total km 7430.1 | moved 20+ m 329.7 | 50+ m 202.1
+adk_high_peaks (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 81 runs, 32.7 km (10.7 km on 10+ km2); in lakes 246 runs, 127.4 km; of 7518 km drawn
+adk_high_peaks (/Users/mac/Fishing): known falls 87: found pass 1 49, both passes 59 | OSM/NHD-mapped 55: pass 1 33, both 41
+  drops: pass 1 456 {'cascade / knickpoint': 235, 'steep reach': 214, 'waterfall-like step': 7}; big-creek pass 112
+  waterfall candidates by status: {'steep reach': 189, 'unmapped cascade': 183, 'likely DEM artifact': 72, 'matches mapped waterfall': 64, 'unmapped short fall (big creek)': 40, 'dam / weir': 13, 'unmapped waterfall-like step': 2}
+adk_high_peaks (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 75 runs, 30.2 km (11.5 km on 10+ km2); in lakes 65 runs, 32.1 km; of 7430 km drawn
+adk_high_peaks (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 87: found pass 1 49, both passes 59 | OSM/NHD-mapped 55: pass 1 33, both 41
+  drops: pass 1 456 {'cascade / knickpoint': 235, 'steep reach': 214, 'waterfall-like step': 7}; big-creek pass 114
+  waterfall candidates by status: {'steep reach': 189, 'unmapped cascade': 183, 'likely DEM artifact': 72, 'matches mapped waterfall': 64, 'unmapped short fall (big creek)': 42, 'dam / weir': 13, 'unmapped waterfall-like step': 2}

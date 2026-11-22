@@ -20,7 +20,8 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              (5+ summers since 2011, within flowlib.GAUGE_KM on its model line, 2/3-1.5 x its drainage; not a canal):
              0.05 + 0.95 x its share of summers flowing. It raises a reach anywhere (Piru Creek below Pyramid Dam flows
              every summer on its releases), and lowers one only at or below the gauge and where no trout are known on
-             the creek it stands for
+             the creek it stands for. (3) A tailwater (TAILWATERS) with no gauge record on the reach: full, since its
+             dam's releases keep it flowing every summer, which the natural-flow model can't see
   size       drainage area, log scale: 1 km^2 -> 0, 50+ km^2 -> 1. The full area (05c_drainages.py, area_streams.csv):
              with what flows in from neighbouring boxes and from above reservoirs, which each box's DEM routing
              misses (a creek crossing in from the next box, or leaving a dam, started again near nothing)
@@ -234,6 +235,13 @@ def score(s):
     cls2[rec] = pd.cut(gsh[rec], [-1, 0.2, 0.5, 0.85, 1.0], labels=["mostly dry", "seasonal", "usually flows",
                                                                      "year-round"]).astype(str)
     rule[rec] = "gauge"
+    # (3) a tailwater (TAILWATERS) flows every summer on its dam's releases, which the natural-flow model can't see: it
+    # scales the creek's own ground below the dam. Piru Creek below Pyramid Dam read mostly dry or seasonal on 28 of its
+    # reaches, and on about 20 more once the routing stopped leaking Pyramid Lake's own shores into that ground
+    # (03b_stitch.route_lake, 2026-11-21). A gauge record on the reach (2) still stands: it is measured.
+    tw_up = tailwater(s).ne("") & (water < 1.0) & ~rec
+    water = water.where(~tw_up, 1.0)
+    cls2[tw_up], rule[tw_up] = "year-round", "tailwater releases"
     # below a gauged diversion the model can't see the canal: where the gauge just below kept flowing in under half
     # its summers since 2011 (05b_flow.py's div_water) and no trout are known here, its record is the water term
     gw = num(s, "div_water")

@@ -1,8 +1,56 @@
-# Stream burning: NHD lines into the routing DEM (measured 2026-11-20, not installed)
+# Stream burning: NHD lines into the routing (lakes installed 2026-11-21; the DEM burn parked)
 
-**Status:** measured on two whole maps in scratch copies of the pipeline. The user decided on 2026-11-20 to leave the
-routing as it is, and to keep this work to come back to. Nothing here is wired into the pipeline. The log entry is
-"2026-11-20, afternoon: burning NHD stream lines into the routing DEM" in `MULTI_AREA_LOG.md`.
+**Status:**
+- **Installed 2026-11-21: NHD's lines through lakes** (`harness/patch_lakes.py`, now in `scripts/03b_stitch.py`).
+  - `route_lake`: every cell of a lake that holds water drains to its outlet, along NHD HR's lines through the lake
+    where they run.
+  - `outflow_streams`: the way the water takes below the outlet is a stream line down to the first stream it meets.
+  - It went in with a tailwater floor in `scripts/scoring.py`: a `TAILWATERS` reach with no gauge record gets full
+    water credit.
+  - Asked for by the user ("implement and commit the nhd stream burning") after the routing let Pilgrim Creek, not
+    the Snake, cross Jackson Lake to the dam. Measured on all 12 maps first: see *Lakes* below.
+- **Parked: the burn into the DEM itself** (`burnlib.py`, `patch_burn.py`), measured on 2026-11-20 on two whole
+  maps. The user decided then to leave it out and keep it to come back to. It doesn't fix the lake crossings: at a
+  lake that drains over a dam, filling raises the burned trench back to the water's level.
+- **Log entries** in `MULTI_AREA_LOG.md`:
+  - "2026-11-20, afternoon: burning NHD stream lines into the routing DEM";
+  - "2026-11-21: NHD's lines through lakes".
+
+## Lakes (installed 2026-11-21)
+Measured with `harness/measure_area.sh` (each area's scratch copy from 03b, the live 03 outputs linked) against the
+live build, all 12 maps; `harness/remeasure_05b.sh` after the lakes layer (05d's `lakes.gpkg`, which 05b reads) was
+copied into the copies; totals by `checks/summarize.py`:
+
+| all 12 maps | live | lake routing |
+|---|---|---|
+| straight made-up lines across lakes (300+ m runs) | 986 km | 266 km |
+| lake outlets reading under half of NHDPlus (`lake_outlets.py`, the reach carrying the most water) | 45 | 39 |
+| HR lines D8 misses (`hragree.py`) | 1,811 | 1,784 |
+| NHDPlus V2 line ends under half | 669 | 677 |
+| mapped falls found (`data/validate.py`, both passes) | 486 of 829 | 487 |
+| known falls found (any source, 200 m, `falls.py`) | 1,025 of 2,127 | 1,025 |
+| sudden flow drops; reach ends dead on an edge between boxes | 0; 0 | 0; 0 |
+| reaches | 105,478 | 104,999 |
+| km of fish 60+ | 42,159 | 41,911 |
+| reaches moving 10+ fish-score points | | 265 up, 408 down |
+
+- **Fixed:**
+  - Jackson Lake's crossing (the Snake's line now runs to the dam; nothing crosses beside it).
+  - Palisades (45 of 47 in-lake reaches named Snake River, against 6 of 46).
+  - 120 creeks drawn carrying a lake's water lose it: Lower Slide Lake's 1,539 km² on a 2.7 km creek, Jenny, Leigh,
+    Roseland and Bailey lakes' outlets, and others.
+  - Lake Mathews' 111 km² reaches Temescal Wash (113 km² below it; NHDPlus 105).
+- **The 10+ point moves:**
+  - Mostly reaches whose ends now cross the 50%-in-lake line of the "reservoir" class (the lines inside lakes follow
+    NHD's, so the reaches split differently at the shores). About 3 down for every 2 up.
+  - The creeks above (all down).
+  - LA's flow classes: about 20 Piru Creek reaches below Pyramid Dam would have gone from year-round to seasonal.
+    Their natural-flow drainage had included Pyramid Lake's own shores through a path leaking out of the lake. The
+    tailwater floor restores them, and 28 that the live build already showed mostly dry or seasonal.
+  - Willow Creek (San Bernardinos, 6 reaches) drops a class for the same reason, without a release to keep it up.
+  - One San Jacinto River reach changes its NHDPlus line match at a junction and loses its gauge record.
+- **Checked by picture:** Jackson Lake, Palisades, Leigh / String / Jenny lakes, Lower Slide Lake, Roseland Lake, and
+  the Indian River below its reservoir.
 
 ## The question
 In flat ground the 10 m DEM's D8 routing can send a creek's water somewhere other than where NHD's stream network
@@ -141,11 +189,23 @@ $H/compare.sh /private/tmp/burn/r0 /private/tmp/burn/r3e adk_northwest
   NaN. `burnlib.flat()` gives no-data cells 1e3 instead.
 
 ## Files
-- `harness/`: `burnlib.py`, `patch_burn.py`, `setup_root.sh`, `run_chain.sh`, `run_checks.sh`, `compare.sh`,
-  `window_hr.py`, `window_drops.py`, `window_plot.py`.
+- `harness/`:
+  - the DEM burn (parked): `burnlib.py`, `patch_burn.py`;
+  - the lake routing (installed): `patch_lakes.py`, which patches a `scripts/` copy (or the project) exactly as
+    measured;
+  - scratch builds: `setup_root.sh`, `run_chain.sh` (starts at 03, 03b, 04 or 05b), `run_checks.sh`, `compare.sh`;
+  - whole-area measuring against the live build: `measure_area.sh`, `remeasure_05b.sh`;
+  - windows: `window_hr.py`, `window_drops.py`, `window_plot.py`.
+- A scratch copy needs the area's lakes layer, which 05b reads: copy `data/derived/<area>/_shared/lakes.gpkg` into
+  it, or its reservoir classes differ from the live build's.
 - `checks/`: the measures above, plus:
+  - `summarize.py` (one table over the measured areas);
   - `hr_density.py` (HR km per km2 of drainage for flagged reaches);
   - `xref.py` (flagged reaches against nearby HR misses).
+  - Since 2026-11-21, `lake_outlets.py` takes the reach carrying the most water within 150 m of NHDPlus's outlet
+    point (the nearest one was often a side creek), and `standing.py` counts a reach that starts in the same box as
+    continuing a reach end on an edge.
 - `results/`: the 2026-11-20 runs.
   - `checks_r0_*` baseline, `checks_r3e_*` the burn above, `checks_r3_adk_northwest` the same without the edge rule.
   - `compare_*` the comparisons; `hragree_live_6_areas.txt`; `classify_short_live_12_areas.txt`.
+  - `lakes_2026-11-21/`: the lake routing's 12-area summary and per-area checks and comparisons.

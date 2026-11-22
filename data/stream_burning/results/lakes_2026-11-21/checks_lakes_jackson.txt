@@ -1,0 +1,58 @@
+#### score_root
+reaches 10499 (project 10528); matched within 30 m 10229, 30-200 m 179, none within 200 m 91
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/jackson/stream_reaches_ranked.csv 10499
+#### standing
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1631           0.0                   10             0                      0.49      506.4
+ gros_ventre     1423           0.0                   12             0                      0.15      326.6
+      hoback     2016           0.0                    0             0                      0.32      553.5
+jackson_lake     2439           0.0                   20             0                      0.36      700.4
+buffalo_fork      163           0.0                    1             0                      0.02       42.7
+teton_valley     1747           0.0                    8             0                      0.51      562.4
+   palisades     1080           0.0                    5             0                      1.40      256.4
+#### short_named
+{"area": "jackson", "reaches": 10499, "named_on_their_line": 2387, "under_quarter": 143, "outside_lakes": 139, "km": 76.3, "fish_60_plus": 109, "top": {"Gros Ventre River": 14, "Shoal Creek": 12, "Snake River": 9, "Crystal Creek": 7}}
+#### classify_short
+{"area": "jackson", "total": 139, "side arm (main arm beside)": {"n": 53.0, "km": 26.2, "fish60": 32.0}, "water routed elsewhere": {"n": 86.0, "km": 50.1, "fish60": 77.0}, "elsewhere_top": {"Shoal Creek": 12, "Gros Ventre River": 10, "Coburn Creek": 6, "Crystal Creek": 6, "Cache Creek": 6, "Little Greys River": 5}}
+#### v2_ends
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 1832; ours under half of V2 at the line's lower end: 107, under a quarter 66, over double 101, no reach within 60 m 230
+size           5-20  20-100  100-1000  1000+
+lines           717     522       395    198
+no_reach         79      53        41     57
+under_half       45      18        23     21
+under_quarter     9      15        21     21
+over_double      54      34        12      1
+#### hragree
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 13986, D8 misses 160 (1.1 %)
+size       <2 km    2-10   10-50  50+ km
+lines     6348.0  3301.0  1655.0  1931.0
+miss        49.0    45.0    23.0    31.0
+miss_pct     0.8     1.4     1.4     1.6
+#### lake_outlets
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+jackson: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 4 | pass 1 + big-creek pass: 3 / 4
+  on smaller drainages:   pass 1: 9 / 17 | pass 1 + big-creek pass: 9 / 17
+  all:                    pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Gros Ventre                                                1      1     1
+Hoback & Snake River Canyon                                2      1     1
+Jackson Lake, Jenny Lake & the northern Tetons            10      6     6
+Palisades Reservoir & Alpine                               1      0     0
+Teton Valley, Idaho: Driggs, Victor & the Teton River      1      0     0
+Tetons & Snake River                                       6      4     4
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

@@ -1,0 +1,80 @@
+#### score_root
+reaches 8900 (project 8947); matched within 30 m 8740, 30-200 m 154, none within 200 m 6
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/smokies/stream_reaches_ranked.csv 8900
+#### standing
+smokies (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ cades_cove     1841           0.0                    9             0                      0.22      536.7
+   le_conte     2076           0.0                    9             0                      0.28      625.2
+cataloochee     1412           0.0                    7             0                      0.16      337.7
+    tellico     1161           0.0                   11             0                      0.18      302.5
+   snowbird      511           0.0                    1             0                      0.06      160.4
+  nantahala      890           0.0                    7             0                      0.19      224.8
+ tuckasegee     1009           0.0                    0             0                      0.15      264.1
+#### short_named
+{"area": "smokies", "reaches": 8900, "named_on_their_line": 2055, "under_quarter": 33, "outside_lakes": 32, "km": 6.1, "fish_60_plus": 8, "top": {"Tuckasegee River": 5, "Tellico River": 3, "Little Tennessee River": 3, "Oconaluftee River": 2}}
+#### classify_short
+{"area": "smokies", "total": 32, "side arm (main arm beside)": {"n": 31.0, "km": 6.0, "fish60": 8.0}, "water routed elsewhere": {"n": 1.0, "km": 0.1, "fish60": 0.0}, "elsewhere_top": {"Coker Creek": 1}}
+#### v2_ends
+smokies (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 2041; ours under half of V2 at the line's lower end: 40, under a quarter 21, over double 83, no reach within 60 m 62
+size           5-20  20-100  100-1000  1000+
+lines           907     543       445    146
+no_reach         35      12        10      5
+under_half       28       6         1      5
+under_quarter    10       5         1      5
+over_double      62      15         6      0
+#### hragree
+smokies (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 27864, D8 misses 20 (0.1 %)
+size        <2 km    2-10   10-50  50+ km
+lines     18006.0  5048.0  2342.0  2412.0
+miss         12.0     5.0     3.0     0.0
+miss_pct      0.1     0.1     0.1     0.0
+#### lake_outlets
+smokies (project): lakes with an outlet line 19; below them under half of NHDPlus: 2
+          lake   ha  nhd_km2  ours               sid     reach_name  ratio
+    Lake Emory 33.6    801.1 20.79   tuckasegee:s743  Watauga Creek   0.03
+Lake Junaluska 81.2    164.3  1.83 cataloochee:s1019 Richland Creek   0.01
+#### check_flow_drops
+smokies: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+smokies: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 15 / 45 | pass 1 + big-creek pass: 25 / 45
+  on smaller drainages:   pass 1: 72 / 111 | pass 1 + big-creek pass: 72 / 111
+  all:                    pass 1: 87 / 156 | pass 1 + big-creek pass: 97 / 156
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Abrams Creek, Cades Cove, Little River & Twentymile               19      8    12
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee     48     23    25
+Nantahala Lake, Gorge & Wesser                                    29     13    16
+Raven Fork, Cosby, Big Creek, Cataloochee & Maggie Valley         24     17    17
+Snowbird, Santeetlah & Joyce Kilmer                               12     10    10
+Tellico River, Bald River & Citico Creek                           5      3     4
+Tuckasegee, Alarka & Dillsboro                                    19     13    13
+
+named mapped falls on big creeks that both passes miss: 
+                                                       region                      name  area     d1      d2
+          Abrams Creek, Cades Cove, Little River & Twentymile          Bear Creek Falls 100.0  790.0  1126.0
+          Abrams Creek, Cades Cove, Little River & Twentymile Bear Creek Falls (Cheoah)  88.0  932.0  1273.0
+          Abrams Creek, Cades Cove, Little River & Twentymile           Lynn Camp Falls  30.0 1052.0   309.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee          Tom Branch Falls 103.0  502.0   732.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee  Little River Upper Falls  15.0 1823.0 10259.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Fish Camp Cascades  29.0  809.0 10958.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Cliff Branch Falls  36.0 1232.0  7837.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee   Lower Enloe Creek Falls  10.0  214.0   456.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee             Pothole Falls  47.0  507.0   207.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Big Rock Falls  47.0  415.0   279.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee               Raven Falls  51.0  506.0   453.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Island Slide Falls  51.0  232.0   726.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Buckshot Falls  52.0  423.0  1353.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        War Branch Cascade  27.0  786.0 10473.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Cataract Falls  15.0 1551.0  4827.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Hitchin Post Falls  33.0 1076.0  5713.0
+                               Nantahala Lake, Gorge & Wesser           Nantahala Falls 151.0 1327.0   611.0
+                               Nantahala Lake, Gorge & Wesser         Jagged Rock Falls  94.0  235.0   327.0
+                               Nantahala Lake, Gorge & Wesser The Cascades on Nantahala  94.0  549.0   430.0
+                               Nantahala Lake, Gorge & Wesser         Camp Branch Falls  99.0  205.0  1357.0
+
+every precisely placed known fall, any source: pass 1: 99 / 187 | pass 1 + big-creek pass: 116 / 187
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

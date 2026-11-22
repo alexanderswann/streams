@@ -1,0 +1,30 @@
+lexington_va: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 4287, 'km': 3444, 'mean': np.float64(58.38), '>=40': 3992, '>=60': 1903, '>=80': 406, 'km60': np.float64(1396.6)}
+             B: {'n': 4284, 'km': 3445, 'mean': np.float64(58.41), '>=40': 3992, '>=60': 1903, '>=80': 406, 'km60': np.float64(1395.3)}
+B reaches matched to an A reach within 30 m: 4262 of 4284 (22 unmatched, 8.5 km); A reaches no B reach matched: 28
+  drainage +20% or more: 4, -20% or more: 1; x2 or more: 3, /2 or less: 0
+  flow class changed: 2; name changed: 4
+  fish score up 10+: 1, down 10+: 1; any change: 13; crossing 60: up 0, down 1
+  biggest moves:
+              sid_b             name_b  af_a  af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+blue_ridge_va:s1465    Thrashers Creek 17.23 17.28   1.00    year-round     reservoir          60.0          18.0 -42.0
+blue_ridge_va:s2055                NaN  1.14  1.07   0.94     reservoir    year-round          11.0          33.0  22.0
+blue_ridge_va:s1545         Mill Creek  3.10 21.20   6.84     reservoir     reservoir          14.0          17.0   3.0
+blue_ridge_va:s2083 Higginbotham Creek  1.14  4.43   3.89     reservoir     reservoir          11.0          14.0   3.0
+blue_ridge_va:s1525         Mill Creek  3.10  6.91   2.23     reservoir     reservoir          14.0          15.0   1.0
+lexington_va: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  2499.7           4.5           1.6
+10-100     684.1           7.0           4.1
+100+       260.9           0.0           0.0
+total km 3444.6 | moved 20+ m 11.5 | 50+ m 5.7
+lexington_va (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 36 runs, 13.6 km (5.0 km on 10+ km2); in lakes 5 runs, 1.9 km; of 3444 km drawn
+lexington_va (/Users/mac/Fishing): known falls 27: found pass 1 15, both passes 16 | OSM/NHD-mapped 22: pass 1 14, both 15
+  drops: pass 1 206 {'steep reach': 106, 'cascade / knickpoint': 96, 'waterfall-like step': 4}; big-creek pass 47
+  waterfall candidates by status: {'steep reach': 98, 'unmapped cascade': 73, 'likely DEM artifact': 34, 'unmapped short fall (big creek)': 23, 'matches mapped waterfall': 12, 'dam / weir': 6, 'unmapped waterfall-like step': 4}
+lexington_va (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 36 runs, 13.3 km (4.6 km on 10+ km2); in lakes 0 runs, 0.0 km; of 3445 km drawn
+lexington_va (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 27: found pass 1 15, both passes 16 | OSM/NHD-mapped 22: pass 1 14, both 15
+  drops: pass 1 206 {'steep reach': 106, 'cascade / knickpoint': 96, 'waterfall-like step': 4}; big-creek pass 47
+  waterfall candidates by status: {'steep reach': 98, 'unmapped cascade': 73, 'likely DEM artifact': 34, 'unmapped short fall (big creek)': 23, 'matches mapped waterfall': 12, 'dam / weir': 6, 'unmapped waterfall-like step': 4}

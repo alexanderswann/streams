@@ -1,0 +1,53 @@
+#### standing
+jackson (/Users/mac/Fishing)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1636           0.0                   10             0                      0.49      505.7
+ gros_ventre     1420           0.0                   12             0                      0.15      327.2
+      hoback     2015           0.0                    0             0                      0.32      553.5
+jackson_lake     2456           0.0                   20             0                      0.35      715.4
+buffalo_fork      163           0.0                    1             0                      0.02       42.7
+teton_valley     1748           0.0                    8             0                      0.51      562.5
+   palisades     1090           0.0                    5             0                      1.40      258.2
+#### short_named
+{"area": "jackson", "reaches": 10528, "named_on_their_line": 2379, "under_quarter": 143, "outside_lakes": 140, "km": 76.8, "fish_60_plus": 110, "top": {"Gros Ventre River": 15, "Shoal Creek": 12, "Snake River": 9, "Crystal Creek": 7}}
+#### v2_ends
+jackson (/Users/mac/Fishing): NHDPlus V2 lines checked 1832; ours under half of V2 at the line's lower end: 107, under a quarter 66, over double 101, no reach within 60 m 229
+size           5-20  20-100  100-1000  1000+
+lines           717     522       395    198
+no_reach         79      52        41     57
+under_half       45      18        23     21
+under_quarter     9      15        21     21
+over_double      54      34        12      1
+#### hragree
+jackson (/Users/mac/Fishing): HR lines checked 13986, D8 misses 169 (1.2 %)
+size       <2 km    2-10   10-50  50+ km
+lines     6348.0  3301.0  1655.0  1931.0
+miss        54.0    46.0    25.0    32.0
+miss_pct     0.9     1.4     1.5     1.7
+#### lake_outlets
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+jackson: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 4 | pass 1 + big-creek pass: 3 / 4
+  on smaller drainages:   pass 1: 9 / 17 | pass 1 + big-creek pass: 9 / 17
+  all:                    pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Gros Ventre                                                1      1     1
+Hoback & Snake River Canyon                                2      1     1
+Jackson Lake, Jenny Lake & the northern Tetons            10      6     6
+Palisades Reservoir & Alpine                               1      0     0
+Teton Valley, Idaho: Driggs, Victor & the Teton River      1      0     0
+Tetons & Snake River                                       6      4     4
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

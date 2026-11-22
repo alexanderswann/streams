@@ -22,8 +22,12 @@ for r, g in reaches.items():
         amin = float(src.read(1).min()); T = src.transform; shape = (src.height, src.width)
     ends = shapely.points([ln.coords[-1] for ln in g.geometry])
     on = shapely.dwithin(ends, seam, 1.0) if edges else np.zeros(len(g), bool)
-    dead = [i for i in np.flatnonzero(on)                 # on no reach line of another box (its start or its middle)
-            if not (owner[tree.query(ends[i], predicate="dwithin", distance=15)] != r).any()]
+    # dead: on no reach line of another box (its start or its middle), and no other reach of its own box starts there
+    # (a junction can fall on the edge: the reach below it then starts in the same box)
+    own_starts = shapely.STRtree(shapely.points([ln.coords[0] for ln in g.geometry]))
+    dead = [i for i in np.flatnonzero(on)
+            if not (owner[tree.query(ends[i], predicate="dwithin", distance=15)] != r).any()
+            and not any(j != i for j in own_starts.query(ends[i], predicate="dwithin", distance=15))]
     dead_list += [(r, g.sid.iat[i], round(float(g.area_km2.iat[i]), 1)) for i in dead]
     with rasterio.open(f"{config.derived_dir(r)}/strahler.tif") as src:
         so = src.read(1)

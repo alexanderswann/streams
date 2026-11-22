@@ -1,0 +1,50 @@
+n_georgia: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 14912, 'km': 12182, 'mean': np.float64(56.67), '>=40': 12359, '>=60': 6785, '>=80': 1730, 'km60': np.float64(5378.9)}
+             B: {'n': 14841, 'km': 12168, 'mean': np.float64(56.88), '>=40': 12366, '>=60': 6783, '>=80': 1730, 'km60': np.float64(5367.2)}
+B reaches matched to an A reach within 30 m: 14604 of 14841 (237 unmatched, 166.8 km); A reaches no B reach matched: 369
+  drainage +20% or more: 44, -20% or more: 18; x2 or more: 28, /2 or less: 14
+  flow class changed: 35; name changed: 37
+  fish score up 10+: 14, down 10+: 29; any change: 122; crossing 60: up 4, down 9
+  biggest moves:
+                sid_b                  name_b    af_a    af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+          rabun:s3877 Middle Fork Broad River   50.86   50.90   1.00    year-round     reservoir          88.0          26.0 -62.0
+        cohutta:s1623        Cherry Log Creek   36.99   36.78   0.99     reservoir    year-round          24.0          81.0  57.0
+hooch_tailwater:s1467     Chattahoochee River 3296.02 3295.98   1.00    year-round     reservoir          75.0          19.0 -56.0
+     blue_ridge:s1916             Smith Creek   19.02   19.02   1.00     reservoir    year-round          23.0          76.0  53.0
+     blue_ridge:s3978            Pettit Creek    1.72    1.91   1.11    year-round     reservoir          72.0          22.0 -50.0
+     blue_ridge:s3469              Ward Creek   13.91   14.01   1.01     reservoir    year-round          21.0          70.0  49.0
+      blue_ridge:s401            Conley Creek    9.59    9.59   1.00     reservoir    year-round          20.0          67.0  47.0
+      blue_ridge:s574              Camp Creek    2.25    2.57   1.14    year-round     reservoir          59.0          17.0 -42.0
+        cohutta:s1812            Willys Creek    3.33    5.30   1.59    year-round     reservoir          59.0          18.0 -41.0
+        cohutta:s3231            Redbud Creek   35.20   13.18   0.37    year-round     reservoir          54.0          14.0 -40.0
+      blue_ridge:s706          Hiwassee River    7.10  214.06  30.15    year-round     reservoir          65.0          25.0 -40.0
+          rabun:s2252            Black Branch    2.49    2.49   1.00     reservoir    year-round          17.0          56.0  39.0
+ hooch_tailwater:s263           Chicken Creek   22.66   22.53   0.99     reservoir    year-round          17.0          55.0  38.0
+hooch_tailwater:s2123    Stone Mountain Creek   13.78   13.76   1.00     reservoir    year-round          16.0          53.0  37.0
+ hooch_tailwater:s386                     NaN    6.06    6.99   1.15    year-round     reservoir          48.0          15.0 -33.0
+          rabun:s1082                     NaN    1.55    1.50   0.97     reservoir    year-round          14.0          47.0  33.0
+hooch_tailwater:s2060            Pounds Creek    8.51    9.38   1.10    year-round     reservoir          47.0          14.0 -33.0
+hooch_tailwater:s2059            Pounds Creek    8.51    8.59   1.01    year-round     reservoir          47.0          14.0 -33.0
+ hooch_tailwater:s524      Copper Sandy Creek    7.16    7.10   0.99     reservoir    year-round          14.0          47.0  33.0
+          rabun:s1315                     NaN    1.46    1.39   0.95    year-round     reservoir          46.0          14.0 -32.0
+          rabun:s1128                     NaN    1.59    1.23   0.77     reservoir    year-round          14.0          45.0  31.0
+     blue_ridge:s1330                     NaN    1.28    1.24   0.97     reservoir    year-round          13.0          43.0  30.0
+ hooch_tailwater:s862                     NaN    7.02    6.95   0.99     reservoir    year-round          13.0          42.0  29.0
+hooch_tailwater:s1169                     NaN    3.20    3.48   1.09    year-round     reservoir          42.0          13.0 -29.0
+     blue_ridge:s3089              Blue Creek    1.23    3.04   2.47    year-round     reservoir          42.0          14.0 -28.0
+n_georgia: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  8484.4          90.8          50.4
+10-100    2667.0          69.6          34.3
+100+      1016.2          69.1          44.6
+total km 12167.6 | moved 20+ m 229.5 | 50+ m 129.3
+n_georgia (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 182 runs, 77.2 km (34.9 km on 10+ km2); in lakes 122 runs, 59.7 km; of 12182 km drawn
+n_georgia (/Users/mac/Fishing): known falls 925: found pass 1 380, both passes 433 | OSM/NHD-mapped 205: pass 1 100, both 112
+  drops: pass 1 820 {'cascade / knickpoint': 545, 'steep reach': 237, 'waterfall-like step': 38}; big-creek pass 243
+  waterfall candidates by status: {'matches mapped waterfall': 455, 'unmapped cascade': 189, 'likely DEM artifact': 131, 'steep reach': 126, 'unmapped short fall (big creek)': 78, 'dam / weir': 57, 'unmapped waterfall-like step': 4}
+n_georgia (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 177 runs, 73.7 km (33.1 km on 10+ km2); in lakes 13 runs, 5.9 km; of 12168 km drawn
+n_georgia (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 925: found pass 1 380, both passes 434 | OSM/NHD-mapped 205: pass 1 100, both 113
+  drops: pass 1 821 {'cascade / knickpoint': 547, 'steep reach': 237, 'waterfall-like step': 37}; big-creek pass 249
+  waterfall candidates by status: {'matches mapped waterfall': 457, 'unmapped cascade': 191, 'likely DEM artifact': 131, 'steep reach': 126, 'unmapped short fall (big creek)': 83, 'dam / weir': 56, 'unmapped waterfall-like step': 4}

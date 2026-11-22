@@ -48,7 +48,9 @@ for _, lk in wb.iterrows():
     if not cand:
         rows.append(dict(lake=lk.gnis_name, ha=round(lake.area / 1e4, 1), nhd_km2=round(fl.totdasqkm, 1), ours=np.nan, sid=None))
         continue
-    i = min(cand, key=lambda i: st.geometry.values[i].distance(pt))
+    # the reach carrying the most water there: the river below the outlet, not a side creek that happens to pass
+    # nearer NHDPlus's (1:100,000) line
+    i = max(cand, key=lambda i: st.area_full_km2.iat[i])
     rows.append(dict(lake=lk.gnis_name, ha=round(lake.area / 1e4, 1), nhd_km2=round(fl.totdasqkm, 1),
                      ours=st.area_full_km2.iat[i], sid=st.sid.iat[i], reach_name=st.name.iat[i]))
 t = pd.DataFrame(rows)

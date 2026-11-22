@@ -1,0 +1,50 @@
+la: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 17805, 'km': 16011, 'mean': np.float64(19.59), '>=40': 3442, '>=60': 2145, '>=80': 898, 'km60': np.float64(1388.9)}
+             B: {'n': 17802, 'km': 15983, 'mean': np.float64(19.62), '>=40': 3456, '>=60': 2160, '>=80': 897, 'km60': np.float64(1395.6)}
+B reaches matched to an A reach within 30 m: 17626 of 17802 (176 unmatched, 102.1 km); A reaches no B reach matched: 212
+  drainage +20% or more: 64, -20% or more: 43; x2 or more: 26, /2 or less: 28
+  flow class changed: 65; name changed: 19
+  fish score up 10+: 31, down 10+: 18; any change: 122; crossing 60: up 19, down 2
+  biggest moves:
+               sid_b            name_b    af_a    af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+          piru:s2061        Piru Creek 1093.93 1097.27   1.00    mostly dry    year-round           3.0          70.0  67.0
+          piru:s2194        Piru Creek 1120.31 1123.67   1.00    mostly dry    year-round           8.0          73.0  65.0
+          piru:s2215        Piru Creek 1121.58 1124.94   1.00    mostly dry    year-round           8.0          72.0  64.0
+          piru:s2195        Piru Creek 1121.10 1124.45   1.00    mostly dry    year-round           8.0          72.0  64.0
+          piru:s2062        Piru Creek 1099.05 1102.40   1.00    mostly dry    year-round           8.0          70.0  62.0
+          piru:s2191        Piru Creek 1118.40 1121.75   1.00    mostly dry    year-round           7.0          68.0  61.0
+          piru:s2193        Piru Creek 1119.44 1122.80   1.00    mostly dry    year-round           7.0          68.0  61.0
+          piru:s2063        Piru Creek 1100.78 1104.12   1.00    mostly dry    year-round           7.0          67.0  60.0
+          piru:s2069        Piru Creek 1104.16 1107.51   1.00    mostly dry    year-round           7.0          67.0  60.0
+          piru:s2189        Piru Creek 1116.48 1119.82   1.00    mostly dry    year-round           7.0          67.0  60.0
+          piru:s2190        Piru Creek 1117.31 1120.66   1.00    mostly dry    year-round           7.0          67.0  60.0
+          piru:s2192        Piru Creek 1118.86 1122.20   1.00    mostly dry    year-round           8.0          68.0  60.0
+          piru:s2216        Piru Creek 1126.34 1129.69   1.00    mostly dry    year-round          11.0          69.0  58.0
+          piru:s2218        Piru Creek 1127.69 1131.05   1.00    mostly dry    year-round          16.0          71.0  55.0
+          piru:s2217        Piru Creek 1127.28 1130.63   1.00    mostly dry    year-round          16.0          70.0  54.0
+          piru:s2219        Piru Creek 1128.88 1132.22   1.00    mostly dry    year-round          15.0          67.0  52.0
+          piru:s2240        Piru Creek 1129.28 1132.62   1.00    mostly dry    year-round          15.0          66.0  51.0
+          piru:s2241        Piru Creek 1130.18 1133.54   1.00    mostly dry    year-round          15.0          65.0  50.0
+          piru:s2283        Piru Creek 1135.12 1138.48   1.00    mostly dry    year-round          15.0          64.0  49.0
+          piru:s1542        Piru Creek  865.45  868.79   1.00    year-round      seasonal          73.0          25.0 -48.0
+   san_gabriel:s2814               NaN  387.59  383.92   0.99    mostly dry    year-round           6.0          52.0  46.0
+   san_gabriel:s2815               NaN  387.59  387.59   1.00    mostly dry    year-round           6.0          52.0  46.0
+   san_jacinto:s1398 San Jacinto River  357.86  357.86   1.00    mostly dry    year-round          13.0          57.0  44.0
+ santa_ana_mtns:s513               NaN   77.52   77.49   1.00    year-round     reservoir          57.0          18.0 -39.0
+san_bernardino:s1432               NaN   14.32   17.93   1.25    year-round     reservoir          55.0          17.0 -38.0
+la: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+               km  km_moved_20m  km_moved_50m
+size                                         
+1-10 km2  12159.8          64.2          44.6
+10-100     3062.4          38.2          22.5
+100+        761.1          27.8          14.2
+total km 15983.2 | moved 20+ m 130.1 | 50+ m 81.2
+la (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 899 runs, 411.4 km (80.3 km on 10+ km2); in lakes 81 runs, 40.4 km; of 16011 km drawn
+la (/Users/mac/Fishing): known falls 412: found pass 1 185, both passes 199 | OSM/NHD-mapped 212: pass 1 117, both 127
+  drops: pass 1 4993 {'steep reach': 3272, 'cascade / knickpoint': 1564, 'waterfall-like step': 157}; big-creek pass 416
+  waterfall candidates by status: {'steep reach': 3110, 'unmapped cascade': 1263, 'matches mapped waterfall': 256, 'likely DEM artifact': 207, 'unmapped waterfall-like step': 116, 'unmapped short fall (big creek)': 82, 'dam / weir': 64}
+la (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 894 runs, 408.9 km (78.8 km on 10+ km2); in lakes 31 runs, 14.1 km; of 15983 km drawn
+la (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 412: found pass 1 185, both passes 199 | OSM/NHD-mapped 212: pass 1 117, both 127
+  drops: pass 1 4996 {'steep reach': 3272, 'cascade / knickpoint': 1568, 'waterfall-like step': 156}; big-creek pass 418
+  waterfall candidates by status: {'steep reach': 3110, 'unmapped cascade': 1268, 'matches mapped waterfall': 256, 'likely DEM artifact': 205, 'unmapped waterfall-like step': 115, 'unmapped short fall (big creek)': 81, 'dam / weir': 64}

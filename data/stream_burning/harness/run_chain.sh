@@ -18,9 +18,12 @@ step() {   # step <range or ""> <script>
 echo "== START $a $(date '+%m-%d %H:%M:%S') root $R" >> $LOG
 # BOXES (optional): the boxes to condition (03) this time, to resume a chain that stopped part way through 03
 if [[ $first == 03 ]]; then for r in ${=BOXES:-$ranges}; do step $r 03_hydrology; done; fi
-[[ $first == 04 ]] || step "" 03b_stitch      # first = 03, 03b, or 04 (resume after a finished 03b)
-for r in $ranges; do step $r 04_knickpoints; step $r 04b_bigcreek_steps; done
-for r in $ranges; do step $r 05_score; done
-for r in $ranges; do step $r 05c_drainages; done
+# first = 03, 03b, 04 (resume after a finished 03b) or 05b (only the flow step, e.g. after the lakes layer came in)
+if [[ $first != 05b ]]; then
+  [[ $first == 04 ]] || step "" 03b_stitch
+  for r in $ranges; do step $r 04_knickpoints; step $r 04b_bigcreek_steps; done
+  for r in $ranges; do step $r 05_score; done
+  for r in $ranges; do step $r 05c_drainages; done
+fi
 for r in $ranges; do step $r 05b_flow; done
 echo "== DONE $a $(date '+%m-%d %H:%M:%S')" >> $LOG

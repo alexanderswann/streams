@@ -1,0 +1,60 @@
+#### standing
+adk_northwest (/Users/mac/Fishing)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     2687           0.0                    9             0                      0.87      730.2
+  long_lake     1880           0.0                    0             0                      0.44      411.7
+     tupper     1304           0.0                   18             0                      0.55      351.4
+   st_regis     1271           0.0                   16             0                      0.38      342.1
+lake_ozonia     1137           0.0                    6             0                      0.37      376.3
+#### short_named
+{"area": "adk_northwest", "reaches": 8279, "named_on_their_line": 1675, "under_quarter": 79, "outside_lakes": 54, "km": 23.9, "fish_60_plus": 39, "top": {"West Branch Beaver River": 8, "Dun Brook": 6, "West Branch Oswegatchie River": 5, "Saint Regis River": 5}}
+#### v2_ends
+adk_northwest (/Users/mac/Fishing): NHDPlus V2 lines checked 1639; ours under half of V2 at the line's lower end: 71, under a quarter 46, over double 77, no reach within 60 m 177
+size           5-20  20-100  100-1000  1000+
+lines           773     355       449     62
+no_reach         80      51        39      7
+under_half       42      14        10      5
+under_quarter    22       9        10      5
+over_double      61      14         2      0
+#### hragree
+adk_northwest (/Users/mac/Fishing): HR lines checked 10713, D8 misses 131 (1.2 %)
+size       <2 km    2-10   10-50  50+ km
+lines     5572.0  2716.0  1169.0  1256.0
+miss        93.0    29.0     8.0     1.0
+miss_pct     1.7     1.1     0.7     0.1
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 6
+             lake   ha  nhd_km2  ours            sid reach_name  ratio
+      Graves Pond  9.2     10.0  3.82    beaver:s612        NaN   0.38
+unnamed reservoir 13.2      9.9  2.39    beaver:s263        NaN   0.24
+       Twin Ponds  9.1      9.0  2.57    beaver:s354        NaN   0.29
+      Turtle Pond 28.7      8.4  1.03     tupper:s37        NaN   0.12
+unnamed reservoir 58.9      7.4  1.09 long_lake:s237        NaN   0.15
+ McCavanaugh Pond 12.1      6.1  1.41   st_regis:s99        NaN   0.23
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_northwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 24 | pass 1 + big-creek pass: 18 / 24
+  on smaller drainages:   pass 1: 0 / 9 | pass 1 + big-creek pass: 0 / 9
+  all:                    pass 1: 3 / 33 | pass 1 + big-creek pass: 18 / 33
+
+by range:
+                                                                  falls  pass1  both
+region                                                                              
+Carry Falls, the Raquette reservoirs & the St. Regis                  5      1     4
+Lake Ozonia, the Deer and Little Salmon rivers                        3      1     3
+Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper          6      0     2
+Stillwater, Beaver River, Cranberry Lake & Five Ponds                11      0     3
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls      8      1     6
+
+named mapped falls on big creeks that both passes miss: 
+                                                          region            name  area      d1      d2
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Upper Falls  73.0  4365.0  4910.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Lower Falls  74.0  4429.0  5719.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper  Raquette Falls  74.0  4415.0  5499.0
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls Jamestown Falls 165.0 24776.0 19653.0
+            Carry Falls, the Raquette reservoirs & the St. Regis Augerhole Falls  69.0 24281.0  7923.0
+
+every precisely placed known fall, any source: pass 1: 4 / 44 | pass 1 + big-creek pass: 23 / 44
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

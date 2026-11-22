@@ -1,0 +1,52 @@
+#### standing
+ne_ct (/Users/mac/Fishing)
+      box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ natchaug     1672           0.0                   14             0                      0.27      401.1
+quinebaug     1747           0.0                    0             0                      0.44      445.4
+#### short_named
+{"area": "ne_ct", "reaches": 3419, "named_on_their_line": 815, "under_quarter": 27, "outside_lakes": 26, "km": 9.2, "fish_60_plus": 10, "top": {"Fenton River": 5, "French River": 3, "Mashamoquet Brook": 3, "Pease Brook": 3}}
+#### v2_ends
+ne_ct (/Users/mac/Fishing): NHDPlus V2 lines checked 744; ours under half of V2 at the line's lower end: 32, under a quarter 15, over double 36, no reach within 60 m 88
+size           5-20  20-100  100-1000  1000+
+lines           350     188       160     46
+no_reach         54      24        10      0
+under_half       15       7        10      0
+under_quarter     8       4         3      0
+over_double      26       8         2      0
+#### hragree
+ne_ct (/Users/mac/Fishing): HR lines checked 9131, D8 misses 145 (1.6 %)
+size       <2 km    2-10  10-50  50+ km
+lines     5463.0  1993.0  860.0   815.0
+miss       104.0    32.0    9.0     0.0
+miss_pct     1.9     1.6    1.0     0.0
+#### lake_outlets
+ne_ct (project): lakes with an outlet line 140; below them under half of NHDPlus: 6
+                    lake   ha  nhd_km2   ours             sid      reach_name  ratio
+North Grosvenordale Pond 23.8    256.7 102.74  quinebaug:s190    French River   0.40
+          Beachdale Pond 15.1     73.1  10.71 quinebaug:s1740   Denison Brook   0.15
+         State Line Pond 30.2     17.0   7.06   natchaug:s163             NaN   0.42
+       unnamed reservoir  9.0     10.4   4.95  quinebaug:s502 Wappoquia Brook   0.48
+              Moore Pond 20.7      3.2   1.13   natchaug:s170   Roaring Brook   0.35
+              Clark Pond  8.2      3.0   1.01  quinebaug:s847             NaN   0.34
+#### check_flow_drops
+ne_ct: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+ne_ct: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 9 | pass 1 + big-creek pass: 4 / 9
+  on smaller drainages:   pass 1: 0 / 14 | pass 1 + big-creek pass: 0 / 14
+  all:                    pass 1: 0 / 23 | pass 1 + big-creek pass: 4 / 23
+
+by range:
+                                falls  pass1  both
+region                                            
+Natchaug, Fenton & Willimantic     20      0     4
+Quinebaug, Five Mile & Moosup       3      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                        region                   name  area      d1     d2
+Natchaug, Fenton & Willimantic     Diana's Pool Falls 144.0  4914.0 2113.0
+ Quinebaug, Five Mile & Moosup          Cargill Falls  16.0  3087.0  766.0
+ Quinebaug, Five Mile & Moosup Spencer Rock Waterfall  34.0 15157.0 8061.0
+
+every precisely placed known fall, any source: pass 1: 0 / 25 | pass 1 + big-creek pass: 4 / 25
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

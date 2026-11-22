@@ -1,0 +1,60 @@
+#### score_root
+reaches 17802 (project 17805); matched within 30 m 17626, 30-200 m 156, none within 200 m 20
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/la/stream_reaches_ranked.csv 17802
+#### standing
+la (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   san_gabriel     3963           0.0                   14             0                      1.11     1126.3
+  santa_monica      681           0.0                    0             0                     36.96      214.1
+san_bernardino     3220           0.0                    0             0                      1.74      914.7
+         sespe     3477           0.0                   14             0                      0.40      884.6
+          piru     2395           0.0                    7             0                      0.73      667.6
+ sierra_pelona      620           0.0                   12             0                      0.61      171.9
+   san_jacinto     1672           0.0                    0             0                      0.40      464.4
+santa_ana_mtns     1774           0.0                    0             0                      0.17      492.1
+#### short_named
+{"area": "la", "reaches": 17802, "named_on_their_line": 1972, "under_quarter": 121, "outside_lakes": 116, "km": 61.7, "fish_60_plus": 0, "top": {"Temescal Wash": 46, "Los Angeles River": 21, "Le Montaine Creek": 7, "Santa Clara River": 5}}
+#### classify_short
+{"area": "la", "total": 116, "side arm (main arm beside)": {"n": 30.0, "km": 11.1, "fish60": 0.0}, "water routed elsewhere": {"n": 86.0, "km": 50.7, "fish60": 0.0}, "elsewhere_top": {"Temescal Wash": 46, "Los Angeles River": 20, "Le Montaine Creek": 6, "Lytle Creek": 3, "Sespe Creek": 3, "Aliso Creek": 2}}
+#### v2_ends
+la (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 3661; ours under half of V2 at the line's lower end: 200, under a quarter 161, over double 121, no reach within 60 m 557
+size           5-20  20-100  100-1000  1000+
+lines          1677    1037       883     64
+no_reach        191     106       243     17
+under_half       55      28        84     33
+under_quarter    31      21        81     28
+over_double      94      20         7      0
+#### hragree
+la (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 59682, D8 misses 535 (0.9 %)
+size        <2 km     2-10   10-50  50+ km
+lines     39611.0  10693.0  5159.0  4212.0
+miss        256.0    171.0    52.0    56.0
+miss_pct      0.6      1.6     1.0     1.3
+#### lake_outlets
+la (project): lakes with an outlet line 40; below them under half of NHDPlus: 2
+                 lake     ha  nhd_km2  ours                  sid    reach_name  ratio
+        Lake Elsinore 1277.1   1866.3  2.87 santa_ana_mtns:s1032 Temescal Wash   0.00
+Little Rock Reservoir   43.0    165.1  1.05     san_gabriel:s255           NaN   0.01
+#### check_flow_drops
+la: sudden flow drops (flow per km2 of area_edge_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+la: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 36 / 54 | pass 1 + big-creek pass: 46 / 54
+  on smaller drainages:   pass 1: 81 / 158 | pass 1 + big-creek pass: 81 / 158
+  all:                    pass 1: 117 / 212 | pass 1 + big-creek pass: 127 / 212
+
+by range:
+                             falls  pass1  both
+region                                         
+Piru Creek & Castaic             1      0     0
+San Bernardino Mountains        15     11    13
+San Gabriel Mountains           69     39    43
+San Jacinto Mountains           28     21    21
+Santa Ana Mountains             46     15    16
+Santa Monica Mountains          21     11    14
+Sespe, Topatopa & Mt. Pinos     32     20    20
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 123 / 219 | pass 1 + big-creek pass: 134 / 219
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 49 / 172 | pass 1 + big-creek pass: 51 / 172

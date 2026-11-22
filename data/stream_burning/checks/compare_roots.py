@@ -10,6 +10,7 @@ import numpy as np, pandas as pd, geopandas as gpd, shapely
 import config
 def load(root):
     rk = pd.read_csv(f"{root}/output/{config.AREA}/stream_reaches_ranked.csv", low_memory=False)
+    rk = rk[~rk.sid.astype(str).str.contains("+", regex=False)]   # 06_map's drawn-through pieces
     g = pd.concat([gpd.read_file(f"{root}/output/{config.AREA}/{r}/streams_scored.gpkg")[["sid", "geometry"]]
                    for r in config.REGIONS], ignore_index=True)
     g = gpd.GeoDataFrame(g, crs=4326).to_crs(config.CRS).merge(rk, on="sid")

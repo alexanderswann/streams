@@ -1,0 +1,49 @@
+#### score_root
+reaches 4612 (project 4623); matched within 30 m 4593, 30-200 m 18, none within 200 m 1
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/se_pa/stream_reaches_ranked.csv 4612
+#### standing
+se_pa (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   brandywine     2686           0.0                   15             0                      9.03      716.2
+ridley_valley     1926           0.0                    0             0                     52.64      601.3
+#### short_named
+{"area": "se_pa", "reaches": 4612, "named_on_their_line": 1269, "under_quarter": 37, "outside_lakes": 36, "km": 13.9, "fish_60_plus": 9, "top": {"Schuylkill River": 11, "Valley Creek": 6, "Wissahickon Creek": 3, "Chester Creek": 2}}
+#### classify_short
+{"area": "se_pa", "total": 36, "side arm (main arm beside)": {"n": 29.0, "km": 8.9, "fish60": 7.0}, "water routed elsewhere": {"n": 7.0, "km": 5.1, "fish60": 2.0}, "elsewhere_top": {"Valley Creek": 4, "Antietam Creek": 1, "Minister Creek": 1, "Pine Run": 1}}
+#### v2_ends
+se_pa (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 1012; ours under half of V2 at the line's lower end: 29, under a quarter 20, over double 71, no reach within 60 m 135
+size           5-20  20-100  100-1000  1000+
+lines           438     272       221     81
+no_reach         45      35        36     19
+under_half       15       5         6      3
+under_quarter     7       4         6      3
+over_double      48      18         5      0
+#### hragree
+se_pa (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 5288, D8 misses 142 (2.7 %)
+size       <2 km    2-10  10-50  50+ km
+lines     2655.0  1249.0  541.0   843.0
+miss        56.0    37.0   11.0    38.0
+miss_pct     2.1     3.0    2.0     4.5
+#### lake_outlets
+se_pa (project): lakes with an outlet line 23; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+se_pa: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+se_pa: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 3 | pass 1 + big-creek pass: 0 / 3
+  on smaller drainages:   pass 1: 0 / 8 | pass 1 + big-creek pass: 0 / 8
+  all:                    pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+
+by range:
+                                                      falls  pass1  both
+region                                                                  
+Brandywine, French Creek & White Clay                     4      0     0
+Ridley, Crum & Darby, Valley Creek & the Wissahickon      7      0     0
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

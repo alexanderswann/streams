@@ -1,0 +1,64 @@
+#### standing
+adk_high_peaks (/Users/mac/Fishing)
+       box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+high_peaks     1956           0.0                    5             0                      0.36      493.0
+    boquet      765           0.0                    0             0                      0.29      200.8
+   saranac     1061           0.0                   18             0                      0.20      252.5
+wilmington     1813           0.0                   19             0                      0.50      438.9
+ champlain     1009           0.0                    2             0                      0.22      318.7
+chateaugay     2534           0.0                   20             0                      0.56      676.0
+#### short_named
+{"area": "adk_high_peaks", "reaches": 9138, "named_on_their_line": 1944, "under_quarter": 89, "outside_lakes": 80, "km": 43.6, "fish_60_plus": 48, "top": {"Salmon River": 13, "Arnold Brook": 6, "West Mill Brook": 5, "Saranac River": 4}}
+#### v2_ends
+adk_high_peaks (/Users/mac/Fishing): NHDPlus V2 lines checked 1108; ours under half of V2 at the line's lower end: 28, under a quarter 12, over double 38, no reach within 60 m 100
+size           5-20  20-100  100-1000  1000+
+lines           487     323       245     53
+no_reach         54      19        12     15
+under_half       20       5         2      1
+under_quarter     7       2         2      1
+over_double      25       9         4      0
+#### hragree
+adk_high_peaks (/Users/mac/Fishing): HR lines checked 9627, D8 misses 148 (1.5 %)
+size       <2 km    2-10   10-50  50+ km
+lines     4914.0  2557.0  1023.0  1133.0
+miss       112.0    26.0     6.0     4.0
+miss_pct     2.3     1.0     0.6     0.4
+#### lake_outlets
+adk_high_peaks (project): lakes with an outlet line 182; below them under half of NHDPlus: 11
+                 lake    ha  nhd_km2  ours              sid    reach_name  ratio
+     Union Falls Pond 659.6    853.1  1.10  wilmington:s542           NaN   0.00
+  Franklin Falls Pond 181.5    754.4  1.05 wilmington:s1099           NaN   0.00
+Lower Chateaugay Lake 221.7    248.5  8.17  chateaugay:s337 Thurber Brook   0.03
+    unnamed reservoir   8.1     46.7  8.48  chateaugay:s641           NaN   0.18
+          Ragged Lake 111.3     31.0  1.62 chateaugay:s1275  Fender Brook   0.05
+         Bradley Pond  46.5     14.2  2.61  chateaugay:s752           NaN   0.18
+             Bay Pond  50.8     13.9  1.97 wilmington:s1145           NaN   0.14
+         Newport Pond  10.5     11.0  2.53      boquet:s388           NaN   0.23
+           Grass Pond  12.9      8.4  1.89   wilmington:s65           NaN   0.22
+            Wolf Pond  57.2      6.5  2.24 high_peaks:s1338           NaN   0.34
+        Florence Pond   9.5      2.7  1.12   champlain:s424           NaN   0.41
+#### check_flow_drops
+adk_high_peaks: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_high_peaks: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 13 / 25 | pass 1 + big-creek pass: 21 / 25
+  on smaller drainages:   pass 1: 20 / 28 | pass 1 + big-creek pass: 20 / 28
+  all:                    pass 1: 33 / 53 | pass 1 + big-creek pass: 41 / 53
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Ausable Chasm, Keeseville, Willsboro & Westport            5      2     3
+Boquet, Elizabethtown, Moriah & Port Henry                 1      0     1
+High Peaks, Keene Valley, Newcomb & the Cold River        31     21    23
+Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake      2      0     2
+Saranac Lakes, Lake Placid, Keene & Jay                   14     10    12
+
+named mapped falls on big creeks that both passes miss: 
+                                            region            name   area     d1      d2
+High Peaks, Keene Valley, Newcomb & the Cold River   Millers Falls   68.0 2316.0 18263.0
+           Saranac Lakes, Lake Placid, Keene & Jay  Monument Falls  232.0  843.0  8385.0
+   Ausable Chasm, Keeseville, Willsboro & Westport Horseshoe Falls 1021.0  224.0  1158.0
+
+every precisely placed known fall, any source: pass 1: 32 / 59 | pass 1 + big-creek pass: 41 / 59
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

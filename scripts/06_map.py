@@ -625,6 +625,11 @@ def summer_flow(r):
         nhd = {"unmapped": "doesn't map it as a stream"}.get(r.flow, f"maps it {r.flow}")
         return (f"{c} · likely dry most summers: no green along the channel in late summer (satellite, 2022–24), and "
                 f"NHD {nhd}; the score takes it as seasonal · the {src} said: " + ", ".join(bits))
+    # scoring.py's water (3): a tailwater, which its dam's releases keep flowing
+    if r.water_rule == "tailwater releases":
+        tw = r.tailwater if isinstance(getattr(r, "tailwater", None), str) else "the dam"
+        return (f"{c} · below {tw}: its releases keep it flowing every summer, which the score uses · the {src}, "
+                f"which sees only the natural flow, said: " + ", ".join(bits) + f" · NHD: {r.flow}")
     return (" · ".join([c] + bits) + f" ({src})" + (f" · below {dam}: releases set the flow" if dam else "")
             + (f" · {gauge}" if gauge else "") + f" · NHD: {r.flow}")
 

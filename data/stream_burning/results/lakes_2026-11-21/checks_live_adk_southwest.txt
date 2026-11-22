@@ -1,0 +1,54 @@
+#### standing
+adk_southwest (/Users/mac/Fishing)
+              box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+            moose     2504           0.0                   16             0                      0.62      742.2
+west_canada_lakes      541           0.0                    3             0                      0.15      124.3
+      west_canada     1798           0.0                    6             0                      0.36      551.6
+       speculator     1972           0.0                    0             0                      0.44      463.9
+#### short_named
+{"area": "adk_southwest", "reaches": 6815, "named_on_their_line": 1587, "under_quarter": 43, "outside_lakes": 40, "km": 15.5, "fish_60_plus": 23, "top": {"Cincinnati Creek": 8, "Black River": 6, "West Canada Creek": 6, "Independence River": 4}}
+#### v2_ends
+adk_southwest (/Users/mac/Fishing): NHDPlus V2 lines checked 1497; ours under half of V2 at the line's lower end: 29, under a quarter 15, over double 117, no reach within 60 m 95
+size           5-20  20-100  100-1000  1000+
+lines           738     393       283     83
+no_reach         64      24         7      0
+under_half       21       2         6      0
+under_quarter     8       2         5      0
+over_double      79      32         6      0
+#### hragree
+adk_southwest (/Users/mac/Fishing): HR lines checked 7875, D8 misses 88 (1.1 %)
+size       <2 km    2-10   10-50  50+ km
+lines     3714.0  2093.0  1054.0  1014.0
+miss        57.0    20.0     9.0     2.0
+miss_pct     1.5     1.0     0.9     0.2
+#### lake_outlets
+adk_southwest (project): lakes with an outlet line 216; below them under half of NHDPlus: 8
+              lake   ha  nhd_km2  ours                   sid               reach_name  ratio
+ unnamed reservoir 24.7     58.3  3.87       west_canada:s23                      NaN   0.07
+         Pine Lake 67.3     28.9  1.10      speculator:s1339                      NaN   0.04
+          Mud Lake  9.7     24.6  1.37      west_canada:s877                      NaN   0.06
+         Lake Kora 80.5     11.2  3.46 west_canada_lakes:s82             Wakely Brook   0.31
+ unnamed reservoir 28.0      6.6  3.14           moose:s1495             Miller Brook   0.48
+    Half Moon Pond  8.5      5.3  2.41            moose:s393              South Inlet   0.45
+ unnamed reservoir 11.7      5.1  1.48     west_canada:s1242                      NaN   0.29
+Middle Branch Lake 20.2      3.0  1.35            moose:s638 Middle Branch Pine Creek   0.45
+#### check_flow_drops
+adk_southwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 7 | pass 1 + big-creek pass: 5 / 7
+  on smaller drainages:   pass 1: 1 / 3 | pass 1 + big-creek pass: 1 / 3
+  all:                    pass 1: 4 / 10 | pass 1 + big-creek pass: 6 / 10
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls      2      1     1
+Piseco, Speculator, Caroga & the West Branch Sacandaga             8      3     5
+
+named mapped falls on big creeks that both passes miss: 
+                                                region                    name  area     d1     d2
+Piseco, Speculator, Caroga & the West Branch Sacandaga West Stoney Creek Falls  15.0 1767.0 8908.0
+
+every precisely placed known fall, any source: pass 1: 7 / 20 | pass 1 + big-creek pass: 11 / 20
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

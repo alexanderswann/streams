@@ -3080,3 +3080,54 @@ which publishes.
 - **Left:** with Lakes off, the whole reach across Jackson Lake still reads Pilgrim Creek, as Trout Creek does across
   Palisades. The root fix is for 03b to split a reach where a dam link puts a river's water back in, so the stretch
   below the dam is a reach of its own. That needs every area's routing rebuilt.
+
+## 2026-11-21: NHD's lines through lakes (stream-burning session)
+Task: the user's "implement and commit the nhd stream burning", relayed by the overview session, after the line
+across Jackson Lake read Pilgrim Creek (jackson_lake:s1476) and Palisades' read Trout Creek. Later in this session the
+user added: "commit and deploy to the website when finished". Details, numbers and tools: `data/stream_burning/`
+(README).
+- **Cause.** 03b ended only the path that gathered the most water at a lake's outlet. The flat water's own
+  directions let other paths cross the lake and leave it on their own.
+  - Pilgrim Creek's ran to Jackson Lake Dam beside the Snake's outlet pit, so the line over the dam was its channel.
+  - Paths like it drew 986 km of straight lines across lakes over the 12 maps.
+  - Below an outlet the river had no line of its own: the cells below a dam gather little ground. So the lake's
+    water, which crossbox puts back in there, landed on the first line it met, a side creek's included. Example:
+    Lower Slide Lake's 1,539 km2 on a 2.7 km creek beside the Gros Ventre.
+- **Fix, in `03b_stitch.py`.**
+  - `route_lake`: every cell of a lake that holds water drains to its outlet, along NHD HR's lines through the lake
+    where they run (a least-cost path, a step off the lines counting five along them).
+  - `outflow_streams`: the way the water takes below the outlet is a stream line down to the first stream it meets,
+    so the lake's water lands on the river below that junction.
+  - The DEM burn measured on 2026-11-20 stays parked: at a lake draining over a dam, filling raised its trench back
+    to the water's level, so it didn't fix the crossings.
+- **Measured first on all 12 maps against the live builds** (scratch copies from 03b, the lakes layer copied in):
+  - Straight lines across lakes 986 → 266 km.
+  - Lake outlets under half of NHDPlus 45 → 39 (`lake_outlets.py` now takes the reach carrying the most water near
+    NHDPlus's outlet point, not the nearest; the nearest was often a side creek).
+  - HR lines D8 misses 1,811 → 1,784. Mapped falls found (`data/validate.py`) 486 → 487 of 829; all known falls
+    1,025 → 1,025.
+  - Flow drops 0 → 0; reach ends dead on an edge between boxes 0 → 0.
+  - 120 creeks no longer carry a lake's water; Lake Mathews' 111 km2 now reaches Temescal Wash (NHDPlus 105).
+  - Fish 60+ 42,159 → 41,911 km. 10+ point moves: 265 up, 408 down. Most are reaches whose ends now cross the
+    50 %-in-lake line of the reservoir class, plus the creeks above.
+- **Tailwater floor, in `scoring.py`.** Piru Creek below Pyramid Dam would have dropped about 20 reaches from
+  year-round to seasonal: its natural-flow drainage had included Pyramid Lake's own shores through a leaking path.
+  - A `TAILWATERS` reach with no gauge record now gets full water credit: the releases keep it flowing, which the
+    natural-flow model can't see.
+  - It restores those reaches and 28 the live build already showed mostly dry or seasonal, against the gauge just
+    below the dam (11 of 11 summers flowing). The gauge above Lake Piru (31 %) still sets its reaches.
+  - With it, LA's fish 60+ goes 1,389 → 1,396 km.
+  - Left as they come out: Willow Creek in the San Bernardinos (6 reaches) drops a class for the same leak, with no
+    release to keep it up. One San Jacinto River reach matches the next NHDPlus line at a junction and loses its
+    gauge record.
+- **Also:** `run_rebuild_a.sh` takes `SKIP_03=1`, to start at 03b after a change to 03b only. README updated
+  (hydrology, past dams, the water term, the rebuild note).
+- **Rebuild:** all 12 maps from 03b (`SKIP_03=1 ./run_rebuild_a.sh ...`), one after another.
+  - Jackson first, 19:30–19:40 (03b took 46 s for its 7 boxes: 32 of 44 lakes routed along NHD's lines).
+  - Checked: the installed build equals the scratch one measured beforehand; flow drops 0; mapped falls found
+    12 of 21, as before; no reach ends dead on a box edge. On the rendered map with Lakes off, the line through
+    Jackson Lake reads Snake River (2,084 km2 at the dam, order 7) and follows the old channel through Palisades
+    (29.9 km named Snake River; the last 0.7 km at Palisades Dam has no name on it).
+  - At the user's "can you push the updates you have so far", Jackson went live on its own at 19:49 (site 797a30e:
+    only `streams/jackson/` and the index changed; the live files equal the checked ones byte for byte). The
+    rebuild of the other 11 started again at 19:49.

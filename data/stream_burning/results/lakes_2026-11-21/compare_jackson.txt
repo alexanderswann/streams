@@ -1,0 +1,50 @@
+jackson: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 10528, 'km': 9273, 'mean': np.float64(68.52), '>=40': 9454, '>=60': 7106, '>=80': 3849, 'km60': np.float64(5587.8)}
+             B: {'n': 10499, 'km': 9177, 'mean': np.float64(68.72), '>=40': 9466, '>=60': 7113, '>=80': 3852, 'km60': np.float64(5576.6)}
+B reaches matched to an A reach within 30 m: 10229 of 10499 (270 unmatched, 212.1 km); A reaches no B reach matched: 336
+  drainage +20% or more: 38, -20% or more: 16; x2 or more: 24, /2 or less: 8
+  flow class changed: 45; name changed: 23
+  fish score up 10+: 26, down 10+: 25; any change: 110; crossing 60: up 14, down 16
+  biggest moves:
+             sid_b            name_b    af_a    af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+teton_valley:s1632         Dry Creek   12.77   12.29   0.96     reservoir    year-round          30.0         100.0  70.0
+  teton_snake:s136     Taggart Creek   11.54   13.36   1.16    year-round     reservoir          99.0          29.0 -70.0
+jackson_lake:s1494               NaN   26.86   27.68   1.03    year-round     reservoir         100.0          31.0 -69.0
+ jackson_lake:s401       Snake River 1373.87 1373.85   1.00     reservoir    year-round          32.0         100.0  68.0
+teton_valley:s1662         Dry Creek   12.21   25.35   2.08    year-round     reservoir         100.0          33.0 -67.0
+jackson_lake:s2374     Cascade Creek   43.05   42.94   1.00     reservoir    year-round          34.0         100.0  66.0
+jackson_lake:s1990               NaN   11.17   35.19   3.15    year-round     reservoir         100.0          34.0 -66.0
+jackson_lake:s1192 Waterfalls Canyon   10.91   11.05   1.01     reservoir    year-round          28.0          94.0  66.0
+jackson_lake:s1752               NaN   44.52   45.00   1.01    year-round     reservoir         100.0          35.0 -65.0
+jackson_lake:s1056     Colter Canyon   10.15   10.16   1.00     reservoir    year-round          29.0          90.0  61.0
+jackson_lake:s1887               NaN   23.69   23.39   0.99     reservoir    year-round          26.0          85.0  59.0
+    palisades:s106     Big Elk Creek  151.44  153.90   1.02    year-round     reservoir          84.0          25.0 -59.0
+ gros_ventre:s1199 Gros Ventre River 1485.79 1487.99   1.00    year-round     reservoir          84.0          25.0 -59.0
+    palisades:s396      Indian Creek  105.94  106.27   1.00    year-round     reservoir          82.0          25.0 -57.0
+jackson_lake:s1851               NaN    5.18    5.18   1.00    year-round     reservoir          77.0          23.0 -54.0
+ jackson_lake:s647               NaN    7.97    7.95   1.00     reservoir    year-round          23.0          76.0  53.0
+jackson_lake:s1152               NaN    1.13    1.11   0.98     reservoir    year-round          21.0          72.0  51.0
+ jackson_lake:s872               NaN   76.77   76.76   1.00     reservoir    year-round          21.0          70.0  49.0
+ jackson_lake:s626               NaN   14.79   14.44   0.98     reservoir    year-round          21.0          70.0  49.0
+   palisades:s1072        Salt River    9.95 2058.13 206.85    year-round     reservoir          70.0          25.0 -45.0
+jackson_lake:s1588               NaN    1.69    1.37   0.81     reservoir    year-round          20.0          64.0  44.0
+    palisades:s727               NaN 1173.16 1172.46   1.00     reservoir    year-round          19.0          63.0  44.0
+ gros_ventre:s1210 Gros Ventre River   14.65 1534.72 104.76    year-round     reservoir          66.0          22.0 -44.0
+  gros_ventre:s390 Gros Ventre River    2.17    2.05   0.94    year-round     reservoir          61.0          18.0 -43.0
+jackson_lake:s1702               NaN    1.11    1.14   1.03    year-round     reservoir          62.0          19.0 -43.0
+jackson: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  6561.9         124.1         102.6
+10-100    1931.6          50.5          35.8
+100+       683.1          69.7          59.1
+total km 9176.5 | moved 20+ m 244.3 | 50+ m 197.5
+jackson (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 232 runs, 94.8 km (12.5 km on 10+ km2); in lakes 219 runs, 165.5 km; of 9273 km drawn
+jackson (/Users/mac/Fishing): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2465 {'steep reach': 1752, 'cascade / knickpoint': 634, 'waterfall-like step': 79}; big-creek pass 91
+  waterfall candidates by status: {'steep reach': 1736, 'unmapped cascade': 582, 'unmapped waterfall-like step': 72, 'likely DEM artifact': 60, 'unmapped short fall (big creek)': 52, 'matches mapped waterfall': 21, 'dam / weir': 1}
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 232 runs, 94.3 km (11.7 km on 10+ km2); in lakes 103 runs, 74.9 km; of 9177 km drawn
+jackson (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2461 {'steep reach': 1752, 'cascade / knickpoint': 630, 'waterfall-like step': 79}; big-creek pass 90
+  waterfall candidates by status: {'steep reach': 1736, 'unmapped cascade': 579, 'unmapped waterfall-like step': 72, 'likely DEM artifact': 60, 'unmapped short fall (big creek)': 52, 'matches mapped waterfall': 21}

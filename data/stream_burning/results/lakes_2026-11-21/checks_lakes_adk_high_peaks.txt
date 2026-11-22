@@ -1,0 +1,65 @@
+#### score_root
+reaches 9087 (project 9138); matched within 30 m 8637, 30-200 m 382, none within 200 m 68
+wrote /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1/output/adk_high_peaks/stream_reaches_ranked.csv 9087
+#### standing
+adk_high_peaks (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1)
+       box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+high_peaks     1951           0.0                    5             0                      0.41      497.8
+    boquet      766           0.0                    0             0                      0.28      204.0
+   saranac     1051           0.0                   19             0                      0.20      250.5
+wilmington     1791           0.0                   19             0                      0.54      448.0
+ champlain     1016           0.0                    2             0                      0.22      320.4
+chateaugay     2512           0.0                   19             0                      0.59      675.3
+#### short_named
+{"area": "adk_high_peaks", "reaches": 9087, "named_on_their_line": 1951, "under_quarter": 80, "outside_lakes": 80, "km": 43.5, "fish_60_plus": 48, "top": {"Salmon River": 13, "Arnold Brook": 6, "West Mill Brook": 5, "Saranac River": 4}}
+#### classify_short
+{"area": "adk_high_peaks", "total": 80, "side arm (main arm beside)": {"n": 43.0, "km": 11.6, "fish60": 22.0}, "water routed elsewhere": {"n": 37.0, "km": 31.9, "fish60": 26.0}, "elsewhere_top": {"Salmon River": 6, "Arnold Brook": 5, "West Mill Brook": 4, "Dry Mill Brook": 3, "Sandburn Brook": 3, "West Branch Dead Creek": 3}}
+#### v2_ends
+adk_high_peaks (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): NHDPlus V2 lines checked 1108; ours under half of V2 at the line's lower end: 30, under a quarter 13, over double 33, no reach within 60 m 102
+size           5-20  20-100  100-1000  1000+
+lines           487     323       245     53
+no_reach         55      19        13     15
+under_half       21       6         2      1
+under_quarter     8       2         2      1
+over_double      20       9         4      0
+#### hragree
+adk_high_peaks (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): HR lines checked 9627, D8 misses 150 (1.6 %)
+size       <2 km    2-10   10-50  50+ km
+lines     4914.0  2557.0  1023.0  1133.0
+miss       114.0    26.0     6.0     4.0
+miss_pct     2.3     1.0     0.6     0.4
+#### lake_outlets
+adk_high_peaks (project): lakes with an outlet line 182; below them under half of NHDPlus: 7
+         lake    ha  nhd_km2  ours              sid reach_name  ratio
+  Osgood Pond 208.5     21.7  1.52  wilmington:s981        NaN   0.07
+Lake Florence   8.8     16.4  2.99 chateaugay:s2158        NaN   0.18
+ Newport Pond  10.5     11.0  2.53      boquet:s384        NaN   0.23
+   Moose Pond  13.4      9.9  1.13  high_peaks:s273        NaN   0.11
+    Wolf Pond  57.2      6.5  2.24 high_peaks:s1344        NaN   0.34
+   Upper Pond  31.0      3.7  1.83  high_peaks:s516        NaN   0.49
+Florence Pond   9.5      2.7  1.12   champlain:s424        NaN   0.41
+#### check_flow_drops
+adk_high_peaks: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_high_peaks: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 13 / 25 | pass 1 + big-creek pass: 21 / 25
+  on smaller drainages:   pass 1: 20 / 28 | pass 1 + big-creek pass: 20 / 28
+  all:                    pass 1: 33 / 53 | pass 1 + big-creek pass: 41 / 53
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Ausable Chasm, Keeseville, Willsboro & Westport            5      2     3
+Boquet, Elizabethtown, Moriah & Port Henry                 1      0     1
+High Peaks, Keene Valley, Newcomb & the Cold River        31     21    23
+Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake      2      0     2
+Saranac Lakes, Lake Placid, Keene & Jay                   14     10    12
+
+named mapped falls on big creeks that both passes miss: 
+                                            region            name   area     d1      d2
+High Peaks, Keene Valley, Newcomb & the Cold River   Millers Falls   68.0 2316.0 18263.0
+           Saranac Lakes, Lake Placid, Keene & Jay  Monument Falls  230.0  843.0  8385.0
+   Ausable Chasm, Keeseville, Willsboro & Westport Horseshoe Falls 1019.0  224.0  1158.0
+
+every precisely placed known fall, any source: pass 1: 32 / 59 | pass 1 + big-creek pass: 41 / 59
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0

@@ -1,0 +1,50 @@
+ne_ct: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 3419, 'km': 2761, 'mean': np.float64(53.84), '>=40': 2329, '>=60': 1629, '>=80': 540, 'km60': np.float64(1189.3)}
+             B: {'n': 3433, 'km': 2753, 'mean': np.float64(53.81), '>=40': 2340, '>=60': 1626, '>=80': 541, 'km60': np.float64(1154.2)}
+B reaches matched to an A reach within 30 m: 3306 of 3433 (127 unmatched, 64.9 km); A reaches no B reach matched: 174
+  drainage +20% or more: 35, -20% or more: 30; x2 or more: 9, /2 or less: 22
+  flow class changed: 40; name changed: 32
+  fish score up 10+: 8, down 10+: 37; any change: 126; crossing 60: up 2, down 23
+  biggest moves:
+          sid_b              name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+quinebaug:s1392          Wood River  21.71  21.84   1.01     reservoir    year-round          24.0          80.0  56.0
+ quinebaug:s286     Quinebaug River 417.09 418.49   1.00    year-round     reservoir          77.0          23.0 -54.0
+  natchaug:s224       Bigelow Brook  12.07  12.34   1.02    year-round     reservoir          74.0          22.0 -52.0
+quinebaug:s1632       Pachaug River  78.89  78.88   1.00    year-round     reservoir          70.0          21.0 -49.0
+ quinebaug:s171      Fivemile River   4.16   3.66   0.88    year-round     reservoir          66.0          19.0 -47.0
+ natchaug:s1427                 NaN  12.90  13.88   1.08    year-round     reservoir          62.0          18.0 -44.0
+ natchaug:s1407                 NaN  12.90  13.13   1.02    year-round     reservoir          62.0          18.0 -44.0
+ natchaug:s1224 Columbia Lake Brook   4.93   4.58   0.93     reservoir    year-round          18.0          60.0  42.0
+  natchaug:s193      Leadmine Brook   7.60   7.92   1.04    year-round     reservoir          59.0          18.0 -41.0
+  natchaug:s723                 NaN   4.22   4.08   0.97     reservoir    year-round          17.0          57.0  40.0
+   natchaug:s82      Leadmine Brook  13.30  13.31   1.00    year-round     reservoir          58.0          18.0 -40.0
+  natchaug:s915                 NaN 299.87   1.47   0.00    year-round usually flows          79.0          40.0 -39.0
+ quinebaug:s305         Clear River   2.74   2.80   1.02    year-round     reservoir          51.0          16.0 -35.0
+ quinebaug:s298        Brandy Brook   2.99   2.73   0.91     reservoir    year-round          15.0          49.0  34.0
+ natchaug:s1380                 NaN  12.90   1.14   0.09    year-round usually flows          62.0          28.0 -34.0
+ quinebaug:s370          Teft Brook  56.08   1.62   0.03    year-round usually flows          73.0          40.0 -33.0
+ quinebaug:s779                 NaN 190.03   2.12   0.01    year-round usually flows          60.0          27.0 -33.0
+  natchaug:s256                 NaN   8.56   1.05   0.12    year-round usually flows          61.0          29.0 -32.0
+  natchaug:s173       Lebanon Brook   1.38   5.06   3.67       no data     reservoir          49.0          17.0 -32.0
+  natchaug:s903                 NaN   5.43   1.15   0.21    year-round usually flows          64.0          32.0 -32.0
+ natchaug:s1104 Indian Hollow Brook   2.35   2.72   1.16 usually flows     reservoir          51.0          19.0 -32.0
+  natchaug:s581                 NaN  10.44   1.31   0.13    year-round usually flows          61.0          32.0 -29.0
+ quinebaug:s333        Little River  61.80   2.00   0.03    year-round    year-round          71.0          43.0 -28.0
+quinebaug:s1654                 NaN   3.19   2.87   0.90     reservoir    year-round          15.0          43.0  28.0
+quinebaug:s1409                 NaN  94.18   1.70   0.02    year-round       no data          83.0          56.0 -27.0
+ne_ct: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  2063.1          78.6          40.2
+10-100     549.1          18.2           8.1
+100+       140.5           5.4           2.8
+total km 2752.6 | moved 20+ m 102.2 | 50+ m 51.1
+ne_ct (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 63 runs, 25.4 km (9.8 km on 10+ km2); in lakes 42 runs, 19.9 km; of 2761 km drawn
+ne_ct (/Users/mac/Fishing): known falls 27: found pass 1 0, both passes 6 | OSM/NHD-mapped 23: pass 1 0, both 4
+  drops: pass 1 14 {'cascade / knickpoint': 14}; big-creek pass 42
+  waterfall candidates by status: {'dam / weir': 26, 'likely DEM artifact': 11, 'unmapped cascade': 8, 'unmapped short fall (big creek)': 7}
+ne_ct (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 59 runs, 23.1 km (8.4 km on 10+ km2); in lakes 9 runs, 3.3 km; of 2753 km drawn
+ne_ct (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 27: found pass 1 0, both passes 6 | OSM/NHD-mapped 23: pass 1 0, both 4
+  drops: pass 1 14 {'cascade / knickpoint': 14}; big-creek pass 42
+  waterfall candidates by status: {'dam / weir': 26, 'likely DEM artifact': 11, 'unmapped cascade': 8, 'unmapped short fall (big creek)': 7}

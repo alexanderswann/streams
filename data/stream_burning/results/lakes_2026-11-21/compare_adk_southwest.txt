@@ -1,0 +1,50 @@
+adk_southwest: A /Users/mac/Fishing
+   B /private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1
+fish scores  A: {'n': 6815, 'km': 6073, 'mean': np.float64(68.56), '>=40': 5993, '>=60': 4930, '>=80': 2605, 'km60': np.float64(4492.8)}
+             B: {'n': 6767, 'km': 6033, 'mean': np.float64(69.09), '>=40': 6017, '>=60': 4946, '>=80': 2606, 'km60': np.float64(4459.1)}
+B reaches matched to an A reach within 30 m: 6411 of 6767 (356 unmatched, 215.4 km); A reaches no B reach matched: 481
+  drainage +20% or more: 74, -20% or more: 44; x2 or more: 36, /2 or less: 18
+  flow class changed: 57; name changed: 43
+  fish score up 10+: 29, down 10+: 38; any change: 221; crossing 60: up 16, down 29
+  biggest moves:
+                 sid_b                   name_b   af_a   af_b  ratio water_class_a water_class_b  fish_score_a  fish_score_b    ds
+            moose:s441               Lost Creek  14.56  14.48   0.99     reservoir    year-round          30.0          99.0  69.0
+west_canada_lakes:s382                      NaN   5.59   2.41   0.43    year-round     reservoir          90.0          24.0 -66.0
+west_canada_lakes:s381                      NaN   5.59   1.83   0.33    year-round     reservoir          90.0          24.0 -66.0
+west_canada_lakes:s383                      NaN   5.59   4.06   0.73    year-round     reservoir          90.0          26.0 -64.0
+ west_canada_lakes:s83            Sumner Stream   3.46   8.08   2.34    year-round     reservoir          93.0          30.0 -63.0
+            moose:s507                      NaN  43.87  43.52   0.99    year-round     reservoir          87.0          25.0 -62.0
+ west_canada_lakes:s53                      NaN  17.63  17.66   1.00    year-round     reservoir          85.0          25.0 -60.0
+              moose:s0 North Branch Moose River 100.74 100.74   1.00     reservoir    year-round          25.0          84.0  59.0
+west_canada_lakes:s377        West Canada Creek   5.59  24.42   4.37    year-round     reservoir          90.0          31.0 -59.0
+            moose:s428              South Inlet   2.41   2.42   1.00    year-round     reservoir          83.0          25.0 -58.0
+       speculator:s113              Fall Stream  32.13  33.76   1.05    year-round     reservoir          81.0          24.0 -57.0
+        speculator:s99              Fall Stream  32.13  32.18   1.00    year-round     reservoir          81.0          24.0 -57.0
+           moose:s1608                      NaN   1.50   5.07   3.38    year-round     reservoir          85.0          28.0 -57.0
+west_canada_lakes:s491             Indian River   1.45   2.92   2.01    year-round     reservoir          84.0          27.0 -57.0
+      speculator:s1644             Caroga Creek  25.53  26.40   1.03    year-round     reservoir          80.0          24.0 -56.0
+           moose:s1253                      NaN   1.21   1.19   0.98     reservoir    year-round          23.0          78.0  55.0
+      speculator:s1362                Frie Flow  12.87  14.75   1.15    year-round     reservoir          79.0          24.0 -55.0
+             moose:s16                      NaN   2.19   3.18   1.45    year-round     reservoir          78.0          24.0 -54.0
+west_canada_lakes:s367                      NaN   1.35   1.35   1.00     reservoir    year-round          23.0          77.0  54.0
+      speculator:s1630                      NaN   1.80   2.64   1.47    year-round     reservoir          76.0          23.0 -53.0
+      west_canada:s706        West Canada Creek 636.06 635.85   1.00     reservoir    year-round          23.0          76.0  53.0
+             moose:s91                      NaN   3.44   3.42   0.99     reservoir    year-round          21.0          71.0  50.0
+      speculator:s1844                      NaN  11.81  11.78   1.00     reservoir    year-round          21.0          71.0  50.0
+       speculator:s626                      NaN   1.18   1.50   1.27    year-round     reservoir          71.0          21.0 -50.0
+           moose:s1597       Golden Stair Creek  11.71  11.49   0.98     reservoir    year-round          21.0          71.0  50.0
+adk_southwest: B's lines against A's (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1 vs /Users/mac/Fishing)
+              km  km_moved_20m  km_moved_50m
+size                                        
+1-10 km2  4502.1         204.7         126.2
+10-100    1222.6          67.7          39.4
+100+       308.2          14.4           9.6
+total km 6033.0 | moved 20+ m 286.8 | 50+ m 175.3
+adk_southwest (/Users/mac/Fishing): straight runs of 300+ m: outside lakes 50 runs, 19.9 km (8.4 km on 10+ km2); in lakes 144 runs, 81.1 km; of 6072 km drawn
+adk_southwest (/Users/mac/Fishing): known falls 55: found pass 1 15, both passes 24 | OSM/NHD-mapped 12: pass 1 4, both 6
+  drops: pass 1 94 {'cascade / knickpoint': 73, 'steep reach': 18, 'waterfall-like step': 3}; big-creek pass 92
+  waterfall candidates by status: {'unmapped cascade': 53, 'unmapped short fall (big creek)': 46, 'likely DEM artifact': 40, 'steep reach': 18, 'dam / weir': 14, 'matches mapped waterfall': 12, 'unmapped waterfall-like step': 2}
+adk_southwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): straight runs of 300+ m: outside lakes 48 runs, 19.1 km (8.0 km on 10+ km2); in lakes 55 runs, 24.8 km; of 6033 km drawn
+adk_southwest (/private/tmp/claude-501/-Users-mac-Fishing/b6ebd770-e5d8-4fda-96f2-3f6b17fa0a6f/scratchpad/q/q1): known falls 55: found pass 1 15, both passes 24 | OSM/NHD-mapped 12: pass 1 4, both 6
+  drops: pass 1 93 {'cascade / knickpoint': 73, 'steep reach': 18, 'waterfall-like step': 2}; big-creek pass 92
+  waterfall candidates by status: {'unmapped cascade': 53, 'unmapped short fall (big creek)': 46, 'likely DEM artifact': 40, 'steep reach': 18, 'dam / weir': 14, 'matches mapped waterfall': 12, 'unmapped waterfall-like step': 1}
