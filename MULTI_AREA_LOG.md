@@ -3636,3 +3636,132 @@ new build; not among the figures the user chose on, and told to them with this e
   time, so it follows wherever the put-ins land; the counts here will shift a little with them.
 
 **Not published by this session:** three maps handed to the overview session.
+
+## 2026-11-22: a lake ends at NHD's outlet; one step decides where a lake drains (stream-burning session)
+
+**Asked:** the two lake faults found after the maps of 2026-11-21 went out (the entry of 2026-11-21, late): a lake's
+water put back in away from its own outlet (Seventh Lake's channel to Fifth Lake not drawn), and a lake ended at a
+cell that is not its outlet (Raquette Lake 5.6 mi off). The overview session asked the user "Fix the lake outlets at
+the root and rebuild all 12 maps?"; the user answered "Yes, fix it" (2026-11-21 23:30). Not in the map step: in
+`03b_stitch.py` and `crossbox.py`, with rules that read the data, no per-area constants and no named places.
+
+**What changed** (commit f337bfb; `README.md` step 3 and "Past dams"; the full account with the tables is in
+`data/stream_burning/README.md`, "Both faults fixed at the root"):
+- `03b_stitch.py` ends each lake where one of NHD's detailed stream lines that starts in the lake leaves the water,
+  if the terrain takes the water on within 1,000 ft down that line. The cells before that (a dam's crest) are
+  pointed along NHD's line. The outlet and the first cell of the way out go to `<area>/_shared/lake_outlets.json`.
+- `crossbox.py` reads that file and puts the lake's water in at that first cell. Until now it looked for the place
+  itself along NHDPlus's 1:100,000 line.
+- With several outflow lines the order is: the one NHD names; else the one NHDPlus's line leaves the lake by; else
+  the one nearest the cell where the terrain gathers the lake's water. A pipe or ditch counts only where a stream
+  line goes on from it within 0.6 mi.
+- A lake stays where it was where NHD has no outflow line, where the terrain refuses the lines, where the line runs
+  off the map, or where NHDPlus leaves at the terrain's cell far from NHD's lines.
+- `crossbox.py` also: a river that enters the map through a reservoir goes in at that reservoir's put-in; a lake's
+  water no longer dies at a box edge on a small rim basin; the lakes whose water is carried nowhere are named in
+  the log.
+- Drivers: `run_base.sh` runs `02b_download_flow.py` before `03b`, `run_rebuild_a.sh` fetches the flow data first
+  when NHDPlus's lines are missing. `03b` stops before writing anything where they are missing (`NO_NHDPLUS=1` goes
+  on without them and says so in its last line).
+
+**Which step decides how many lakes** (12 maps):
+
+| Step | Lakes | Of them moved 330 ft+ / 1,000 ft+ |
+|---|---:|---|
+| One NHD outflow line the terrain takes on | 1,355 (5 through a pipe or ditch) | 155 / 70 |
+| Several lines, NHD's name decides | 33 | 11 / 3 |
+| Several lines, NHDPlus decides | 17 | 6 / 4 |
+| Several lines, the nearest to the terrain's cell | 11 | 2 / 2 |
+| Ended at NHD's outlet, all | 1,417 | 79 are 1,000 ft or more from the old cell |
+| Left where they were though NHD has an outflow line | 12 | |
+| No NHD outflow line | 71 | |
+
+Where NHD names one line and NHDPlus leaves by another, the name wins: 3 of the 33 (Castaic Lake, Beaver Pond on
+the Cedar River, Rock Lake). NHDPlus only chooses among NHD's detailed lines; its own line is never where the water
+goes in.
+
+**Measured first, on scratch builds of all 12 maps** against the published copy, then reviewed twice by the overview
+session on its own measurements. The first version (nearest line where NHD names none) failed its bar, "no gauge and
+no NHDPlus point on a named river worse without a stated reason": Lake Mathews spilled north and both Temescal Creek
+gauges fell, and Lens and Livingston Lakes left Paul Creek. NHDPlus as the second witness cured both.
+
+**The rebuilt maps** (all 12 from `03b`, 2026-11-22 06:27 to 07:28, no failed step; against the published copy,
+site 4315299, on what the maps draw):
+
+| Map | Line, mi | Fish 60+, mi | New line | Gone line | 10+ lower | 10+ higher | NHD lake outlets newly drawn | Flagged as lost |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| Adirondacks, High Peaks | 4,126 → 4,126 | 2,975.3 → 2,975.7 | 4.0 | 4.5 | 1.7 | 3.0 | 9 | 0 |
+| Adirondacks, north-west | 3,674 → 3,672 | 2,839.0 → 2,839.0 | 6.5 | 8.6 | 2.6 | 5.0 | 10 | 4 |
+| Adirondacks, south-east | 3,736 → 3,734 | 2,526.4 → 2,527.0 | 3.9 | 6.0 | 1.3 | 0.1 | 5 | 1 |
+| Adirondacks, south-west | 3,369 → 3,371 | 2,681.3 → 2,683.1 | 7.3 | 5.0 | 3.4 | 0.5 | 7 | 1 |
+| Central Vermont | 3,955 → 3,954 | 2,081.4 → 2,080.6 | 0.2 | 1.1 | 0.0 | 0.1 | 0 | 1 |
+| Jackson | 5,313 → 5,313 | 3,332.2 → 3,331.8 | 1.8 | 1.4 | 0.4 | 0.0 | 4 | 0 |
+| LA | 9,440 → 9,439 | 850.2 → 849.7 | 3.6 | 4.2 | 0.2 | 1.0 | 5 | 1 |
+| Lexington VA | 2,036 → 2,036 | 832.6 → 832.9 | 0.3 | 0.9 | 0.0 | 0.0 | 1 | 0 |
+| North Georgia | 7,001 → 6,997 | 3,208.3 → 3,205.3 | 2.9 | 6.8 | 1.8 | 0.0 | 9 | 0 |
+| NE Connecticut | 1,527 → 1,524 | 701.0 → 697.9 | 3.8 | 6.7 | 3.3 | 2.5 | 10 | 4 |
+| SE Pennsylvania | 2,181 → 2,180 | 831.0 → 829.8 | 0.5 | 1.4 | 0.4 | 0.0 | 1 | 4 |
+| Smokies | 4,040 → 4,040 | 2,256.5 → 2,256.4 | 0.0 | 0.3 | 0.0 | 0.2 | 0 | 0 |
+| All 12 | 50,399 → 50,387 | 25,115.2 → 25,109.3 | 34.9 | 46.8 | 15.2 | 12.3 | 61 | 16 |
+
+- The rebuilt maps equal the scratch builds they were measured on: every routing raster, drop, reach, drainage
+  table and drawn line. Scores differ on three Adirondack maps by the lake term of the entry above, which the
+  scratch builds did not have.
+- Lakes ending 1,000 ft or more from NHD's outlet: 77 → 8, each a lake left on purpose. Lakes whose water went in
+  650 ft or more off its way out: 192 → 7 (6 lakes left where they were, and Castac Lake, which has no NHD outflow
+  line). 1,414 of 1,431 lakes get their water at the top of the way out `03b` laid.
+- Seventh Lake's channel to Fifth Lake is drawn from the lake's west tip: 2,571 ft, 16.9 sq mi, fish 87. Raquette
+  Lake's lines run to its real outlet and the Raquette River starts there with 113.9 sq mi; the Saranac River
+  leaves Upper Saranac Lake's south end with 46.3. The Snake is drawn and named from Palisades Dam (5,035 sq mi,
+  order 7). The Cedar River is drawn from the Cedar Lakes dam (3.9 sq mi).
+- USGS gauges: 5 moved by 0.02 or more of their drainage, 4 better (Salt River at the Wyoming line 0.006 → 0.906,
+  Castaic Lagoon's flume 0.004 → 1.050, the Beaver below Stillwater Dam 0.934 → 1.005, the Oswegatchie 0.944 →
+  1.010). One reads worse, Temescal Creek at Corona Lake 0.935 → 0.860: the map now draws the first 360 ft below
+  Lee Lake's dam, 24 ft from the gauge; the line below Indian Canyon Creek keeps its 54.1 sq mi. Within 10 %:
+  417 → 419 of 516.
+- NHDPlus points (13,949): 53 better, 35 worse, within 10 % 10,283 → 10,310, under half 836 → 829. Each of the 35
+  has its reason in `data/stream_burning/results/root_fix_2026-11-22/nhdplus_worse_with_reasons.csv`: 19 where
+  NHD's detailed outflow line and the terrain agree and NHDPlus leaves the lake another way, 14 where the river
+  has its water and the point is read against another line, 2 that were near zero before.
+- No dead end on a box edge, no sudden flow drop. Known falls with a drop within 330 ft: 958 → 961 of 2,128.
+- Every drawn line whose drainage changed was listed, whatever its score did: 27.4 mi gained (the Little River's
+  12.0 mi in the north-west Adirondacks, +17 sq mi), 24.1 mi lost. Of the lost, 15.7 mi lie below 19 lakes whose
+  water now leaves by NHD's outlet; the rest had been drawn with the value of the reach below them, or sit above
+  a junction that moved a few hundred feet.
+
+**Known, and left as it is:**
+- **15.7 mi of creek below 19 lakes read less**, because the published maps put the lake's water in 0.6 to 1.2 mi
+  from its outlet, on these: Mad Tom Brook below Mill Creek Lake (3.5 mi, 1.3 sq mi less; fish 88 → 77 at worst),
+  an unnamed creek below Butler Pond (2.3 mi), Potash Brook below Merino Pond (2.0 mi, 29.5 sq mi; fish 71 → 33),
+  Beaver Pond's north channel (1.3 mi), a side creek at King Lake (1.3 mi), Mono Pond's creek (1.0 mi), a Grass
+  River tributary below Boyd Pond (0.9 mi), East Branch Stonehouse Brook below Halls Pond (0.9 mi). At all but
+  Butler Pond and Beaver Pond NHD's detailed data has one outflow line, and the terrain takes the water on down
+  it. NHDPlus's coarser line has the old course at Mill Creek Lake, Merino Pond, Mono Pond, Boyd Pond and Halls
+  Pond; at Mill Creek Lake, Boyd Pond and Halls Pond NHD's detailed data draws an inflow where NHDPlus leaves.
+- **Merino Pond** now feeds the French River, not Potash Brook. A third witness agrees: the USGS gauge French
+  River at Webster (86.0 sq mi) can only reach its drainage with this stream in, and by the east outlet it joins
+  about 800 ft from the gauge, by Potash Brook 0.8 mi below it.
+- **The second outlet of 9 lakes is no longer drawn** (13 NHD outflow lines): Soft Maple Reservoir's canal arm,
+  Round Lake, Butler Pond, Perch Pond, Castaic Lake, Number Four and Number Five Reservoirs, Baltic Reservoir, Glen
+  Morgan Lake, Marsh Creek Reservoir. Proposed to the user by the overview session, not built: draw a second NHD
+  outlet as a side channel.
+- **12 lakes are left where they were**: Huckleberry Pond, Ferris Lake, Eagle Pond, Burntbridge Pond, Long Pond and
+  two unnamed ponds (the DEM holds the water back along NHD's line), Tetreault Pond (the terrain refuses the outlet
+  NHD names), Lens Lake and Livingston Lake (NHDPlus and the terrain have them on Paul Creek, NHD names outflows
+  0.5 and 1.5 mi away), Stone Mountain Lake and Badluck Lake (NHD's line runs off the map). Seven of them still
+  get their water 1,200 ft to 1.5 mi from their dead end.
+- **Lake Mathews** drains by Cajalco Creek again (43.4 sq mi, mostly dry, fish 3). At its dam about 230 ft of line
+  read year-round, 42.8 sq mi, fish 56 (33.8423, -117.4587), above that mostly dry creek. Not fixed.
+- **Two first stretches below LA dams read drier than the creek below them**: Bouquet Creek's first 0.31 mi below
+  Bouquet Reservoir (new line; seasonal, fish 20, above year-round, fish 65) and the San Gabriel's first 50 ft
+  below Morris Dam. The below-dam water rule doesn't reach them. Not fixed.
+- **Seen on the way, not from this change:** Little Neshaminy Creek's main water passes 720 ft beside Bradford
+  Reservoir, not through it, as before (its first 1,300 ft below the reservoir read the reservoir's own 1.0 sq mi).
+  The French River's water from outside the Connecticut map (60 sq mi at the north edge) is not brought in. The
+  400 ft of creek between Beaver Pond and Cedar Lakes reads 3.5 sq mi where the pond passes on 1.1.
+- **The one-cell gap at a lake's outlet stays** (the audit's batch 6): `data/stream_burning/README.md`, "The gap at
+  a lake's outlet", says why and what closing it takes.
+- A scratch root must hold `data/known_falls_curated*.csv`, or the waterfall labels of that build are wrong. Mine
+  did not, and the scratch falls table was wrong until the step was run again with the lists.
+
+**Not published by this session:** the overview session compares with the published copy and publishes.

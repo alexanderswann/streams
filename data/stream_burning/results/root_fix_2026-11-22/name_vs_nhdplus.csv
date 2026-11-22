@@ -1,0 +1,35 @@
+area,box,lake,ha,lines,named,verdict,v_to_named_m,v_to_other_m
+adk_high_peaks,saranac,Lower Saranac Lake,869.9,2,1,NHDPlus leaves by the named line too,37.0,740.0
+adk_high_peaks,wilmington,Lower Saint Regis Lake,185.4,2,1,NHDPlus leaves by the named line too,3.0,70.0
+adk_high_peaks,chateaugay,Twin Ponds,78.7,2,1,NHDPlus leaves by the named line too,17.0,1349.0
+adk_northwest,beaver,Taylorville Pond,44.7,2,1,NHDPlus leaves by the named line too,30.0,155.0
+adk_northwest,beaver,Soft Maple Reservoir,136.7,2,1,NHDPlus leaves by the named line too,27.0,290.0
+adk_northwest,beaver,unnamed,97.1,2,1,NHDPlus leaves by the named line too,37.0,1242.0
+adk_northwest,beaver,Rock Lake,23.3,2,1,NHDPlus leaves by another line,325.0,202.0
+adk_northwest,long_lake,Simon Pond,315.4,2,1,NHDPlus leaves by the named line too,17.0,293.0
+adk_northwest,long_lake,Round Lake,304.7,2,1,NHDPlus leaves by the named line too,71.0,84.0
+adk_southeast,minerva,Hewitt Pond,68.5,2,1,NHDPlus leaves by the named line too,18.0,1071.0
+adk_southeast,sacandaga,Keenan Reservoir,18.4,2,1,NHDPlus leaves by the named line too,10.0,252.0
+adk_southeast,lake_george,Lakes Pond,30.0,2,1,NHDPlus leaves by the named line too,71.0,118.0
+adk_southwest,west_canada_lakes,Beaver Pond,36.1,2,1,NHDPlus leaves by another line,794.0,4.0
+adk_southwest,speculator,The Floe,40.5,2,1,NHDPlus leaves by the named line too,25.0,52.0
+adk_southwest,speculator,Peck Lake,573.5,3,2,NHDPlus leaves by the named line too,17.0,3706.0
+la,san_gabriel,Morris Reservoir,114.7,2,1,NHDPlus leaves by the named line too,10.0,246.0
+la,santa_monica,Lake Sherwood,55.9,3,1,NHDPlus leaves by the named line too,15.0,84.0
+la,piru,Castaic Lake,812.5,2,1,NHDPlus leaves by another line,335.0,78.0
+n_georgia,rabun,Lake Rabun,292.8,2,1,NHDPlus leaves by the named line too,28.0,707.0
+ne_ct,natchaug,Breakneck Pond,38.6,2,1,NHDPlus leaves by the named line too,1.0,139.0
+ne_ct,natchaug,Hatchet Pond,15.2,2,1,NHDPlus leaves by the named line too,55.0,244.0
+ne_ct,natchaug,Number Five Reservoir,12.7,2,1,NHDPlus leaves by the named line too,11.0,194.0
+ne_ct,natchaug,Number Four Reservoir,27.2,2,1,NHDPlus leaves by the named line too,22.0,133.0
+ne_ct,natchaug,Fairview Reservoir,27.0,2,1,NHDPlus leaves by the named line too,4.0,1818.0
+ne_ct,quinebaug,Morse Pond,9.4,2,1,NHDPlus leaves by the named line too,60.0,380.0
+ne_ct,quinebaug,Beachdale Pond,15.1,2,1,NHDPlus leaves by the named line too,20.0,54.0
+ne_ct,quinebaug,Fivemile Pond,14.3,2,1,NHDPlus leaves by the named line too,56.0,74.0
+ne_ct,quinebaug,unnamed,8.4,2,1,NHDPlus leaves by the named line too,82.0,68.0
+ne_ct,quinebaug,unnamed,8.6,1,1,NHDPlus has no line leaving the lake,,
+ne_ct,quinebaug,Stone Hill Reservoir,11.7,2,1,NHDPlus leaves by the named line too,11.0,99.0
+se_pa,brandywine,Marsh Creek Reservoir,202.2,3,1,NHDPlus leaves by the named line too,28.0,295.0
+se_pa,brandywine,Green Hills Lake,9.2,2,1,NHDPlus leaves by the named line too,17.0,143.0
+se_pa,brandywine,West Chester Reservoir,26.1,2,1,NHDPlus leaves by the named line too,7.0,56.0
+smokies,cataloochee,Lake Junaluska,81.2,2,1,NHDPlus leaves by the named line too,69.0,69.0

@@ -1,0 +1,1531 @@
+area,box,lake,ha,step,pipe,moved_m,in_build,why,lat,lon
+adk_high_peaks,high_peaks,Palmer Pond,12.9,one outflow line,False,14,True,NHD's outflow line,43.94961,-73.742
+adk_high_peaks,high_peaks,Big Marsh Pond,10.2,one outflow line,False,22,True,NHD's outflow line,43.9783,-73.77256
+adk_high_peaks,high_peaks,Moose Mountain Pond,14.0,one outflow line,False,0,True,NHD's outflow line,43.96038,-73.6448
+adk_high_peaks,high_peaks,Hammond Pond,24.1,one outflow line,False,0,True,NHD's outflow line,43.99006,-73.64961
+adk_high_peaks,high_peaks,Clear Pond,71.7,one outflow line,False,72,True,NHD's outflow line,43.99628,-73.83031
+adk_high_peaks,high_peaks,Elk Lake,218.3,one outflow line,False,10,True,NHD's outflow line,44.02293,-73.82991
+adk_high_peaks,high_peaks,Munson Pond,9.2,one outflow line,False,0,True,NHD's outflow line,44.02651,-73.64865
+adk_high_peaks,high_peaks,Round Pond,10.4,one outflow line,False,0,True,NHD's outflow line,44.04039,-73.62737
+adk_high_peaks,high_peaks,New Pond,39.5,one outflow line,False,22,True,NHD's outflow line,44.09776,-73.6594
+adk_high_peaks,high_peaks,Ash Craft Pond,9.0,one outflow line,False,36,True,NHD's outflow line,44.10343,-73.62116
+adk_high_peaks,high_peaks,Bass Lake,16.6,one outflow line,False,32,True,NHD's outflow line,43.97355,-73.67728
+adk_high_peaks,high_peaks,Goodnow Pond,17.9,one outflow line,False,22,True,NHD's outflow line,43.95007,-74.23026
+adk_high_peaks,high_peaks,Woodruff Pond,18.4,one outflow line,False,85,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.96481,-74.15054
+adk_high_peaks,high_peaks,Harris Lake,126.5,one outflow line,False,10,True,NHD's outflow line,43.97014,-74.12952
+adk_high_peaks,high_peaks,Wolf Pond,26.6,one outflow line,False,0,True,NHD's outflow line,43.9574,-73.9329
+adk_high_peaks,high_peaks,Sand Pond,25.8,one outflow line,False,22,True,NHD's outflow line,43.94801,-73.8917
+adk_high_peaks,high_peaks,Vanderwhacker Pond,10.1,one outflow line,False,0,True,NHD's outflow line,43.95759,-74.00382
+adk_high_peaks,high_peaks,Boreas Ponds,142.5,one outflow line,False,0,True,NHD's outflow line,44.00883,-73.93497
+adk_high_peaks,high_peaks,Beaver Flow,37.9,one outflow line,False,10,True,NHD's outflow line,43.98939,-74.07
+adk_high_peaks,high_peaks,Perch Pond,51.3,one outflow line,False,22,True,NHD's outflow line,43.98417,-74.02719
+adk_high_peaks,high_peaks,Trout Pond,28.3,one outflow line,False,0,True,NHD's outflow line,43.97995,-74.01741
+adk_high_peaks,high_peaks,County Line Flow,45.9,one outflow line,False,42,True,NHD's outflow line,43.97717,-74.27093
+adk_high_peaks,high_peaks,Lilypad Pond,14.0,one outflow line,False,10,True,NHD's outflow line,43.98173,-74.25254
+adk_high_peaks,high_peaks,unnamed,12.3,one outflow line,False,166,True,NHD's outflow line,43.96462,-74.1857
+adk_high_peaks,high_peaks,Rich Lake,155.8,one outflow line,False,10,True,NHD's outflow line,43.97633,-74.18691
+adk_high_peaks,high_peaks,Belden Lake,9.9,one outflow line,False,0,True,NHD's outflow line,43.97273,-74.17412
+adk_high_peaks,high_peaks,Arbutus Pond,49.0,one outflow line,False,10,True,NHD's outflow line,43.98234,-74.2357
+adk_high_peaks,high_peaks,Wolf Pond,57.2,one outflow line,False,0,True,NHD's outflow line,44.02896,-74.22063
+adk_high_peaks,high_peaks,Deer Pond,39.3,one outflow line,False,32,True,NHD's outflow line,44.03484,-74.25125
+adk_high_peaks,high_peaks,Military Lake,8.2,one outflow line,False,28,True,NHD's outflow line,43.97857,-74.22378
+adk_high_peaks,high_peaks,Henderson Lake,113.8,one outflow line,False,0,True,NHD's outflow line,44.09149,-74.05941
+adk_high_peaks,high_peaks,unnamed,31.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.04963,-74.0592
+adk_high_peaks,high_peaks,unnamed,24.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.05524,-74.05249
+adk_high_peaks,high_peaks,Lake Jimmy,15.9,one outflow line,False,10,True,NHD's outflow line,44.07861,-74.04775
+adk_high_peaks,high_peaks,Lake Sally,18.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.06369,-74.04
+adk_high_peaks,high_peaks,unnamed,9.4,one outflow line,False,0,True,NHD's outflow line,44.04047,-74.02964
+adk_high_peaks,high_peaks,unnamed,14.0,one outflow line,False,10,True,NHD's outflow line,44.05955,-74.06179
+adk_high_peaks,high_peaks,unnamed,8.9,one outflow line,False,0,True,NHD's outflow line,44.02567,-74.05871
+adk_high_peaks,high_peaks,Catlin Lake,263.4,one outflow line,False,10,True,NHD's outflow line,43.98971,-74.26142
+adk_high_peaks,high_peaks,Harkness Lake,9.8,one outflow line,False,10,True,NHD's outflow line,44.06804,-74.07652
+adk_high_peaks,high_peaks,Newcomb Lake,179.6,one outflow line,False,10,True,NHD's outflow line,43.99737,-74.09956
+adk_high_peaks,high_peaks,Lake Colden,15.9,one outflow line,False,10,True,NHD's outflow line,44.11938,-73.98248
+adk_high_peaks,high_peaks,Ampersand Lake,142.4,one outflow line,False,14,True,NHD's outflow line,44.20913,-74.20837
+adk_high_peaks,high_peaks,Moose Pond,74.6,one outflow line,False,10,True,NHD's outflow line,44.0533,-74.19821
+adk_high_peaks,high_peaks,Moose Pond,13.4,one outflow line,False,10,True,NHD's outflow line,44.18129,-74.07437
+adk_high_peaks,high_peaks,Duck Hole,27.7,one outflow line,False,0,True,NHD's outflow line,44.14132,-74.10876
+adk_high_peaks,high_peaks,Lower Pond,22.7,one outflow line,False,50,True,NHD's outflow line,44.1371,-74.09957
+adk_high_peaks,high_peaks,Upper Pond,31.0,one outflow line,False,0,True,NHD's outflow line,44.13253,-74.09089
+adk_high_peaks,high_peaks,Heart Lake,11.5,one outflow line,False,10,True,NHD's outflow line,44.18055,-73.96742
+adk_high_peaks,high_peaks,Upper Cascade Lake,10.6,one outflow line,False,0,True,NHD's outflow line,44.22532,-73.87486
+adk_high_peaks,high_peaks,Upper Ausable Lake,60.4,one outflow line,False,0,True,NHD's outflow line,44.08422,-73.86293
+adk_high_peaks,high_peaks,Lower Asuable Lake,58.1,one outflow line,False,0,True,NHD's outflow line,44.11688,-73.82543
+adk_high_peaks,high_peaks,Chapel Pond,8.5,one outflow line,False,20,True,NHD's outflow line,44.14167,-73.7523
+adk_high_peaks,high_peaks,unnamed,25.5,one outflow line,False,30,True,NHD's outflow line,44.05351,-73.89035
+adk_high_peaks,high_peaks,Round Lake,18.8,one outflow line,False,206,True,NHD's outflow line,44.22877,-73.90547
+adk_high_peaks,high_peaks,Round Pond,8.5,one outflow line,False,0,True,NHD's outflow line,44.12389,-73.73143
+adk_high_peaks,boquet,Mud Pond,9.2,one outflow line,False,10,True,NHD's outflow line,43.96986,-73.56567
+adk_high_peaks,boquet,Round Pond,9.4,one outflow line,False,0,True,NHD's outflow line,43.95471,-73.57849
+adk_high_peaks,boquet,Overshot Pond,11.8,one outflow line,False,0,True,NHD's outflow line,43.95002,-73.58471
+adk_high_peaks,boquet,unnamed,14.2,one outflow line,False,51,True,NHD's outflow line,44.05771,-73.59264
+adk_high_peaks,boquet,Newport Pond,10.5,one outflow line,False,50,True,NHD's outflow line,44.07695,-73.59805
+adk_high_peaks,boquet,Russett Pond,10.4,one outflow line,False,0,True,NHD's outflow line,44.11617,-73.55913
+adk_high_peaks,boquet,Mill Pond,30.1,one outflow line,False,0,True,NHD's outflow line,44.11387,-73.55506
+adk_high_peaks,boquet,Nichols Pond,34.6,one outflow line,False,1015,True,NHD's outflow line,44.16192,-73.51137
+adk_high_peaks,boquet,Bartlett Pond,40.0,one outflow line,False,10,True,NHD's outflow line,44.10132,-73.51064
+adk_high_peaks,boquet,North Pond,14.4,one outflow line,False,0,True,NHD's outflow line,44.1281,-73.51347
+adk_high_peaks,boquet,Lincoln Pond,261.7,one outflow line,False,10,True,NHD's outflow line,44.16492,-73.55532
+adk_high_peaks,boquet,Little Pond,11.7,one outflow line,False,0,True,NHD's outflow line,44.18193,-73.57655
+adk_high_peaks,boquet,Lake Champlain,112105.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.21773,-73.35911
+adk_high_peaks,boquet,unnamed,11.3,one outflow line,False,108,True,NHD's outflow line,44.19825,-73.31385
+adk_high_peaks,boquet,Sherman Lake,17.1,one outflow line,False,10,True,NHD's outflow line,43.98741,-73.54417
+adk_high_peaks,boquet,Tub Mill Pond,22.9,one outflow line,False,10,True,NHD's outflow line,44.0261,-73.5849
+adk_high_peaks,boquet,unnamed,8.6,one outflow line,False,20,True,NHD's outflow line,44.21389,-73.31816
+adk_high_peaks,saranac,Fish Creek Ponds,65.2,one outflow line,False,1425,True,NHD's outflow line,44.30084,-74.36209
+adk_high_peaks,saranac,Horseshoe Pond,35.5,one outflow line,False,738,True,NHD's outflow line,44.31864,-74.35788
+adk_high_peaks,saranac,Little Polliwog Pond,8.2,one outflow line,False,10,True,NHD's outflow line,44.32614,-74.36206
+adk_high_peaks,saranac,Polliwog Pond,86.5,one outflow line,False,1074,True,NHD's outflow line,44.33802,-74.36269
+adk_high_peaks,saranac,Upper Saranac Lake,1969.2,one outflow line,False,6757,True,NHD's outflow line,44.30155,-74.34428
+adk_high_peaks,saranac,Middle Saranac Lake,572.1,one outflow line,False,0,True,NHD's outflow line,44.26473,-74.2432
+adk_high_peaks,saranac,Weller Pond,71.7,one outflow line,False,14,True,NHD's outflow line,44.27897,-74.27347
+adk_high_peaks,saranac,Follensby Clear Pond,200.3,one outflow line,False,20,True,NHD's outflow line,44.31092,-74.3463
+adk_high_peaks,saranac,Black Pond,17.7,one outflow line,False,0,True,NHD's outflow line,44.31737,-74.26698
+adk_high_peaks,saranac,Green Pond,26.1,one outflow line,False,839,True,NHD's outflow line,44.33993,-74.33356
+adk_high_peaks,saranac,Pine Pond,20.3,one outflow line,False,723,True,NHD's outflow line,44.26689,-74.14169
+adk_high_peaks,saranac,Oseetah Lake,305.7,one outflow line,False,51,True,NHD's outflow line,44.29584,-74.12422
+adk_high_peaks,saranac,Second Pond,61.0,one outflow line,False,58,True,NHD's outflow line,44.28323,-74.17228
+adk_high_peaks,saranac,Kiwassa Lake,114.2,one outflow line,False,14,True,NHD's outflow line,44.28729,-74.16107
+adk_high_peaks,saranac,Lake Flower,131.0,one outflow line,False,0,True,NHD's outflow line,44.32435,-74.1317
+adk_high_peaks,saranac,Moody Pond,10.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.32876,-74.12035
+adk_high_peaks,saranac,Little Colby Pond,17.3,one outflow line,False,20,True,NHD's outflow line,44.32963,-74.15169
+adk_high_peaks,saranac,Lake Colby,125.5,one outflow line,False,32,True,NHD's outflow line,44.33657,-74.15297
+adk_high_peaks,saranac,McCauley Pond,32.8,one outflow line,False,32,True,NHD's outflow line,44.35119,-74.20859
+adk_high_peaks,saranac,Lower Saranac Lake,869.9,NHD's name,False,22,True,"NHD's outflow line, the named one of 2",44.29529,-74.19581
+adk_high_peaks,saranac,unnamed,13.7,one outflow line,False,71,True,NHD's outflow line,44.29334,-74.09217
+adk_high_peaks,saranac,Wolf Pond,9.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.29758,-74.07042
+adk_high_peaks,saranac,Alford Pond,15.5,one outflow line,False,0,True,NHD's outflow line,44.26022,-74.03856
+adk_high_peaks,saranac,Moose Pond,65.9,one outflow line,False,20,True,NHD's outflow line,44.36614,-74.06595
+adk_high_peaks,saranac,McKenzie Pond,99.0,one outflow line,False,14,True,NHD's outflow line,44.32453,-74.07476
+adk_high_peaks,saranac,Lake Placid,796.9,one outflow line,False,22,True,NHD's outflow line,44.30459,-73.99534
+adk_high_peaks,saranac,Lake Clear,448.2,one outflow line,False,0,True,NHD's outflow line,44.34787,-74.27789
+adk_high_peaks,saranac,Hoel Pond,187.0,one outflow line,False,775,True,NHD's outflow line,44.35208,-74.36442
+adk_high_peaks,saranac,unnamed,12.0,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.35018,-74.33219
+adk_high_peaks,saranac,Rat Pond,13.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.35388,-74.31747
+adk_high_peaks,saranac,Little Green Pond,29.8,one outflow line,False,73,True,NHD's outflow line,44.35807,-74.29609
+adk_high_peaks,saranac,Little Clear Pond,151.0,one outflow line,False,0,True,NHD's outflow line,44.35556,-74.28407
+adk_high_peaks,saranac,Grass Pond,8.1,one outflow line,False,10,True,NHD's outflow line,44.37287,-74.28738
+adk_high_peaks,saranac,unnamed,8.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.2968,-73.99008
+adk_high_peaks,saranac,Mirror Lake,50.5,one outflow line,False,14,True,NHD's outflow line,44.28376,-73.98153
+adk_high_peaks,saranac,Holcomb Pond,11.8,one outflow line,False,36,True,NHD's outflow line,44.28973,-73.9249
+adk_high_peaks,saranac,Connery Pond,34.2,one outflow line,False,70,True,NHD's outflow line,44.30953,-73.93444
+adk_high_peaks,saranac,Owen Pond,9.1,one outflow line,False,14,True,NHD's outflow line,44.32319,-73.90284
+adk_high_peaks,saranac,Copperas Pond,9.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.32926,-73.89809
+adk_high_peaks,saranac,Lower Cascade Lake,11.1,one outflow line,False,14,True,NHD's outflow line,44.23743,-73.86111
+adk_high_peaks,wilmington,Black Pond,14.7,one outflow line,False,36,True,NHD's outflow line,44.44476,-74.42235
+adk_high_peaks,wilmington,Bay Pond,50.8,one outflow line,False,51,True,NHD's outflow line,44.42548,-74.42028
+adk_high_peaks,wilmington,unnamed,52.6,one outflow line,False,10,True,NHD's outflow line,44.4177,-74.43104
+adk_high_peaks,wilmington,East Pond,30.9,one outflow line,False,611,True,NHD's outflow line,44.37836,-74.43217
+adk_high_peaks,wilmington,Cat Pond,21.9,one outflow line,False,22,True,NHD's outflow line,44.40518,-74.41119
+adk_high_peaks,wilmington,Madawaska Pond,123.5,one outflow line,False,10,True,NHD's outflow line,44.51906,-74.39444
+adk_high_peaks,wilmington,Follensby Junior Pond,78.3,one outflow line,False,0,True,NHD's outflow line,44.45189,-74.35843
+adk_high_peaks,wilmington,Wolf Pond,10.4,one outflow line,False,14,True,NHD's outflow line,44.53113,-74.34662
+adk_high_peaks,wilmington,Clear Lake,12.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.49476,-74.30124
+adk_high_peaks,wilmington,Quebec Pond,25.0,one outflow line,False,10,True,NHD's outflow line,44.4819,-74.34842
+adk_high_peaks,wilmington,Chain Lake,39.8,one outflow line,False,14,True,NHD's outflow line,44.48394,-74.29847
+adk_high_peaks,wilmington,Rice Lake,56.4,one outflow line,False,14,True,NHD's outflow line,44.5117,-74.31815
+adk_high_peaks,wilmington,Little Long Pond,16.5,one outflow line,False,50,True,NHD's outflow line,44.39317,-74.38733
+adk_high_peaks,wilmington,Little Fish Pond,10.2,one outflow line,False,0,True,NHD's outflow line,44.39512,-74.38203
+adk_high_peaks,wilmington,Fish Pond,50.2,one outflow line,False,0,True,NHD's outflow line,44.39464,-74.37764
+adk_high_peaks,wilmington,Clamshell Pond,15.2,one outflow line,False,20,True,NHD's outflow line,44.38178,-74.36359
+adk_high_peaks,wilmington,Grass Pond,10.1,one outflow line,False,30,True,NHD's outflow line,44.3778,-74.34343
+adk_high_peaks,wilmington,Saint Regis Pond,156.8,one outflow line,False,0,True,NHD's outflow line,44.38116,-74.3336
+adk_high_peaks,wilmington,Lydia Pond,8.3,one outflow line,False,10,True,NHD's outflow line,44.39546,-74.39471
+adk_high_peaks,wilmington,Ochre Pond,10.0,one outflow line,False,36,True,NHD's outflow line,44.38643,-74.34195
+adk_high_peaks,wilmington,unnamed,50.2,one outflow line,False,0,True,NHD's outflow line,44.4532,-74.38519
+adk_high_peaks,wilmington,Clear Pond,33.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.58982,-74.28473
+adk_high_peaks,wilmington,Meacham Lake,486.4,one outflow line,False,30,True,NHD's outflow line,44.55359,-74.30834
+adk_high_peaks,wilmington,Upper Saint Regis Lake,291.3,one outflow line,False,0,True,NHD's outflow line,44.41012,-74.27022
+adk_high_peaks,wilmington,Bear Pond,22.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.39995,-74.28441
+adk_high_peaks,wilmington,Spitfire Lake,108.7,one outflow line,False,22,True,NHD's outflow line,44.42032,-74.25929
+adk_high_peaks,wilmington,Spectacle Ponds,35.7,one outflow line,False,0,True,NHD's outflow line,44.42553,-74.30081
+adk_high_peaks,wilmington,Lower Saint Regis Lake,185.4,NHD's name,False,71,True,"NHD's outflow line, the named one of 2",44.43164,-74.29898
+adk_high_peaks,wilmington,Black Pond,31.3,one outflow line,False,42,True,NHD's outflow line,44.43326,-74.29908
+adk_high_peaks,wilmington,Church Pond,8.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.44371,-74.24354
+adk_high_peaks,wilmington,unnamed,11.1,one outflow line,False,0,True,NHD's outflow line,44.43958,-74.25879
+adk_high_peaks,wilmington,Osgood Pond,208.5,one outflow line,False,0,True,NHD's outflow line,44.46667,-74.22991
+adk_high_peaks,wilmington,Jones Pond,62.7,one outflow line,False,194,True,NHD's outflow line,44.45025,-74.19883
+adk_high_peaks,wilmington,Green Pond,8.5,one outflow line,False,30,True,NHD's outflow line,44.38267,-74.30031
+adk_high_peaks,wilmington,Little Long Pond,32.0,one outflow line,False,81,True,NHD's outflow line,44.38829,-74.29171
+adk_high_peaks,wilmington,Mountain Pond,24.5,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.4781,-74.27164
+adk_high_peaks,wilmington,Barnum Pond,37.7,one outflow line,False,0,True,NHD's outflow line,44.45536,-74.26199
+adk_high_peaks,wilmington,Grass Pond,12.9,one outflow line,False,1135,True,NHD's outflow line,44.58372,-74.12067
+adk_high_peaks,wilmington,Fishhole Pond,17.3,one outflow line,False,376,True,NHD's outflow line,44.58649,-74.10652
+adk_high_peaks,wilmington,Rainbow Lake,149.5,one outflow line,False,2187,True,NHD's outflow line,44.48482,-74.16202
+adk_high_peaks,wilmington,Clear Pond,42.1,one outflow line,False,264,True,NHD's outflow line,44.48263,-74.16947
+adk_high_peaks,wilmington,Square Pond,18.6,one outflow line,False,81,True,NHD's outflow line,44.49187,-74.14142
+adk_high_peaks,wilmington,Mountain Pond,13.2,one outflow line,False,20,True,NHD's outflow line,44.52655,-74.13122
+adk_high_peaks,wilmington,unnamed,45.2,one outflow line,False,1838,True,NHD's outflow line,44.48858,-74.13492
+adk_high_peaks,wilmington,Hope Pond,10.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.51275,-74.12865
+adk_high_peaks,wilmington,Lake Kushaqua,153.8,one outflow line,False,10,True,NHD's outflow line,44.52786,-74.10276
+adk_high_peaks,wilmington,Oregon Pond,9.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.49638,-74.11783
+adk_high_peaks,wilmington,Buck Pond,53.8,one outflow line,False,36,True,NHD's outflow line,44.506,-74.1168
+adk_high_peaks,wilmington,Inlet,57.1,one outflow line,False,2380,True,NHD's outflow line,44.49135,-74.18079
+adk_high_peaks,wilmington,Loon Lake,8.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.48783,-74.16688
+adk_high_peaks,wilmington,unnamed,22.2,one outflow line,False,0,True,NHD's outflow line,44.53664,-74.08626
+adk_high_peaks,wilmington,Grass Pond,10.3,one outflow line,False,10,True,NHD's outflow line,44.37591,-74.02864
+adk_high_peaks,wilmington,Franklin Falls Pond,181.5,one outflow line,False,14,True,NHD's outflow line,44.43745,-73.9727
+adk_high_peaks,wilmington,Loon Lake,143.8,one outflow line,False,0,True,NHD's outflow line,44.56026,-74.07934
+adk_high_peaks,wilmington,Fern Lake,172.4,one outflow line,False,10,True,NHD's outflow line,44.48361,-73.72856
+adk_high_peaks,wilmington,Taylor Pond,357.8,one outflow line,False,28,True,NHD's outflow line,44.49309,-73.82357
+adk_high_peaks,wilmington,Silver Lake,324.7,one outflow line,False,51,True,NHD's outflow line,44.5185,-73.8608
+adk_high_peaks,wilmington,unnamed,17.4,one outflow line,False,0,True,NHD's outflow line,44.55087,-73.68933
+adk_high_peaks,wilmington,Mud Pond,45.3,one outflow line,False,22,True,NHD's outflow line,44.56449,-73.91494
+adk_high_peaks,wilmington,Cranberry Pond,14.3,one outflow line,False,20,True,NHD's outflow line,44.47284,-73.90507
+adk_high_peaks,wilmington,Union Falls Pond,659.6,one outflow line,False,30,True,NHD's outflow line,44.50733,-73.91612
+adk_high_peaks,wilmington,Newberry Pond,22.3,one outflow line,False,0,True,NHD's outflow line,44.45948,-73.77798
+adk_high_peaks,wilmington,Slush Pond,18.6,one outflow line,False,14,True,NHD's outflow line,44.51174,-73.7321
+adk_high_peaks,wilmington,Military Pond,9.4,one outflow line,False,14,True,NHD's outflow line,44.54823,-73.72665
+adk_high_peaks,wilmington,unnamed,9.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.38576,-73.66615
+adk_high_peaks,champlain,Frances Pond,12.7,one outflow line,False,10,True,NHD's outflow line,44.3581,-73.51168
+adk_high_peaks,champlain,Lake Champlain,112105.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.55067,-73.26896
+adk_high_peaks,champlain,Big Pond,22.9,one outflow line,False,22,True,NHD's outflow line,44.28596,-73.55825
+adk_high_peaks,champlain,Mud Pond,10.5,one outflow line,False,0,True,NHD's outflow line,44.30947,-73.53849
+adk_high_peaks,champlain,Lawson Pond,11.2,one outflow line,False,708,True,NHD's outflow line,44.37372,-73.60053
+adk_high_peaks,champlain,Trout Pond,13.5,one outflow line,False,0,True,NHD's outflow line,44.4117,-73.57048
+adk_high_peaks,champlain,Long Pond,120.3,one outflow line,False,50,True,NHD's outflow line,44.39608,-73.45635
+adk_high_peaks,champlain,Florence Pond,9.5,one outflow line,False,10,True,NHD's outflow line,44.41536,-73.45044
+adk_high_peaks,champlain,Highlands Forge Lake,50.3,one outflow line,False,86,True,NHD's outflow line,44.41476,-73.4399
+adk_high_peaks,champlain,Hadley Pond,15.8,one outflow line,False,10,True,NHD's outflow line,44.4284,-73.4364
+adk_high_peaks,champlain,unnamed,12.1,one outflow line,False,283,True,NHD's outflow line,44.57423,-73.43552
+adk_high_peaks,champlain,Davis Lake,19.0,one outflow line,False,14,True,NHD's outflow line,44.61878,-73.60827
+adk_high_peaks,champlain,Butternut Pond,65.7,one outflow line,False,28,True,NHD's outflow line,44.4344,-73.49416
+adk_high_peaks,champlain,Keenan Pond,16.5,one outflow line,False,14,True,NHD's outflow line,44.43243,-73.47449
+adk_high_peaks,champlain,Augur Lake,152.6,one outflow line,False,0,True,NHD's outflow line,44.46998,-73.49551
+adk_high_peaks,chateaugay,Lake Titus,176.3,one outflow line,False,0,True,NHD's outflow line,44.74072,-74.2878
+adk_high_peaks,chateaugay,unnamed,43.8,NHDPlus's line,False,495,True,"NHD's outflow line, the one of 3 that NHDPlus's line leaves by",44.71268,-74.34117
+adk_high_peaks,chateaugay,Lake Duane,19.1,one outflow line,False,10,True,NHD's outflow line,44.68697,-74.31597
+adk_high_peaks,chateaugay,unnamed,8.1,one outflow line,False,0,True,NHD's outflow line,44.83839,-74.28634
+adk_high_peaks,chateaugay,Twin Ponds,78.7,NHD's name,False,10,True,"NHD's outflow line, the named one of 2",44.71638,-74.35729
+adk_high_peaks,chateaugay,Deer River Flow,107.9,one outflow line,False,10,True,NHD's outflow line,44.65782,-74.31984
+adk_high_peaks,chateaugay,Horseshoe Pond,19.6,one outflow line,False,20,True,NHD's outflow line,44.66359,-74.29038
+adk_high_peaks,chateaugay,Eagle Pond,16.7,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,44.6712,-74.26985
+adk_high_peaks,chateaugay,Lake Florence,8.8,one outflow line,False,0,True,NHD's outflow line,44.61409,-74.26439
+adk_high_peaks,chateaugay,Debar Pond,36.1,one outflow line,False,10,True,NHD's outflow line,44.62886,-74.19815
+adk_high_peaks,chateaugay,Duck Pond,25.8,one outflow line,False,10,True,NHD's outflow line,44.59843,-74.13708
+adk_high_peaks,chateaugay,Indian Lake,135.2,one outflow line,False,51,True,NHD's outflow line,44.71118,-74.12972
+adk_high_peaks,chateaugay,Ingraham Pond,54.5,one outflow line,False,10,True,NHD's outflow line,44.75566,-74.10732
+adk_high_peaks,chateaugay,Mountain View Lake,95.4,one outflow line,False,14,True,NHD's outflow line,44.70413,-74.13816
+adk_high_peaks,chateaugay,Plumadore Pond,44.5,one outflow line,False,0,True,NHD's outflow line,44.6515,-74.09656
+adk_high_peaks,chateaugay,Wolf Pond,21.0,one outflow line,False,349,True,NHD's outflow line,44.64753,-74.06144
+adk_high_peaks,chateaugay,Ragged Lake,111.3,one outflow line,False,0,True,NHD's outflow line,44.70699,-74.06629
+adk_high_peaks,chateaugay,Mud Pond,19.3,one outflow line,False,0,True,NHD's outflow line,44.73111,-74.0664
+adk_high_peaks,chateaugay,Lilypad Pond,12.2,one outflow line,False,32,True,NHD's outflow line,44.77488,-74.06873
+adk_high_peaks,chateaugay,unnamed,9.7,one outflow line,False,0,True,NHD's outflow line,44.59164,-74.03135
+adk_high_peaks,chateaugay,Upper Chateaugay Lake,1031.1,one outflow line,False,0,True,NHD's outflow line,44.76727,-73.97825
+adk_high_peaks,chateaugay,Twin Ponds,9.2,one outflow line,False,20,True,NHD's outflow line,44.67603,-73.96333
+adk_high_peaks,chateaugay,Lower Chateaugay Lake,221.7,one outflow line,False,22,True,NHD's outflow line,44.83092,-74.03102
+adk_high_peaks,chateaugay,unnamed,12.8,one outflow line,False,32,True,NHD's outflow line,44.80288,-73.65392
+adk_high_peaks,chateaugay,Miner Lake,53.6,one outflow line,False,0,True,NHD's outflow line,44.86912,-73.67491
+adk_high_peaks,chateaugay,Mud Pond,8.9,one outflow line,False,0,True,NHD's outflow line,44.62418,-73.82407
+adk_high_peaks,chateaugay,Mud Pond,17.2,one outflow line,False,10,True,NHD's outflow line,44.75499,-73.85162
+adk_high_peaks,chateaugay,Mud Pond,9.7,one outflow line,False,10,True,NHD's outflow line,44.59102,-73.76981
+adk_high_peaks,chateaugay,Chazy Lake,746.2,one outflow line,False,10,True,NHD's outflow line,44.77065,-73.80746
+adk_high_peaks,chateaugay,Bradley Pond,46.5,one outflow line,False,10,True,NHD's outflow line,44.75288,-73.89285
+adk_northwest,beaver,Hawk Pond,15.4,one outflow line,False,0,True,NHD's outflow line,43.95419,-74.96354
+adk_northwest,beaver,Dismal Pond,25.4,one outflow line,False,22,True,NHD's outflow line,43.95284,-74.98324
+adk_northwest,beaver,Salmon Lake,42.8,one outflow line,False,0,True,NHD's outflow line,43.93869,-74.94312
+adk_northwest,beaver,Cranberry Pond,8.5,one outflow line,False,14,True,NHD's outflow line,43.86442,-74.97903
+adk_northwest,beaver,Woods Lake,25.3,one outflow line,False,36,True,NHD's outflow line,43.86586,-74.95539
+adk_northwest,beaver,Mud Lake,10.8,one outflow line,False,41,True,NHD's outflow line,43.89521,-74.96669
+adk_northwest,beaver,Clear Lake,42.5,one outflow line,False,22,True,NHD's outflow line,43.98226,-74.92313
+adk_northwest,beaver,Witchhopple Lake,39.1,one outflow line,False,10,True,NHD's outflow line,43.96335,-74.92565
+adk_northwest,beaver,Little Rock Pond,27.0,one outflow line,False,0,True,NHD's outflow line,43.96415,-74.90445
+adk_northwest,beaver,Beaverdam Pond,19.1,one outflow line,False,32,True,NHD's outflow line,43.97108,-74.9027
+adk_northwest,beaver,Buck Pond,9.8,one outflow line,False,0,True,NHD's outflow line,43.82299,-74.93341
+adk_northwest,beaver,Snake Pond,8.2,one outflow line,False,0,True,NHD's outflow line,43.83271,-74.92282
+adk_northwest,beaver,Silver Lake,23.2,one outflow line,False,10,True,NHD's outflow line,43.84197,-74.90888
+adk_northwest,beaver,Thirsty Pond,11.3,one outflow line,False,20,True,NHD's outflow line,43.82234,-74.90766
+adk_northwest,beaver,West Pond,15.9,one outflow line,False,22,True,NHD's outflow line,43.81241,-74.88231
+adk_northwest,beaver,Twitchell Lake,57.7,one outflow line,False,0,True,NHD's outflow line,43.84069,-74.89271
+adk_northwest,beaver,Stillwater Reservoir,2520.5,one outflow line,False,394,True,NHD's outflow line,43.89638,-75.04663
+adk_northwest,beaver,East Pond,10.7,one outflow line,False,0,True,NHD's outflow line,43.86588,-74.86665
+adk_northwest,beaver,Thayer Lake,46.9,one outflow line,False,0,True,NHD's outflow line,43.93363,-74.82925
+adk_northwest,beaver,Nehasane Lake,258.0,one outflow line,False,20,True,NHD's outflow line,43.94732,-74.83818
+adk_northwest,beaver,unnamed,14.3,one outflow line,False,36,True,NHD's outflow line,43.97567,-74.82651
+adk_northwest,beaver,Deer Pond,19.3,one outflow line,False,10,True,NHD's outflow line,43.93337,-74.78315
+adk_northwest,beaver,unnamed,8.4,one outflow line,False,10,True,NHD's outflow line,44.0278,-74.73526
+adk_northwest,beaver,Lake Lila,580.9,one outflow line,False,30,True,NHD's outflow line,43.99375,-74.76959
+adk_northwest,beaver,Pigeon Lake,17.1,one outflow line,False,0,True,NHD's outflow line,43.84663,-74.76468
+adk_northwest,beaver,Chub Lake,18.8,one outflow line,False,0,True,NHD's outflow line,43.83208,-74.78626
+adk_northwest,beaver,Lilypad Pond,24.6,one outflow line,False,10,True,NHD's outflow line,43.98052,-74.72687
+adk_northwest,beaver,Shingle Shanty Pond,31.9,one outflow line,False,20,True,NHD's outflow line,43.91931,-74.77473
+adk_northwest,beaver,Lower Sister Lake,59.5,one outflow line,False,10,True,NHD's outflow line,43.87222,-74.77864
+adk_northwest,beaver,Negro Lake,50.3,one outflow line,False,0,True,NHD's outflow line,43.98952,-74.88795
+adk_northwest,beaver,Falls Lake,37.1,one outflow line,False,10,True,NHD's outflow line,43.93711,-74.87522
+adk_northwest,beaver,Rock Lake,80.8,one outflow line,False,0,True,NHD's outflow line,43.9678,-74.86418
+adk_northwest,beaver,South Pond,15.5,one outflow line,False,0,True,NHD's outflow line,43.84392,-74.88126
+adk_northwest,beaver,Big Moose Lake,498.7,one outflow line,False,0,True,NHD's outflow line,43.81868,-74.85445
+adk_northwest,beaver,Gull Lakes,11.5,one outflow line,False,10,True,NHD's outflow line,43.86284,-74.81937
+adk_northwest,beaver,Mays Pond,13.0,one outflow line,False,10,True,NHD's outflow line,43.82124,-74.81713
+adk_northwest,beaver,Constable Pond,21.3,one outflow line,False,36,True,NHD's outflow line,43.83086,-74.80529
+adk_northwest,beaver,Lilypad Ponds,9.4,one outflow line,False,161,True,NHD's outflow line,43.85319,-74.87166
+adk_northwest,beaver,Russian Lake,15.8,one outflow line,False,0,True,NHD's outflow line,43.84157,-74.80538
+adk_northwest,beaver,unnamed,11.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.8542,-74.82189
+adk_northwest,beaver,Rose Pond,21.3,one outflow line,False,14,True,NHD's outflow line,43.92094,-74.83763
+adk_northwest,beaver,Terror Lake,33.3,one outflow line,False,40,True,NHD's outflow line,43.89848,-74.81055
+adk_northwest,beaver,West Pond,32.9,one outflow line,False,0,True,NHD's outflow line,43.93003,-74.73557
+adk_northwest,beaver,South Pond,18.6,one outflow line,False,10,True,NHD's outflow line,43.89121,-74.73189
+adk_northwest,beaver,Crystal Lake,33.6,one outflow line,False,166,True,NHD's outflow line,43.83905,-75.27908
+adk_northwest,beaver,Hitchcock Lake,14.4,one outflow line,False,10,True,NHD's outflow line,43.8465,-75.0497
+adk_northwest,beaver,Sunday Lake,8.4,one outflow line,False,0,True,NHD's outflow line,43.86105,-75.10223
+adk_northwest,beaver,Fifth Creek Pond,10.6,NHDPlus's line,False,14,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",43.84126,-75.08229
+adk_northwest,beaver,Moshier Reservoir,124.3,one outflow line,False,36,True,NHD's outflow line,43.88796,-75.10949
+adk_northwest,beaver,Francis Lake,57.6,one outflow line,False,0,True,NHD's outflow line,43.85925,-75.17216
+adk_northwest,beaver,unnamed,13.6,one outflow line,False,10,True,NHD's outflow line,43.87184,-75.18364
+adk_northwest,beaver,Elmer Falls Pond,8.7,one outflow line,False,54,True,NHD's outflow line,43.92709,-75.28858
+adk_northwest,beaver,Effley Falls Pond,126.6,one outflow line,False,163,True,NHD's outflow line,43.92432,-75.27773
+adk_northwest,beaver,Taylorville Pond,44.7,NHD's name,False,78,True,"NHD's outflow line, the named one of 2",43.92721,-75.31013
+adk_northwest,beaver,Beaver Lake,133.8,one outflow line,False,14,True,NHD's outflow line,43.8861,-75.16314
+adk_northwest,beaver,unnamed,39.7,NHDPlus's line,False,0,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",43.91678,-75.22501
+adk_northwest,beaver,Crooked Lake,19.3,one outflow line,False,1344,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.90959,-75.16595
+adk_northwest,beaver,Soft Maple Reservoir,136.7,NHD's name,False,239,True,"NHD's outflow line, the named one of 2",43.91723,-75.22551
+adk_northwest,beaver,Pepperbox Pond,10.5,one outflow line,False,14,True,NHD's outflow line,43.93921,-75.09451
+adk_northwest,beaver,Sunshine Pond,30.4,one outflow line,False,0,True,NHD's outflow line,43.93563,-75.05576
+adk_northwest,beaver,unnamed,18.3,one outflow line,False,14,True,NHD's outflow line,43.93778,-75.07183
+adk_northwest,beaver,Moshier Ponds,9.3,one outflow line,False,64,True,NHD's outflow line,43.92517,-75.0763
+adk_northwest,beaver,Shallow Pond,52.2,one outflow line,False,0,True,NHD's outflow line,43.9206,-75.03917
+adk_northwest,beaver,Lyon Lake,33.3,one outflow line,False,10,True,NHD's outflow line,43.9423,-75.02386
+adk_northwest,beaver,Evergreen Lake,19.6,one outflow line,False,412,True,NHD's outflow line,43.91647,-75.01601
+adk_northwest,beaver,Peaked Mountain Lake,17.2,one outflow line,False,30,True,NHD's outflow line,43.91142,-75.0043
+adk_northwest,beaver,Huckleberry Pond,8.5,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,43.94681,-74.9947
+adk_northwest,beaver,Soda Pond,8.7,one outflow line,False,30,True,NHD's outflow line,43.93474,-75.00766
+adk_northwest,beaver,Sand Pond,34.4,one outflow line,False,28,True,NHD's outflow line,43.94732,-75.16531
+adk_northwest,beaver,Belfort Pond,15.7,one outflow line,False,28,True,NHD's outflow line,43.92661,-75.33131
+adk_northwest,beaver,unnamed,10.7,one outflow line,False,0,True,NHD's outflow line,43.81131,-74.80262
+adk_northwest,beaver,Queer Lake,47.7,one outflow line,False,184,False,NHD's outflow line,43.80474,-74.80438
+adk_northwest,beaver,Shallow Lake,113.0,one outflow line,False,10,True,NHD's outflow line,43.82306,-74.73642
+adk_northwest,beaver,Chain Ponds,8.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.80476,-74.81308
+adk_northwest,beaver,Big Deer Pond,24.9,one outflow line,False,0,True,NHD's outflow line,44.06671,-74.84036
+adk_northwest,beaver,Gull Lake,32.2,one outflow line,False,20,True,NHD's outflow line,44.02157,-74.88315
+adk_northwest,beaver,Partlow Lake,31.6,one outflow line,False,20,True,NHD's outflow line,44.00153,-74.84016
+adk_northwest,beaver,Cracker Pond,10.5,one outflow line,False,22,True,NHD's outflow line,44.03796,-74.88961
+adk_northwest,beaver,Cranberry Lake,2793.7,one outflow line,False,22,True,NHD's outflow line,44.22068,-74.84783
+adk_northwest,beaver,unnamed,20.6,one outflow line,False,10,True,NHD's outflow line,44.13828,-74.9158
+adk_northwest,beaver,Heath Pond,12.7,one outflow line,False,10,True,NHD's outflow line,44.17979,-74.92024
+adk_northwest,beaver,Bassout Pond,10.8,one outflow line,False,63,True,NHD's outflow line,44.08907,-74.86465
+adk_northwest,beaver,Cat Mountain Pond,8.7,one outflow line,False,0,True,NHD's outflow line,44.09393,-74.8609
+adk_northwest,beaver,Olmstead Pond,21.9,one outflow line,False,30,True,NHD's outflow line,44.12028,-74.83859
+adk_northwest,beaver,Cowhorn Pond,8.8,one outflow line,False,10,True,NHD's outflow line,44.09139,-74.84716
+adk_northwest,beaver,unnamed,13.7,one outflow line,False,22,True,NHD's outflow line,44.10027,-74.73207
+adk_northwest,beaver,Otter Pond,13.8,one outflow line,False,10,True,NHD's outflow line,44.11378,-74.73088
+adk_northwest,beaver,Scott Pond,10.5,one outflow line,False,14,True,NHD's outflow line,44.10738,-74.77015
+adk_northwest,beaver,Curtis Pond,8.6,one outflow line,False,0,True,NHD's outflow line,44.15814,-74.76095
+adk_northwest,beaver,Colvin Pond,9.7,one outflow line,False,20,True,NHD's outflow line,44.11032,-74.75414
+adk_northwest,beaver,Tomar Pond,14.0,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.06531,-74.80365
+adk_northwest,beaver,Clear Pond,29.5,one outflow line,False,10,True,NHD's outflow line,44.04408,-74.76602
+adk_northwest,beaver,Graves Pond,9.2,one outflow line,False,10,True,NHD's outflow line,44.09844,-74.75694
+adk_northwest,beaver,Spring Pond,12.8,one outflow line,False,397,True,NHD's outflow line,44.09365,-74.75071
+adk_northwest,beaver,Dog Pond,10.1,one outflow line,False,10,True,NHD's outflow line,44.15581,-74.72656
+adk_northwest,beaver,Silver Lake,48.6,one outflow line,False,10,True,NHD's outflow line,44.23198,-74.82075
+adk_northwest,beaver,Twin Ponds,12.0,one outflow line,False,20,True,NHD's outflow line,43.95715,-75.0488
+adk_northwest,beaver,Grassy Pond,8.5,one outflow line,False,50,True,NHD's outflow line,44.0001,-75.04347
+adk_northwest,beaver,Walker Lake,17.7,one outflow line,False,14,True,NHD's outflow line,43.97461,-74.94146
+adk_northwest,beaver,Crooked Lake,54.0,NHDPlus's line,False,962,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",43.99668,-74.94631
+adk_northwest,beaver,Willys Lake,24.8,one outflow line,False,308,True,NHD's outflow line,43.97228,-74.95643
+adk_northwest,beaver,French Pond,8.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.97809,-75.22973
+adk_northwest,beaver,Lanes Pond,9.9,one outflow line,False,14,True,NHD's outflow line,43.998,-75.2227
+adk_northwest,beaver,Mud Pond,21.0,one outflow line,False,10,True,NHD's outflow line,43.97279,-75.22522
+adk_northwest,beaver,Long Pond,60.4,one outflow line,False,0,True,NHD's outflow line,43.99248,-75.19137
+adk_northwest,beaver,Trout Lake,14.4,one outflow line,False,10,True,NHD's outflow line,43.9976,-75.19463
+adk_northwest,beaver,Round Pond,18.3,one outflow line,False,228,True,NHD's outflow line,43.98852,-75.19111
+adk_northwest,beaver,Deer Pond,8.3,one outflow line,False,14,True,NHD's outflow line,44.01337,-75.18882
+adk_northwest,beaver,Oven Lake,42.9,one outflow line,False,0,True,NHD's outflow line,44.02654,-74.90573
+adk_northwest,beaver,Wolf Pond,31.0,one outflow line,False,20,True,NHD's outflow line,44.02982,-74.99208
+adk_northwest,beaver,Big Five,10.2,one outflow line,False,22,True,NHD's outflow line,44.05286,-74.95225
+adk_northwest,beaver,Toad Pond,9.9,one outflow line,False,10,True,NHD's outflow line,44.01828,-74.93244
+adk_northwest,beaver,Long Lake,15.4,one outflow line,False,0,True,NHD's outflow line,44.113,-75.15527
+adk_northwest,beaver,Round Lake,31.8,one outflow line,False,10,True,NHD's outflow line,44.11269,-75.17889
+adk_northwest,beaver,Elijah Lake,15.9,one outflow line,False,10,True,NHD's outflow line,44.09782,-75.23944
+adk_northwest,beaver,South Greek Lake,23.3,one outflow line,False,14,True,NHD's outflow line,44.12189,-75.21966
+adk_northwest,beaver,Mouldy Pond,9.4,one outflow line,False,20,True,NHD's outflow line,44.06048,-75.17661
+adk_northwest,beaver,Cage Lake,18.5,one outflow line,False,32,True,NHD's outflow line,44.05197,-75.0073
+adk_northwest,beaver,Otter Pond,20.0,one outflow line,False,100,True,NHD's outflow line,44.10572,-74.98244
+adk_northwest,beaver,Streeter Lake,28.5,one outflow line,False,0,True,NHD's outflow line,44.11182,-75.07142
+adk_northwest,beaver,unnamed,16.3,one outflow line,False,0,True,NHD's outflow line,44.1139,-75.06017
+adk_northwest,beaver,unnamed,21.6,one outflow line,False,10,True,NHD's outflow line,44.14189,-75.25937
+adk_northwest,beaver,Jenny Lake,9.5,one outflow line,False,0,True,NHD's outflow line,44.16636,-75.2247
+adk_northwest,beaver,Rock Lake,10.8,one outflow line,False,0,True,NHD's outflow line,44.16595,-75.1414
+adk_northwest,beaver,unnamed,60.6,one outflow line,False,32,True,NHD's outflow line,44.22148,-75.07393
+adk_northwest,beaver,Long Lake,10.3,one outflow line,False,0,True,NHD's outflow line,44.15938,-75.20429
+adk_northwest,beaver,Sucker Lake,36.2,one outflow line,False,0,True,NHD's outflow line,44.17877,-75.11278
+adk_northwest,beaver,Portaferry Lake,31.6,one outflow line,False,0,True,NHD's outflow line,44.22393,-75.20301
+adk_northwest,beaver,Dry Timber Lake,10.6,one outflow line,False,10,True,NHD's outflow line,44.14811,-75.15774
+adk_northwest,beaver,Twin Ponds,9.1,one outflow line,False,14,True,NHD's outflow line,44.15624,-75.19715
+adk_northwest,beaver,unnamed,13.2,one outflow line,False,0,True,NHD's outflow line,44.16595,-74.97955
+adk_northwest,beaver,Twin Lakes,15.0,one outflow line,False,10,True,NHD's outflow line,44.17621,-75.04397
+adk_northwest,beaver,unnamed,8.8,one outflow line,False,32,True,NHD's outflow line,44.17423,-74.97142
+adk_northwest,beaver,unnamed,13.2,one outflow line,False,94,True,NHD's outflow line,44.17027,-74.99131
+adk_northwest,beaver,unnamed,16.4,one outflow line,False,30,True,NHD's outflow line,44.15416,-75.00344
+adk_northwest,beaver,unnamed,110.5,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.16928,-75.00932
+adk_northwest,beaver,unnamed,65.1,one outflow line,False,78,True,NHD's outflow line,44.18702,-74.96991
+adk_northwest,beaver,Lost Pond,10.1,one outflow line,False,0,True,NHD's outflow line,44.18935,-74.94275
+adk_northwest,beaver,Star Lake,87.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.15604,-75.05284
+adk_northwest,beaver,unnamed,97.1,NHD's name,False,1244,True,"NHD's outflow line, the named one of 2",44.16784,-74.96066
+adk_northwest,beaver,Muskrat Pond,16.5,one outflow line,False,22,True,NHD's outflow line,44.18943,-74.92474
+adk_northwest,beaver,Chaumont Pond,289.6,one outflow line,False,54,True,NHD's outflow line,44.21538,-74.98692
+adk_northwest,beaver,unnamed,37.7,one outflow line,False,488,True,NHD's outflow line,44.19845,-74.95864
+adk_northwest,beaver,unnamed,58.4,one outflow line,False,63,True,NHD's outflow line,44.21321,-75.03611
+adk_northwest,beaver,unnamed,12.6,one outflow line,False,10,True,NHD's outflow line,44.19701,-75.00169
+adk_northwest,beaver,Middle South Pond,18.5,one outflow line,False,496,True,NHD's outflow line,43.99182,-75.01715
+adk_northwest,beaver,Rock Lake,23.3,NHD's name,False,340,True,"NHD's outflow line, the named one of 2",44.00983,-75.01927
+adk_northwest,beaver,Sand Lake,29.6,one outflow line,False,22,True,NHD's outflow line,44.00983,-75.01466
+adk_northwest,beaver,Lower South Pond,17.5,one outflow line,False,0,True,NHD's outflow line,43.98219,-75.01216
+adk_northwest,beaver,Bear Pond,32.2,one outflow line,False,14,True,NHD's outflow line,43.95887,-75.00954
+adk_northwest,beaver,Diana Pond,12.3,one outflow line,False,14,True,NHD's outflow line,43.95491,-75.00567
+adk_northwest,beaver,Sitz Pond,8.0,one outflow line,False,86,True,NHD's outflow line,43.99543,-74.99732
+adk_northwest,beaver,Lower Beech Ridge Pond,10.0,one outflow line,False,0,True,NHD's outflow line,43.96598,-74.97949
+adk_northwest,long_lake,Rock Lake,86.0,one outflow line,False,0,True,NHD's outflow line,43.83459,-74.3366
+adk_northwest,long_lake,Wolf Pond,16.0,one outflow line,False,0,True,NHD's outflow line,43.89183,-74.34779
+adk_northwest,long_lake,unnamed,49.0,one outflow line,False,10,True,NHD's outflow line,43.84874,-74.37091
+adk_northwest,long_lake,Tirrel Pond,58.9,one outflow line,False,0,True,NHD's outflow line,43.87564,-74.36664
+adk_northwest,long_lake,Sprague Pond,23.5,one outflow line,False,0,True,NHD's outflow line,43.79386,-74.37956
+adk_northwest,long_lake,unnamed,12.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.8423,-74.39585
+adk_northwest,long_lake,Pickwacket Pond,81.1,one outflow line,False,490,True,NHD's outflow line,44.00162,-74.30867
+adk_northwest,long_lake,Comer Pond,24.8,one outflow line,False,10,True,NHD's outflow line,44.03385,-74.29407
+adk_northwest,long_lake,Stephens Pond,33.5,one outflow line,False,45,True,NHD's outflow line,43.81433,-74.41926
+adk_northwest,long_lake,Cascade Pond,14.9,one outflow line,False,10,True,NHD's outflow line,43.82963,-74.43615
+adk_northwest,long_lake,unnamed,147.4,one outflow line,False,82,True,NHD's outflow line,43.83936,-74.38494
+adk_northwest,long_lake,Crystal Lake,11.6,one outflow line,False,10,True,NHD's outflow line,43.84646,-74.45292
+adk_northwest,long_lake,North Pond,22.1,one outflow line,False,10,True,NHD's outflow line,43.94052,-74.71858
+adk_northwest,long_lake,Little Salmon Lake,11.2,one outflow line,False,10,True,NHD's outflow line,43.97974,-74.70418
+adk_northwest,long_lake,Frank Pond,9.5,one outflow line,False,76,True,NHD's outflow line,43.97989,-74.69383
+adk_northwest,long_lake,Hardigan Pond,13.2,one outflow line,False,14,True,NHD's outflow line,43.97033,-74.68553
+adk_northwest,long_lake,Rob Pond,8.3,one outflow line,False,14,True,NHD's outflow line,43.95726,-74.62378
+adk_northwest,long_lake,Salmon Lake,129.3,one outflow line,False,10,True,NHD's outflow line,43.96417,-74.67372
+adk_northwest,long_lake,East Pond,23.7,one outflow line,False,0,True,NHD's outflow line,43.93666,-74.69019
+adk_northwest,long_lake,Moonshine Pond,8.5,NHDPlus's line,False,32,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",44.04585,-74.50363
+adk_northwest,long_lake,Sperry Pond,50.9,one outflow line,False,10,True,NHD's outflow line,44.08264,-74.51732
+adk_northwest,long_lake,Sutton Pond,12.5,one outflow line,False,0,True,NHD's outflow line,43.95385,-74.60037
+adk_northwest,long_lake,Rock Pond,114.5,one outflow line,False,0,True,NHD's outflow line,43.99273,-74.64949
+adk_northwest,long_lake,unnamed,10.4,one outflow line,False,0,True,NHD's outflow line,43.98173,-74.56739
+adk_northwest,long_lake,Bottle Pond,21.4,one outflow line,False,1063,True,NHD's outflow line,43.95926,-74.6032
+adk_northwest,long_lake,Flatfish Pond,35.1,one outflow line,False,0,True,NHD's outflow line,43.9835,-74.58284
+adk_northwest,long_lake,Sand Pond,12.0,one outflow line,False,10,True,NHD's outflow line,44.00802,-74.54225
+adk_northwest,long_lake,Third Pond,15.6,one outflow line,False,10,True,NHD's outflow line,44.0705,-74.38879
+adk_northwest,long_lake,Lower Moose Pond,8.5,one outflow line,False,0,True,NHD's outflow line,44.07694,-74.41408
+adk_northwest,long_lake,Second Pond,16.5,one outflow line,False,0,True,NHD's outflow line,44.07933,-74.37309
+adk_northwest,long_lake,Upper Moose Pond,16.0,one outflow line,False,10,True,NHD's outflow line,44.07323,-74.41062
+adk_northwest,long_lake,Long Pond,47.5,one outflow line,False,10,True,NHD's outflow line,44.08498,-74.70153
+adk_northwest,long_lake,Lows Lake,10.8,one outflow line,False,0,True,NHD's outflow line,44.10984,-74.67092
+adk_northwest,long_lake,Center Pond,8.3,one outflow line,False,0,True,NHD's outflow line,44.16151,-74.70115
+adk_northwest,long_lake,Lake Marian,94.6,one outflow line,False,10,True,NHD's outflow line,44.11619,-74.72337
+adk_northwest,long_lake,Panther Pond,13.9,one outflow line,False,10,True,NHD's outflow line,44.13398,-74.71004
+adk_northwest,long_lake,Hornet Ponds,19.6,one outflow line,False,10,True,NHD's outflow line,44.09791,-74.72271
+adk_northwest,long_lake,unnamed,9.5,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.15679,-74.31524
+adk_northwest,long_lake,unnamed,14.1,one outflow line,False,10,True,NHD's outflow line,44.18288,-74.32683
+adk_northwest,long_lake,Rock Pond,10.8,one outflow line,False,0,True,NHD's outflow line,44.19091,-74.30133
+adk_northwest,long_lake,Gull Pond,119.2,one outflow line,False,10,True,NHD's outflow line,44.21636,-74.52311
+adk_northwest,long_lake,Town Line Pond,17.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.23057,-74.67037
+adk_northwest,long_lake,Hitchins Pond,107.4,one outflow line,False,30,True,NHD's outflow line,44.11483,-74.62615
+adk_northwest,long_lake,Little Trout Pond,20.0,one outflow line,False,20,True,NHD's outflow line,44.09807,-74.64912
+adk_northwest,long_lake,Trout Pond,63.3,one outflow line,False,28,True,NHD's outflow line,44.08855,-74.6578
+adk_northwest,long_lake,High Pond,16.2,one outflow line,False,0,True,NHD's outflow line,44.08683,-74.65506
+adk_northwest,long_lake,East Charley Pond,9.9,one outflow line,False,0,True,NHD's outflow line,44.0446,-74.68426
+adk_northwest,long_lake,Charley Pond,42.8,one outflow line,False,0,True,NHD's outflow line,44.02974,-74.68222
+adk_northwest,long_lake,Minnow Pond,44.7,nearest the terrain's cell,False,0,True,"NHD's outflow line, the nearest of 2",43.87684,-74.44218
+adk_northwest,long_lake,Mud Pond,38.7,one outflow line,False,0,True,NHD's outflow line,43.89772,-74.44012
+adk_northwest,long_lake,Salmon Pond,36.1,one outflow line,False,0,True,NHD's outflow line,43.9073,-74.37776
+adk_northwest,long_lake,South Pond,174.6,one outflow line,False,22,True,NHD's outflow line,43.9257,-74.45493
+adk_northwest,long_lake,Lower Pond,54.0,one outflow line,False,0,True,NHD's outflow line,43.85866,-74.56778
+adk_northwest,long_lake,Upper Pond,59.0,one outflow line,False,10,True,NHD's outflow line,43.86471,-74.55094
+adk_northwest,long_lake,Grass Pond,11.6,one outflow line,False,10,True,NHD's outflow line,43.87318,-74.57564
+adk_northwest,long_lake,Eagle Lake,73.0,one outflow line,False,0,True,NHD's outflow line,43.83926,-74.49378
+adk_northwest,long_lake,Utowana Lake,126.6,one outflow line,False,14,True,NHD's outflow line,43.8347,-74.54345
+adk_northwest,long_lake,Blue Mountain Lake,509.1,one outflow line,False,0,True,NHD's outflow line,43.85248,-74.46953
+adk_northwest,long_lake,unnamed,8.6,one outflow line,False,45,True,NHD's outflow line,44.1013,-74.7102
+adk_northwest,long_lake,Little Charley Pond,10.8,one outflow line,False,0,True,NHD's outflow line,44.03609,-74.69866
+adk_northwest,long_lake,unnamed,9.2,one outflow line,False,10,True,NHD's outflow line,44.21915,-74.42456
+adk_northwest,long_lake,unnamed,15.0,one outflow line,False,32,True,NHD's outflow line,44.21874,-74.43245
+adk_northwest,long_lake,Antediluvian Pond,9.5,one outflow line,False,32,True,NHD's outflow line,44.00535,-74.62609
+adk_northwest,long_lake,Bum Pond,15.6,nearest the terrain's cell,False,0,True,"NHD's outflow line, the nearest of 2; the terrain's way on leaves NHD's line",44.00108,-74.67289
+adk_northwest,long_lake,Doctors Pond,11.6,one outflow line,False,0,True,NHD's outflow line,44.00717,-74.60512
+adk_northwest,long_lake,Little Tupper Lake,925.2,one outflow line,False,0,True,NHD's outflow line,44.05411,-74.56411
+adk_northwest,long_lake,Stony Pond,46.1,one outflow line,False,10,True,NHD's outflow line,44.0252,-74.58654
+adk_northwest,long_lake,Bettner Ponds,29.5,one outflow line,False,0,True,NHD's outflow line,44.03605,-74.65336
+adk_northwest,long_lake,Slim Pond,99.1,one outflow line,False,20,True,NHD's outflow line,44.00316,-74.50075
+adk_northwest,long_lake,Horseshoe Lake,160.9,one outflow line,False,28,True,NHD's outflow line,44.12961,-74.63018
+adk_northwest,long_lake,Eagle Crag Lake,62.3,one outflow line,False,0,True,NHD's outflow line,44.18797,-74.61005
+adk_northwest,long_lake,Mount Arab Lake,49.9,one outflow line,False,10,True,NHD's outflow line,44.19423,-74.59599
+adk_northwest,long_lake,Bridge Brook Pond,74.0,one outflow line,False,0,True,NHD's outflow line,44.16244,-74.56945
+adk_northwest,long_lake,Black Pond,8.1,one outflow line,False,14,True,NHD's outflow line,44.1516,-74.58528
+adk_northwest,long_lake,unnamed,194.9,one outflow line,False,0,True,NHD's outflow line,44.23337,-74.56455
+adk_northwest,long_lake,unnamed,8.2,one outflow line,False,0,True,NHD's outflow line,44.13588,-74.29673
+adk_northwest,long_lake,Duck Lake,127.2,one outflow line,False,0,True,NHD's outflow line,44.1059,-74.44528
+adk_northwest,long_lake,unnamed,8.1,one outflow line,False,41,True,NHD's outflow line,44.10943,-74.48661
+adk_northwest,long_lake,Lake Madeleine,127.2,one outflow line,False,20,True,NHD's outflow line,44.13264,-74.48266
+adk_northwest,long_lake,Follensby Pond,292.3,one outflow line,False,41,True,NHD's outflow line,44.19567,-74.37686
+adk_northwest,long_lake,Simon Pond,315.4,NHD's name,False,14,True,"NHD's outflow line, the named one of 2",44.19867,-74.47157
+adk_northwest,long_lake,Tupper Lake Reservoir,10.4,one outflow line,False,10,True,NHD's outflow line,44.18597,-74.46955
+adk_northwest,long_lake,unnamed,94.9,one outflow line,False,106,True,NHD's outflow line,44.19228,-74.38128
+adk_northwest,long_lake,Heavens Lake,9.9,one outflow line,False,0,True,NHD's outflow line,44.13023,-74.42993
+adk_northwest,long_lake,unnamed,58.9,one outflow line,False,0,True,NHD's outflow line,44.16152,-74.44126
+adk_northwest,long_lake,unnamed,29.5,one outflow line,False,0,True,NHD's outflow line,44.21225,-74.37882
+adk_northwest,long_lake,Grass Pond,1135.3,NHDPlus's line,False,32,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",44.10195,-74.68471
+adk_northwest,long_lake,High Pond,19.8,one outflow line,False,20,True,NHD's outflow line,43.92347,-74.61515
+adk_northwest,long_lake,Brandreth Lake,357.1,one outflow line,False,942,True,NHD's outflow line,43.90975,-74.69208
+adk_northwest,long_lake,McRorie Lake,162.4,one outflow line,False,0,True,NHD's outflow line,44.02252,-74.42385
+adk_northwest,long_lake,Mohegan Lake,52.4,one outflow line,False,10,True,NHD's outflow line,44.04688,-74.47205
+adk_northwest,long_lake,First Pond,24.7,one outflow line,False,22,True,NHD's outflow line,44.07985,-74.3536
+adk_northwest,long_lake,Handsome Pond,62.0,one outflow line,False,0,True,NHD's outflow line,44.06534,-74.4534
+adk_northwest,long_lake,Burntbridge Pond,23.4,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,44.20819,-74.71819
+adk_northwest,long_lake,Forked Lake,361.4,one outflow line,False,14,True,NHD's outflow line,43.90594,-74.52634
+adk_northwest,long_lake,Little Forked Lake,250.3,one outflow line,False,164,True,NHD's outflow line,43.89979,-74.5894
+adk_northwest,long_lake,Plumley Pond,127.5,one outflow line,False,10,True,NHD's outflow line,43.91271,-74.57735
+adk_northwest,long_lake,Cary Pond,18.8,one outflow line,False,28,True,NHD's outflow line,43.94806,-74.59218
+adk_northwest,long_lake,Pear Pond,9.1,one outflow line,False,10,True,NHD's outflow line,43.95226,-74.60898
+adk_northwest,long_lake,Moose Pond,99.4,one outflow line,False,20,True,NHD's outflow line,43.94914,-74.567
+adk_northwest,long_lake,New Pond,23.0,one outflow line,False,0,True,NHD's outflow line,43.94168,-74.62163
+adk_northwest,long_lake,Pelcher Pond,18.2,one outflow line,False,10,True,NHD's outflow line,43.82419,-74.71851
+adk_northwest,long_lake,Upper Pond,21.1,one outflow line,False,10,True,NHD's outflow line,43.80211,-74.70929
+adk_northwest,long_lake,Lower Pond,63.9,one outflow line,False,32,True,NHD's outflow line,43.80434,-74.70082
+adk_northwest,long_lake,Cranberry Pond,11.6,one outflow line,False,14,True,NHD's outflow line,43.84089,-74.6984
+adk_northwest,long_lake,Raquette Lake,2173.8,one outflow line,False,9087,True,NHD's outflow line,43.80713,-74.61005
+adk_northwest,long_lake,unnamed,12.0,one outflow line,False,20,True,NHD's outflow line,44.05206,-74.71231
+adk_northwest,long_lake,Long Lake,1685.4,one outflow line,False,202,True,NHD's outflow line,44.08686,-74.31955
+adk_northwest,long_lake,Park Lake,15.2,one outflow line,False,30,True,NHD's outflow line,43.97255,-74.42471
+adk_northwest,long_lake,Lake Eaton,232.2,one outflow line,False,10,True,NHD's outflow line,43.9779,-74.45009
+adk_northwest,long_lake,Mud Pond,25.8,one outflow line,False,0,True,NHD's outflow line,44.01192,-74.42932
+adk_northwest,long_lake,Grampus Lake,103.8,one outflow line,False,22,True,NHD's outflow line,44.02316,-74.48411
+adk_northwest,long_lake,Stony Creek Ponds,77.6,one outflow line,False,20,True,NHD's outflow line,44.21206,-74.31373
+adk_northwest,long_lake,Round Lake,304.7,NHD's name,False,132,True,"NHD's outflow line, the named one of 2",44.08695,-74.58261
+adk_northwest,long_lake,Bear Pond,52.3,one outflow line,False,511,True,NHD's outflow line,44.07675,-74.65637
+adk_northwest,long_lake,Loon Pond,41.2,one outflow line,False,67,True,NHD's outflow line,44.06715,-74.63757
+adk_northwest,tupper,Pitchfork Pond,14.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.28442,-74.49925
+adk_northwest,tupper,Wolf Pond,367.9,one outflow line,False,20,True,NHD's outflow line,44.26119,-74.47852
+adk_northwest,tupper,Heavens Pond,17.2,one outflow line,False,10,True,NHD's outflow line,44.30352,-74.46323
+adk_northwest,tupper,Little Wolf Pond,66.1,one outflow line,False,73,True,NHD's outflow line,44.25135,-74.47285
+adk_northwest,tupper,Haymeadow Pond,9.2,one outflow line,False,10,True,NHD's outflow line,44.27321,-74.51087
+adk_northwest,tupper,Lost Pond,11.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.27672,-74.48879
+adk_northwest,tupper,Horseshoe Pond,12.0,one outflow line,False,10,True,NHD's outflow line,44.24643,-74.64511
+adk_northwest,tupper,Massawepie Lake,174.7,one outflow line,False,14,True,NHD's outflow line,44.25009,-74.66563
+adk_northwest,tupper,Long Pond,18.8,one outflow line,False,10,True,NHD's outflow line,44.25567,-74.63591
+adk_northwest,tupper,Catamount Pond,43.6,one outflow line,False,32,True,NHD's outflow line,44.2673,-74.63972
+adk_northwest,tupper,Tooley Pond,19.6,one outflow line,False,10,True,NHD's outflow line,44.26442,-74.92051
+adk_northwest,tupper,Cook Pond,18.2,one outflow line,False,10,True,NHD's outflow line,44.24675,-74.89272
+adk_northwest,tupper,Lead Pond,38.5,one outflow line,False,0,True,NHD's outflow line,44.27809,-74.41898
+adk_northwest,tupper,Chandler Pond,12.5,one outflow line,False,10,True,NHD's outflow line,44.31516,-74.72507
+adk_northwest,tupper,Crooked Lake,23.3,one outflow line,False,41,True,NHD's outflow line,44.34238,-74.73624
+adk_northwest,tupper,Leonard Pond,20.5,one outflow line,False,86,True,NHD's outflow line,44.33391,-74.73364
+adk_northwest,tupper,Grass River Flow,74.7,one outflow line,False,10,True,NHD's outflow line,44.25534,-74.74439
+adk_northwest,tupper,Jocks Pond,17.3,one outflow line,False,10,True,NHD's outflow line,44.28917,-74.66829
+adk_northwest,tupper,Windfall Pond,10.4,one outflow line,False,10,True,NHD's outflow line,44.32929,-74.62818
+adk_northwest,tupper,Sevey Pond,9.0,one outflow line,False,36,True,NHD's outflow line,44.28722,-74.71254
+adk_northwest,tupper,Pleasant Lake,18.3,one outflow line,False,10,True,NHD's outflow line,44.33773,-74.85555
+adk_northwest,tupper,unnamed,16.1,one outflow line,False,10,True,NHD's outflow line,44.29277,-74.83247
+adk_northwest,tupper,Clear Pond,12.3,one outflow line,False,22,True,NHD's outflow line,44.33667,-74.80977
+adk_northwest,tupper,Wolf Pond,8.9,one outflow line,False,10,True,NHD's outflow line,44.30598,-74.81225
+adk_northwest,tupper,Beaver Pond,9.1,one outflow line,False,14,True,NHD's outflow line,44.32963,-74.80001
+adk_northwest,tupper,Sampson Pond,23.8,one outflow line,False,71,True,NHD's outflow line,44.27095,-74.76325
+adk_northwest,tupper,Blue Pond,8.3,one outflow line,False,22,True,NHD's outflow line,44.36554,-74.48111
+adk_northwest,tupper,River Pond,9.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.34337,-74.47629
+adk_northwest,tupper,Willis Pond,28.5,one outflow line,False,10,True,NHD's outflow line,44.34494,-74.50488
+adk_northwest,tupper,Rock Pond,17.1,one outflow line,False,10,True,NHD's outflow line,44.36882,-74.55426
+adk_northwest,tupper,Dry Channel Pond,25.7,one outflow line,False,10,True,NHD's outflow line,44.35015,-74.44411
+adk_northwest,tupper,Windfall Pond,43.4,one outflow line,False,0,True,NHD's outflow line,44.36872,-74.44921
+adk_northwest,tupper,Deer Pond,11.0,one outflow line,False,71,True,NHD's outflow line,44.35282,-74.63581
+adk_northwest,tupper,Jordan Lake,72.3,one outflow line,False,10,True,NHD's outflow line,44.37518,-74.62036
+adk_northwest,tupper,unnamed,27.4,one outflow line,False,735,True,NHD's outflow line,44.25997,-75.18986
+adk_northwest,tupper,Greenfield Pond,11.8,one outflow line,False,121,True,NHD's outflow line,44.26802,-75.07449
+adk_northwest,tupper,Round Pond,11.9,NHDPlus's line,False,58,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",44.26028,-75.06934
+adk_northwest,tupper,Moosehead Pond,25.3,one outflow line,False,10,True,NHD's outflow line,44.24796,-74.95046
+adk_northwest,tupper,Jones Pond,12.1,one outflow line,False,20,True,NHD's outflow line,44.25602,-75.22868
+adk_northwest,tupper,Long Pond,17.5,one outflow line,False,14,True,NHD's outflow line,44.27937,-75.0626
+adk_northwest,tupper,Tracy Pond,11.1,one outflow line,False,14,True,NHD's outflow line,44.32601,-74.94714
+adk_northwest,tupper,unnamed,13.4,NHDPlus's line,False,10,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",44.294,-75.12529
+adk_northwest,tupper,Parmeter Pond,9.1,one outflow line,False,14,True,NHD's outflow line,44.35898,-74.98927
+adk_northwest,tupper,Pine Marsh,10.2,one outflow line,False,50,True,NHD's outflow line,44.35168,-75.01386
+adk_northwest,tupper,Deer Pond,47.1,one outflow line,False,63,True,NHD's outflow line,44.27622,-74.38729
+adk_northwest,tupper,unnamed,18.3,one outflow line,False,22,True,NHD's outflow line,44.30007,-74.38566
+adk_northwest,tupper,Deer Pond,21.9,one outflow line,False,14,True,NHD's outflow line,44.30064,-74.42602
+adk_northwest,tupper,Whey Pond,47.4,one outflow line,False,10,True,NHD's outflow line,44.30419,-74.39916
+adk_northwest,tupper,Black Pond,10.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.3051,-74.38348
+adk_northwest,tupper,Rollins Pond,183.3,one outflow line,False,10,True,NHD's outflow line,44.32315,-74.41038
+adk_northwest,tupper,Copperas Pond,10.0,one outflow line,False,0,True,NHD's outflow line,44.31576,-74.37497
+adk_northwest,tupper,Rollins Pond,41.3,one outflow line,False,28,True,NHD's outflow line,44.32136,-74.37716
+adk_northwest,tupper,Floodwood Pond,94.3,one outflow line,False,0,True,NHD's outflow line,44.32799,-74.38776
+adk_northwest,tupper,Rock Pond,23.6,one outflow line,False,10,True,NHD's outflow line,44.32872,-74.4255
+adk_northwest,tupper,Middle Pond,27.3,one outflow line,False,0,True,NHD's outflow line,44.33726,-74.37185
+adk_northwest,tupper,East Pine Pond,27.0,one outflow line,False,32,True,NHD's outflow line,44.33964,-74.41222
+adk_northwest,tupper,Ledge Pond,18.3,one outflow line,False,0,True,NHD's outflow line,44.35986,-74.42331
+adk_northwest,tupper,Slang Pond,21.2,one outflow line,False,1007,True,NHD's outflow line,44.36319,-74.37195
+adk_northwest,tupper,Long Pond,139.2,one outflow line,False,10,True,NHD's outflow line,44.34768,-74.40097
+adk_northwest,tupper,West Pine Pond,27.2,one outflow line,False,10,True,NHD's outflow line,44.33754,-74.42391
+adk_northwest,st_regis,Long Pond,13.5,one outflow line,False,10,True,NHD's outflow line,44.38388,-74.8292
+adk_northwest,st_regis,Blake Falls Reservoir,255.3,one outflow line,False,32,True,NHD's outflow line,44.50247,-74.74596
+adk_northwest,st_regis,Barney Pond,16.9,one outflow line,False,14,True,NHD's outflow line,44.46622,-74.80822
+adk_northwest,st_regis,Rainbow Falls Reservoir,269.3,one outflow line,False,112,True,NHD's outflow line,44.51684,-74.81988
+adk_northwest,st_regis,South Colton Reservoir,91.7,one outflow line,False,78,True,NHD's outflow line,44.51683,-74.88065
+adk_northwest,st_regis,Five Falls Reservoir,57.6,one outflow line,False,10,True,NHD's outflow line,44.52983,-74.84325
+adk_northwest,st_regis,Long Pond,9.5,one outflow line,False,28,True,NHD's outflow line,44.53889,-74.76883
+adk_northwest,st_regis,Sterling Pond,26.9,one outflow line,False,0,True,NHD's outflow line,44.54457,-74.73016
+adk_northwest,st_regis,Horton Ponds,9.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.51461,-74.83738
+adk_northwest,st_regis,Clear Pond,14.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.55843,-74.77216
+adk_northwest,st_regis,Joe Indian Pond,144.5,one outflow line,False,10,True,NHD's outflow line,44.48238,-74.74089
+adk_northwest,st_regis,unnamed,19.3,one outflow line,False,63,True,NHD's outflow line,44.44533,-74.80389
+adk_northwest,st_regis,Church Pond,8.6,one outflow line,False,10,True,NHD's outflow line,44.38152,-74.77008
+adk_northwest,st_regis,Stark Falls Reservoir,260.7,one outflow line,True,453,True,"NHD's outflow line, a pipe or ditch",44.45057,-74.76617
+adk_northwest,st_regis,Carry Falls Reservoir,1243.2,one outflow line,False,30,True,NHD's outflow line,44.43522,-74.747
+adk_northwest,st_regis,Weller Pond,30.5,one outflow line,False,10,True,NHD's outflow line,44.53292,-74.59731
+adk_northwest,st_regis,Kildare Pond,11.7,one outflow line,False,10,True,NHD's outflow line,44.44167,-74.69595
+adk_northwest,st_regis,McCavanaugh Pond,12.1,one outflow line,False,10,True,NHD's outflow line,44.54783,-74.53917
+adk_northwest,st_regis,Wolf Pond,15.2,one outflow line,False,14,True,NHD's outflow line,44.45541,-74.52821
+adk_northwest,st_regis,McDonald Pond,31.8,one outflow line,False,0,True,NHD's outflow line,44.3976,-74.52415
+adk_northwest,st_regis,Train Pond,13.1,one outflow line,False,10,True,NHD's outflow line,44.52827,-74.58048
+adk_northwest,st_regis,Potter Pond,14.5,one outflow line,False,10,True,NHD's outflow line,44.38107,-74.5563
+adk_northwest,st_regis,unnamed,44.7,one outflow line,False,10,True,NHD's outflow line,44.48004,-74.4762
+adk_northwest,st_regis,Benz Pond,10.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.51593,-74.45185
+adk_northwest,st_regis,Long Pond,22.3,one outflow line,False,10,True,NHD's outflow line,44.45346,-74.47179
+adk_northwest,st_regis,Cranberry Pond,19.3,one outflow line,False,10,True,NHD's outflow line,44.41333,-74.45833
+adk_northwest,st_regis,Amber Lake,43.9,one outflow line,False,0,True,NHD's outflow line,44.39924,-74.62636
+adk_northwest,st_regis,Clear Lake,12.2,one outflow line,False,30,True,NHD's outflow line,44.43514,-75.02419
+adk_northwest,st_regis,Ormsbee Pond,9.0,one outflow line,False,0,True,NHD's outflow line,44.39347,-74.86483
+adk_northwest,st_regis,Cranberry Pond,8.3,one outflow line,False,51,True,NHD's outflow line,44.4454,-74.98297
+adk_northwest,st_regis,Boyd Pond,35.5,one outflow line,False,10,True,NHD's outflow line,44.39279,-75.08946
+adk_northwest,st_regis,unnamed,11.3,one outflow line,False,0,True,NHD's outflow line,44.46656,-75.01641
+adk_northwest,st_regis,L Pond,13.3,one outflow line,False,10,True,NHD's outflow line,44.45873,-74.96776
+adk_northwest,st_regis,Green Pond,12.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.52588,-74.94733
+adk_northwest,st_regis,Warm Brook Flow,237.1,one outflow line,False,20,True,NHD's outflow line,44.53055,-74.93135
+adk_northwest,st_regis,Arbuckle Pond,16.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.51731,-74.91928
+adk_northwest,lake_ozonia,Lake Ozonia,165.3,one outflow line,False,10,True,NHD's outflow line,44.57863,-74.58981
+adk_northwest,lake_ozonia,Dexter Lake,52.9,one outflow line,False,14,True,NHD's outflow line,44.61185,-74.54282
+adk_northwest,lake_ozonia,Long Pond,14.8,one outflow line,False,10,True,NHD's outflow line,44.65667,-74.49782
+adk_northwest,lake_ozonia,unnamed,9.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.7237,-74.88086
+adk_southeast,indian_lake,Dippikill Pond,10.2,one outflow line,False,89,True,NHD's outflow line,43.56852,-73.8754
+adk_southeast,indian_lake,Daggett Pond,23.3,one outflow line,False,32,True,NHD's outflow line,43.5351,-73.84731
+adk_southeast,indian_lake,Palmer Pond,13.1,one outflow line,False,20,True,NHD's outflow line,43.64727,-73.87182
+adk_southeast,indian_lake,unnamed,20.6,one outflow line,False,10,True,NHD's outflow line,43.66899,-73.86534
+adk_southeast,indian_lake,Loon Lake,212.3,one outflow line,False,14,True,NHD's outflow line,43.66179,-73.83893
+adk_southeast,indian_lake,unnamed,10.2,one outflow line,False,22,True,NHD's outflow line,43.70972,-73.85973
+adk_southeast,indian_lake,Friends Lake,181.1,one outflow line,False,10,True,NHD's outflow line,43.63947,-73.83998
+adk_southeast,indian_lake,Mountain Spring Lake,22.0,one outflow line,False,30,True,NHD's outflow line,43.71022,-73.84607
+adk_southeast,indian_lake,Hidden Lake,12.2,one outflow line,False,0,True,NHD's outflow line,43.73707,-73.87498
+adk_southeast,indian_lake,Fish Ponds,9.0,one outflow line,False,0,True,NHD's outflow line,43.53768,-74.07153
+adk_southeast,indian_lake,unnamed,9.1,one outflow line,False,0,True,NHD's outflow line,43.54482,-74.06362
+adk_southeast,indian_lake,Garnet Lake,126.3,one outflow line,False,10,True,NHD's outflow line,43.53827,-74.0131
+adk_southeast,indian_lake,Lizard Pond,9.0,one outflow line,False,0,True,NHD's outflow line,43.51187,-74.04248
+adk_southeast,indian_lake,Little Pond,12.6,one outflow line,False,10,True,NHD's outflow line,43.52088,-73.9603
+adk_southeast,indian_lake,Elm Lake,27.2,one outflow line,False,10,True,NHD's outflow line,43.53628,-74.33518
+adk_southeast,indian_lake,Whitaker Lake,60.3,one outflow line,False,20,True,NHD's outflow line,43.56753,-74.38561
+adk_southeast,indian_lake,Hayes Flow,8.5,one outflow line,False,14,True,NHD's outflow line,43.52708,-74.2322
+adk_southeast,indian_lake,unnamed,12.4,one outflow line,False,64,True,NHD's outflow line,43.62016,-74.18962
+adk_southeast,indian_lake,Siamese Ponds,40.4,one outflow line,False,0,True,NHD's outflow line,43.61631,-74.18074
+adk_southeast,indian_lake,Cod Pond,19.9,one outflow line,False,14,True,NHD's outflow line,43.51768,-74.1384
+adk_southeast,indian_lake,Kibby Pond,16.2,one outflow line,False,0,True,NHD's outflow line,43.57001,-74.08292
+adk_southeast,indian_lake,Windover Lake,35.1,one outflow line,False,14,True,NHD's outflow line,43.63205,-74.00822
+adk_southeast,indian_lake,Chatiemac Lake,12.8,one outflow line,False,14,True,NHD's outflow line,43.64571,-74.04656
+adk_southeast,indian_lake,Austin Pond,12.1,one outflow line,False,10,True,NHD's outflow line,43.67371,-73.96374
+adk_southeast,indian_lake,Oven Mountain Pond,9.5,one outflow line,False,28,True,NHD's outflow line,43.64622,-73.98058
+adk_southeast,indian_lake,The Vly,10.0,one outflow line,False,10,True,NHD's outflow line,43.68808,-74.07517
+adk_southeast,indian_lake,Thirteenth Lake,131.5,one outflow line,False,10,True,NHD's outflow line,43.71732,-74.11804
+adk_southeast,indian_lake,Second Pond,18.1,one outflow line,False,10,True,NHD's outflow line,43.65935,-74.08553
+adk_southeast,indian_lake,Twin Ponds,12.0,one outflow line,False,0,True,NHD's outflow line,43.67133,-74.16871
+adk_southeast,indian_lake,Puffer Pond,16.3,one outflow line,False,0,True,NHD's outflow line,43.67373,-74.20167
+adk_southeast,indian_lake,Hour Pond,16.3,one outflow line,False,20,True,NHD's outflow line,43.69765,-74.15966
+adk_southeast,indian_lake,Peaked Mountain Pond,8.2,one outflow line,False,10,True,NHD's outflow line,43.72308,-74.15285
+adk_southeast,indian_lake,unnamed,26.2,one outflow line,False,0,True,NHD's outflow line,43.7585,-74.17036
+adk_southeast,indian_lake,John Pond,10.2,one outflow line,False,0,True,NHD's outflow line,43.72775,-74.2017
+adk_southeast,indian_lake,Kings Flow,84.9,one outflow line,False,10,True,NHD's outflow line,43.69042,-74.23272
+adk_southeast,indian_lake,Round Pond,56.5,one outflow line,False,10,True,NHD's outflow line,43.67655,-74.24617
+adk_southeast,indian_lake,Crotched Pond,26.6,one outflow line,False,10,True,NHD's outflow line,43.68353,-74.29646
+adk_southeast,indian_lake,Adirondack Lake,78.0,one outflow line,False,10,True,NHD's outflow line,43.78133,-74.25567
+adk_southeast,indian_lake,Dug Mountain Ponds,9.7,one outflow line,False,10,True,NHD's outflow line,43.5938,-74.36403
+adk_southeast,indian_lake,Indian Lake,1740.5,one outflow line,False,28,True,NHD's outflow line,43.7557,-74.27561
+adk_southeast,indian_lake,Rock Pond,17.6,one outflow line,False,32,True,NHD's outflow line,43.62872,-74.29933
+adk_southeast,indian_lake,Long Pond,17.0,one outflow line,False,0,True,NHD's outflow line,43.63568,-74.29044
+adk_southeast,indian_lake,John Mack Pond,12.1,one outflow line,False,14,True,NHD's outflow line,43.65283,-74.31108
+adk_southeast,indian_lake,unnamed,37.0,one outflow line,False,14,True,NHD's outflow line,43.5993,-74.30438
+adk_southeast,indian_lake,Owl Pond,27.8,NHDPlus's line,False,0,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",43.6049,-74.32129
+adk_southeast,indian_lake,Fuller Pond,8.6,one outflow line,False,100,True,NHD's outflow line,43.74185,-74.00268
+adk_southeast,indian_lake,Long Pond,8.4,one outflow line,False,10,True,NHD's outflow line,43.74285,-74.01347
+adk_southeast,indian_lake,unnamed,8.0,one outflow line,False,10,True,NHD's outflow line,43.77204,-73.96491
+adk_southeast,indian_lake,Clear Pond,11.5,one outflow line,False,10,True,NHD's outflow line,43.74852,-74.0135
+adk_southeast,indian_lake,Bird Pond,8.8,one outflow line,False,0,True,NHD's outflow line,43.72199,-73.93622
+adk_southeast,indian_lake,unnamed,47.4,one outflow line,False,0,True,NHD's outflow line,43.77131,-74.21193
+adk_southeast,indian_lake,Cedar River Flow,201.8,one outflow line,False,0,True,NHD's outflow line,43.72608,-74.47226
+adk_southeast,indian_lake,Wakely Pond,16.5,one outflow line,False,0,True,NHD's outflow line,43.73802,-74.46409
+adk_southeast,indian_lake,Mason Lake,42.2,one outflow line,False,14,True,NHD's outflow line,43.59017,-74.42799
+adk_southeast,indian_lake,Lewey Lake,150.8,one outflow line,False,10,True,NHD's outflow line,43.65229,-74.38995
+adk_southeast,indian_lake,Mud Lake,8.1,one outflow line,False,0,True,NHD's outflow line,43.51625,-74.4272
+adk_southeast,minerva,Oliver Pond,18.0,one outflow line,False,0,True,NHD's outflow line,43.82682,-73.9111
+adk_southeast,minerva,Muller Pond,18.0,one outflow line,False,10,True,NHD's outflow line,43.83388,-73.88672
+adk_southeast,minerva,Bigsby Pond,19.3,one outflow line,False,10,True,NHD's outflow line,43.83673,-73.90234
+adk_southeast,minerva,Bailey Pond,13.4,one outflow line,False,0,True,NHD's outflow line,43.87518,-73.90188
+adk_southeast,minerva,unnamed,214.5,one outflow line,False,10,True,NHD's outflow line,43.79763,-74.22936
+adk_southeast,minerva,Ross Pond,8.5,one outflow line,False,422,True,NHD's outflow line,43.7958,-74.14933
+adk_southeast,minerva,O K Slip Pond,14.8,one outflow line,False,14,True,NHD's outflow line,43.80027,-74.12142
+adk_southeast,minerva,unnamed,12.6,one outflow line,False,0,True,NHD's outflow line,43.79642,-73.99233
+adk_southeast,minerva,Bullhead Pond,9.9,one outflow line,False,10,True,NHD's outflow line,43.82473,-74.02804
+adk_southeast,minerva,Balfour Lake,37.5,one outflow line,False,10,True,NHD's outflow line,43.86398,-74.0065
+adk_southeast,minerva,Huntley Pond,15.4,one outflow line,False,22,True,NHD's outflow line,43.8319,-74.12395
+adk_southeast,minerva,Mink Pond,55.6,one outflow line,False,20,True,NHD's outflow line,43.84276,-74.13187
+adk_southeast,minerva,Thumb Pond,18.6,one outflow line,False,335,True,NHD's outflow line,43.84997,-74.12057
+adk_southeast,minerva,Nate Pond,8.3,one outflow line,False,0,True,NHD's outflow line,43.85894,-74.09369
+adk_southeast,minerva,Moose Pond,20.3,one outflow line,False,0,True,NHD's outflow line,43.87546,-74.08821
+adk_southeast,minerva,Clear Pond,10.0,one outflow line,False,0,True,NHD's outflow line,43.83522,-74.22291
+adk_southeast,minerva,Mud Pond,10.7,one outflow line,False,0,True,NHD's outflow line,43.84571,-74.23011
+adk_southeast,minerva,Pine Lake,36.2,one outflow line,False,0,True,NHD's outflow line,43.844,-74.257
+adk_southeast,minerva,Corner Pond,8.8,one outflow line,False,22,True,NHD's outflow line,43.83125,-74.23515
+adk_southeast,minerva,Beaver Ponds,13.6,one outflow line,False,0,True,NHD's outflow line,43.85212,-74.15587
+adk_southeast,minerva,Split Rock Pond,41.7,one outflow line,False,10,True,NHD's outflow line,43.86024,-74.1575
+adk_southeast,minerva,Frank Pond,10.5,one outflow line,False,10,True,NHD's outflow line,43.85981,-74.16025
+adk_southeast,minerva,Goodnow Flowage,178.6,one outflow line,False,20,True,NHD's outflow line,43.91456,-74.18625
+adk_southeast,minerva,Zack Pond,36.5,one outflow line,False,10,True,NHD's outflow line,43.92935,-74.18942
+adk_southeast,minerva,Otter Pond,11.1,one outflow line,False,14,True,NHD's outflow line,43.91391,-74.2093
+adk_southeast,minerva,Cheney Pond,31.3,one outflow line,False,0,True,NHD's outflow line,43.93349,-73.96635
+adk_southeast,minerva,Hewitt Pond,68.5,NHD's name,False,30,True,"NHD's outflow line, the named one of 2",43.86656,-73.97248
+adk_southeast,minerva,Stony Pond,26.4,one outflow line,False,10,True,NHD's outflow line,43.83885,-73.98502
+adk_southeast,minerva,unnamed,13.6,one outflow line,False,10,True,NHD's outflow line,43.82244,-73.98281
+adk_southeast,minerva,Minerva Lake,31.9,one outflow line,False,0,True,NHD's outflow line,43.79162,-73.96966
+adk_southeast,minerva,unnamed,13.6,one outflow line,False,0,True,NHD's outflow line,43.79203,-73.95511
+adk_southeast,minerva,Big Bad Luck Pond,46.8,one outflow line,False,14,True,NHD's outflow line,43.79588,-74.15977
+adk_southeast,minerva,Lake Francis,42.6,one outflow line,False,10,True,NHD's outflow line,43.79198,-74.20681
+adk_southeast,minerva,Whortleberry Pond,8.1,one outflow line,False,0,True,NHD's outflow line,43.80165,-74.14863
+adk_southeast,minerva,Cranberry Pond,11.8,one outflow line,False,669,True,NHD's outflow line,43.80436,-74.1742
+adk_southeast,minerva,unnamed,22.6,one outflow line,False,0,True,NHD's outflow line,43.86051,-74.27522
+adk_southeast,minerva,Grassy Pond,14.7,one outflow line,False,10,True,NHD's outflow line,43.86663,-74.27514
+adk_southeast,minerva,Essex Chain Lakes,115.3,one outflow line,False,0,True,NHD's outflow line,43.86747,-74.26654
+adk_southeast,minerva,Jackson Pond,16.3,one outflow line,False,20,True,NHD's outflow line,43.87334,-74.24183
+adk_southeast,minerva,Deer Pond,20.9,one outflow line,False,22,True,NHD's outflow line,43.88081,-74.2675
+adk_southeast,minerva,Essex Chain Lakes,10.6,one outflow line,False,180,True,NHD's outflow line,43.8835,-74.23971
+adk_southeast,minerva,Essex Chain Lakes,28.4,one outflow line,False,14,True,NHD's outflow line,43.88699,-74.2358
+adk_southeast,minerva,Essex Chain Lakes,8.4,one outflow line,False,0,True,NHD's outflow line,43.88443,-74.21729
+adk_southeast,minerva,Sixth Lake,18.1,one outflow line,False,0,True,NHD's outflow line,43.8903,-74.21983
+adk_southeast,minerva,Mud Pond,11.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.88124,-74.25131
+adk_southeast,minerva,Unknown Pond,15.1,one outflow line,False,10,True,NHD's outflow line,43.81965,-74.27932
+adk_southeast,siamese,Bear Pond,17.7,one outflow line,False,10,True,NHD's outflow line,43.49851,-73.91789
+adk_southeast,siamese,Round Pond,32.2,one outflow line,False,10,True,NHD's outflow line,43.50338,-74.00823
+adk_southeast,siamese,Livingston Lake,74.7,"left at the terrain's cell: NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line",False,0,False,"NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line",43.38237,-74.02983
+adk_southeast,siamese,Middle Flow,13.5,NHDPlus's line,False,10,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",43.38421,-74.02313
+adk_southeast,siamese,unnamed,19.5,one outflow line,False,0,True,NHD's outflow line,43.3572,-74.21003
+adk_southeast,siamese,Willis Lake,14.9,one outflow line,False,50,True,NHD's outflow line,43.36975,-74.24295
+adk_southeast,siamese,Wilcox Lake,59.0,one outflow line,False,104,True,NHD's outflow line,43.39977,-74.15662
+adk_southeast,siamese,Harrisburg Lake,75.3,one outflow line,False,32,True,NHD's outflow line,43.40053,-74.09215
+adk_southeast,siamese,Tenant Lake,30.9,one outflow line,False,14,True,NHD's outflow line,43.35502,-74.09789
+adk_southeast,siamese,Lake Algonquin,104.8,one outflow line,False,22,True,NHD's outflow line,43.39015,-74.29196
+adk_southeast,siamese,Lens Lake,21.7,"left at the terrain's cell: NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line",False,0,False,"NHDPlus's line leaves the lake at the cell with the most water, 300 m or more from NHD's detailed outflow line",43.39252,-74.01572
+adk_southeast,siamese,unnamed,8.7,one outflow line,False,22,True,NHD's outflow line,43.40476,-74.01527
+adk_southeast,siamese,Saint John Lake,13.7,one outflow line,False,0,True,NHD's outflow line,43.44541,-74.0633
+adk_southeast,siamese,unnamed,9.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.46165,-73.92312
+adk_southeast,siamese,unnamed,8.7,one outflow line,False,10,True,NHD's outflow line,43.47493,-73.89989
+adk_southeast,siamese,New Lake,9.8,one outflow line,False,14,True,NHD's outflow line,43.42401,-74.14801
+adk_southeast,sacandaga,Loughberry Lake,31.0,one outflow line,False,67,True,NHD's outflow line,43.0925,-73.76669
+adk_southeast,sacandaga,Lake Bonita,17.3,one outflow line,False,41,True,NHD's outflow line,43.21129,-73.7686
+adk_southeast,sacandaga,unnamed,12.2,one outflow line,False,425,True,NHD's outflow line,43.23535,-73.71282
+adk_southeast,sacandaga,unnamed,8.6,one outflow line,False,0,True,NHD's outflow line,43.23973,-73.70965
+adk_southeast,sacandaga,unnamed,13.1,one outflow line,False,10,True,NHD's outflow line,43.19418,-73.82839
+adk_southeast,sacandaga,Woodland Lake,29.6,one outflow line,False,28,True,NHD's outflow line,43.21916,-73.8321
+adk_southeast,sacandaga,Lake Lonely,58.5,one outflow line,False,1188,True,NHD's outflow line,43.06013,-73.73798
+adk_southeast,sacandaga,Jenny Lake,36.1,one outflow line,False,14,True,NHD's outflow line,43.26432,-73.91872
+adk_southeast,sacandaga,Hunt Lake,55.5,one outflow line,False,0,True,NHD's outflow line,43.25959,-73.914
+adk_southeast,sacandaga,Great Sacandaga Lake,190.1,one outflow line,False,20,True,NHD's outflow line,43.29669,-73.8856
+adk_southeast,sacandaga,Keenan Reservoir,18.4,NHD's name,False,0,True,"NHD's outflow line, the named one of 2",43.32597,-73.7563
+adk_southeast,sacandaga,Second Lake,11.3,one outflow line,False,14,True,NHD's outflow line,43.3397,-73.8293
+adk_southeast,sacandaga,Lake Luzerne,42.0,one outflow line,False,322,True,NHD's outflow line,43.32439,-73.83736
+adk_southeast,sacandaga,Lake Nancy,28.8,one outflow line,False,14,True,NHD's outflow line,43.11386,-74.00975
+adk_southeast,sacandaga,unnamed,8.7,one outflow line,False,71,True,NHD's outflow line,43.22671,-74.17022
+adk_southeast,sacandaga,unnamed,16.6,one outflow line,False,0,True,NHD's outflow line,43.21868,-74.16897
+adk_southeast,sacandaga,Jackson Summit Reservoir,42.9,one outflow line,False,41,True,NHD's outflow line,43.1394,-74.28219
+adk_southeast,sacandaga,Great Sacandaga Lake,8351.3,one outflow line,False,410,True,NHD's outflow line,43.24999,-74.07135
+adk_southeast,sacandaga,Cameron Reservoir,22.7,one outflow line,False,0,True,NHD's outflow line,43.15761,-74.27128
+adk_southeast,sacandaga,unnamed,17.3,one outflow line,False,10,True,NHD's outflow line,43.11748,-74.05431
+adk_southeast,sacandaga,Steele Reservoir,67.7,one outflow line,False,842,True,NHD's outflow line,43.1543,-74.05263
+adk_southeast,sacandaga,Round Lake,22.7,one outflow line,False,14,True,NHD's outflow line,43.14633,-74.01562
+adk_southeast,sacandaga,Ireland Vly,106.3,one outflow line,False,72,True,NHD's outflow line,43.14401,-74.02857
+adk_southeast,sacandaga,Lake Desolation,27.6,one outflow line,False,14,True,NHD's outflow line,43.1326,-73.9701
+adk_southeast,sacandaga,Archer Vly,9.3,one outflow line,False,10,True,NHD's outflow line,43.15544,-73.96652
+adk_southeast,sacandaga,Black Pond,24.6,one outflow line,False,22,True,NHD's outflow line,43.23486,-73.93685
+adk_southeast,sacandaga,Davignon Pond,9.8,one outflow line,False,10,True,NHD's outflow line,43.2642,-73.96456
+adk_southeast,sacandaga,Efner Lake,41.0,one outflow line,False,10,True,NHD's outflow line,43.26867,-73.93109
+adk_southeast,sacandaga,Woodward Lake,42.9,one outflow line,False,0,True,NHD's outflow line,43.23015,-74.1985
+adk_southeast,sacandaga,unnamed,77.9,one outflow line,False,40,True,NHD's outflow line,43.24598,-74.19644
+adk_southeast,sacandaga,unnamed,14.0,one outflow line,False,54,True,NHD's outflow line,43.25855,-74.17866
+adk_southeast,sacandaga,unnamed,8.7,one outflow line,False,20,True,NHD's outflow line,43.29759,-74.07864
+adk_southeast,sacandaga,Great Sacandaga Lake,892.8,one outflow line,False,220,True,NHD's outflow line,43.29495,-73.99966
+adk_southeast,sacandaga,Great Sacandaga Lake,639.6,one outflow line,False,89,True,NHD's outflow line,43.319,-73.92182
+adk_southeast,sacandaga,Bell Brook Pond,28.3,one outflow line,False,22,True,NHD's outflow line,43.33869,-73.93776
+adk_southeast,sacandaga,Sand Lake,21.5,one outflow line,False,0,True,NHD's outflow line,43.33942,-74.07345
+adk_southeast,sacandaga,Rice Pond,9.6,one outflow line,False,10,True,NHD's outflow line,43.30189,-74.10928
+adk_southeast,sacandaga,Bennett Lake,16.8,one outflow line,False,10,True,NHD's outflow line,43.31241,-74.19261
+adk_southeast,sacandaga,Middle Lake,13.7,one outflow line,False,10,True,NHD's outflow line,43.33271,-74.21047
+adk_southeast,sacandaga,unnamed,16.3,one outflow line,False,0,True,NHD's outflow line,43.34669,-74.1043
+adk_southeast,sacandaga,Murphy Lake,15.4,one outflow line,False,10,True,NHD's outflow line,43.34132,-74.21937
+adk_southeast,lake_george,Beaver Pond,15.8,one outflow line,False,22,True,NHD's outflow line,43.50126,-73.72945
+adk_southeast,lake_george,Pack Forest Lake,29.5,one outflow line,False,22,True,NHD's outflow line,43.5522,-73.8112
+adk_southeast,lake_george,Tripp Pond,20.3,one outflow line,False,20,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.60095,-73.79761
+adk_southeast,lake_george,Buttermilk Pond,8.8,nearest the terrain's cell,False,20,True,"NHD's outflow line, the nearest of 2",43.71619,-73.62102
+adk_southeast,lake_george,North Pond,12.2,one outflow line,False,0,True,NHD's outflow line,43.74244,-73.58862
+adk_southeast,lake_george,unnamed,10.9,one outflow line,False,14,True,NHD's outflow line,43.73533,-73.65609
+adk_southeast,lake_george,Swede Pond,15.6,one outflow line,False,0,True,NHD's outflow line,43.73777,-73.5824
+adk_southeast,lake_george,Beaver Pond,20.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.74947,-73.71117
+adk_southeast,lake_george,Chub Pond,9.8,one outflow line,False,28,True,NHD's outflow line,43.75773,-73.65385
+adk_southeast,lake_george,unnamed,11.7,one outflow line,False,10,True,NHD's outflow line,43.78476,-73.67151
+adk_southeast,lake_george,Pharoah Lake,169.7,one outflow line,False,10,True,NHD's outflow line,43.79462,-73.65215
+adk_southeast,lake_george,Springhill Ponds,12.2,one outflow line,False,166,True,NHD's outflow line,43.78716,-73.60062
+adk_southeast,lake_george,Whortleberry Pond,19.6,one outflow line,False,0,True,NHD's outflow line,43.78617,-73.65358
+adk_southeast,lake_george,Crane Pond,65.5,one outflow line,False,0,True,NHD's outflow line,43.85111,-73.66282
+adk_southeast,lake_george,unnamed,12.3,one outflow line,False,10,True,NHD's outflow line,43.85553,-73.64095
+adk_southeast,lake_george,Gooseneck Pond,31.8,one outflow line,False,95,True,NHD's outflow line,43.86744,-73.59837
+adk_southeast,lake_george,Pyramid Lake,69.5,one outflow line,False,10,True,NHD's outflow line,43.87216,-73.6458
+adk_southeast,lake_george,Eagle Lake,171.1,one outflow line,False,10,True,NHD's outflow line,43.87478,-73.61687
+adk_southeast,lake_george,Rock Pond,25.2,one outflow line,False,0,True,NHD's outflow line,43.8516,-73.59874
+adk_southeast,lake_george,Crab Pond,14.6,one outflow line,False,0,True,NHD's outflow line,43.83798,-73.64135
+adk_southeast,lake_george,Crystal Lake,21.1,one outflow line,False,10,True,NHD's outflow line,43.65586,-73.73798
+adk_southeast,lake_george,unnamed,8.4,one outflow line,False,28,True,NHD's outflow line,43.68146,-73.68459
+adk_southeast,lake_george,Lily Pond,22.0,one outflow line,False,0,True,NHD's outflow line,43.70644,-73.67238
+adk_southeast,lake_george,unnamed,10.4,one outflow line,False,36,True,NHD's outflow line,43.68816,-73.76038
+adk_southeast,lake_george,Brant Lake,615.7,one outflow line,False,10,True,NHD's outflow line,43.67637,-73.75231
+adk_southeast,lake_george,Burnt Pond,37.9,one outflow line,False,58,True,NHD's outflow line,43.64357,-73.74171
+adk_southeast,lake_george,Sherman Lake,42.1,one outflow line,False,10,True,NHD's outflow line,43.62423,-73.73554
+adk_southeast,lake_george,Warner Pond,12.3,one outflow line,False,10,True,NHD's outflow line,43.71662,-73.82956
+adk_southeast,lake_george,Eli Pond,10.9,one outflow line,False,0,True,NHD's outflow line,43.74684,-73.82648
+adk_southeast,lake_george,Horseshoe Pond,18.0,one outflow line,False,20,True,NHD's outflow line,43.8335,-73.80476
+adk_southeast,lake_george,Schroon Lake,1721.8,one outflow line,False,10,True,NHD's outflow line,43.72831,-73.81071
+adk_southeast,lake_george,Valentine Pond,39.9,one outflow line,False,63,True,NHD's outflow line,43.71423,-73.773
+adk_southeast,lake_george,Marsh Pond,15.1,one outflow line,False,10,True,NHD's outflow line,43.78483,-73.81642
+adk_southeast,lake_george,Thurman Pond,50.8,one outflow line,False,51,True,NHD's outflow line,43.80115,-73.7931
+adk_southeast,lake_george,Bullet Pond,13.3,one outflow line,False,50,True,NHD's outflow line,43.84492,-73.81138
+adk_southeast,lake_george,Stewart Lake,11.9,one outflow line,False,14,True,NHD's outflow line,43.39595,-73.80895
+adk_southeast,lake_george,Viele Pond,10.7,one outflow line,False,10,True,NHD's outflow line,43.4257,-73.7949
+adk_southeast,lake_george,Echo Lake,10.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.49596,-73.79709
+adk_southeast,lake_george,Kellum Pond,22.0,one outflow line,False,14,True,NHD's outflow line,43.55678,-73.78487
+adk_southeast,lake_george,Forest Lake,9.4,one outflow line,False,0,True,NHD's outflow line,43.56172,-73.76669
+adk_southeast,lake_george,unnamed,21.4,one outflow line,False,10,True,NHD's outflow line,43.81739,-73.72973
+adk_southeast,lake_george,Spectacle Pond,10.5,one outflow line,False,14,True,NHD's outflow line,43.81391,-73.70817
+adk_southeast,lake_george,unnamed,9.3,one outflow line,False,0,True,NHD's outflow line,43.81991,-73.67446
+adk_southeast,lake_george,Harrison Marsh,9.8,one outflow line,False,14,True,NHD's outflow line,43.82438,-73.71068
+adk_southeast,lake_george,Goose Pond,26.9,one outflow line,False,0,True,NHD's outflow line,43.84364,-73.67829
+adk_southeast,lake_george,Alder Pond,12.9,one outflow line,False,28,True,NHD's outflow line,43.84959,-73.67891
+adk_southeast,lake_george,Paradox Lake,378.2,one outflow line,False,72,True,NHD's outflow line,43.87608,-73.72861
+adk_southeast,lake_george,Glidden Marsh,11.0,one outflow line,False,0,True,NHD's outflow line,43.84207,-73.65954
+adk_southeast,lake_george,unnamed,9.8,one outflow line,False,0,True,NHD's outflow line,43.81443,-73.67558
+adk_southeast,lake_george,unnamed,16.2,one outflow line,False,0,True,NHD's outflow line,43.89419,-73.60608
+adk_southeast,lake_george,Flemings Pond,27.2,one outflow line,False,22,True,NHD's outflow line,43.90453,-73.62776
+adk_southeast,lake_george,Knob Pond,27.7,one outflow line,False,0,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.91303,-73.59319
+adk_southeast,lake_george,Fourth Lake,20.5,one outflow line,False,64,True,NHD's outflow line,43.35402,-73.82939
+adk_southeast,lake_george,unnamed,10.6,one outflow line,False,10,True,NHD's outflow line,43.36363,-73.79169
+adk_southeast,lake_george,Lake Vanare,14.4,one outflow line,False,416,True,NHD's outflow line,43.37078,-73.78686
+adk_southeast,lake_george,Johnson Pond,36.8,one outflow line,False,0,True,NHD's outflow line,43.92253,-73.69598
+adk_southeast,lake_george,Big Pond,26.4,one outflow line,False,36,True,NHD's outflow line,43.85525,-73.81752
+adk_southeast,lake_george,unnamed,12.9,one outflow line,False,0,True,NHD's outflow line,43.85145,-73.80702
+adk_southeast,lake_george,North Pond,12.8,one outflow line,False,10,True,NHD's outflow line,43.8605,-73.80323
+adk_southeast,lake_george,unnamed,11.5,one outflow line,False,22,True,NHD's outflow line,43.87449,-73.7722
+adk_southeast,lake_george,Sullivan Pond,13.4,one outflow line,False,32,True,NHD's outflow line,43.63333,-73.82076
+adk_southeast,lake_george,Smith Pond,15.3,one outflow line,False,36,True,NHD's outflow line,43.7085,-73.80179
+adk_southeast,lake_george,Rush Pond,12.2,one outflow line,False,331,True,NHD's outflow line,43.34841,-73.7018
+adk_southeast,lake_george,Round Pond,15.0,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.35451,-73.67588
+adk_southeast,lake_george,Wilkie Reservoir,9.3,one outflow line,False,10,True,NHD's outflow line,43.35235,-73.75576
+adk_southeast,lake_george,Butler Pond,41.7,nearest the terrain's cell,False,10,True,"NHD's outflow line, the nearest of 2",43.37907,-73.73805
+adk_southeast,lake_george,Glen Lake,132.5,one outflow line,False,0,True,NHD's outflow line,43.37569,-73.66196
+adk_southeast,lake_george,Martins Pond,21.1,one outflow line,False,58,True,NHD's outflow line,43.40106,-73.33786
+adk_southeast,lake_george,unnamed,15.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.39362,-73.34004
+adk_southeast,lake_george,Lake Sunnyside,15.9,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.37324,-73.63758
+adk_southeast,lake_george,Dolph Pond,17.6,one outflow line,False,0,True,NHD's outflow line,43.47778,-73.45334
+adk_southeast,lake_george,Trout Lake,104.6,one outflow line,False,30,True,NHD's outflow line,43.54464,-73.69598
+adk_southeast,lake_george,Edgecomb Pond,14.7,one outflow line,False,22,True,NHD's outflow line,43.57748,-73.68599
+adk_southeast,lake_george,unnamed,500.9,one outflow line,False,22,True,NHD's outflow line,43.58277,-73.4275
+adk_southeast,lake_george,unnamed,23.6,one outflow line,False,63,True,NHD's outflow line,43.5689,-73.40148
+adk_southeast,lake_george,unnamed,21.8,one outflow line,False,472,True,NHD's outflow line,43.57536,-73.38682
+adk_southeast,lake_george,Inman Pond,34.2,one outflow line,False,10,True,NHD's outflow line,43.64704,-73.27653
+adk_southeast,lake_george,Old Marsh Pond,47.1,one outflow line,False,0,True,NHD's outflow line,43.62883,-73.269
+adk_southeast,lake_george,Lake George,11553.0,one outflow line,False,0,True,NHD's outflow line,43.83725,-73.43016
+adk_southeast,lake_george,Island Pond,40.6,one outflow line,False,14,True,NHD's outflow line,43.6877,-73.64797
+adk_southeast,lake_george,Crossett Pond,49.5,one outflow line,False,10,True,NHD's outflow line,43.49723,-73.57876
+adk_southeast,lake_george,Sly Pond,16.9,one outflow line,False,20,True,NHD's outflow line,43.4514,-73.59355
+adk_southeast,lake_george,Thurber Pond,11.4,one outflow line,False,10,True,NHD's outflow line,43.5062,-73.57571
+adk_southeast,lake_george,Lake Nebo,50.1,one outflow line,False,161,True,NHD's outflow line,43.46369,-73.561
+adk_southeast,lake_george,Lakes Pond,30.0,NHD's name,False,0,True,"NHD's outflow line, the named one of 2",43.48596,-73.5486
+adk_southeast,lake_george,Pine Lake,29.7,one outflow line,False,41,True,NHD's outflow line,43.60839,-73.45719
+adk_southeast,lake_george,Billings Marsh,20.6,one outflow line,False,158,True,NHD's outflow line,43.60188,-73.37756
+adk_southeast,lake_george,Coggman Pond,10.9,one outflow line,False,0,True,NHD's outflow line,43.61892,-73.37252
+adk_southeast,lake_george,unnamed,22.6,one outflow line,False,734,True,NHD's outflow line,43.62538,-73.42242
+adk_southeast,lake_george,Mill Pond,17.6,one outflow line,False,10,True,NHD's outflow line,43.69912,-73.27889
+adk_southeast,lake_george,Hidden Lake,8.0,one outflow line,False,0,True,NHD's outflow line,43.38489,-73.75942
+adk_southeast,lake_george,unnamed,8.0,one outflow line,False,0,True,NHD's outflow line,43.38779,-73.74479
+adk_southeast,lake_george,unnamed,29.6,one outflow line,False,0,True,NHD's outflow line,43.46955,-73.30532
+adk_southeast,lake_george,Browns Pond,18.0,one outflow line,False,684,True,NHD's outflow line,43.50256,-73.31454
+adk_southeast,lake_george,Hadlock Pond,88.0,one outflow line,False,0,True,NHD's outflow line,43.4144,-73.57946
+adk_southeast,lake_george,Copeland Pond,23.5,one outflow line,False,10,True,NHD's outflow line,43.43042,-73.5571
+adk_southeast,lake_george,Fishbrook Pond,16.0,one outflow line,False,20,True,NHD's outflow line,43.57369,-73.53671
+adk_southeast,lake_george,Round Pond,8.3,one outflow line,False,58,True,NHD's outflow line,43.6986,-73.64115
+adk_southeast,lake_george,Jabe Pond,59.3,one outflow line,False,0,True,NHD's outflow line,43.7103,-73.53178
+adk_southeast,lake_george,Wolf Pond,13.2,one outflow line,False,28,True,NHD's outflow line,43.70575,-73.62163
+adk_southeast,lake_george,unnamed,8.9,one outflow line,False,0,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.64538,-73.65599
+adk_southeast,lake_george,Long Pond,15.1,one outflow line,False,0,True,NHD's outflow line,43.68455,-73.64097
+adk_southeast,lake_george,Wintergreen Lake,30.2,one outflow line,False,32,True,NHD's outflow line,43.76167,-73.56332
+adk_southeast,lake_george,Berrymill Pond,25.5,one outflow line,False,0,True,NHD's outflow line,43.81537,-73.58093
+adk_southeast,lake_george,Grizzle Ocean,10.2,one outflow line,False,10,True,NHD's outflow line,43.82357,-73.59641
+adk_southeast,lake_george,Lost Pond,13.9,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.82671,-73.54535
+adk_southeast,lake_george,Putnam Pond,114.5,one outflow line,False,0,True,NHD's outflow line,43.83884,-73.57192
+adk_southeast,lake_george,Cranberry Marsh,13.3,one outflow line,False,42,True,NHD's outflow line,43.8418,-73.54946
+adk_southeast,lake_george,Clear Pond,10.3,one outflow line,False,0,True,NHD's outflow line,43.83777,-73.59384
+adk_southeast,lake_george,Mud Pond,23.3,one outflow line,False,20,True,NHD's outflow line,43.72854,-73.44678
+adk_southeast,lake_george,unnamed,30.0,one outflow line,False,80,True,NHD's outflow line,43.74032,-73.37457
+adk_southeast,lake_george,Root Pond,8.7,one outflow line,False,20,True,NHD's outflow line,43.67808,-73.34797
+adk_southeast,lake_george,Sunset Lake,83.0,one outflow line,False,0,True,NHD's outflow line,43.76121,-73.26444
+adk_southeast,lake_george,Sunrise Lake,24.8,one outflow line,False,10,True,NHD's outflow line,43.75639,-73.2611
+adk_southeast,lake_george,Perch Pond,10.2,nearest the terrain's cell,False,0,True,"NHD's outflow line, the nearest of 2",43.74904,-73.28168
+adk_southeast,lake_george,Strong Swamp,20.3,one outflow line,False,45,True,NHD's outflow line,43.70791,-73.31898
+adk_southeast,lake_george,Penfield Pond,72.3,one outflow line,False,54,True,NHD's outflow line,43.92141,-73.53619
+adk_southwest,moose,Baby Lake,10.9,one outflow line,False,10,True,NHD's outflow line,43.49502,-74.81763
+adk_southwest,moose,Jones Lake,19.1,one outflow line,False,10,True,NHD's outflow line,43.54637,-74.77761
+adk_southwest,moose,Deer Lake,14.3,one outflow line,False,10,True,NHD's outflow line,43.55587,-74.75653
+adk_southwest,moose,Otter Lake,10.3,one outflow line,False,32,True,NHD's outflow line,43.55629,-74.74118
+adk_southwest,moose,Honnedaga Lake,333.5,one outflow line,False,14,True,NHD's outflow line,43.50448,-74.81512
+adk_southwest,moose,Gull Lake,54.0,one outflow line,False,0,True,NHD's outflow line,43.5517,-75.06753
+adk_southwest,moose,Stone Dam Lake,8.2,one outflow line,False,10,True,NHD's outflow line,43.49165,-75.04941
+adk_southwest,moose,Chub Pond,32.8,one outflow line,False,114,True,NHD's outflow line,43.52496,-75.04944
+adk_southwest,moose,Lily Lake,9.1,one outflow line,False,20,True,NHD's outflow line,43.53344,-74.99709
+adk_southwest,moose,Little Woodhull Lake,31.4,one outflow line,False,14,True,NHD's outflow line,43.52326,-74.99115
+adk_southwest,moose,Round Lake,21.5,one outflow line,False,0,True,NHD's outflow line,43.52961,-75.17654
+adk_southwest,moose,Buck Lake,16.4,one outflow line,False,10,True,NHD's outflow line,43.55223,-75.21548
+adk_southwest,moose,Long Lake,64.4,one outflow line,False,14,True,NHD's outflow line,43.54783,-75.15827
+adk_southwest,moose,Otter Lake,60.1,one outflow line,False,10,True,NHD's outflow line,43.58685,-75.12554
+adk_southwest,moose,White Lake,99.1,one outflow line,False,845,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.53704,-75.14326
+adk_southwest,moose,unnamed,11.9,one outflow line,False,32,True,NHD's outflow line,43.59641,-75.27448
+adk_southwest,moose,unnamed,28.0,one outflow line,False,10,True,NHD's outflow line,43.56681,-75.26407
+adk_southwest,moose,Brewer Lake,8.3,one outflow line,False,0,True,NHD's outflow line,43.59058,-75.08442
+adk_southwest,moose,Bear Lake,22.9,one outflow line,False,0,True,NHD's outflow line,43.59375,-75.05705
+adk_southwest,moose,Granny Marsh,10.2,one outflow line,False,32,True,NHD's outflow line,43.57276,-75.08304
+adk_southwest,moose,Sand Lake,126.5,one outflow line,False,32,True,NHD's outflow line,43.5654,-74.99053
+adk_southwest,moose,unnamed,13.5,one outflow line,False,22,True,NHD's outflow line,43.62331,-75.24424
+adk_southwest,moose,Nicks Lake,84.6,one outflow line,False,0,True,NHD's outflow line,43.67165,-74.9951
+adk_southwest,moose,unnamed,19.9,one outflow line,False,0,True,NHD's outflow line,43.68867,-75.01272
+adk_southwest,moose,Nelson Lake,30.4,one outflow line,False,0,True,NHD's outflow line,43.64282,-75.06689
+adk_southwest,moose,Gull Lake,16.3,one outflow line,False,0,True,NHD's outflow line,43.64263,-75.08413
+adk_southwest,moose,Tamarack Lake,13.1,one outflow line,False,32,True,NHD's outflow line,43.66118,-75.0849
+adk_southwest,moose,Copper Lake,24.3,one outflow line,False,10,True,NHD's outflow line,43.65887,-75.13983
+adk_southwest,moose,Brantingham Lake,135.0,one outflow line,False,10,True,NHD's outflow line,43.68509,-75.27613
+adk_southwest,moose,Catspaw Lake,15.1,one outflow line,False,0,True,NHD's outflow line,43.70838,-75.29088
+adk_southwest,moose,Pine Lake,27.1,one outflow line,False,0,True,NHD's outflow line,43.70189,-75.15483
+adk_southwest,moose,East Pine Pond,8.4,one outflow line,False,10,True,NHD's outflow line,43.70371,-75.13733
+adk_southwest,moose,Lake Easka,10.9,one outflow line,False,10,True,NHD's outflow line,43.67938,-75.05291
+adk_southwest,moose,Lake Tekeni,9.2,one outflow line,False,50,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.68164,-75.04423
+adk_southwest,moose,Middle Settlement Lake,17.2,one outflow line,False,10,True,NHD's outflow line,43.6834,-75.10143
+adk_southwest,moose,Grass Pond,9.6,one outflow line,False,41,True,NHD's outflow line,43.69099,-75.06471
+adk_southwest,moose,Middle Branch Lake,20.2,one outflow line,False,20,True,NHD's outflow line,43.69826,-75.1017
+adk_southwest,moose,Gray Lake,19.6,one outflow line,False,32,True,NHD's outflow line,43.70667,-74.95873
+adk_southwest,moose,Twin Pond,13.0,one outflow line,False,0,True,NHD's outflow line,43.70883,-74.94545
+adk_southwest,moose,Fulton Chain Lakes,459.5,one outflow line,False,71,True,NHD's outflow line,43.71208,-74.96903
+adk_southwest,moose,Little Moose Lake,280.0,one outflow line,False,0,True,NHD's outflow line,43.67785,-74.93803
+adk_southwest,moose,Panther Lake,18.1,one outflow line,False,14,True,NHD's outflow line,43.68315,-74.92091
+adk_southwest,moose,East Pond,14.8,one outflow line,False,10,True,NHD's outflow line,43.69294,-74.89421
+adk_southwest,moose,West Lake,12.9,one outflow line,False,113,True,NHD's outflow line,43.7559,-74.91845
+adk_southwest,moose,Safford Pond,19.9,one outflow line,False,14,True,NHD's outflow line,43.78093,-74.91953
+adk_southwest,moose,Lake Rondaxe,100.5,one outflow line,False,0,True,NHD's outflow line,43.76085,-74.91409
+adk_southwest,moose,Little Salmon Lake,13.7,one outflow line,False,14,True,NHD's outflow line,43.49408,-74.84694
+adk_southwest,moose,South Lake,200.5,one outflow line,False,10,True,NHD's outflow line,43.50969,-74.87598
+adk_southwest,moose,Canachagala Lake,136.1,one outflow line,False,41,True,NHD's outflow line,43.6129,-74.89547
+adk_southwest,moose,Woodhull Lake,440.1,NHDPlus's line,False,112,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",43.58332,-74.99065
+adk_southwest,moose,Pico Lake,12.7,one outflow line,False,0,True,NHD's outflow line,43.65843,-74.86662
+adk_southwest,moose,Balsam Lake,9.9,one outflow line,False,10,True,NHD's outflow line,43.62888,-74.79665
+adk_southwest,moose,Seventh Lake,384.6,one outflow line,False,28,True,NHD's outflow line,43.74492,-74.78222
+adk_southwest,moose,Bug Lake,35.8,one outflow line,False,0,True,NHD's outflow line,43.76362,-74.7296
+adk_southwest,moose,Mitchell Ponds,10.4,one outflow line,False,0,True,NHD's outflow line,43.67075,-74.75172
+adk_southwest,moose,Beaver Lake,57.7,one outflow line,False,0,True,NHD's outflow line,43.65104,-74.75255
+adk_southwest,moose,Little Safford Lake,37.3,one outflow line,False,10,True,NHD's outflow line,43.76051,-74.95509
+adk_southwest,moose,Independence Lake,22.8,one outflow line,False,10,True,NHD's outflow line,43.77457,-74.98403
+adk_southwest,moose,North Lake,174.8,one outflow line,False,0,True,NHD's outflow line,43.52226,-74.94784
+adk_southwest,moose,Fourth Lake,25.4,one outflow line,False,0,True,NHD's outflow line,43.56486,-74.97542
+adk_southwest,moose,Third Lake,19.6,one outflow line,False,620,True,NHD's outflow line,43.57917,-74.96179
+adk_southwest,moose,Second Lake,47.6,one outflow line,False,0,True,NHD's outflow line,43.58826,-74.95113
+adk_southwest,moose,Chamber Lake,10.8,one outflow line,False,10,True,NHD's outflow line,43.59222,-74.94221
+adk_southwest,moose,Muskrat Pond,9.2,one outflow line,False,10,True,NHD's outflow line,43.61896,-74.74239
+adk_southwest,moose,Muskrat Lake,41.2,one outflow line,False,0,True,NHD's outflow line,43.63633,-74.73848
+adk_southwest,moose,Indian Lake,35.4,one outflow line,False,10,True,NHD's outflow line,43.62314,-74.76122
+adk_southwest,moose,Fulton Chain Lakes,830.7,one outflow line,False,125,True,NHD's outflow line,43.73643,-74.89749
+adk_southwest,moose,Dart Lake,56.5,one outflow line,False,28,True,NHD's outflow line,43.7934,-74.87067
+adk_southwest,moose,Sis Lake,9.0,one outflow line,False,0,True,NHD's outflow line,43.77034,-74.85817
+adk_southwest,moose,Moss Lake,48.7,one outflow line,False,10,True,NHD's outflow line,43.78141,-74.85292
+adk_southwest,moose,Bubb Lake,21.4,one outflow line,False,10,True,NHD's outflow line,43.77491,-74.84648
+adk_southwest,moose,Cascade Lake,40.4,one outflow line,False,22,True,NHD's outflow line,43.78909,-74.81201
+adk_southwest,moose,White Pond,8.1,one outflow line,False,10,True,NHD's outflow line,43.68869,-74.80774
+adk_southwest,moose,Limekiln Lake,187.9,one outflow line,False,0,True,NHD's outflow line,43.71301,-74.81213
+adk_southwest,moose,Horn Lake,18.2,one outflow line,False,0,True,NHD's outflow line,43.60217,-74.81619
+adk_southwest,moose,First Lake,61.9,one outflow line,False,10,True,NHD's outflow line,43.59852,-74.94059
+adk_southwest,moose,Green Lake,11.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.6519,-74.91202
+adk_southwest,moose,Gibbs Lake,18.9,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.73531,-74.9987
+adk_southwest,moose,Moose Pond,9.2,one outflow line,False,10,True,NHD's outflow line,43.78032,-75.05698
+adk_southwest,moose,East Pond,24.0,one outflow line,False,0,True,NHD's outflow line,43.7389,-75.05855
+adk_southwest,moose,Blackfoot Pond,13.0,one outflow line,False,14,True,NHD's outflow line,43.74251,-75.02726
+adk_southwest,moose,Half Moon Pond,8.5,one outflow line,False,0,True,NHD's outflow line,43.7336,-75.01807
+adk_southwest,moose,Grass Pond,16.4,one outflow line,False,32,True,NHD's outflow line,43.78634,-75.07612
+adk_southwest,moose,Big Otter Lake,99.3,one outflow line,False,20,True,NHD's outflow line,43.72048,-75.12458
+adk_southwest,moose,Stony Lake,28.9,one outflow line,False,10,True,NHD's outflow line,43.77562,-75.2169
+adk_southwest,moose,Chase Lake,47.3,one outflow line,False,72,True,NHD's outflow line,43.76225,-75.31313
+adk_southwest,moose,Sand Pond,8.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.74494,-75.28746
+adk_southwest,moose,Chase Upper Lake,9.4,one outflow line,False,10,True,NHD's outflow line,43.76917,-75.28347
+adk_southwest,moose,Little Otter Lake,18.5,one outflow line,False,10,True,NHD's outflow line,43.74329,-75.26149
+adk_southwest,moose,unnamed,17.9,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,43.77264,-75.43943
+adk_southwest,moose,Hitchcock Pond,12.1,one outflow line,False,10,True,NHD's outflow line,43.78227,-75.09327
+adk_southwest,moose,Fish Pond,11.1,one outflow line,False,0,True,NHD's outflow line,43.78111,-75.26079
+adk_southwest,moose,Huckleberry Lake,13.4,one outflow line,False,0,True,NHD's outflow line,43.79337,-75.25549
+adk_southwest,moose,Queer Lake,47.7,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,43.80465,-74.80438
+adk_southwest,west_canada_lakes,South Lake,35.8,one outflow line,False,20,True,NHD's outflow line,43.58792,-74.62212
+adk_southwest,west_canada_lakes,Spruce Lake,72.3,one outflow line,False,50,True,NHD's outflow line,43.5264,-74.61446
+adk_southwest,west_canada_lakes,Mud Lake,39.6,one outflow line,False,10,True,NHD's outflow line,43.58789,-74.61333
+adk_southwest,west_canada_lakes,Balsam Lake,16.6,one outflow line,False,10,True,NHD's outflow line,43.53654,-74.60499
+adk_southwest,west_canada_lakes,West Lake,98.0,one outflow line,False,0,True,NHD's outflow line,43.59459,-74.62567
+adk_southwest,west_canada_lakes,Sampson Bog,8.8,one outflow line,False,20,True,NHD's outflow line,43.56873,-74.59215
+adk_southwest,west_canada_lakes,Sampson Lake,26.3,one outflow line,False,10,True,NHD's outflow line,43.57587,-74.57662
+adk_southwest,west_canada_lakes,Whitney Lake,44.5,one outflow line,False,0,True,NHD's outflow line,43.59464,-74.56125
+adk_southwest,west_canada_lakes,unnamed,141.8,one outflow line,False,0,True,NHD's outflow line,43.62911,-74.53646
+adk_southwest,west_canada_lakes,Pillsbury Lake,35.4,one outflow line,False,0,True,NHD's outflow line,43.598,-74.54661
+adk_southwest,west_canada_lakes,Little Moose Pond,12.1,one outflow line,False,0,True,NHD's outflow line,43.54964,-74.54363
+adk_southwest,west_canada_lakes,Beaver Pond,36.1,NHD's name,False,0,True,"NHD's outflow line, the named one of 2",43.62674,-74.55011
+adk_southwest,west_canada_lakes,Otter Lake,10.6,one outflow line,False,40,True,NHD's outflow line,43.54368,-74.56323
+adk_southwest,west_canada_lakes,Eighth Lake,123.8,one outflow line,False,86,True,NHD's outflow line,43.76979,-74.71156
+adk_southwest,west_canada_lakes,Bear Pond,11.0,one outflow line,False,10,True,NHD's outflow line,43.70727,-74.69857
+adk_southwest,west_canada_lakes,Falls Pond,14.2,one outflow line,False,41,True,NHD's outflow line,43.63231,-74.68296
+adk_southwest,west_canada_lakes,Lake Kora,80.5,one outflow line,False,42,True,NHD's outflow line,43.73551,-74.59984
+adk_southwest,west_canada_lakes,Sly Pond,9.0,one outflow line,False,22,True,NHD's outflow line,43.67274,-74.59542
+adk_southwest,west_canada_lakes,Little Moose Lake,45.2,one outflow line,False,0,True,NHD's outflow line,43.68252,-74.54014
+adk_southwest,west_canada_lakes,Brooktrout Lake,32.1,one outflow line,False,0,True,NHD's outflow line,43.60002,-74.66231
+adk_southwest,west_canada_lakes,Deep Lake,13.6,one outflow line,False,10,True,NHD's outflow line,43.61614,-74.66371
+adk_southwest,west_canada_lakes,Twin Lakes,14.6,one outflow line,False,22,True,NHD's outflow line,43.61806,-74.64164
+adk_southwest,west_canada_lakes,Mohegan Lake,47.4,one outflow line,False,0,True,NHD's outflow line,43.74623,-74.65578
+adk_southwest,west_canada_lakes,Sagamore Lake,69.8,one outflow line,False,10,True,NHD's outflow line,43.76622,-74.62796
+adk_southwest,west_canada,Hinckley Reservoir,1094.9,one outflow line,False,40,True,NHD's outflow line,43.31197,-75.10784
+adk_southwest,west_canada,unnamed,63.8,one outflow line,False,20,True,NHD's outflow line,43.30473,-75.14259
+adk_southwest,west_canada,unnamed,8.3,one outflow line,False,20,True,NHD's outflow line,43.35144,-75.06188
+adk_southwest,west_canada,unnamed,19.8,one outflow line,False,108,True,NHD's outflow line,43.36745,-74.90873
+adk_southwest,west_canada,Spruce Lake,36.0,one outflow line,False,10,True,NHD's outflow line,43.1618,-74.84162
+adk_southwest,west_canada,Swan Lake,12.9,one outflow line,False,10,True,NHD's outflow line,43.38689,-74.89685
+adk_southwest,west_canada,Mill Creek Lake,21.3,one outflow line,False,10,True,NHD's outflow line,43.41849,-74.88654
+adk_southwest,west_canada,unnamed,8.0,one outflow line,False,14,True,NHD's outflow line,43.44,-74.76194
+adk_southwest,west_canada,unnamed,8.5,one outflow line,False,28,True,NHD's outflow line,43.24101,-74.81642
+adk_southwest,west_canada,unnamed,11.7,one outflow line,False,14,True,NHD's outflow line,43.21674,-74.79285
+adk_southwest,west_canada,Klondike Reservoir,45.7,one outflow line,False,14,True,NHD's outflow line,43.22997,-74.78849
+adk_southwest,west_canada,Mud Lake,9.7,one outflow line,False,14,True,NHD's outflow line,43.29248,-74.79629
+adk_southwest,west_canada,North Branch Lake,9.2,one outflow line,False,10,True,NHD's outflow line,43.31112,-74.79561
+adk_southwest,west_canada,Jerseyfield Lake,154.0,one outflow line,False,22,True,NHD's outflow line,43.29791,-74.76607
+adk_southwest,west_canada,Bochen Lake,12.0,one outflow line,False,14,True,NHD's outflow line,43.35995,-74.76608
+adk_southwest,west_canada,Boyer Lake,13.6,one outflow line,False,22,True,NHD's outflow line,43.28833,-74.74712
+adk_southwest,west_canada,Diamond Lake,11.6,one outflow line,False,0,True,NHD's outflow line,43.30432,-74.73288
+adk_southwest,west_canada,unnamed,24.7,one outflow line,False,0,True,NHD's outflow line,43.45545,-75.15197
+adk_southwest,west_canada,Black Creek Lake,31.8,one outflow line,False,10,True,NHD's outflow line,43.44966,-74.90502
+adk_southwest,west_canada,Alder Pond,9.0,one outflow line,False,184,True,NHD's outflow line,43.43915,-75.21026
+adk_southwest,west_canada,Kayuta Lake,189.0,one outflow line,False,22,True,NHD's outflow line,43.42358,-75.2086
+adk_southwest,west_canada,Forestport Reservoir,45.8,one outflow line,False,14,True,NHD's outflow line,43.44033,-75.20606
+adk_southwest,speculator,Stony Brook Lake,9.9,one outflow line,False,10,True,NHD's outflow line,43.24744,-74.70738
+adk_southwest,speculator,Wilmurt Lake,42.4,one outflow line,False,54,True,NHD's outflow line,43.42668,-74.72641
+adk_southwest,speculator,Big Rock Lake,31.8,one outflow line,False,14,True,NHD's outflow line,43.44958,-74.70381
+adk_southwest,speculator,Alder Brook Lake,8.8,one outflow line,False,10,True,NHD's outflow line,43.36679,-74.65546
+adk_southwest,speculator,G Lake,35.9,one outflow line,False,63,True,NHD's outflow line,43.41823,-74.63565
+adk_southwest,speculator,Evergreen Lake,56.6,one outflow line,False,10,True,NHD's outflow line,43.39265,-74.60519
+adk_southwest,speculator,Sheriff Lake,24.6,one outflow line,False,20,True,NHD's outflow line,43.37559,-74.62036
+adk_southwest,speculator,Pine Lake,38.1,one outflow line,False,90,True,NHD's outflow line,43.42073,-74.65553
+adk_southwest,speculator,Spectacle Lake,78.2,one outflow line,False,10,True,NHD's outflow line,43.23998,-74.59472
+adk_southwest,speculator,Knapps Long Lake,18.6,one outflow line,False,14,True,NHD's outflow line,43.24188,-74.6218
+adk_southwest,speculator,Dexter Lake,12.5,one outflow line,False,36,True,NHD's outflow line,43.24477,-74.59924
+adk_southwest,speculator,Good Luck Lake,38.9,one outflow line,False,227,True,NHD's outflow line,43.25039,-74.537
+adk_southwest,speculator,Trout Lake,20.5,one outflow line,False,0,True,NHD's outflow line,43.27421,-74.54742
+adk_southwest,speculator,unnamed,22.3,one outflow line,False,22,True,NHD's outflow line,43.12109,-74.58665
+adk_southwest,speculator,Third Lake,22.1,one outflow line,False,63,True,NHD's outflow line,43.22216,-74.57033
+adk_southwest,speculator,Fourth Lake,20.5,one outflow line,False,0,True,NHD's outflow line,43.21791,-74.56655
+adk_southwest,speculator,Hillabrandt Vly,22.8,one outflow line,False,0,True,NHD's outflow line,43.11487,-74.55953
+adk_southwest,speculator,Nine Corner Lake,43.6,one outflow line,False,14,True,NHD's outflow line,43.1927,-74.5431
+adk_southwest,speculator,unnamed,26.9,one outflow line,False,108,True,NHD's outflow line,43.22469,-74.52783
+adk_southwest,speculator,Stoner Lakes,33.2,one outflow line,False,28,True,NHD's outflow line,43.22342,-74.5244
+adk_southwest,speculator,Pine Lake,67.3,one outflow line,False,20,True,NHD's outflow line,43.19079,-74.5169
+adk_southwest,speculator,unnamed,8.2,one outflow line,False,36,True,NHD's outflow line,43.11287,-74.51075
+adk_southwest,speculator,unnamed,10.2,one outflow line,False,22,True,NHD's outflow line,43.23229,-74.51447
+adk_southwest,speculator,Green Lake,18.4,one outflow line,False,67,True,NHD's outflow line,43.17455,-74.511
+adk_southwest,speculator,Caroga Lake,223.5,one outflow line,False,45,True,NHD's outflow line,43.12515,-74.4986
+adk_southwest,speculator,Otter Lake,16.2,one outflow line,False,85,True,NHD's outflow line,43.18506,-74.50328
+adk_southwest,speculator,Stewart Lake,13.0,one outflow line,False,10,True,NHD's outflow line,43.18927,-74.47851
+adk_southwest,speculator,Canada Lake,278.4,one outflow line,False,0,True,NHD's outflow line,43.14183,-74.59303
+adk_southwest,speculator,West Lake,82.4,one outflow line,False,22,True,NHD's outflow line,43.16907,-74.53454
+adk_southwest,speculator,Saint Johnsville Reservoir,24.2,one outflow line,False,40,True,NHD's outflow line,43.06461,-74.55657
+adk_southwest,speculator,Rockwood Lake,30.9,one outflow line,False,10,True,NHD's outflow line,43.06277,-74.50452
+adk_southwest,speculator,Mud Lake,12.3,one outflow line,False,0,True,NHD's outflow line,43.3385,-74.44454
+adk_southwest,speculator,Silver Lake,32.4,one outflow line,False,22,True,NHD's outflow line,43.29756,-74.43321
+adk_southwest,speculator,Loomis Pond,13.7,one outflow line,False,14,True,NHD's outflow line,43.30282,-74.49986
+adk_southwest,speculator,Buckhorn Lake,23.2,one outflow line,False,0,True,NHD's outflow line,43.41719,-74.48298
+adk_southwest,speculator,Fawn Lake,115.9,one outflow line,False,10,True,NHD's outflow line,43.49754,-74.45051
+adk_southwest,speculator,Oxbow Lake,126.2,one outflow line,False,444,True,NHD's outflow line,43.43211,-74.49534
+adk_southwest,speculator,Sacandaga Lake,650.3,one outflow line,False,0,True,NHD's outflow line,43.47905,-74.40715
+adk_southwest,speculator,Airdwood Lake,14.1,one outflow line,False,10,True,NHD's outflow line,43.44319,-74.45681
+adk_southwest,speculator,Lake Sound,9.0,one outflow line,False,0,True,NHD's outflow line,43.50702,-74.41937
+adk_southwest,speculator,Vly Lake,16.6,one outflow line,False,108,True,NHD's outflow line,43.48323,-74.49058
+adk_southwest,speculator,The Floe,40.5,NHD's name,False,30,True,"NHD's outflow line, the named one of 2",43.40044,-74.71257
+adk_southwest,speculator,Barto Lake,8.1,one outflow line,False,32,True,NHD's outflow line,43.37652,-74.6896
+adk_southwest,speculator,Morehouse Lake,42.9,one outflow line,False,10,True,NHD's outflow line,43.35641,-74.67724
+adk_southwest,speculator,Trout Lake,17.7,one outflow line,False,20,True,NHD's outflow line,43.34697,-74.71788
+adk_southwest,speculator,Cork Center Reservoir,15.6,one outflow line,False,0,True,NHD's outflow line,43.03666,-74.4652
+adk_southwest,speculator,unnamed,9.8,one outflow line,False,20,True,NHD's outflow line,43.06347,-74.47884
+adk_southwest,speculator,Long Lake,22.9,one outflow line,False,10,True,NHD's outflow line,43.30709,-74.72337
+adk_southwest,speculator,Pleasant Lake,98.2,one outflow line,False,54,True,NHD's outflow line,43.18181,-74.59338
+adk_southwest,speculator,Ayers Lake,36.1,one outflow line,False,10,True,NHD's outflow line,43.19971,-74.61357
+adk_southwest,speculator,Piseco Lake,1152.4,one outflow line,False,10,True,NHD's outflow line,43.38081,-74.54588
+adk_southwest,speculator,T Lake,18.1,one outflow line,False,51,True,NHD's outflow line,43.45445,-74.58958
+adk_southwest,speculator,Spy Lake,154.5,one outflow line,False,0,True,NHD's outflow line,43.38882,-74.52162
+adk_southwest,speculator,Mud Lake,9.3,one outflow line,False,0,True,NHD's outflow line,43.37892,-74.52343
+adk_southwest,speculator,Metcalf Lake,38.4,one outflow line,False,0,True,NHD's outflow line,43.46446,-74.67716
+adk_southwest,speculator,Irving Pond,55.2,one outflow line,False,14,True,NHD's outflow line,43.16315,-74.47787
+adk_southwest,speculator,Indian Lake,8.1,one outflow line,False,10,True,NHD's outflow line,43.19257,-74.47122
+adk_southwest,speculator,Eastman Lake,11.6,one outflow line,False,10,True,NHD's outflow line,43.21182,-74.46699
+adk_southwest,speculator,Bellows Lake,12.2,one outflow line,False,10,True,NHD's outflow line,43.17777,-74.46495
+adk_southwest,speculator,unnamed,11.7,one outflow line,False,0,True,NHD's outflow line,43.15036,-74.43801
+adk_southwest,speculator,Duck Lake,9.8,one outflow line,False,0,True,NHD's outflow line,43.23491,-74.45583
+adk_southwest,speculator,County Line Lake,8.5,one outflow line,False,0,True,NHD's outflow line,43.23411,-74.44106
+adk_southwest,speculator,Peck Lake,573.5,NHD's name,False,143,True,"NHD's outflow line, the named one of 3",43.10062,-74.43257
+adk_southwest,speculator,Ferris Lake,48.7,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,43.31089,-74.63297
+adk_southwest,speculator,Jockeybush Lake,18.9,one outflow line,False,0,True,NHD's outflow line,43.30199,-74.58531
+adk_southwest,speculator,Kennels Pond,24.0,one outflow line,False,1381,True,NHD's outflow line,43.31385,-74.57832
+adk_southwest,speculator,Iron Lake,9.0,one outflow line,False,22,True,NHD's outflow line,43.31177,-74.6009
+adk_southwest,speculator,Rock Lake,12.0,one outflow line,False,10,True,NHD's outflow line,43.33037,-74.58894
+adk_southwest,speculator,Clockmill Pond,27.5,one outflow line,False,14,True,NHD's outflow line,43.34136,-74.59108
+adk_southwest,speculator,Sand Lake,47.0,one outflow line,False,0,True,NHD's outflow line,43.36084,-74.57454
+adk_southwest,speculator,Black Cat Lake,11.5,one outflow line,False,10,True,NHD's outflow line,43.32161,-74.60737
+adk_southwest,speculator,unnamed,8.1,one outflow line,False,42,True,NHD's outflow line,43.29493,-74.60064
+adk_southwest,speculator,Woodworth Lake,13.8,one outflow line,False,0,True,NHD's outflow line,43.12219,-74.3398
+adk_southwest,speculator,Vandenburgh Pond,58.3,one outflow line,False,0,True,NHD's outflow line,43.11785,-74.36861
+adk_southwest,speculator,Mountain Lake,17.7,one outflow line,False,10,True,NHD's outflow line,43.10868,-74.37264
+adk_southwest,speculator,Rice Reservoir,8.1,one outflow line,False,10,True,NHD's outflow line,43.09478,-74.33481
+adk_southwest,speculator,unnamed,13.0,one outflow line,False,10,True,NHD's outflow line,43.15265,-74.35964
+adk_southwest,speculator,Chase Lake,28.1,one outflow line,False,10,True,NHD's outflow line,43.22303,-74.35435
+adk_southwest,speculator,Lily Lake,8.7,one outflow line,False,14,True,NHD's outflow line,43.14104,-74.37846
+adk_southwest,speculator,Woods Lake,29.0,one outflow line,False,0,True,NHD's outflow line,43.25786,-74.31961
+adk_southwest,speculator,Hamilton Lake,60.4,one outflow line,False,14,True,NHD's outflow line,43.42381,-74.39929
+adk_southwest,speculator,Sand Lake,10.6,one outflow line,False,10,True,NHD's outflow line,43.44653,-74.37188
+adk_southwest,speculator,Lake Pleasant,596.8,one outflow line,False,10,True,NHD's outflow line,43.49518,-74.35938
+adk_southwest,speculator,Echo Lake,27.6,one outflow line,False,40,True,NHD's outflow line,43.49149,-74.39429
+adk_southwest,speculator,unnamed,12.8,one outflow line,False,0,True,NHD's outflow line,43.50215,-74.33493
+adk_southwest,speculator,Charley Lake,15.4,one outflow line,False,30,True,NHD's outflow line,43.44398,-74.31901
+adk_southwest,speculator,Gilman Lake,18.5,one outflow line,False,0,True,NHD's outflow line,43.45818,-74.31539
+central_vt,stowe_lamoille,Waterbury Reservoir,351.8,one outflow line,False,0,True,NHD's outflow line,44.38136,-72.76768
+central_vt,stowe_lamoille,Green River Reservoir,240.1,one outflow line,False,10,True,NHD's outflow line,44.62578,-72.53155
+central_vt,stowe_lamoille,Lake Champlain,112105.8,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,44.69051,-73.28865
+central_vt,stowe_lamoille,Arrowhead Mountain Lake,291.2,one outflow line,False,5278,True,NHD's outflow line,44.68639,-73.09166
+central_vt,stowe_lamoille,unnamed,24.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.61896,-73.23706
+central_vt,stowe_lamoille,Lake Mansfield,16.0,one outflow line,False,63,True,NHD's outflow line,44.4724,-72.81073
+central_vt,stowe_lamoille,Indian Brook Reservoir,23.3,one outflow line,False,10,True,NHD's outflow line,44.53083,-73.09725
+central_vt,stowe_lamoille,Colchester Pond,77.4,one outflow line,False,0,True,NHD's outflow line,44.54893,-73.12474
+central_vt,stowe_lamoille,Shelburne Pond,193.9,one outflow line,False,10,True,NHD's outflow line; the terrain's way on leaves NHD's line,44.39685,-73.15622
+central_vt,stowe_lamoille,Worcester Ponds,12.5,one outflow line,False,0,True,NHD's outflow line,44.39918,-72.52704
+central_vt,stowe_lamoille,Bliss Pond,12.8,one outflow line,False,10,True,NHD's outflow line,44.35229,-72.49852
+central_vt,stowe_lamoille,Curtis Pond,30.9,one outflow line,False,0,True,NHD's outflow line,44.37653,-72.49573
+central_vt,stowe_lamoille,Mirror Lake,35.5,one outflow line,False,0,True,NHD's outflow line,44.39142,-72.44437
+central_vt,stowe_lamoille,Forest Lake,54.8,one outflow line,False,10,True,NHD's outflow line,44.40271,-72.44187
+central_vt,stowe_lamoille,Cranberry Meadow Pond,9.5,one outflow line,False,92,True,NHD's outflow line,44.42038,-72.45542
+central_vt,stowe_lamoille,Valley Lake,37.4,NHDPlus's line,False,14,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",44.44366,-72.43769
+central_vt,stowe_lamoille,Little Elmore Pond,10.3,one outflow line,False,0,True,NHD's outflow line,44.50171,-72.53075
+central_vt,stowe_lamoille,Lake Lamoille,54.4,one outflow line,False,0,True,NHD's outflow line,44.57418,-72.61094
+central_vt,stowe_lamoille,Lake Elmore,90.0,one outflow line,False,10,True,NHD's outflow line,44.54118,-72.5243
+central_vt,stowe_lamoille,Collins Pond,8.1,one outflow line,False,40,True,NHD's outflow line,44.62064,-72.50214
+central_vt,stowe_lamoille,Zack Woods Pond,10.2,one outflow line,False,40,True,NHD's outflow line,44.61024,-72.49994
+central_vt,stowe_lamoille,Hardwood Pond,20.1,one outflow line,False,14,True,NHD's outflow line,44.46589,-72.50234
+central_vt,stowe_lamoille,Gillett Pond,12.6,one outflow line,False,10,True,NHD's outflow line,44.35866,-72.96455
+central_vt,stowe_lamoille,Lake Iroquois,99.9,one outflow line,False,14,True,NHD's outflow line,44.36221,-73.08113
+central_vt,mad_winooski,Lamson Pond,10.7,one outflow line,False,0,True,NHD's outflow line,44.06208,-72.61016
+central_vt,mad_winooski,Rood Pond,9.6,one outflow line,False,0,True,NHD's outflow line,44.07921,-72.58574
+central_vt,mad_winooski,Warren Lake,18.7,one outflow line,False,178,True,NHD's outflow line,44.07803,-72.83682
+central_vt,mad_winooski,Baker Pond,15.3,one outflow line,False,32,True,NHD's outflow line,44.07091,-72.63641
+central_vt,mad_winooski,Lake Champlain,112105.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.21764,-73.35912
+central_vt,mad_winooski,unnamed,11.3,one outflow line,False,108,True,NHD's outflow line,44.19825,-73.31385
+central_vt,mad_winooski,unnamed,8.4,one outflow line,False,14,True,NHD's outflow line,44.15166,-72.57154
+central_vt,mad_winooski,Berlin Pond,117.2,one outflow line,False,133,True,NHD's outflow line,44.20751,-72.58176
+central_vt,mad_winooski,Wrightsville Reservoir,73.1,one outflow line,False,58,True,NHD's outflow line,44.31159,-72.57322
+central_vt,mad_winooski,North Montpelier Pond,16.8,one outflow line,False,0,True,NHD's outflow line,44.30344,-72.44744
+central_vt,mad_winooski,Sodom Pond,11.0,one outflow line,False,20,True,NHD's outflow line,44.32206,-72.49981
+central_vt,mad_winooski,Adamant Pond,17.0,one outflow line,False,0,True,NHD's outflow line,44.33026,-72.50385
+central_vt,mad_winooski,unnamed,8.6,one outflow line,False,20,True,NHD's outflow line,44.21389,-73.31816
+central_vt,mad_winooski,unnamed,8.1,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,44.24371,-73.15037
+central_vt,mad_winooski,Cedar Lake,51.7,one outflow line,False,0,True,NHD's outflow line,44.25441,-73.13287
+central_vt,mad_winooski,Bristol Pond,110.7,one outflow line,False,22,True,NHD's outflow line,44.18282,-73.09948
+central_vt,white_river,unnamed,8.3,one outflow line,False,50,True,NHD's outflow line,43.82412,-72.48426
+central_vt,white_river,Sunset Lake,10.0,one outflow line,False,10,True,NHD's outflow line,44.04215,-72.6041
+central_vt,white_river,North Pond,11.2,one outflow line,False,0,True,NHD's outflow line,44.04534,-72.61483
+central_vt,white_river,Burr Pond,34.4,one outflow line,False,60,True,NHD's outflow line,43.76487,-73.18706
+central_vt,white_river,Sugar Hollow Pond,10.1,one outflow line,False,0,True,NHD's outflow line,43.75561,-73.02511
+central_vt,white_river,Lake Champlain,112105.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,44.00081,-73.44082
+central_vt,white_river,Sunset Lake,83.0,one outflow line,False,0,True,NHD's outflow line,43.76121,-73.26444
+central_vt,white_river,Sunrise Lake,24.8,one outflow line,False,10,True,NHD's outflow line,43.75639,-73.2611
+central_vt,white_river,Perch Pond,10.2,nearest the terrain's cell,False,0,True,"NHD's outflow line, the nearest of 2",43.74904,-73.28168
+central_vt,white_river,Johnson Pond,14.4,one outflow line,False,197,True,NHD's outflow line,43.7681,-73.221
+central_vt,white_river,Hinkum Pond,23.9,one outflow line,False,0,True,NHD's outflow line,43.768,-73.1692
+central_vt,white_river,Silver Lake,42.3,one outflow line,False,10,True,NHD's outflow line,43.89843,-73.05289
+central_vt,white_river,Huff Pond,15.5,one outflow line,False,10,True,NHD's outflow line,43.7838,-73.183
+central_vt,white_river,unnamed,10.2,one outflow line,False,0,True,NHD's outflow line,43.88925,-73.08506
+central_vt,white_river,Lake Dunmore,420.6,one outflow line,False,20,True,NHD's outflow line,43.90964,-73.08727
+central_vt,white_river,Fern Lake,27.2,one outflow line,False,30,True,NHD's outflow line; the terrain's way on leaves NHD's line,43.86155,-73.07064
+central_vt,white_river,unnamed,9.9,one outflow line,False,41,True,NHD's outflow line,44.00728,-73.20077
+central_vt,white_river,Sugar Hill Reservoir,19.1,one outflow line,False,158,True,NHD's outflow line,43.91494,-73.00241
+jackson,teton_snake,Phelps Lake,184.7,one outflow line,False,10,True,NHD's outflow line,43.63418,-110.78919
+jackson,teton_snake,Bradley Lake,27.1,one outflow line,False,14,True,NHD's outflow line,43.7154,-110.74844
+jackson,teton_snake,Taggart Lake,46.3,one outflow line,False,0,True,NHD's outflow line,43.69929,-110.74838
+jackson,teton_snake,Snowdrift Lake,22.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,43.70798,-110.8217
+jackson,teton_snake,Icefloe Lake,9.4,one outflow line,False,10,True,NHD's outflow line,43.72473,-110.82575
+jackson,gros_ventre,Lower Slide Lake,205.7,one outflow line,False,10,True,NHD's outflow line,43.62896,-110.54402
+jackson,gros_ventre,unnamed,21.2,one outflow line,False,10,True,NHD's outflow line,43.52622,-110.54356
+jackson,gros_ventre,Blue Miner Lake,11.0,one outflow line,False,78,True,NHD's outflow line,43.55987,-110.5142
+jackson,gros_ventre,unnamed,13.3,one outflow line,False,510,True,NHD's outflow line,43.57996,-110.32132
+jackson,gros_ventre,unnamed,30.3,one outflow line,False,32,True,NHD's outflow line,43.47016,-110.36224
+jackson,hoback,Bailey Lake,13.8,one outflow line,False,10,True,NHD's outflow line,43.17936,-110.74154
+jackson,jackson_lake,Moose Lake,10.0,one outflow line,False,10,True,NHD's outflow line,44.09185,-110.97258
+jackson,jackson_lake,Indian Lake,85.1,one outflow line,False,1239,True,NHD's outflow line,44.0706,-111.04739
+jackson,jackson_lake,Jenny Lake,488.0,one outflow line,False,0,True,NHD's outflow line,43.75002,-110.72482
+jackson,jackson_lake,Lake Solitude,15.1,one outflow line,False,14,True,NHD's outflow line,43.79085,-110.84271
+jackson,jackson_lake,String Lake,28.9,one outflow line,False,0,True,NHD's outflow line,43.78415,-110.72777
+jackson,jackson_lake,Talus Lake,8.4,one outflow line,False,0,True,NHD's outflow line,43.90153,-110.80033
+jackson,jackson_lake,Arizona Lake,9.8,one outflow line,False,95,True,NHD's outflow line,43.9631,-110.61875
+jackson,jackson_lake,Jackson Lake,10858.6,one outflow line,False,10,True,NHD's outflow line,43.85757,-110.58994
+jackson,jackson_lake,Leigh Lake,415.2,one outflow line,False,10,True,NHD's outflow line,43.79819,-110.7282
+jackson,jackson_lake,Elk Ranch Reservoir,41.5,one outflow line,False,152,True,NHD's outflow line,43.80517,-110.48126
+jackson,jackson_lake,Cirque Lake,24.9,one outflow line,False,0,True,NHD's outflow line,43.83289,-110.83688
+jackson,jackson_lake,Emma Matilda Lake,360.3,one outflow line,False,10,True,NHD's outflow line,43.87705,-110.50852
+jackson,jackson_lake,Two Ocean Lake,239.1,one outflow line,True,10,True,"NHD's outflow line, a pipe or ditch",43.90178,-110.50172
+jackson,jackson_lake,Lake of the Woods,70.7,one outflow line,False,20,True,NHD's outflow line,44.10785,-110.83225
+jackson,jackson_lake,Loon Lake,18.0,one outflow line,False,22,True,NHD's outflow line,44.11219,-110.95345
+jackson,buffalo_fork,Tracy Lake,27.2,one outflow line,False,61,True,NHD's outflow line,43.84842,-110.3632
+jackson,teton_valley,Upper Palisades Lake,49.3,one outflow line,False,141,True,NHD's outflow line,43.43765,-111.12857
+jackson,palisades,unnamed,71.5,one outflow line,False,122,True,NHD's outflow line,43.31895,-111.14472
+jackson,palisades,Palisades Reservoir,5626.2,one outflow line,True,224,True,"NHD's outflow line, a pipe or ditch; the terrain's way on leaves NHD's line",43.33201,-111.20569
+jackson,palisades,Palisades Reservoir,395.9,nearest the terrain's cell,False,988,True,"NHD's outflow line, the nearest of 2",43.1646,-111.05222
+jackson,palisades,Palisades Reservoir,376.0,nearest the terrain's cell,False,2022,True,"NHD's outflow line, the nearest of 2",43.17577,-111.04189
+la,san_gabriel,Pacoima Reservoir,24.7,one outflow line,False,0,True,NHD's outflow line,34.33473,-118.39677
+la,san_gabriel,Hansen Flood Control Basin,13.3,one outflow line,False,0,True,NHD's outflow line; the terrain's way on leaves NHD's line,34.26591,-118.3827
+la,san_gabriel,unnamed,15.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.14105,-117.68165
+la,san_gabriel,unnamed,30.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.14927,-117.91558
+la,san_gabriel,Morris Reservoir,114.7,NHD's name,False,164,True,"NHD's outflow line, the named one of 2",34.17459,-117.88059
+la,san_gabriel,unnamed,16.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.14759,-117.92283
+la,san_gabriel,Big Tujunga Reservoir,36.1,one outflow line,False,30,True,NHD's outflow line,34.2933,-118.18725
+la,san_gabriel,Little Rock Reservoir,43.0,one outflow line,False,122,True,NHD's outflow line,34.48577,-118.02357
+la,santa_monica,Malibu Lake,16.8,one outflow line,False,10,True,NHD's outflow line,34.10475,-118.75136
+la,santa_monica,Encino Reservoir,45.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.14791,-118.5169
+la,santa_monica,unnamed,62.6,one outflow line,False,72,True,NHD's outflow line,34.13233,-118.83271
+la,santa_monica,Lake Sherwood,55.9,NHD's name,False,20,True,"NHD's outflow line, the named one of 3",34.13978,-118.85836
+la,santa_monica,Westlake Lake,52.6,one outflow line,False,14,True,NHD's outflow line,34.13588,-118.82401
+la,san_bernardino,unnamed,12.5,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.20423,-117.34653
+la,san_bernardino,Big Bear Lake,1089.6,one outflow line,False,10,True,NHD's outflow line,34.24214,-116.97692
+la,san_bernardino,Baldwin Lake,413.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.26791,-116.82983
+la,san_bernardino,Silverwood Lake,366.3,one outflow line,False,99,True,NHD's outflow line,34.30359,-117.3201
+la,san_bernardino,Lake Gregory,32.9,one outflow line,False,10,True,NHD's outflow line,34.24609,-117.26841
+la,san_bernardino,Lake Arrowhead,297.7,one outflow line,False,0,True,NHD's outflow line,34.26401,-117.18591
+la,san_bernardino,unnamed,10.9,one outflow line,False,20,True,NHD's outflow line,34.26052,-117.16439
+la,sespe,Lake Casitas,623.3,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,34.37293,-119.3477
+la,sespe,Matilija Lake,12.0,one outflow line,False,14,True,NHD's outflow line,34.48474,-119.3088
+la,piru,Castac Lake,84.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.83601,-118.84839
+la,piru,Lake Piru,431.3,one outflow line,False,104,True,NHD's outflow line,34.46169,-118.75388
+la,piru,Quail Lake,101.8,one outflow line,True,2023,True,"NHD's outflow line, a pipe or ditch",34.77441,-118.73939
+la,piru,Pyramid Lake,476.4,one outflow line,False,130,True,NHD's outflow line,34.64353,-118.76807
+la,piru,Elderberry Forebay,157.1,one outflow line,False,386,True,NHD's outflow line,34.56397,-118.62818
+la,piru,Castaic Lake,812.5,NHD's name,False,313,True,"NHD's outflow line, the named one of 2",34.52468,-118.61281
+la,piru,Castaic Lagoon,66.9,one outflow line,False,90,True,NHD's outflow line,34.49792,-118.61099
+la,piru,unnamed,26.6,one outflow line,False,433,True,NHD's outflow line,34.82632,-118.69029
+la,sierra_pelona,Bouquet Reservoir,238.8,one outflow line,True,1068,True,"NHD's outflow line, a pipe or ditch; the terrain's way on leaves NHD's line",34.58641,-118.39606
+la,sierra_pelona,Elizabeth Lake,89.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.66886,-118.41687
+la,sierra_pelona,Hughes Lake,8.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.67587,-118.44919
+la,sierra_pelona,unnamed,13.0,one outflow line,False,22,True,NHD's outflow line; the terrain's way on leaves NHD's line,34.71095,-118.43375
+la,san_jacinto,Lake Hemet,137.6,NHDPlus's line,False,10,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",33.66449,-116.70677
+la,san_jacinto,unnamed,14.2,one outflow line,False,76,True,NHD's outflow line,33.88668,-116.59452
+la,santa_ana_mtns,unnamed,11.4,one outflow line,False,14,True,NHD's outflow line,33.86736,-117.52962
+la,santa_ana_mtns,Lee Lake,24.1,one outflow line,False,124,True,NHD's outflow line,33.74909,-117.44532
+la,santa_ana_mtns,unnamed,9.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.75785,-117.48834
+la,santa_ana_mtns,Lake Mathews,868.0,NHDPlus's line,False,1423,True,"NHD's outflow line, the one of 3 that NHDPlus's line leaves by",33.85243,-117.45072
+la,santa_ana_mtns,unnamed,24.7,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,33.64108,-117.31277
+la,santa_ana_mtns,unnamed,21.3,one outflow line,False,601,False,NHD's outflow line,33.64839,-117.3128
+la,santa_ana_mtns,unnamed,13.9,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.64337,-117.70088
+la,santa_ana_mtns,unnamed,39.5,one outflow line,False,64,True,NHD's outflow line; the terrain's way on leaves NHD's line,33.65953,-117.63123
+la,santa_ana_mtns,El Toro Reservoir,10.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.62191,-117.66729
+la,santa_ana_mtns,unnamed,50.1,one outflow line,False,473,True,NHD's outflow line,33.62682,-117.64242
+la,santa_ana_mtns,unnamed,8.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.63136,-117.5824
+la,santa_ana_mtns,Prado Flood Control Basin,171.5,one outflow line,False,1841,False,NHD's outflow line,33.90669,-117.64073
+lexington_va,maury_goshen,Lexington Reservoir,9.1,one outflow line,False,0,True,NHD's outflow line,37.74797,-79.64613
+lexington_va,maury_goshen,Lake Robertson,9.9,one outflow line,False,70,True,NHD's outflow line,37.8022,-79.60515
+lexington_va,maury_goshen,Lake Merriweather,154.6,one outflow line,False,0,True,NHD's outflow line,37.9598,-79.4591
+lexington_va,blue_ridge_va,unnamed,8.1,one outflow line,False,20,True,NHD's outflow line,37.55164,-79.05153
+lexington_va,blue_ridge_va,Lynchburg Reservoir,47.7,one outflow line,False,10,True,NHD's outflow line,37.66917,-79.27748
+lexington_va,blue_ridge_va,unnamed,13.6,one outflow line,False,100,True,NHD's outflow line,37.6728,-79.12025
+lexington_va,blue_ridge_va,unnamed,75.5,one outflow line,False,170,True,NHD's outflow line,37.66059,-79.0785
+lexington_va,blue_ridge_va,Thrasher Lake,12.9,one outflow line,False,184,True,NHD's outflow line,37.67089,-79.13595
+lexington_va,blue_ridge_va,Willow Lake,10.5,one outflow line,False,117,True,NHD's outflow line,37.91655,-79.23476
+n_georgia,cohutta,Lake Tamarack,35.8,one outflow line,False,14,True,NHD's outflow line,34.4918,-84.37319
+n_georgia,cohutta,Grandview Lake,27.3,one outflow line,False,175,True,NHD's outflow line,34.50135,-84.39927
+n_georgia,cohutta,Sequoyah Lake,15.4,one outflow line,False,350,True,NHD's outflow line,34.54611,-84.36798
+n_georgia,cohutta,Young-Wright Lake,8.1,one outflow line,False,30,True,NHD's outflow line,34.48846,-84.7763
+n_georgia,cohutta,Upper Twin Mountain Lake,10.0,one outflow line,False,81,True,NHD's outflow line,34.50371,-84.46893
+n_georgia,cohutta,unnamed,9.7,one outflow line,False,10,True,NHD's outflow line,34.48444,-84.85871
+n_georgia,cohutta,Defoor Walters Lake,41.2,one outflow line,False,330,True,NHD's outflow line,34.52168,-84.75973
+n_georgia,cohutta,Reregulation Reservoir,330.5,one outflow line,False,22,True,NHD's outflow line,34.60319,-84.69344
+n_georgia,cohutta,Carters Lake,1204.9,one outflow line,False,604,True,NHD's outflow line,34.61183,-84.66995
+n_georgia,cohutta,unnamed,67.9,one outflow line,False,0,True,NHD's outflow line,34.69961,-84.91255
+n_georgia,cohutta,Amakanata Lake,16.7,one outflow line,False,194,True,NHD's outflow line,34.49689,-84.89792
+n_georgia,cohutta,unnamed,18.1,one outflow line,False,71,True,NHD's outflow line,34.4319,-84.71382
+n_georgia,cohutta,Rainbow Lake,24.0,one outflow line,False,89,True,NHD's outflow line,34.74916,-84.60375
+n_georgia,cohutta,unnamed,19.8,one outflow line,False,206,True,NHD's outflow line,34.78767,-84.86669
+n_georgia,cohutta,unnamed,10.5,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.79381,-84.87768
+n_georgia,cohutta,unnamed,39.8,NHDPlus's line,False,671,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by; the terrain's way on leaves NHD's line",34.86872,-84.82817
+n_georgia,cohutta,unnamed,19.5,one outflow line,False,242,True,NHD's outflow line,34.89028,-84.72594
+n_georgia,cohutta,Goose Island Lake,12.9,one outflow line,False,161,True,NHD's outflow line,34.78438,-84.40091
+n_georgia,cohutta,Leisure Lake,9.7,one outflow line,False,45,True,NHD's outflow line,34.93953,-84.89952
+n_georgia,cohutta,unnamed,8.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,35.00738,-84.39928
+n_georgia,cohutta,Ocoee Number Three Lake,220.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,35.01465,-84.41328
+n_georgia,blue_ridge,unnamed,53.0,one outflow line,False,51,True,NHD's outflow line,34.54391,-83.97042
+n_georgia,blue_ridge,Unicoi Lake,15.2,one outflow line,False,85,True,NHD's outflow line,34.72432,-83.72565
+n_georgia,blue_ridge,Twin Lakes East,10.0,one outflow line,False,76,True,NHD's outflow line,34.62029,-83.82114
+n_georgia,blue_ridge,Lake Qualatchee,16.0,one outflow line,False,0,True,NHD's outflow line,34.64533,-83.80236
+n_georgia,blue_ridge,unnamed,18.1,one outflow line,False,51,True,NHD's outflow line,34.62754,-83.77603
+n_georgia,blue_ridge,unnamed,48.1,one outflow line,False,61,True,NHD's outflow line,34.60574,-83.71926
+n_georgia,blue_ridge,Lake Petit,43.2,one outflow line,False,246,True,NHD's outflow line,34.46196,-84.28766
+n_georgia,blue_ridge,Sconti Lake,12.2,one outflow line,False,10,True,NHD's outflow line,34.45129,-84.2855
+n_georgia,blue_ridge,Etowah River Watershed Number 26 Lake,9.9,one outflow line,False,58,True,NHD's outflow line,34.51322,-84.07386
+n_georgia,blue_ridge,Fausett Lake,13.0,one outflow line,False,100,True,NHD's outflow line,34.52843,-84.27906
+n_georgia,blue_ridge,Woody Lake,13.6,one outflow line,False,0,True,NHD's outflow line,34.68734,-84.02082
+n_georgia,blue_ridge,Lake Trahlyta,8.3,one outflow line,False,0,True,NHD's outflow line,34.76963,-83.91743
+n_georgia,blue_ridge,Blue Ridge Lake,1223.1,one outflow line,False,192,True,NHD's outflow line,34.88138,-84.28198
+n_georgia,blue_ridge,Chatuge Lake,2577.6,one outflow line,False,20,True,NHD's outflow line,35.02117,-83.78424
+n_georgia,blue_ridge,Gypsum Pond,20.4,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,35.01608,-84.36207
+n_georgia,blue_ridge,Lake Woodruff,33.1,one outflow line,False,219,True,NHD's outflow line,34.93277,-84.13443
+n_georgia,blue_ridge,Nottely Lake,1482.0,one outflow line,False,114,True,NHD's outflow line,34.9595,-84.09045
+n_georgia,rabun,Lake Russell,35.8,one outflow line,False,10,True,NHD's outflow line,34.48647,-83.50026
+n_georgia,rabun,Reservoir Six,11.6,one outflow line,False,747,True,NHD's outflow line,34.45332,-83.4947
+n_georgia,rabun,Reservoir Number 44,18.5,one outflow line,False,92,True,NHD's outflow line,34.48297,-83.45976
+n_georgia,rabun,Teasley Lake,8.7,one outflow line,False,85,True,NHD's outflow line,34.48634,-83.31037
+n_georgia,rabun,Hartwell Lake,7299.5,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.55662,-83.08183
+n_georgia,rabun,Ayers Pond,9.5,one outflow line,False,92,True,NHD's outflow line,34.49191,-83.24835
+n_georgia,rabun,Lavonia Water Works Lake,23.4,one outflow line,False,0,True,NHD's outflow line,34.47038,-83.13695
+n_georgia,rabun,Toccoa Reservoir,12.4,one outflow line,False,50,True,NHD's outflow line,34.61318,-83.35772
+n_georgia,rabun,Lake Louise,64.7,one outflow line,False,126,True,NHD's outflow line,34.60467,-83.26916
+n_georgia,rabun,Stonecypher Lake,13.6,one outflow line,False,110,True,NHD's outflow line,34.52221,-83.31071
+n_georgia,rabun,Coneross Watershed 9-A Reservoir,8.7,one outflow line,False,0,True,NHD's outflow line,34.6923,-83.09298
+n_georgia,rabun,Lake Rabun,292.8,NHD's name,False,81,True,"NHD's outflow line, the named one of 2",34.76581,-83.41733
+n_georgia,rabun,Tugaloo Lake,203.1,one outflow line,False,114,True,NHD's outflow line,34.71455,-83.35088
+n_georgia,rabun,Yonah Lake,114.8,one outflow line,False,175,True,NHD's outflow line,34.68247,-83.34113
+n_georgia,rabun,Tallulah Falls Lake,22.7,one outflow line,False,30,True,NHD's outflow line,34.73883,-83.3959
+n_georgia,rabun,Lake Burton,1023.5,one outflow line,False,20,True,NHD's outflow line,34.79413,-83.54033
+n_georgia,rabun,Seed Lake,76.9,one outflow line,False,14,True,NHD's outflow line,34.75475,-83.50089
+n_georgia,rabun,Chattooga Lake,14.7,one outflow line,False,58,True,NHD's outflow line,34.89443,-83.15477
+n_georgia,rabun,Crystal Lake,20.7,one outflow line,False,28,True,NHD's outflow line,34.8273,-83.14307
+n_georgia,rabun,Lake Front Homes Pond,8.6,one outflow line,False,0,True,NHD's outflow line,34.92596,-83.12561
+n_georgia,rabun,Lake Becky,27.7,one outflow line,False,120,True,NHD's outflow line,34.84607,-83.11611
+n_georgia,rabun,Lake Leroy,28.2,one outflow line,False,0,True,NHD's outflow line,34.87009,-83.15009
+n_georgia,rabun,Coneross Creek Reservoir,24.6,one outflow line,False,100,True,NHD's outflow line,34.72373,-83.10545
+n_georgia,rabun,unnamed,8.8,one outflow line,False,95,True,NHD's outflow line,34.68134,-83.61774
+n_georgia,rabun,Habersham Mills Lake,27.7,one outflow line,False,42,True,NHD's outflow line,34.5906,-83.55679
+n_georgia,rabun,unnamed,8.2,one outflow line,False,20,True,NHD's outflow line,34.62097,-83.54409
+n_georgia,rabun,Webster Lake,9.3,one outflow line,False,92,True,NHD's outflow line,34.53348,-83.6521
+n_georgia,rabun,Reservoir Number Twelve,8.1,one outflow line,False,30,True,NHD's outflow line,34.58082,-83.467
+n_georgia,hooch_tailwater,Freeman Lake,22.2,one outflow line,False,72,True,NHD's outflow line,33.92176,-84.14067
+n_georgia,hooch_tailwater,Jones Lake,12.5,one outflow line,False,607,True,NHD's outflow line,33.98202,-84.04215
+n_georgia,hooch_tailwater,Stone Mountain Park Lake-South,14.1,one outflow line,False,228,False,NHD's outflow line,33.79627,-84.14137
+n_georgia,hooch_tailwater,Stone Mountain Lake,133.6,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,33.79679,-84.12454
+n_georgia,hooch_tailwater,Cardinal Lake,17.0,one outflow line,False,67,True,NHD's outflow line,33.97442,-84.12952
+n_georgia,hooch_tailwater,Rollins Ranch Lake,9.9,one outflow line,False,22,True,NHD's outflow line,33.9915,-84.10644
+n_georgia,hooch_tailwater,Lake Lucerne,15.1,one outflow line,False,114,True,NHD's outflow line,33.83281,-84.0901
+n_georgia,hooch_tailwater,Lake Sidney Lanier,15512.6,one outflow line,False,5835,False,NHD's outflow line,34.21192,-84.09813
+n_georgia,hooch_tailwater,Brookhaven Country Club Lake,8.2,one outflow line,False,10,True,NHD's outflow line,33.86732,-84.35272
+n_georgia,hooch_tailwater,Bull Sluice Lake,164.9,one outflow line,False,41,True,NHD's outflow line,33.96823,-84.38351
+n_georgia,hooch_tailwater,Lake Arrida,9.5,one outflow line,False,71,True,NHD's outflow line,34.02698,-84.28116
+n_georgia,hooch_tailwater,DeKalb County Water Works,17.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.93691,-84.27889
+n_georgia,hooch_tailwater,unnamed,15.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,34.02282,-84.22731
+n_georgia,hooch_tailwater,Berkeley Lake,27.7,one outflow line,False,114,True,NHD's outflow line,33.98853,-84.18738
+n_georgia,hooch_tailwater,Lake Windwood,69.5,one outflow line,False,340,True,NHD's outflow line,34.08384,-84.23418
+n_georgia,hooch_tailwater,Silver Lake,9.7,one outflow line,False,50,True,NHD's outflow line,33.88907,-84.33812
+n_georgia,hooch_tailwater,unnamed,11.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.82819,-84.47323
+n_georgia,hooch_tailwater,Highland Lake,9.3,one outflow line,False,42,True,NHD's outflow line,34.04251,-84.42197
+n_georgia,hooch_tailwater,Atlanta City Water Works Reservoir Number One,13.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,33.78899,-84.4153
+n_georgia,hooch_tailwater,Bishop Lake,8.5,one outflow line,False,86,True,NHD's outflow line,34.00097,-84.41868
+n_georgia,hooch_tailwater,Garrett Lake,17.7,one outflow line,False,54,True,NHD's outflow line,34.08827,-84.4197
+n_georgia,hooch_tailwater,Lake Providence,10.5,one outflow line,False,91,True,NHD's outflow line,34.11219,-84.30656
+n_georgia,hooch_tailwater,Starnes Lake,8.0,one outflow line,False,148,True,NHD's outflow line,34.12778,-84.29351
+n_georgia,hooch_tailwater,King Lake,9.7,one outflow line,False,142,True,NHD's outflow line,34.15559,-84.30478
+n_georgia,hooch_tailwater,Bradshaw Lake,12.4,one outflow line,False,30,True,NHD's outflow line,34.17822,-84.4486
+n_georgia,hooch_tailwater,Almond Lake,10.8,one outflow line,False,136,True,NHD's outflow line,34.19585,-84.3159
+ne_ct,natchaug,Conant Brook Reservoir,52.3,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,42.06898,-72.28779
+ne_ct,natchaug,Amston Lake,76.7,one outflow line,False,22,True,NHD's outflow line,41.62726,-72.33436
+ne_ct,natchaug,Goss Pond,9.3,one outflow line,False,64,True,NHD's outflow line,41.87805,-72.14995
+ne_ct,natchaug,Mashapaug Pond,120.7,one outflow line,False,14,True,NHD's outflow line,42.00504,-72.12871
+ne_ct,natchaug,Bigelow Pond,10.2,one outflow line,False,61,True,NHD's outflow line,41.99179,-72.1316
+ne_ct,natchaug,Myers Pond,10.0,one outflow line,False,22,True,NHD's outflow line,41.97522,-72.14272
+ne_ct,natchaug,Goodhall Pond,9.3,one outflow line,False,0,True,NHD's outflow line,42.0263,-72.13959
+ne_ct,natchaug,Poole Pond,17.3,one outflow line,False,10,True,NHD's outflow line,41.87948,-72.1135
+ne_ct,natchaug,Halls Pond,33.0,one outflow line,False,840,True,NHD's outflow line,41.83719,-72.10757
+ne_ct,natchaug,Black Spruce Pond,12.6,one outflow line,False,20,True,NHD's outflow line,41.79678,-72.09808
+ne_ct,natchaug,Pine Acres Lake,62.6,one outflow line,False,22,True,NHD's outflow line,41.77628,-72.07807
+ne_ct,natchaug,Griggs Pond,16.9,one outflow line,False,0,True,NHD's outflow line,41.99829,-72.08592
+ne_ct,natchaug,Corbin Wildlife Marsh,12.8,one outflow line,False,10,True,NHD's outflow line,41.99866,-72.09351
+ne_ct,natchaug,Witches Woods Lake,71.1,one outflow line,False,10,True,NHD's outflow line,41.95054,-72.07446
+ne_ct,natchaug,Black Pond,29.2,one outflow line,False,22,True,NHD's outflow line,41.9672,-72.0673
+ne_ct,natchaug,Potter Pond,9.0,one outflow line,False,22,True,NHD's outflow line,42.00161,-72.05365
+ne_ct,natchaug,Chamberlain Pond,20.6,one outflow line,False,14,True,NHD's outflow line,41.97194,-72.059
+ne_ct,natchaug,unnamed,10.8,one outflow line,False,10,True,NHD's outflow line,41.85542,-72.06302
+ne_ct,natchaug,Ashford Lake,21.1,one outflow line,False,277,True,NHD's outflow line,41.89825,-72.12579
+ne_ct,natchaug,Crystal Pond,58.1,one outflow line,False,20,True,NHD's outflow line,41.92947,-72.10292
+ne_ct,natchaug,Hampton Reservoir,24.1,one outflow line,False,0,True,NHD's outflow line,41.82341,-72.05811
+ne_ct,natchaug,unnamed,32.4,one outflow line,False,10,True,NHD's outflow line,41.83645,-72.08196
+ne_ct,natchaug,Keach Pond,12.5,one outflow line,False,20,True,NHD's outflow line,41.96722,-72.08926
+ne_ct,natchaug,Breakneck Pond,38.6,NHD's name,False,10,True,"NHD's outflow line, the named one of 2",42.03004,-72.10198
+ne_ct,natchaug,Hatchet Pond,15.2,NHD's name,False,58,True,"NHD's outflow line, the named one of 2",42.02618,-72.08851
+ne_ct,natchaug,Brewster Pond,29.4,one outflow line,False,10,True,NHD's outflow line,41.61767,-72.29023
+ne_ct,natchaug,Mono Pond,43.7,one outflow line,False,0,True,NHD's outflow line,41.67939,-72.31083
+ne_ct,natchaug,Williams Pond,109.3,one outflow line,False,10,True,NHD's outflow line,41.63017,-72.30099
+ne_ct,natchaug,Stiles Pond,8.5,one outflow line,False,22,True,NHD's outflow line,41.65041,-72.28093
+ne_ct,natchaug,unnamed,8.6,one outflow line,False,14,True,NHD's outflow line,41.67059,-72.25834
+ne_ct,natchaug,Columbia Lake,110.0,one outflow line,False,10,True,NHD's outflow line,41.71852,-72.33203
+ne_ct,natchaug,Andover Lake,61.8,one outflow line,False,10,True,NHD's outflow line,41.7244,-72.3604
+ne_ct,natchaug,Mansfield Hollow Lake,197.9,one outflow line,False,30,True,NHD's outflow line,41.75563,-72.18124
+ne_ct,natchaug,Echo Lake,9.1,one outflow line,False,51,True,NHD's outflow line,41.76577,-72.19078
+ne_ct,natchaug,Wangumbaug Lake,151.6,one outflow line,False,120,True,NHD's outflow line,41.76877,-72.30854
+ne_ct,natchaug,Eagleville Lake,32.2,one outflow line,False,36,True,NHD's outflow line,41.7847,-72.28128
+ne_ct,natchaug,Hansens Pond,17.7,one outflow line,False,28,True,NHD's outflow line,41.80355,-72.18889
+ne_ct,natchaug,Knowlton Pond,44.9,nearest the terrain's cell,False,22,True,"NHD's outflow line, the nearest of 2",41.8355,-72.19194
+ne_ct,natchaug,Leander Pond,15.2,one outflow line,False,0,True,NHD's outflow line,41.83299,-72.18868
+ne_ct,natchaug,Big Pond,15.1,one outflow line,False,10,True,NHD's outflow line,41.67292,-72.1762
+ne_ct,natchaug,Spencer Pond,13.1,one outflow line,False,10,True,NHD's outflow line,41.66388,-72.17096
+ne_ct,natchaug,McLaughlin Pond,8.3,nearest the terrain's cell,False,10,True,"NHD's outflow line, the nearest of 2",41.82657,-72.18041
+ne_ct,natchaug,unnamed,66.3,one outflow line,False,67,True,NHD's outflow line,42.04977,-72.15642
+ne_ct,natchaug,Number Five Reservoir,12.7,NHD's name,False,197,True,"NHD's outflow line, the named one of 2",42.04129,-72.08045
+ne_ct,natchaug,Number Four Reservoir,27.2,NHD's name,False,86,True,"NHD's outflow line, the named one of 2",42.05064,-72.07651
+ne_ct,natchaug,Cohasse Brook Reservoir,23.1,one outflow line,False,63,True,NHD's outflow line,42.0465,-72.05206
+ne_ct,natchaug,unnamed,9.1,one outflow line,False,10,True,NHD's outflow line,42.04123,-72.04662
+ne_ct,natchaug,Hamant Brook Reservoir,12.1,one outflow line,False,22,True,NHD's outflow line,42.05748,-72.11173
+ne_ct,natchaug,Number Three Reservoir,9.0,one outflow line,False,81,True,NHD's outflow line,42.05656,-72.07213
+ne_ct,natchaug,Gagers Pond,12.6,one outflow line,False,10,True,NHD's outflow line,41.63201,-72.14966
+ne_ct,natchaug,Lake Marie,9.1,one outflow line,False,10,True,NHD's outflow line,41.70774,-72.13839
+ne_ct,natchaug,Beaver Brook Pond,8.1,one outflow line,False,0,True,NHD's outflow line,41.69695,-72.12853
+ne_ct,natchaug,Baltic Reservoir,10.1,nearest the terrain's cell,False,10,True,"NHD's outflow line, the nearest of 2",41.62238,-72.07459
+ne_ct,natchaug,unnamed,10.6,one outflow line,False,0,True,NHD's outflow line,41.63672,-72.06842
+ne_ct,natchaug,Bog Meadow Reservoir,36.2,one outflow line,False,10,True,NHD's outflow line,41.5688,-72.09608
+ne_ct,natchaug,Fairview Reservoir,27.0,NHD's name,False,20,True,"NHD's outflow line, the named one of 2",41.56024,-72.08172
+ne_ct,natchaug,Taftville Reservoir,10.4,one outflow line,False,67,True,NHD's outflow line,41.56328,-72.06683
+ne_ct,natchaug,Hanover Reservoir,8.3,one outflow line,False,20,True,NHD's outflow line,41.64733,-72.06074
+ne_ct,natchaug,Red Cedar Lake,53.0,one outflow line,False,45,True,NHD's outflow line,41.55959,-72.23031
+ne_ct,natchaug,Fitchville Pond,23.1,one outflow line,False,10,True,NHD's outflow line,41.56362,-72.15543
+ne_ct,natchaug,Savin Lake,20.5,one outflow line,False,10,True,NHD's outflow line,41.57304,-72.25024
+ne_ct,natchaug,Deep River Reservoir,95.4,one outflow line,False,10,True,NHD's outflow line,41.55531,-72.24332
+ne_ct,natchaug,Happy Acres Pond,22.4,one outflow line,False,32,True,NHD's outflow line,41.86739,-72.20717
+ne_ct,natchaug,Bissonnette Pond,21.4,one outflow line,False,10,True,NHD's outflow line,41.92265,-72.22032
+ne_ct,natchaug,Lake Chaffee,21.1,one outflow line,False,0,True,NHD's outflow line,41.93989,-72.19255
+ne_ct,natchaug,Bradway Pond,10.5,one outflow line,False,432,True,NHD's outflow line,41.94935,-72.35584
+ne_ct,natchaug,Orcutts Pond,9.5,one outflow line,False,0,True,NHD's outflow line,41.97804,-72.32291
+ne_ct,natchaug,New City Pond,13.6,one outflow line,False,10,True,NHD's outflow line,42.00305,-72.24205
+ne_ct,natchaug,unnamed,16.1,one outflow line,False,0,True,NHD's outflow line,41.9783,-72.24626
+ne_ct,natchaug,Moore Pond,20.7,one outflow line,False,0,True,NHD's outflow line,42.00597,-72.20643
+ne_ct,natchaug,Lake George,37.6,one outflow line,False,63,True,NHD's outflow line,42.0634,-72.22397
+ne_ct,natchaug,Morey Pond,12.3,one outflow line,False,0,True,NHD's outflow line,41.95796,-72.19103
+ne_ct,natchaug,Sessions Meadow Marsh,10.0,one outflow line,False,0,True,NHD's outflow line,42.01863,-72.16807
+ne_ct,natchaug,Buckley Pond,10.1,one outflow line,False,0,True,NHD's outflow line,41.99325,-72.16522
+ne_ct,natchaug,Skungamaug Marsh,28.5,one outflow line,False,14,True,NHD's outflow line,41.88789,-72.34199
+ne_ct,natchaug,Staffordville Reservoir,63.1,one outflow line,False,22,True,NHD's outflow line,41.99636,-72.25985
+ne_ct,natchaug,State Line Pond,30.2,one outflow line,False,30,True,NHD's outflow line,42.01777,-72.31581
+ne_ct,quinebaug,Wallum Lake,125.4,one outflow line,False,152,True,NHD's outflow line,42.00223,-71.76278
+ne_ct,quinebaug,Morse Pond,9.4,NHD's name,False,10,True,"NHD's outflow line, the named one of 2",42.04412,-71.74724
+ne_ct,quinebaug,Burlingame Reservoir,27.2,one outflow line,False,22,True,NHD's outflow line,41.9143,-71.74239
+ne_ct,quinebaug,Wilson Reservoir,44.3,one outflow line,False,103,True,NHD's outflow line,41.96561,-71.72276
+ne_ct,quinebaug,Pascoag Reservoir,137.0,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,41.92608,-71.71972
+ne_ct,quinebaug,Badluck Lake,38.9,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,42.05529,-71.76975
+ne_ct,quinebaug,Ponaganset Reservoir,89.3,one outflow line,False,10,True,NHD's outflow line,41.86839,-71.7428
+ne_ct,quinebaug,Abbott Pond,10.6,one outflow line,False,22,True,NHD's outflow line,41.88512,-71.9996
+ne_ct,quinebaug,Nightingale Pond,16.4,one outflow line,False,32,True,NHD's outflow line,41.8998,-72.0135
+ne_ct,quinebaug,unnamed,9.9,one outflow line,False,108,True,NHD's outflow line,41.82604,-72.04799
+ne_ct,quinebaug,Wappaquasset Pond,36.4,one outflow line,False,20,True,NHD's outflow line,41.93102,-71.98165
+ne_ct,quinebaug,Muddy Pond,15.6,one outflow line,False,61,True,NHD's outflow line,42.02187,-72.02928
+ne_ct,quinebaug,Beach Pond,141.2,one outflow line,False,20,True,NHD's outflow line,41.5815,-71.81748
+ne_ct,quinebaug,Beachdale Pond,15.1,NHD's name,False,0,True,"NHD's outflow line, the named one of 2",41.57876,-71.86211
+ne_ct,quinebaug,Doaneville Pond,27.6,one outflow line,False,32,True,NHD's outflow line,41.56624,-71.87855
+ne_ct,quinebaug,Tippecansett Pond,25.3,one outflow line,False,10,True,NHD's outflow line,41.59988,-71.77903
+ne_ct,quinebaug,Hazard Pond,19.4,one outflow line,False,14,True,NHD's outflow line,41.62644,-71.78214
+ne_ct,quinebaug,Wickaboxet Pond,15.7,one outflow line,False,260,True,NHD's outflow line,41.63083,-71.76836
+ne_ct,quinebaug,Grassy Pond,9.0,one outflow line,False,30,True,NHD's outflow line,41.54005,-71.77481
+ne_ct,quinebaug,Beach Pond,23.9,one outflow line,False,0,True,NHD's outflow line,41.57191,-71.79001
+ne_ct,quinebaug,Carbuncle Pond,15.5,one outflow line,False,239,True,NHD's outflow line,41.69663,-71.77372
+ne_ct,quinebaug,Waterman Pond,12.8,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,41.71836,-71.73032
+ne_ct,quinebaug,Little Grass Pond,11.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,41.66576,-71.73299
+ne_ct,quinebaug,Arnold Pond,30.5,one outflow line,False,14,True,NHD's outflow line,41.66821,-71.74956
+ne_ct,quinebaug,Bailey Pond,19.4,one outflow line,False,393,True,NHD's outflow line,41.63774,-71.79311
+ne_ct,quinebaug,Tillinghast Pond,16.5,one outflow line,False,32,True,NHD's outflow line,41.64884,-71.7587
+ne_ct,quinebaug,Hell Hollow Pond,11.2,one outflow line,False,14,True,NHD's outflow line,41.63725,-71.8702
+ne_ct,quinebaug,Green Fall Pond,18.9,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,41.53447,-71.81044
+ne_ct,quinebaug,Moosup Pond,38.5,one outflow line,False,10,True,NHD's outflow line,41.73445,-71.86139
+ne_ct,quinebaug,Morse Pond,16.8,one outflow line,False,0,True,NHD's outflow line,42.02724,-72.01055
+ne_ct,quinebaug,Lake Chaubunagungamaug,517.9,left at the terrain's cell: NHD's outflow line leaves the map before the terrain takes the water on,False,0,False,NHD's outflow line leaves the map before the terrain takes the water on,42.05764,-71.84467
+ne_ct,quinebaug,Larner Pond,11.1,one outflow line,False,414,False,NHD's outflow line,42.05931,-71.90561
+ne_ct,quinebaug,Versailles Pond,23.2,one outflow line,False,54,True,NHD's outflow line,41.60097,-72.04413
+ne_ct,quinebaug,Papermill Pond,24.9,one outflow line,False,666,True,NHD's outflow line,41.61942,-72.05072
+ne_ct,quinebaug,Blissville Pond,11.5,one outflow line,False,14,True,NHD's outflow line,41.5604,-72.03866
+ne_ct,quinebaug,Lisbon Pond,10.2,one outflow line,False,14,True,NHD's outflow line,41.64649,-72.01767
+ne_ct,quinebaug,Clark Pond,8.2,one outflow line,False,0,True,NHD's outflow line,41.77062,-71.7759
+ne_ct,quinebaug,Paradise Lake,19.6,one outflow line,False,0,True,NHD's outflow line,41.75073,-71.96787
+ne_ct,quinebaug,Ross Pond,12.8,one outflow line,False,61,True,NHD's outflow line,41.77677,-71.86426
+ne_ct,quinebaug,Ross Management Area Pond,20.9,one outflow line,False,42,True,NHD's outflow line,41.77245,-71.79614
+ne_ct,quinebaug,Quinebaug Pond,28.3,one outflow line,False,14,True,NHD's outflow line; the terrain's way on leaves NHD's line,41.76893,-71.88726
+ne_ct,quinebaug,Fivemile Pond,14.3,NHD's name,False,14,True,"NHD's outflow line, the named one of 2",41.80438,-71.88614
+ne_ct,quinebaug,Tetreault Pond,15.8,"left at the terrain's cell: the terrain takes the water on down none of the outflow lines NHD names within 300 m, only down an unnamed one",False,0,False,"the terrain takes the water on down none of the outflow lines NHD names within 300 m, only down an unnamed one",41.79771,-71.84976
+ne_ct,quinebaug,unnamed,9.8,one outflow line,False,0,True,NHD's outflow line,41.81106,-71.97104
+ne_ct,quinebaug,Bog Meadow Reservoir,11.8,one outflow line,False,20,True,NHD's outflow line,41.84449,-71.81519
+ne_ct,quinebaug,Chase Reservoir,29.9,one outflow line,False,71,True,NHD's outflow line,41.84611,-71.83823
+ne_ct,quinebaug,unnamed,15.4,one outflow line,False,0,True,NHD's outflow line,41.84897,-71.80172
+ne_ct,quinebaug,Middle Reservoir,39.8,one outflow line,False,81,True,NHD's outflow line,41.84905,-71.81111
+ne_ct,quinebaug,Killingly Pond,48.8,one outflow line,False,250,True,NHD's outflow line,41.85935,-71.8024
+ne_ct,quinebaug,Eddy Pray Reservoir,15.6,one outflow line,False,117,True,NHD's outflow line,41.86328,-71.811
+ne_ct,quinebaug,Dayville Pond,9.2,one outflow line,False,335,True,NHD's outflow line,41.85051,-71.89029
+ne_ct,quinebaug,Alexander Lake,79.6,one outflow line,False,10,True,NHD's outflow line,41.85124,-71.90748
+ne_ct,quinebaug,Lake Albert,17.0,one outflow line,False,429,True,NHD's outflow line,41.81714,-71.80655
+ne_ct,quinebaug,Aspinook Pond,125.1,one outflow line,False,51,True,NHD's outflow line,41.61052,-71.98525
+ne_ct,quinebaug,unnamed,8.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,41.62627,-71.96783
+ne_ct,quinebaug,Clayville Pond,19.7,one outflow line,False,1011,True,NHD's outflow line,41.62541,-71.96583
+ne_ct,quinebaug,Pachaug Pond,331.1,one outflow line,False,14,True,NHD's outflow line,41.58185,-71.92973
+ne_ct,quinebaug,unnamed,8.4,NHD's name,False,121,True,"NHD's outflow line, the named one of 2",41.54913,-71.8952
+ne_ct,quinebaug,unnamed,8.6,one outflow line,False,102,True,NHD's outflow line,41.76881,-71.90952
+ne_ct,quinebaug,Ashland Pond,36.1,one outflow line,False,10,True,NHD's outflow line,41.60545,-71.97721
+ne_ct,quinebaug,Hopeville Pond,43.2,one outflow line,False,32,True,NHD's outflow line,41.6098,-71.94089
+ne_ct,quinebaug,Stone Hill Reservoir,11.7,NHD's name,False,58,True,"NHD's outflow line, the named one of 2",41.63007,-71.90103
+ne_ct,quinebaug,Quaddick Reservoir,53.6,one outflow line,False,20,True,NHD's outflow line,41.94303,-71.8291
+ne_ct,quinebaug,Bowdish Reservoir,89.2,one outflow line,False,36,True,NHD's outflow line,41.92477,-71.77803
+ne_ct,quinebaug,Reams Pond,13.6,one outflow line,False,10,True,NHD's outflow line,41.9388,-71.86212
+ne_ct,quinebaug,Acme Pond,13.8,one outflow line,False,10,True,NHD's outflow line,41.94303,-71.89484
+ne_ct,quinebaug,Roseland Lake,39.7,one outflow line,False,36,True,NHD's outflow line,41.94511,-71.94914
+ne_ct,quinebaug,unnamed,10.0,one outflow line,False,10,True,NHD's outflow line,41.9538,-71.98118
+ne_ct,quinebaug,West Thompson Lake,81.2,one outflow line,False,272,True,NHD's outflow line,41.94669,-71.90371
+ne_ct,quinebaug,unnamed,84.2,one outflow line,False,20,True,NHD's outflow line,41.95172,-71.82119
+ne_ct,quinebaug,Stump Pond,35.8,one outflow line,False,36,True,NHD's outflow line,41.96888,-71.81647
+ne_ct,quinebaug,Wakefield Pond,30.5,one outflow line,False,20,True,NHD's outflow line,41.96126,-71.79827
+ne_ct,quinebaug,Little Pond,27.6,one outflow line,False,14,True,NHD's outflow line,42.01801,-71.84083
+ne_ct,quinebaug,Long Pond,8.4,left at the terrain's cell: the terrain takes the water on down none of NHD's outflow lines within 300 m,False,0,False,the terrain takes the water on down none of NHD's outflow lines within 300 m,42.02141,-71.8205
+ne_ct,quinebaug,Merino Pond,30.4,one outflow line,False,10,True,NHD's outflow line,42.04945,-71.89413
+ne_ct,quinebaug,Wilbur Pond,9.4,one outflow line,False,10,True,NHD's outflow line,41.93032,-71.76413
+ne_ct,quinebaug,Lake Washington,16.6,one outflow line,False,10,True,NHD's outflow line,41.91434,-71.75975
+se_pa,brandywine,Coatesville Reservoir,22.3,NHDPlus's line,False,0,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",40.0054,-75.85333
+se_pa,brandywine,unnamed,37.3,one outflow line,False,100,True,NHD's outflow line,40.02813,-75.84987
+se_pa,brandywine,Marsh Creek Reservoir,202.2,NHD's name,False,288,True,"NHD's outflow line, the named one of 3",40.05814,-75.71552
+se_pa,brandywine,unnamed,9.6,one outflow line,False,32,True,NHD's outflow line,40.11827,-75.84336
+se_pa,brandywine,Glen Morgan Lake,50.5,NHDPlus's line,False,191,True,"NHD's outflow line, the one of 2 that NHDPlus's line leaves by",40.1892,-75.86362
+se_pa,brandywine,Struble Lake,57.1,one outflow line,False,130,True,NHD's outflow line,40.10795,-75.86247
+se_pa,brandywine,Green Hills Lake,9.2,NHD's name,False,130,True,"NHD's outflow line, the named one of 2",40.26203,-75.90665
+se_pa,brandywine,Hopewell Lake,26.7,one outflow line,False,71,True,NHD's outflow line,40.20405,-75.77815
+se_pa,brandywine,Scotts Run Lake,8.3,one outflow line,False,10,True,NHD's outflow line,40.20942,-75.79666
+se_pa,brandywine,Somerset Lake,10.8,one outflow line,False,10,True,NHD's outflow line,39.78398,-75.74187
+se_pa,brandywine,unnamed,12.3,one outflow line,False,328,False,NHD's outflow line,39.69349,-75.74603
+se_pa,brandywine,unnamed,60.4,one outflow line,False,1290,False,NHD's outflow line; the terrain's way on leaves NHD's line,39.69414,-75.63815
+se_pa,brandywine,West Chester Reservoir,26.1,NHD's name,False,40,True,"NHD's outflow line, the named one of 2",39.9846,-75.57198
+se_pa,brandywine,unnamed,10.3,one outflow line,False,40,True,NHD's outflow line,40.17668,-75.88766
+se_pa,ridley_valley,Springton Reservoir,147.3,one outflow line,False,22,True,NHD's outflow line,39.95174,-75.39435
+se_pa,ridley_valley,unnamed,12.1,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,40.09529,-75.35728
+se_pa,ridley_valley,unnamed,8.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,40.09452,-75.31328
+se_pa,ridley_valley,Bradford Reservoir,9.9,one outflow line,False,444,True,NHD's outflow line,40.23133,-75.16098
+se_pa,ridley_valley,unnamed,22.4,one outflow line,False,82,True,NHD's outflow line,39.83986,-75.21383
+se_pa,ridley_valley,Bell Lake,21.3,one outflow line,False,22,True,NHD's outflow line,39.84317,-75.17515
+se_pa,ridley_valley,unnamed,8.2,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,39.90226,-75.17986
+se_pa,ridley_valley,East Park Reservoir,37.6,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,39.98288,-75.19354
+se_pa,ridley_valley,unnamed,50.9,one outflow line,False,222,True,NHD's outflow line,39.88814,-75.26182
+se_pa,ridley_valley,unnamed,8.2,one outflow line,False,121,True,NHD's outflow line,39.83438,-75.28627
+se_pa,ridley_valley,unnamed,8.4,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,40.05651,-75.5333
+se_pa,ridley_valley,unnamed,18.7,one outflow line,False,30,True,NHD's outflow line,40.07033,-75.52403
+se_pa,ridley_valley,Pickering Creek Reservoir,43.6,one outflow line,False,22,True,NHD's outflow line,40.11993,-75.49296
+smokies,cades_cove,Fontana Lake,3514.8,one outflow line,False,10,True,NHD's outflow line,35.45272,-83.80465
+smokies,cades_cove,Calderwood Lake,225.1,one outflow line,False,58,True,NHD's outflow line,35.49252,-83.97906
+smokies,cades_cove,Fort Loudoun Lake,5578.8,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,35.80015,-84.02093
+smokies,le_conte,Fontana Lake,323.4,one outflow line,False,136,True,NHD's outflow line,35.43825,-83.58464
+smokies,cataloochee,Waterville Lake,127.2,one outflow line,False,89,True,NHD's outflow line,35.69544,-83.04959
+smokies,cataloochee,Lake Junaluska,81.2,NHD's name,False,57,True,"NHD's outflow line, the named one of 2",35.52722,-82.96326
+smokies,tellico,Indian Boundary Lake,37.6,one outflow line,False,0,True,NHD's outflow line,35.40167,-84.11473
+smokies,tellico,Chilhowee Lake,680.7,one outflow line,False,10,True,NHD's outflow line,35.546,-84.04985
+smokies,tellico,Tellico Lake,6142.7,left at the terrain's cell: NHD has no outflow line,False,0,False,NHD has no outflow line,35.56146,-84.19062
+smokies,tellico,unnamed,13.9,one outflow line,False,36,True,NHD's outflow line,35.54826,-84.16142
+smokies,snowbird,Santeetlah Lake,1068.5,one outflow line,False,81,True,NHD's outflow line,35.37748,-83.87644
+smokies,nantahala,Nantahala Lake,559.1,one outflow line,False,14,True,NHD's outflow line,35.19939,-83.65107
+smokies,nantahala,Queens Creek Lake,8.5,one outflow line,False,10,True,NHD's outflow line,35.27579,-83.65674
+smokies,nantahala,unnamed,17.1,one outflow line,False,92,True,NHD's outflow line,35.37247,-83.56285
+smokies,tuckasegee,Lake Emory,33.6,one outflow line,False,0,True,NHD's outflow line,35.22099,-83.37484

@@ -190,6 +190,55 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    the size floor). The folder also keeps the
    experiment this came from, NHD's lines burned into the DEM itself, which is not used: burned everywhere they lost
    waterfall-like steps in the mountains, burned on flat ground only they reshuffled braided rivers' arms.
+   Since 2026-11-22 a lake ends at NHD's outlet, not at the cell where the DEM gathers the most water
+   (`lake_outlet`). The two were the same place at most lakes, but 300 m or more apart at 77 of the 1,430
+   the maps carried on (Raquette Lake 9.1 km: the terrain's cell sat at South Inlet's mouth, and `route_lake` sent
+   the whole lake there). NHD's outlet is where one of its detailed stream lines that starts in the lake leaves the
+   water. The line is followed for up to 300 m to the first cell the terrain takes the water on from: one whose
+   own D8 path doesn't lead back into the lake and stays on NHD's line (80 % of its next 200 m within 40 m). The
+   cells before it (a dam's crest, a sill) are pointed along NHD's line; the lake's last cell on the line is the pit.
+   A way out that reaches another lake that holds water ends at its first cell. A pipeline or ditch counts only
+   where the terrain takes the water on down no stream line, and only where a stream line goes on from it within
+   1 km (the network runs through Palisades Dam and Stark Falls Dam as a pipe; the Los Angeles Aqueduct leaves
+   Bouquet Reservoir as one too, and took Bouquet Creek's water in a scratch build before the second condition).
+   With two or three outflow lines (61 lakes) three witnesses are asked in turn. The line NHD names is the river's
+   own bed (the Beaver River's below Soft Maple Reservoir, beside the unnamed power canal where the terrain spills
+   the lake). Else the line NHDPlus V2's 1:100,000 flowline leaves the lake by (Lake Mathews has three unnamed ways
+   out; the terrain spills it north over a dike, NHDPlus and the gauges on Temescal Creek have it on Cajalco Creek).
+   NHDPlus only chooses among NHD's detailed lines; its own geometry is never where the water goes in. Else the one
+   nearest the terrain's cell. D8 sends a lake's water down one way out, so the other arm is drawn only where it
+   gathers a creek's ground of its own. Of the 1,417 lakes ended at NHD's outlet on the 12 maps, 1,355 have one
+   outflow line the terrain takes on (5 of them a pipe or ditch); NHD's name decides 33, NHDPlus 17, the nearest
+   line 11. Name and NHDPlus disagree at 3 of the 33 (Castaic Lake, Beaver Pond on the Cedar River, Rock Lake), and
+   the name stands.
+   The terrain's cell stays (12 lakes on the 12 maps, each named in the log with the reason) where the terrain takes
+   the water on down none of NHD's outflow lines within 300 m (Ferris Lake, whose outlet stream the DEM runs back
+   into the lake for 800 m); where it takes it on only down another line than the one NHD names or NHDPlus leaves by
+   (Tetreault Pond: the unnamed line dried Snake Meadow Brook in a scratch build); where the line runs off the map;
+   where NHDPlus's line leaves the lake at the terrain's cell and every outflow line the terrain takes on is 300 m
+   or more from it (Lens Lake and Livingston Lake, on a divide: NHD names their outflows to one side, NHDPlus and
+   the terrain have them on Paul Creek); and where NHD's outlet lies on an edge between two boxes. 71 more lakes
+   have no NHD outflow line at all. All lakes are first ended at the terrain's cell and judged on that one surface,
+   then moved: judged one by one, a lake whose outflow line runs through the next pond of a chain was held back by
+   that pond's flat water.
+   `03b` writes what it decided to `data/derived/<area>/_shared/lake_outlets.json` (outlet cell and first cell of
+   the way out per box; the lakes left at the terrain's cell with the reason), and `crossbox.py` puts each lake's
+   water back in at that first cell (6., Past dams) instead of looking for the place again. Until then the two
+   steps each decided where a lake drains, and where they differed the top of the outlet channel carried none of
+   the lake's water (Seventh Lake's 43.5 km² went in 555 m from its outlet, in the woods, and the channel to Fifth
+   Lake wasn't drawn; 192 lakes missed 200 m or more of their way out). `03b` reads NHDPlus's lines for the second
+   witness, so `run_base.sh` runs `02b_download_flow.py` before it and `run_rebuild_a.sh` fetches them when the file
+   is missing. Where it is still missing `03b` stops before it writes anything; `NO_NHDPLUS=1` goes on without the
+   second witness and says so in its last line. Measured on scratch builds of all 12 maps against the published
+   ones before it went in, and again on the rebuilt maps (`data/stream_burning/README.md`, "Both faults fixed at
+   the root"): lakes ending 300 m or more from NHD's outlet 77 → 8, put-ins 200 m or more off the way out 192 → 7,
+   61 lake outlets NHD maps newly drawn, USGS gauges within 10 % of their drainage 417 → 419 of 516 (the Salt River
+   at the Wyoming line 0.006 → 0.91 of its drainage, the Beaver below Stillwater 0.93 → 1.01), no dead end, no flow
+   drop. What it costs: the second outlet of 9 lakes is no longer drawn, and 15.7 mi of creek below 19 lakes read
+   less because the lake's water now leaves by NHD's outlet (Mad Tom Brook below Mill Creek Lake, Potash Brook
+   below Merino Pond); NHDPlus's coarser line has the old course at some of them.
+   The pit itself stays (the one-cell gap between a lake's last cell and its way out): closing it is a bigger change
+   than this one, see `data/stream_burning/README.md`, "The gap at a lake's outlet".
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
    with the channel 200 m above and below. Classes:
    - **waterfall-like step**: max slope ≥ 0.6 and ≥ 2.5× steeper than the neighbouring channel
@@ -205,8 +254,8 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    was no channel for the detectors from the dam down to where 1 km² (10 km² for the second pass) had gathered again:
    Rainbow Falls on the Raquette, two steps in the bypassed channel below Rainbow Falls Dam, was found only while a
    path leaked out of the reservoir, and went with the leak. Known falls found (any source, 200 m): 1,025 →
-   1,070 of 2,128 over the 12 maps, none lost. `run_base.sh` runs `02b_download_flow.py` before the
-   drops for it. A drop's `area_km2` is this size.
+   1,070 of 2,128 over the 12 maps, none lost. `run_base.sh` runs `02b_download_flow.py` before
+   `03b` (which asks NHDPlus's lines about lake outlets, 3.) and so before the drops. A drop's `area_km2` is this size.
    `02f_known_falls.py` (per area, before step 5; `run_mid.sh` runs it first): the known waterfalls, every source merged
    into `data/raw/<area>/_shared/known_falls.gpkg`. Sources: OpenStreetMap (queried in tiles of at most 0.5 degrees: one
    query over a whole area's box hung on both public servers; waterfall nodes and ways, named rapids,
@@ -320,20 +369,23 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
      above Goshen Pass, Otter Creek, the Snake) started with nothing too. Where an NHDPlus V2 river of 10+ km² crosses
      the outer boundary flowing in, its drainage there, less what the box's own routing and the edge links already
      have at that spot, is carried down the creek the same way. One that comes in through a reservoir (the
-     Chattahoochee in Lake Lanier) is handed to the cell below the dam.
+     Chattahoochee in Lake Lanier) is handed to the cell below the dam: since 2026-11-22 the cell where that
+     reservoir's own water goes in (a second line ran 115 m beside the Hiwassee below Chatuge Dam before).
    - **Past dams**: every lake and reservoir ends its D8 paths at its outlet (`03b_stitch.py`; not one whose outlet is
      on an edge between two boxes), so the creek below the dam starts again near nothing (since 2026-11-21 on a line of
      its own from the outlet down to the first stream it meets, so the lake's water lands on the river below that
-     junction, not along a side creek's line: see 3.). `crossbox.py` links each reservoir's dead
-     ends to the cell below its dam where the water goes on, found by walking down the NHDPlus flowlines leaving the
-     lake (Morris 533 km², Pyramid 514, Castaic Lagoon 412, Big Tujunga 212, Littlerock 165, Lake Hemet 143, Big Bear
-     137, Matilija 132). That cell sits beside the channel as often as on it, and its path joined the river's own
-     line (03b's outflow line) a median 40-120 m down, 300 m or more at about 60 outlets, so the first stretch below a
-     dam read only its own few cells. Since 2026-11-21 the water is put in at the top of the lake's routed way out
-     (the outlet pit's steepest neighbour on the conditioned DEM) wherever the cell found lies within 100 m of that
-     line and runs into it (1,237 of 1,430 lake dead ends on the 12 maps); where the routing
-     leaves a lake somewhere else than NHD does (Stillwater Reservoir over a saddle 450 m from its dam, Raquette Lake
-     south over the Brown's Tract carry), NHD's cell stands. Lakes with no outflow (Baldwin Lake) and dead ends away
+     junction, not along a side creek's line: see 3.). `crossbox.py` links each lake's dead
+     ends to the cell where its water goes on (Morris 533 km², Pyramid 514, Castaic Lagoon 412, Big Tujunga 212,
+     Littlerock 165, Lake Hemet 143, Big Bear 137, Matilija 132). Since 2026-11-22 that is the first cell of the way
+     out `03b_stitch.py` laid at NHD's outlet (`lake_outlets.json`, 3.) for 1,414 of the 1,431 lakes carried on: one
+     decision where there were two. Until then `crossbox.py` found the cell itself by walking down the NHDPlus
+     flowlines leaving the lake; that cell sat beside the channel as often as on it, 300 m or more from the river's
+     own line at about 60 outlets, and 31 lakes' water went in 200 m or more from an outlet `03b` had right. For the rest (the 12 lakes `03b` leaves at the
+     terrain's cell, and lakes NHD's detailed data gives no outflow line: Castac Lake) that walk still stands, and
+     the cell it finds is moved to the top of the lake's routed way out where it lies within 100 m of it and runs
+     into it (`_at_outflow`, 4 lakes). A put-in whose path leaves its box across a rim basin too small to have an
+     exit link gets one, so the water goes on in the next box (the water of 2 lakes died on such an edge). The
+     lakes whose water is carried nowhere are named in the log. Lakes with no outflow (Baldwin Lake) and dead ends away
      from lakes (desert fans, the sea)
      stay closed. Drainages still end at dams; only areas use this. NHDPlus (1:100,000) has no flowline for most small
      ponds, and below them a brook's drainage started again from nothing (293 ponds over the 12 areas, 2026-11-20:

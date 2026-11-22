@@ -1,0 +1,189 @@
+area,name,ft,change,old_km2,new_km2,nhdplus_km2,verdict,old_fish,new_fish,lat,lon,lake,lake_km2,putin_m,putin_moved_m,decided,nhd_outlets
+adk_high_peaks,,426,lost,6.32,1.11,1.13,towards NHDPlus,15.0,39.0,44.3376,-74.34406,,,,,,
+adk_high_peaks,,15,lost,6.32,1.11,1.13,towards NHDPlus,15.0,39.0,44.33695,-74.34449,,,,,,
+adk_high_peaks,,141,lost,5.97,1.09,,no NHDPlus line,69.0,53.0,44.49121,-74.17956,,,,,,
+adk_high_peaks,,1846,lost,27.8,1.84,,no NHDPlus line,81.0,57.0,44.65138,-74.06384,,,,,,
+adk_high_peaks,,103,lost,27.8,1.84,,no NHDPlus line,81.0,57.0,44.65068,-74.06089,,,,,,
+adk_high_peaks,,79,lost,6.32,3.4,,no NHDPlus line,15.0,63.0,44.32456,-74.35343,,,,,,
+adk_high_peaks,,243,lost,6.32,3.4,,no NHDPlus line,15.0,63.0,44.32478,-74.35324,,,,,,
+adk_high_peaks,,13,lost,6.32,3.4,,no NHDPlus line,15.0,63.0,44.32456,-74.35355,,,,,,
+adk_high_peaks,,36,lost,29.39,2.47,0.82,towards NHDPlus,83.0,65.0,44.36804,-73.59602,,,,,,
+adk_high_peaks,,2574,lost,29.39,2.47,2.53,towards NHDPlus,83.0,65.0,44.36807,-73.59156,,,,,,
+adk_high_peaks,,13,lost,29.39,2.47,0.82,towards NHDPlus,83.0,65.0,44.36809,-73.59614,,,,,,
+adk_high_peaks,Grass Pond Outlet,349,lost,9.03,6.03,8.7,AWAY from NHDPlus,94.0,74.0,44.37542,-74.02921,,,,,,
+adk_high_peaks,Grass Pond Outlet,68,lost,9.04,6.03,8.7,AWAY from NHDPlus,100.0,81.0,44.37516,-74.02997,,,,,,
+adk_high_peaks,,824,lost,9.03,3.01,8.7,AWAY from NHDPlus,94.0,84.0,44.37551,-74.0282,Grass Pond (10.3 ha),6.02,35.0,32.0,one outflow line,1.0
+adk_high_peaks,Grass Pond Outlet,212,lost,9.04,3.02,8.7,AWAY from NHDPlus,100.0,90.0,44.37498,-74.02972,Grass Pond (10.3 ha),6.02,107.0,32.0,one outflow line,1.0
+adk_high_peaks,Otter Creek (side channel),841,lost,2430.65,1.06,2432.39,AWAY from NHDPlus,67.0,50.0,44.19822,-73.31504,,,,,,
+adk_high_peaks,Otter Creek (side channel),106,lost,2430.65,1.06,2432.39,AWAY from NHDPlus,67.0,50.0,44.19744,-73.31363,,,,,,
+adk_high_peaks,Otter Creek (side channel),43,lost,2430.65,1.06,2432.39,AWAY from NHDPlus,67.0,50.0,44.19734,-73.31325,,,,,,
+adk_northwest,,3439,lost,45.14,0.72,,no NHDPlus line,12.0,7.0,44.17275,-74.99512,unnamed reservoir (13.2 ha),44.4,386.0,63.0,,1.0
+adk_northwest,,19,lost,2.82,1.33,1.32,towards NHDPlus,54.0,49.0,43.87332,-74.57564,,,,,,
+adk_northwest,,3483,lost,3.47,1.34,,no NHDPlus line,67.0,56.0,43.92178,-75.17252,,,,,,
+adk_northwest,,4980,lost,3.5,1.1,3.6,AWAY from NHDPlus,67.0,56.0,44.41705,-75.09886,Boyd Pond (35.5 ha),2.4,1422.0,1644.0,one outflow line,1.0
+adk_northwest,,444,lost,3.52,1.86,6.82,AWAY from NHDPlus,77.0,61.0,43.96838,-74.59522,Antediluvian Pond (9.5 ha),1.55,4843.0,35.0,one outflow line,1.0
+adk_northwest,,3908,lost,3.52,1.05,,no NHDPlus line,77.0,68.0,43.96557,-74.59187,,,,,,
+adk_northwest,,103,gained,1.01,4.89,11.16,towards NHDPlus,56.0,71.0,44.18851,-74.61041,Eagle Crag Lake (62.3 ha),3.88,57.0,1837.0,one outflow line,1.0
+adk_northwest,,2043,gained,1.01,4.89,11.16,towards NHDPlus,56.0,71.0,44.19534,-74.6192,Eagle Crag Lake (62.3 ha),3.88,1088.0,1837.0,one outflow line,1.0
+adk_northwest,,2619,lost,6.04,2.75,2.75,towards NHDPlus,77.0,77.0,44.27158,-75.07794,,,,,,
+adk_northwest,,33,lost,6.04,2.75,2.75,towards NHDPlus,77.0,77.0,44.26861,-75.07593,,,,,,
+adk_northwest,,15,gained,2.3,3.79,3.73,towards NHDPlus,81.0,94.0,43.9591,-75.00947,Lyon Lake (33.3 ha),1.6,2207.0,36.0,one outflow line,1.0
+adk_northwest,,1481,lost,674.66,3.01,3.5,towards NHDPlus,74.0,53.0,44.26684,-75.19784,,,,,,
+adk_northwest,,844,lost,3.47,1.5,5.07,AWAY from NHDPlus,67.0,60.0,43.92222,-75.17888,,,,,,
+adk_northwest,,535,gained,1.57,3.97,1.55,AWAY from NHDPlus,51.0,60.0,44.3915,-75.07471,Boyd Pond (35.5 ha),2.4,1177.0,1644.0,one outflow line,1.0
+adk_northwest,,3067,gained,1.87,5.75,,no NHDPlus line,54.0,63.0,44.20172,-74.61615,Eagle Crag Lake (62.3 ha),3.88,1587.0,1837.0,one outflow line,1.0
+adk_northwest,Plumb Brook,2762,lost,6.04,2.87,3.03,towards NHDPlus,77.0,76.0,44.27338,-75.07543,,,,,,
+adk_northwest,,2496,lost,2.22,1.05,1.77,AWAY from NHDPlus,85.0,80.0,43.91993,-75.02678,Middle South Pond (18.5 ha),1.08,7444.0,99.0,one outflow line,1.0
+adk_northwest,Fish Creek,2730,gained,3.08,4.4,3.17,AWAY from NHDPlus,77.0,80.0,44.11833,-75.16884,Long Lake (15.4 ha),1.32,1225.0,1570.0,one outflow line,2.0
+adk_northwest,Middle Branch Oswegatchie River,1189,lost,6.18,4.18,8.56,AWAY from NHDPlus,93.0,95.0,43.97377,-74.9616,,,,,,
+adk_northwest,,1126,gained,3.87,9.91,11.29,towards NHDPlus,65.0,73.0,44.09786,-74.75938,,,,,,
+adk_northwest,,3461,gained,7.82,11.7,3.94,AWAY from NHDPlus,70.0,73.0,44.20721,-74.61487,Eagle Crag Lake (62.3 ha),3.88,2152.0,1837.0,one outflow line,1.0
+adk_northwest,,203,gained,3.87,9.91,11.29,towards NHDPlus,65.0,73.0,44.09822,-74.75781,,,,,,
+adk_northwest,,15,gained,3.87,9.91,9.95,towards NHDPlus,65.0,73.0,44.09835,-74.75706,,,,,,
+adk_northwest,,2196,gained,5.18,11.22,11.29,towards NHDPlus,67.0,74.0,44.09552,-74.76139,,,,,,
+adk_northwest,,3269,gained,8.87,12.75,3.94,AWAY from NHDPlus,72.0,76.0,44.21442,-74.61557,Eagle Crag Lake (62.3 ha),3.88,2948.0,1837.0,one outflow line,1.0
+adk_northwest,,7784,gained,3.04,9.09,,no NHDPlus line,78.0,88.0,44.10656,-74.7436,,,,,,
+adk_northwest,,33,gained,3.04,9.09,,no NHDPlus line,78.0,88.0,44.1136,-74.73076,,,,,,
+adk_northwest,,50,gained,3.04,9.09,,no NHDPlus line,78.0,88.0,44.11369,-74.73076,,,,,,
+adk_northwest,Brandreth Lake Outlet,924,lost,20.85,13.46,23.25,AWAY from NHDPlus,99.0,94.0,43.90913,-74.67881,,,,,,
+adk_northwest,Sand Lake Outlet,73,lost,9.99,1.15,12.91,AWAY from NHDPlus,82.0,63.0,44.00979,-75.01522,,,,,,
+adk_northwest,Sand Lake Outlet,11,lost,9.99,1.15,12.91,AWAY from NHDPlus,82.0,63.0,44.00988,-75.01497,,,,,,
+adk_northwest,Little River,278,gained,22.83,67.25,80.12,towards NHDPlus,76.0,83.0,44.1452,-75.02476,unnamed reservoir (13.2 ha),44.4,3746.0,1115.0,,1.0
+adk_northwest,Little River,4549,gained,5.39,49.81,60.51,towards NHDPlus,63.0,84.0,44.15924,-75.01151,unnamed reservoir (13.2 ha),44.4,1916.0,1115.0,,1.0
+adk_northwest,Little River,1854,gained,7.29,51.71,60.51,towards NHDPlus,69.0,86.0,44.15249,-75.01638,unnamed reservoir (13.2 ha),44.4,2702.0,1115.0,,1.0
+adk_northwest,Little River,2705,gained,12.48,56.9,,no NHDPlus line,74.0,87.0,44.14997,-75.01838,unnamed reservoir (13.2 ha),44.4,3013.0,1115.0,,1.0
+adk_northwest,Little River,975,gained,24.18,68.61,80.12,towards NHDPlus,80.0,87.0,44.14322,-75.02726,unnamed reservoir (13.2 ha),44.4,4043.0,1115.0,,1.0
+adk_northwest,Little River,4042,gained,25.96,70.38,80.12,towards NHDPlus,83.0,89.0,44.14213,-75.03288,unnamed reservoir (13.2 ha),44.4,4446.0,1115.0,,1.0
+adk_northwest,Shingle Shanty Brook,687,gained,47.03,78.4,79.3,towards NHDPlus,96.0,96.0,43.99342,-74.72176,Lilypad Pond (24.6 ha),31.37,1468.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,2580,gained,46.2,77.57,79.3,towards NHDPlus,100.0,100.0,43.9865,-74.72753,Lilypad Pond (24.6 ha),31.37,643.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,3093,gained,46.7,78.07,79.3,towards NHDPlus,100.0,100.0,43.98982,-74.72278,Lilypad Pond (24.6 ha),31.37,1063.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,67,gained,55.55,86.92,87.12,towards NHDPlus,100.0,100.0,43.99764,-74.74015,Lilypad Pond (24.6 ha),31.37,2148.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,73,gained,55.82,87.19,87.12,towards NHDPlus,100.0,100.0,43.99671,-74.74158,Lilypad Pond (24.6 ha),31.37,2119.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,139,gained,55.82,87.19,91.91,towards NHDPlus,100.0,100.0,43.99644,-74.74208,Lilypad Pond (24.6 ha),31.37,2117.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,20,gained,55.82,87.19,91.91,towards NHDPlus,100.0,100.0,43.9964,-74.74213,Lilypad Pond (24.6 ha),31.37,2116.0,,one outflow line,1.0
+adk_northwest,,31,lost,1232.26,5.38,,no NHDPlus line,83.0,40.0,44.21861,-74.43239,Simon Pond (315.4 ha),1270.49,3878.0,40.0,NHD's name,3.0
+adk_northwest,,33,lost,1166.6,36.46,1242.78,AWAY from NHDPlus,100.0,81.0,44.21247,-74.37875,,,,,,
+adk_northwest,,33,lost,1166.6,36.46,1242.78,AWAY from NHDPlus,100.0,81.0,44.21243,-74.37869,,,,,,
+adk_northwest,Little River,1673,gained,91.52,135.93,148.44,towards NHDPlus,87.0,87.0,44.14938,-75.10616,,,,,,
+adk_northwest,Little River,638,gained,93.95,138.36,151.02,towards NHDPlus,88.0,88.0,44.1528,-75.10804,,,,,,
+adk_northwest,Little River,310,gained,94.55,138.96,157.09,towards NHDPlus,88.0,88.0,44.15388,-75.10805,,,,,,
+adk_northwest,Little River,357,gained,79.11,123.53,132.1,towards NHDPlus,89.0,89.0,44.12948,-75.10963,,,,,,
+adk_northwest,Little River,1805,gained,87.31,131.73,145.76,towards NHDPlus,89.0,89.0,44.13713,-75.11227,,,,,,
+adk_northwest,Little River,4746,gained,88.67,133.08,145.76,towards NHDPlus,89.0,89.0,44.14317,-75.11003,,,,,,
+adk_northwest,Little River,2353,gained,62.6,107.01,124.67,towards NHDPlus,91.0,91.0,44.14186,-75.04013,unnamed reservoir (13.2 ha),44.4,4902.0,1115.0,,1.0
+adk_northwest,Little River,2215,gained,63.33,107.75,124.67,towards NHDPlus,93.0,93.0,44.14285,-75.04551,unnamed reservoir (13.2 ha),44.4,5180.0,1115.0,,1.0
+adk_northwest,Little River,1516,gained,63.78,108.19,124.67,towards NHDPlus,93.0,93.0,44.14213,-75.05089,unnamed reservoir (13.2 ha),44.4,5581.0,1115.0,,1.0
+adk_northwest,Little River,464,gained,64.11,108.53,124.67,towards NHDPlus,93.0,93.0,44.14312,-75.05426,unnamed reservoir (13.2 ha),44.4,5751.0,1115.0,,1.0
+adk_northwest,Little River,4216,gained,97.37,141.78,157.09,towards NHDPlus,93.0,93.0,44.16126,-75.11043,,,,,,
+adk_northwest,Little River,2850,gained,65.3,109.71,124.67,towards NHDPlus,94.0,94.0,44.14473,-75.05939,unnamed reservoir (13.2 ha),44.4,6024.0,1115.0,,1.0
+adk_northwest,Little River,2511,gained,86.49,130.9,145.76,towards NHDPlus,94.0,94.0,44.13272,-75.11163,,,,,,
+adk_northwest,Little River,119,gained,100.66,145.07,5.26,AWAY from NHDPlus,94.0,94.0,44.17415,-75.09607,,,,,,
+adk_northwest,Shingle Shanty Brook,1006,gained,51.92,83.29,5.76,AWAY from NHDPlus,95.0,95.0,43.99586,-74.72412,Lilypad Pond (24.6 ha),31.37,1692.0,,one outflow line,1.0
+adk_northwest,Little River,1209,gained,65.81,110.23,124.67,towards NHDPlus,96.0,96.0,44.14464,-75.06564,unnamed reservoir (13.2 ha),44.4,6476.0,1115.0,,1.0
+adk_northwest,Little River,7166,gained,100.36,144.77,157.09,towards NHDPlus,99.0,99.0,44.16712,-75.10056,,,,,,
+adk_northwest,Shingle Shanty Brook,634,gained,51.33,82.7,5.76,AWAY from NHDPlus,99.0,99.0,43.99549,-74.72213,Lilypad Pond (24.6 ha),31.37,1681.0,,one outflow line,1.0
+adk_northwest,Little River,2413,gained,67.04,111.46,124.67,towards NHDPlus,100.0,100.0,44.14203,-75.07239,unnamed reservoir (13.2 ha),44.4,7087.0,1115.0,,1.0
+adk_northwest,Little River,338,gained,67.33,111.75,132.94,towards NHDPlus,100.0,100.0,44.14112,-75.07477,unnamed reservoir (13.2 ha),44.4,7302.0,1115.0,,1.0
+adk_northwest,Little River,470,gained,68.61,113.02,127.54,towards NHDPlus,100.0,100.0,44.14067,-75.07626,unnamed reservoir (13.2 ha),44.4,7431.0,1115.0,,1.0
+adk_northwest,Little River,1801,gained,69.74,114.16,127.54,towards NHDPlus,100.0,100.0,44.13905,-75.07901,unnamed reservoir (13.2 ha),44.4,7707.0,1115.0,,1.0
+adk_northwest,Little River,1721,gained,71.02,115.44,127.54,towards NHDPlus,100.0,100.0,44.13608,-75.08388,,,,,,
+adk_northwest,Little River,100,gained,71.38,115.79,127.54,towards NHDPlus,100.0,100.0,44.13463,-75.08576,,,,,,
+adk_northwest,Little River,2679,gained,72.9,117.31,128.89,towards NHDPlus,100.0,100.0,44.13481,-75.09126,,,,,,
+adk_northwest,Little River,267,gained,73.33,117.75,132.1,towards NHDPlus,100.0,100.0,44.13346,-75.09438,,,,,,
+adk_northwest,Little River,5024,gained,75.31,119.72,132.1,towards NHDPlus,100.0,100.0,44.13048,-75.10375,,,,,,
+adk_northwest,Shingle Shanty Brook,1701,gained,52.23,83.6,87.12,towards NHDPlus,100.0,100.0,43.9965,-74.72935,Lilypad Pond (24.6 ha),31.37,1757.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,2829,gained,52.99,84.36,,no NHDPlus line,100.0,100.0,43.99651,-74.73397,Lilypad Pond (24.6 ha),31.37,1835.0,,one outflow line,1.0
+adk_northwest,Shingle Shanty Brook,943,gained,54.85,86.22,,no NHDPlus line,100.0,100.0,43.9967,-74.73858,Lilypad Pond (24.6 ha),31.37,1997.0,,one outflow line,1.0
+adk_northwest,Raquette River,133,lost,1232.26,5.38,1291.27,AWAY from NHDPlus,83.0,82.0,44.21838,-74.43265,Simon Pond (315.4 ha),1270.49,3847.0,40.0,NHD's name,3.0
+adk_northwest,Raquette River,37,lost,1232.26,5.38,,no NHDPlus line,83.0,82.0,44.21856,-74.43221,Simon Pond (315.4 ha),1270.49,3887.0,40.0,NHD's name,3.0
+adk_southeast,Wolf Pond Brook,123,lost,2.31,1.1,1.58,AWAY from NHDPlus,87.0,71.0,43.70535,-73.62244,Wolf Pond (13.2 ha),1.1,15.0,41.0,one outflow line,1.0
+adk_southeast,Wolf Pond Brook,39,lost,2.31,1.1,1.58,AWAY from NHDPlus,87.0,71.0,43.70548,-73.62201,Wolf Pond (13.2 ha),1.1,41.0,41.0,one outflow line,1.0
+adk_southeast,Madison Creek,3912,gained,1.26,2.37,,no NHDPlus line,83.0,89.0,43.50519,-74.04549,Lizard Pond (9 ha),1.11,768.0,735.0,one outflow line,2.0
+adk_southeast,Madison Creek,262,gained,1.26,2.37,0.96,AWAY from NHDPlus,83.0,89.0,43.50045,-74.04815,Lizard Pond (9 ha),1.11,1334.0,735.0,one outflow line,2.0
+adk_southeast,Madison Creek,22,gained,1.26,2.37,0.96,AWAY from NHDPlus,83.0,89.0,43.50048,-74.04822,Lizard Pond (9 ha),1.11,1333.0,735.0,one outflow line,2.0
+adk_southeast,Madison Creek,1242,gained,1.26,2.37,0.96,AWAY from NHDPlus,83.0,89.0,43.50072,-74.04989,Lizard Pond (9 ha),1.11,1362.0,735.0,one outflow line,2.0
+adk_southeast,,1100,lost,3.18,0.99,2.79,AWAY from NHDPlus,50.0,39.0,43.87248,-73.59458,Gooseneck Pond (31.8 ha),2.19,672.0,31.0,one outflow line,1.0
+adk_southeast,,3113,lost,3.97,1.18,,no NHDPlus line,55.0,46.0,43.35568,-73.72762,Butler Pond (41.7 ha),2.79,915.0,1819.0,nearest the terrain's cell,2.0
+adk_southeast,,616,lost,72.02,2.62,,no NHDPlus line,73.0,51.0,43.32207,-73.84376,,,,,,
+adk_southeast,,1502,lost,5.54,2.75,,no NHDPlus line,57.0,51.0,43.34702,-73.72595,Butler Pond (41.7 ha),2.79,1864.0,1819.0,nearest the terrain's cell,2.0
+adk_southeast,,4687,lost,6.79,4.0,,no NHDPlus line,57.0,53.0,43.34323,-73.71739,Butler Pond (41.7 ha),2.79,2517.0,1819.0,nearest the terrain's cell,2.0
+adk_southeast,,2608,lost,7.66,4.87,,no NHDPlus line,59.0,55.0,43.34204,-73.70779,Butler Pond (41.7 ha),2.79,3064.0,1819.0,nearest the terrain's cell,2.0
+adk_southeast,,1174,gained,1.63,4.42,,no NHDPlus line,58.0,67.0,43.38761,-73.7409,Butler Pond (41.7 ha),2.79,965.0,1819.0,nearest the terrain's cell,2.0
+adk_southeast,,4558,gained,2.67,6.36,2.76,AWAY from NHDPlus,69.0,77.0,43.8293,-74.13213,Huntley Pond (15.4 ha),3.69,731.0,794.0,one outflow line,1.0
+adk_southeast,Madison Creek,401,gained,1.63,2.74,1.83,AWAY from NHDPlus,84.0,89.0,43.49894,-74.0524,Lizard Pond (9 ha),1.11,1630.0,735.0,one outflow line,2.0
+adk_southeast,Spring Run,1156,lost,18.34,7.01,,no NHDPlus line,65.0,55.0,43.08961,-73.77012,Loughberry Lake (31 ha),10.92,289.0,71.0,one outflow line,1.0
+adk_southeast,Spring Run,1356,lost,18.34,11.01,29.49,AWAY from NHDPlus,65.0,56.0,43.09113,-73.76862,,,,,,
+adk_southeast,,36,lost,3.47,1.5,6.54,AWAY from NHDPlus,92.0,83.0,43.5735,-73.53653,,,,,,
+adk_southeast,,80,lost,3.47,1.5,6.54,AWAY from NHDPlus,92.0,83.0,43.57373,-73.53653,,,,,,
+adk_southeast,,53,lost,3.47,1.5,6.54,AWAY from NHDPlus,92.0,83.0,43.57359,-73.53647,,,,,,
+adk_southwest,,1139,lost,10.5,0.4,,no NHDPlus line,73.0,48.0,43.39375,-74.54881,Spy Lake (154.5 ha),10.1,466.0,1800.0,one outflow line,1.0
+adk_southwest,,1230,lost,6.63,2.21,2.21,towards NHDPlus,70.0,57.0,43.30287,-74.5665,,,,,,
+adk_southwest,,291,lost,6.63,2.21,2.21,towards NHDPlus,70.0,57.0,43.30052,-74.56467,,,,,,
+adk_southwest,,9,lost,6.63,2.21,2.21,towards NHDPlus,70.0,57.0,43.30409,-74.56772,,,,,,
+adk_southwest,,127,lost,3.28,1.96,4.03,AWAY from NHDPlus,83.0,61.0,43.78584,-75.07681,,,,,,
+adk_southwest,,7027,lost,11.18,1.97,12.12,AWAY from NHDPlus,86.0,73.0,43.6407,-74.53928,Beaver Pond (36.1 ha),9.21,1149.0,858.0,NHD's name,2.0
+adk_southwest,Mad Tom Brook,6016,lost,4.72,1.44,8.8,AWAY from NHDPlus,88.0,77.0,43.41306,-74.91119,Mill Creek Lake (21.3 ha),3.28,315.0,1802.0,one outflow line,1.0
+adk_southwest,,32,gained,2.43,4.24,4.18,towards NHDPlus,88.0,95.0,43.73894,-75.05874,Blackfoot Pond (13 ha),1.8,2570.0,58.0,one outflow line,2.0
+adk_southwest,,543,lost,5.42,3.12,2.69,towards NHDPlus,61.0,58.0,43.12521,-74.34131,,,,,,
+adk_southwest,,1455,gained,2.13,5.28,5.18,towards NHDPlus,63.0,64.0,43.3855,-74.90061,Mill Creek Lake (21.3 ha),3.28,3833.0,1802.0,one outflow line,1.0
+adk_southwest,Jockeybush Outlet,629,lost,6.63,3.41,3.03,towards NHDPlus,70.0,64.0,43.29962,-74.56504,,,,,,
+adk_southwest,,1296,gained,1.01,3.18,,no NHDPlus line,55.0,65.0,43.68506,-74.89181,East Pond (14.8 ha),2.17,881.0,603.0,one outflow line,1.0
+adk_southwest,Mad Tom Brook,4881,lost,6.99,3.71,8.8,AWAY from NHDPlus,88.0,82.0,43.39768,-74.92937,Mill Creek Lake (21.3 ha),3.28,2446.0,1802.0,one outflow line,1.0
+adk_southwest,Mad Tom Brook,2492,lost,5.61,2.33,8.8,AWAY from NHDPlus,93.0,85.0,43.40659,-74.92145,Mill Creek Lake (21.3 ha),3.28,1335.0,1802.0,one outflow line,1.0
+adk_southwest,,696,gained,2.42,4.93,5.31,towards NHDPlus,53.0,49.0,43.2507,-74.53607,,,,,,
+adk_southwest,Mad Tom Brook,704,lost,10.74,7.46,10.24,AWAY from NHDPlus,76.0,73.0,43.38255,-74.93543,Mill Creek Lake (21.3 ha),3.28,4046.0,1802.0,one outflow line,1.0
+adk_southwest,Mad Tom Brook,4256,lost,9.13,5.85,8.8,AWAY from NHDPlus,80.0,76.0,43.38741,-74.93382,Mill Creek Lake (21.3 ha),3.28,3534.0,1802.0,one outflow line,1.0
+adk_southwest,Mill Creek,5846,gained,7.38,10.66,11.72,towards NHDPlus,84.0,87.0,43.41537,-74.8771,Mill Creek Lake (21.3 ha),3.28,832.0,1802.0,one outflow line,1.0
+adk_southwest,Cedar River,401,gained,6.34,9.19,0.83,AWAY from NHDPlus,96.0,99.0,43.6288,-74.53726,Beaver Pond (36.1 ha),2.85,1052.0,858.0,NHD's name,2.0
+adk_southwest,Cedar River,9,gained,6.34,9.19,9.51,towards NHDPlus,96.0,99.0,43.62818,-74.53851,Beaver Pond (36.1 ha),2.85,940.0,858.0,NHD's name,2.0
+adk_southwest,Cedar River,9,gained,6.34,9.19,0.83,AWAY from NHDPlus,96.0,99.0,43.62882,-74.53724,Beaver Pond (36.1 ha),2.85,1054.0,858.0,NHD's name,2.0
+adk_southwest,,2797,lost,30.0,18.68,,no NHDPlus line,100.0,100.0,43.57904,-74.99381,,,,,,
+adk_southwest,Cedar River,2207,gained,3.38,12.59,14.17,towards NHDPlus,93.0,100.0,43.63921,-74.5295,unnamed reservoir (141.8 ha),9.21,1246.0,1180.0,,1.0
+adk_southwest,,1706,lost,30.0,11.25,11.39,towards NHDPlus,100.0,100.0,43.58039,-74.98179,,,,,,
+adk_southwest,,1630,lost,30.0,11.25,,no NHDPlus line,100.0,100.0,43.57706,-74.99294,,,,,,
+adk_southwest,,48,lost,30.0,18.68,18.95,towards NHDPlus,100.0,100.0,43.58233,-74.99021,,,,,,
+central_vt,Otter Creek (side channel),841,lost,2456.1,1.06,2432.39,AWAY from NHDPlus,58.0,56.0,44.19822,-73.31504,,,,,,
+central_vt,Otter Creek (side channel),106,lost,2456.1,1.06,2432.39,AWAY from NHDPlus,58.0,56.0,44.19744,-73.31363,,,,,,
+central_vt,Otter Creek (side channel),43,lost,2456.1,1.06,2432.39,AWAY from NHDPlus,58.0,56.0,44.19734,-73.31325,,,,,,
+central_vt,Lamoille River,18,gained,4.08,1758.91,1820.08,towards NHDPlus,44.0,58.0,44.65522,-73.10927,Arrowhead Mountain Lake (291.2 ha),1762.68,1564.0,50.0,one outflow line,1.0
+central_vt,Lamoille River,514,gained,4.08,1758.91,1820.08,towards NHDPlus,44.0,58.0,44.65381,-73.10931,Arrowhead Mountain Lake (291.2 ha),1762.68,1411.0,50.0,one outflow line,1.0
+jackson,,162,lost,2.9,1.21,,no NHDPlus line,72.0,62.0,43.56045,-110.51401,,,,,,
+la,,341,gained,2.61,7.05,,no NHDPlus line,2.0,6.0,34.15547,-118.45417,,,,,,
+la,,9,gained,1.24,74.55,,no NHDPlus line,2.0,21.0,34.82366,-118.69374,,,,,,
+la,Castaic Creek,744,gained,1.52,375.27,,no NHDPlus line,5.0,9.0,34.51198,-118.60848,Castaic Lake (812.5 ha),373.74,1138.0,337.0,NHD's name,2.0
+la,Piru Creek,1542,gained,2.47,1096.36,1086.55,towards NHDPlus,7.0,72.0,34.45256,-118.75266,Lake Piru (431.3 ha),1093.89,972.0,92.0,one outflow line,1.0
+la,Piru Creek,70,gained,1.13,1095.02,1086.43,towards NHDPlus,3.0,74.0,34.4551,-118.75184,Lake Piru (431.3 ha),1093.89,697.0,92.0,one outflow line,1.0
+n_georgia,,6215,lost,27.08,2.02,1.92,towards NHDPlus,60.0,40.0,34.16312,-84.31478,King Lake (9.7 ha),25.03,1207.0,40.0,one outflow line,1.0
+n_georgia,,115,lost,27.08,2.02,1.92,towards NHDPlus,60.0,40.0,34.1592,-84.3083,King Lake (9.7 ha),25.03,471.0,40.0,one outflow line,1.0
+n_georgia,,468,lost,27.08,2.02,1.92,towards NHDPlus,60.0,40.0,34.15759,-84.30589,King Lake (9.7 ha),25.03,195.0,40.0,one outflow line,1.0
+n_georgia,Caney Creek,1406,lost,127.63,11.83,11.82,towards NHDPlus,64.0,54.0,34.08308,-84.24081,,,,,,
+n_georgia,Rock Creek,366,lost,67.26,29.09,72.09,AWAY from NHDPlus,78.0,72.0,34.78543,-84.40374,Goose Island Lake (12.9 ha),37.99,151.0,175.0,one outflow line,1.0
+ne_ct,,5348,lost,4.11,1.16,4.89,AWAY from NHDPlus,56.0,33.0,41.65185,-72.30951,Mono Pond (43.7 ha),2.95,914.0,2150.0,one outflow line,1.0
+ne_ct,,7,lost,4.11,1.16,4.89,AWAY from NHDPlus,56.0,33.0,41.64552,-72.31326,Mono Pond (43.7 ha),2.95,1616.0,2150.0,one outflow line,1.0
+ne_ct,Old Stone Mill Brook,15,gained,2.23,3.81,2.51,AWAY from NHDPlus,34.0,62.0,41.64631,-72.01756,,,,,,
+ne_ct,Potash Brook,5129,lost,77.77,1.4,,no NHDPlus line,71.0,33.0,42.04346,-71.90426,Merino Pond (30.4 ha),76.37,244.0,834.0,one outflow line,1.0
+ne_ct,,1379,lost,423.75,2.19,,no NHDPlus line,76.0,35.0,41.94481,-71.90241,West Thompson Lake (81.2 ha),421.47,106.0,31.0,one outflow line,1.0
+ne_ct,,1656,gained,1.02,3.97,,no NHDPlus line,30.0,64.0,41.68472,-72.30958,Mono Pond (43.7 ha),2.95,588.0,2150.0,one outflow line,1.0
+ne_ct,East Branch Stonehouse Brook,1681,lost,6.74,3.73,5.88,AWAY from NHDPlus,70.0,65.0,41.82294,-72.12633,Halls Pond (33 ha),3.02,1306.0,1604.0,one outflow line,1.0
+ne_ct,East Branch Stonehouse Brook,3113,lost,6.74,3.73,5.88,AWAY from NHDPlus,70.0,65.0,41.81712,-72.13502,Halls Pond (33 ha),3.02,2267.0,1604.0,one outflow line,1.0
+ne_ct,Slovik Brook,841,gained,1.76,4.77,,no NHDPlus line,40.0,66.0,41.85002,-72.0967,Halls Pond (33 ha),3.01,1035.0,1604.0,one outflow line,1.0
+ne_ct,Leadmine Brook,44,lost,12.71,7.96,10.28,AWAY from NHDPlus,54.0,50.0,42.02631,-72.1417,,,,,,
+ne_ct,Potash Brook,5364,lost,79.82,3.45,80.19,AWAY from NHDPlus,70.0,53.0,42.03663,-71.89457,Merino Pond (30.4 ha),76.37,1042.0,834.0,one outflow line,1.0
+ne_ct,Carson Brook,198,lost,21.35,7.54,23.82,AWAY from NHDPlus,67.0,58.0,41.63042,-71.79389,,,,,,
+ne_ct,Carson Brook,1096,lost,21.35,7.48,9.32,towards NHDPlus,67.0,58.0,41.63319,-71.79315,,,,,,
+ne_ct,Carson Brook,11,lost,21.35,7.54,9.36,towards NHDPlus,67.0,58.0,41.63096,-71.79398,,,,,,
+ne_ct,Wood River,2794,lost,21.35,13.46,13.15,towards NHDPlus,67.0,63.0,41.63434,-71.79874,,,,,,
+ne_ct,Wood River,203,lost,21.35,13.46,13.15,towards NHDPlus,67.0,63.0,41.63077,-71.79675,,,,,,
+ne_ct,Wood River,96,lost,21.35,13.46,13.15,towards NHDPlus,67.0,63.0,41.63076,-71.79615,,,,,,
+ne_ct,Wood River,90,lost,21.35,13.46,13.25,towards NHDPlus,67.0,63.0,41.63083,-71.79582,,,,,,
+ne_ct,Wood River,348,lost,21.35,13.46,13.25,towards NHDPlus,67.0,63.0,41.63042,-71.79389,,,,,,
+ne_ct,Giffords Brook,1858,gained,3.65,6.6,11.97,towards NHDPlus,65.0,70.0,41.68791,-72.30729,Mono Pond (43.7 ha),2.95,977.0,2150.0,one outflow line,1.0
+ne_ct,Giffords Brook,1963,gained,4.58,7.53,11.97,towards NHDPlus,67.0,71.0,41.69025,-72.30347,Mono Pond (43.7 ha),2.95,1338.0,2150.0,one outflow line,1.0
+ne_ct,Giffords Brook,1967,gained,5.15,8.1,11.97,towards NHDPlus,69.0,73.0,41.69227,-72.29725,Mono Pond (43.7 ha),2.95,1808.0,2150.0,one outflow line,1.0
+ne_ct,French River,720,gained,1.43,77.8,155.94,towards NHDPlus,41.0,66.0,42.04877,-71.88745,Merino Pond (30.4 ha),76.37,549.0,834.0,one outflow line,1.0
+ne_ct,French River,1342,gained,2.81,79.18,155.94,towards NHDPlus,50.0,69.0,42.04553,-71.88737,Merino Pond (30.4 ha),76.37,695.0,834.0,one outflow line,1.0
+ne_ct,French River,2235,gained,3.35,79.72,156.75,towards NHDPlus,51.0,69.0,42.04104,-71.88795,Merino Pond (30.4 ha),76.37,1049.0,834.0,one outflow line,1.0
+ne_ct,Little River,1327,gained,1.0,95.38,106.49,towards NHDPlus,24.0,84.0,41.61912,-72.04072,,,,,,
+ne_ct,Quandock Brook,424,lost,1030.52,9.56,9.59,towards NHDPlus,71.0,29.0,41.76817,-71.91081,,,,,,
+se_pa,Little Neshaminy Creek,1250,lost,26.15,2.69,30.12,AWAY from NHDPlus,66.0,51.0,40.22624,-75.1568,,,,,,
+se_pa,Little Neshaminy Creek,54,lost,26.15,2.69,30.12,AWAY from NHDPlus,66.0,51.0,40.22754,-75.15898,,,,,,
