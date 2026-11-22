@@ -222,10 +222,11 @@ the cell where crossbox puts the water in, down the D8 path to the next reach, w
   outlets had been drawn with the score of the brook below and now score lower on their own flat ground.
 - On line both versions draw, the score fell 10+ points on 154 mi and rose 10+ on 240 mi; 93 mi went from 60+ to
   under 60 and 165 mi the other way.
-- The overview session sorted the gone line (its own scripts; stretches of 0.2+ mi that weren't lake pieces, 87 mi):
-  15 mi in 33 lines lie along an NHD stream line and drained 0.8+ sq mi, 15 mi in 24 lines along one and drained
-  less (the headwater creeks under the floor), 57 mi in 119 lines along no NHD line. I haven't re-derived that split.
-  The first group holds lake outlet channels, which is the next fault.
+- The overview session sorted the gone line (stretches of 0.2+ mi that weren't lake pieces, 87 mi): 15 mi in 33
+  lines lie along an NHD stream line and drained 0.8+ sq mi, 15 mi in 24 lines along one and drained less (the
+  headwater creeks under the floor), 57 mi in 119 lines along no NHD line. Derived again here from the two site
+  commits alone (`checks/gone_split.py`), with the same result. The first group holds lake outlet channels, which
+  is the next fault.
 
 ### Fault 1: a lake's water put back in away from its own outlet
 Seventh Lake (adk_southwest, with Sixth Lake): the outlet channel to Fifth Lake, 16.9 sq mi and fish 87 on the maps

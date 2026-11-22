@@ -1,0 +1,177 @@
+area,mi,on_nhd,big,f60,name,sqmi,fish,lat,lon
+adk_high_peaks,0.5606,False,False,False,,0.49,49,44.3351,-74.1584
+adk_high_peaks,0.6181,False,False,False,,0.44,49,44.4707,-73.9355
+adk_high_peaks,0.5309,False,False,False,,0.42,52,44.5089,-73.9053
+adk_high_peaks,0.453,False,False,False,,0.41,52,44.4401,-73.9725
+adk_high_peaks,0.7117,True,False,False,,0.4,54,44.434,-73.9878
+adk_high_peaks,0.4268,False,True,False,,1.95,56,44.4371,-73.4841
+adk_high_peaks,0.718,True,False,False,,0.41,57,43.9787,-74.2865
+adk_high_peaks,0.7959,False,False,False,,0.45,58,44.5316,-74.0866
+adk_high_peaks,0.2398,False,True,True,Cascade Brook,2.36,62,44.2394,-73.8553
+adk_high_peaks,0.5824,False,False,True,,0.41,63,44.5599,-73.932
+adk_high_peaks,0.3052,False,True,True,,1.05,66,43.9523,-74.0065
+adk_high_peaks,0.3092,True,True,True,,1.5,66,43.9627,-74.1897
+adk_high_peaks,0.3504,False,True,True,New Pond Brook,1.9,68,44.0952,-73.6589
+adk_high_peaks,0.7605,False,True,True,,2.22,73,44.2881,-73.9242
+adk_high_peaks,0.6038,False,True,True,,1.36,76,43.9754,-74.0177
+adk_high_peaks,0.3478,False,True,True,,1.88,94,44.0502,-74.2053
+adk_high_peaks,0.4016,True,False,False,,0.49,57,44.5993,-74.2796
+adk_high_peaks,0.4247,False,True,True,,3.05,71,44.3518,-74.2862
+adk_high_peaks,0.2585,False,True,True,Quebec Brook,7.16,76,44.5158,-74.3881
+adk_high_peaks,0.3032,False,True,True,Moose Creek,2.06,92,44.1871,-74.0806
+adk_high_peaks,0.3033,False,True,True,Newcomb River,17.92,99,43.9945,-74.1004
+adk_high_peaks,0.2791,False,True,True,Saranac River,156.32,83,44.3295,-74.127
+adk_high_peaks,0.4277,False,True,True,Saranac River,301.39,87,44.5119,-73.9132
+adk_northwest,0.7171,False,False,False,,0.43,47,44.3362,-74.7416
+adk_northwest,0.7697,False,False,False,,0.39,50,44.2032,-74.445
+adk_northwest,0.4461,True,True,False,,1.33,54,44.1958,-74.5926
+adk_northwest,0.7098,False,False,False,,0.47,55,43.8608,-75.1582
+adk_northwest,0.9949,False,False,False,,0.45,56,43.8304,-74.3479
+adk_northwest,0.6078,False,False,False,,0.41,59,44.0509,-74.4833
+adk_northwest,0.8941,True,False,True,,0.41,60,44.1727,-74.9569
+adk_northwest,1.256,False,False,True,,0.4,62,44.3008,-74.4726
+adk_northwest,0.9787,True,True,True,,1.18,63,44.2961,-74.4264
+adk_northwest,0.6592,True,False,True,,0.39,64,44.1197,-74.9017
+adk_northwest,0.391,True,True,True,,2.17,66,44.0974,-74.7607
+adk_northwest,0.2774,False,True,True,Crystal Creek,1.37,67,43.8391,-75.2867
+adk_northwest,0.2782,False,True,True,Willis Brook,1.95,67,44.3426,-74.5162
+adk_northwest,0.4621,False,True,True,Kildare Outlet,1.15,67,44.4438,-74.6992
+adk_northwest,0.4469,False,True,True,,1.2,67,44.343,-74.4302
+adk_northwest,0.5536,False,True,True,,2.28,70,44.3267,-74.4266
+adk_northwest,0.8449,False,True,True,,0.88,70,44.3041,-74.4706
+adk_northwest,0.8541,False,True,True,,2.38,72,44.3274,-74.9502
+adk_northwest,0.5885,False,True,True,,1.74,75,44.2861,-74.3938
+adk_northwest,0.3461,False,False,True,,0.49,80,43.9159,-74.9758
+adk_northwest,0.6169,True,True,True,Pepperbox Creek,0.86,89,43.9401,-75.1006
+adk_northwest,0.646,True,True,True,,1.9,89,44.1162,-75.0732
+adk_northwest,0.2709,True,True,True,,1.05,91,44.0006,-74.9975
+adk_northwest,0.324,False,True,True,Moshier Creek,1.39,92,43.9389,-75.0699
+adk_northwest,0.2071,False,True,True,,1.73,95,43.9909,-74.8907
+adk_northwest,0.3651,True,True,False,,1.08,52,44.2628,-75.1947
+adk_northwest,0.1864,False,False,False,,0.78,52,44.2607,-75.1914
+adk_northwest,0.4431,True,False,True,,0.46,61,44.1635,-74.703
+adk_northwest,0.3892,False,False,True,,0.39,62,44.0031,-75.1859
+adk_northwest,0.4817,False,True,False,Browns Tract Inlet,2.46,58,43.8031,-74.6982
+adk_northwest,0.5118,True,True,False,,3.24,59,44.1644,-74.4419
+adk_northwest,0.27,False,True,True,,5.11,77,44.1258,-74.6342
+adk_northwest,0.2303,True,True,True,Brandreth Lake Outlet,5.31,82,43.9124,-74.6874
+adk_northwest,1.168,False,True,True,,3.04,82,44.0207,-74.5897
+adk_northwest,0.2174,False,True,False,,17.34,12,44.1732,-74.9951
+adk_northwest,0.555,False,True,True,Twitchell Creek,7.11,89,43.8322,-74.928
+adk_northwest,0.3279,False,True,True,,24.56,95,43.8946,-75.0488
+adk_northwest,0.3865,False,True,True,,24.56,95,43.8922,-75.0541
+adk_northwest,0.3701,False,True,True,Raquette River,880.35,75,44.5056,-74.7454
+adk_southeast,0.7928,False,False,False,,0.44,46,43.659,-73.8632
+adk_southeast,0.5833,False,False,False,,0.44,50,43.5701,-73.6519
+adk_southeast,0.4938,False,False,False,,0.4,52,43.5978,-73.7889
+adk_southeast,0.5413,True,False,False,,0.42,52,43.5276,-73.7027
+adk_southeast,0.7081,False,False,False,,0.39,54,43.8377,-74.1166
+adk_southeast,0.7984,False,False,False,,0.66,54,43.7677,-73.7918
+adk_southeast,1.0415,False,False,False,,0.39,57,43.1424,-74.2939
+adk_southeast,0.6039,False,False,False,,0.4,59,43.9086,-74.2378
+adk_southeast,0.6371,False,True,True,,0.85,60,43.6445,-73.8752
+adk_southeast,0.8016,False,False,True,,0.39,61,43.8432,-74.2357
+adk_southeast,0.5805,False,True,True,,1.45,64,43.2212,-73.8351
+adk_southeast,0.2861,True,True,True,,1.21,64,43.9024,-73.6232
+adk_southeast,0.2143,False,True,True,,1.25,65,43.9261,-74.193
+adk_southeast,0.3631,False,True,True,,1.47,66,43.3927,-73.8073
+adk_southeast,0.8335,True,True,True,Finkle Brook,2.4,68,43.5782,-73.6817
+adk_southeast,0.5812,False,True,True,Bell Brook,2.51,70,43.3368,-73.9373
+adk_southeast,0.7383,True,True,True,Rock Pond Brook,1.74,70,43.8532,-73.6087
+adk_southeast,0.5557,False,True,True,,2.6,70,43.4506,-73.5621
+adk_southeast,0.5295,False,False,True,,0.39,71,43.5719,-74.0735
+adk_southeast,0.2776,False,True,True,Pine Lake Brook,2.1,72,43.6153,-73.4455
+adk_southeast,0.7127,True,False,True,,0.48,73,43.7834,-73.5991
+adk_southeast,0.4626,False,True,True,Second Pond Brook,2.22,78,43.6564,-74.0889
+adk_southeast,0.5221,False,True,True,Johnson Pond Brook,1.93,88,43.9173,-73.6946
+adk_southeast,0.244,False,False,False,,0.68,53,43.3211,-73.8264
+adk_southeast,0.3458,False,False,False,,0.68,53,43.3252,-73.8403
+adk_southeast,0.2794,True,False,True,,0.42,82,43.6777,-74.288
+adk_southeast,1.3056,False,True,True,,4.64,61,43.6744,-73.8724
+adk_southeast,0.4448,False,True,True,Spring Run,7.22,64,43.0914,-73.7636
+adk_southeast,0.4596,True,True,True,,5.65,79,43.7158,-73.7784
+adk_southeast,0.922,False,True,True,,4.57,80,43.5406,-74.0606
+adk_southeast,0.2496,False,True,True,,22.44,69,43.6478,-74.3924
+adk_southeast,0.7169,False,True,True,,8.87,73,43.8564,-73.6693
+adk_southeast,0.3332,False,True,True,South Brook,12.39,74,43.3991,-74.0971
+adk_southeast,0.3422,False,True,True,,39.11,77,43.5595,-73.4469
+adk_southeast,0.1864,False,True,True,,39.93,79,43.5639,-73.4414
+adk_southeast,0.8357,True,True,True,,9.08,85,43.5448,-74.013
+adk_southeast,0.2457,False,True,True,Putnam Creek,20.95,91,43.8959,-73.5331
+adk_southwest,0.8293,False,False,False,,0.42,48,43.3412,-75.0973
+adk_southwest,0.5144,False,False,False,,0.71,53,43.1249,-74.4885
+adk_southwest,0.8374,False,False,False,,0.43,55,43.5632,-74.9047
+adk_southwest,0.8497,True,False,False,,0.47,56,43.7635,-74.8928
+adk_southwest,0.2902,False,False,False,,0.42,57,43.1919,-74.5108
+adk_southwest,0.2122,False,True,True,,1.2,63,43.4318,-74.72
+adk_southwest,0.3633,False,True,True,Alder Brook,1.09,64,43.3704,-74.6578
+adk_southwest,0.6472,True,True,True,,0.83,66,43.6361,-74.6768
+adk_southwest,0.5114,True,False,True,,0.42,70,43.6976,-75.0614
+adk_southwest,0.6399,True,True,True,,2.61,71,43.768,-74.7152
+adk_southwest,0.2157,False,True,True,,2.61,71,43.7606,-74.7178
+adk_southwest,0.339,False,True,True,,2.41,75,43.7871,-74.8178
+adk_southwest,0.4923,False,True,True,,1.63,80,43.2374,-74.8147
+adk_southwest,0.7905,False,True,True,,0.87,83,43.2495,-74.7093
+adk_southwest,0.4338,False,True,True,,1.93,84,43.1102,-74.5604
+adk_southwest,0.2613,False,True,True,,2.16,90,43.591,-74.634
+adk_southwest,0.2788,False,True,False,,0.93,53,43.3938,-74.6284
+adk_southwest,0.3102,False,True,False,,1.15,56,43.3943,-74.6286
+adk_southwest,0.4647,False,True,True,Sheriff Lake Outlet,3.18,73,43.3803,-74.6163
+adk_southwest,0.2577,False,True,True,,4.26,75,43.7795,-74.9266
+adk_southwest,0.3446,False,True,True,,6.81,85,43.7545,-74.7243
+adk_southwest,0.2376,False,True,True,,2.5,98,43.5545,-74.7422
+adk_southwest,0.4873,False,True,True,,10.59,82,43.113,-74.5072
+adk_southwest,0.2602,False,True,True,,16.94,87,43.7469,-74.7793
+adk_southwest,0.4912,True,True,True,,16.94,87,43.7448,-74.7869
+adk_southwest,0.2476,True,True,True,Otter Creek,21.82,100,43.7213,-75.1309
+adk_southwest,0.43,True,True,True,Sacandaga River,70.81,85,43.5063,-74.3293
+adk_southwest,0.4659,False,True,True,Middle Branch Moose River,129.93,93,43.687,-75.0123
+adk_southwest,0.4328,False,True,True,North Branch Moose River,40.59,100,43.7927,-74.875
+central_vt,0.6817,True,False,False,,0.39,44,44.4303,-72.7502
+central_vt,0.3011,True,False,False,,0.39,45,44.5446,-73.1029
+central_vt,0.7031,True,False,False,,0.42,45,44.2027,-72.5957
+central_vt,0.31,True,True,False,,1.0,51,43.766,-73.174
+central_vt,0.496,False,True,True,Martin Brook,1.54,70,44.1559,-72.5726
+central_vt,0.4177,False,True,True,Pond Brook,7.05,66,44.197,-72.5855
+central_vt,0.2168,False,True,True,,10.51,66,44.2116,-72.5796
+jackson,0.9329,True,False,False,,0.47,18,43.3006,-111.2078
+la,0.5494,True,False,False,,0.45,2,34.5879,-118.3973
+la,1.2945,True,False,False,,0.47,2,33.7547,-117.4355
+la,0.7523,False,False,False,,0.52,4,34.2954,-116.8162
+la,0.9348,True,False,False,Oso Creek,0.42,5,33.6681,-117.621
+la,0.4034,False,True,False,,2.89,48,34.2694,-116.8126
+la,0.4547,True,True,False,,43.17,8,33.855,-117.4508
+la,0.4887,False,True,False,,58.41,23,34.8363,-118.8522
+la,0.6316,False,True,False,,211.65,11,34.1713,-117.8806
+lexington_va,0.2442,True,True,True,Mill Creek,8.62,63,37.6551,-79.0782
+n_georgia,0.4785,True,False,False,Little River,0.43,32,34.2027,-84.3106
+n_georgia,0.6458,True,False,False,,0.39,35,34.7213,-83.1151
+n_georgia,0.5308,True,False,False,,0.39,39,34.6878,-83.3498
+n_georgia,0.6926,True,True,True,,1.5,66,34.5487,-84.373
+n_georgia,0.2491,False,True,False,Spring Creek,2.98,38,34.4817,-84.8619
+n_georgia,0.2073,True,True,False,Toms Creek,3.98,50,34.4893,-83.2451
+n_georgia,0.6135,True,True,False,,4.39,52,33.9719,-84.1314
+n_georgia,0.1947,True,True,False,Wurley Creek,3.94,56,34.639,-84.6496
+n_georgia,0.6386,True,True,True,,3.34,60,34.6031,-83.7189
+n_georgia,0.2365,True,True,False,,9.74,56,34.8962,-84.7252
+n_georgia,0.3363,False,True,True,Coneross Creek,13.08,60,34.7209,-83.0948
+n_georgia,0.194,False,True,True,Tallulah River,184.6,67,34.7358,-83.3959
+ne_ct,0.2678,False,False,False,,0.39,20,41.6375,-71.7954
+ne_ct,0.2667,True,False,False,,0.39,30,41.6824,-72.3081
+ne_ct,0.4222,True,False,False,,0.51,47,41.6199,-71.9671
+ne_ct,0.4329,False,True,False,Half Hill Brook,1.24,50,41.7818,-71.8647
+ne_ct,0.7176,False,True,False,,1.48,54,42.054,-72.117
+ne_ct,0.8825,False,True,True,,1.61,66,42.0174,-71.8486
+ne_ct,0.2726,True,True,True,North Running Brook,1.66,67,41.9491,-71.9838
+ne_ct,0.4597,False,True,True,,2.18,68,41.7092,-72.1362
+ne_ct,0.4587,True,True,True,,2.24,69,42.0535,-72.0791
+ne_ct,0.4807,True,False,False,,0.41,23,41.9243,-71.7841
+ne_ct,0.2657,False,False,False,,0.67,33,41.9596,-71.9102
+ne_ct,0.2449,True,True,True,Deep River,8.92,81,41.5586,-72.2424
+ne_ct,0.3646,False,True,True,Wood River,9.06,82,41.6252,-71.7791
+ne_ct,0.277,False,True,True,Pachaug River,62.36,80,41.6041,-71.9823
+ne_ct,0.2713,False,True,True,,161.76,61,41.9564,-71.9084
+se_pa,0.244,False,False,False,,0.44,37,40.0971,-75.3576
+se_pa,0.2151,False,True,False,Scotts Run,1.47,54,40.2062,-75.795
+se_pa,0.391,False,True,True,,2.62,68,40.0706,-75.5214
+smokies,0.2073,True,True,False,Stiles Branch,1.37,52,35.3662,-83.5559
