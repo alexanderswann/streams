@@ -1,0 +1,63 @@
+#### central_vt checked 11-21 23:04:22
+#### failed steps or notes in this run's logs
+== START central_vt 11-21 22:41:09
+== DONE central_vt 11-21 22:45:02
+#### verify_install against the scratch build
+central_vt
+  stowe_lamoille | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  mad_winooski | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  white_river | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+central_vt (/Users/mac/Fishing)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+stowe_lamoille     2823           0.0                   21             0                      6.18      786.4
+  mad_winooski     2751           0.0                   15             0                     22.28      725.1
+   white_river     2923           0.0                    0             0                     12.50      816.4
+#### lake_outlets
+central_vt (project): lakes with an outlet line 58; below them under half of NHDPlus: 1
+             lake  ha  nhd_km2  ours                 sid reach_name  ratio
+unnamed reservoir 9.5     40.0 18.12 stowe_lamoille:s984  The Creek   0.45
+#### check_flow_drops
+central_vt: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+central_vt: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 10 / 23 | pass 1 + big-creek pass: 16 / 23
+  on smaller drainages:   pass 1: 4 / 7 | pass 1 + big-creek pass: 4 / 7
+  all:                    pass 1: 14 / 30 | pass 1 + big-creek pass: 20 / 30
+
+by range:
+                                           falls  pass1  both
+region                                                       
+Mad River, Winooski & New Haven River          6      1     2
+Middlebury River, Breadloaf & White River      7      5     7
+Stowe & upper Lamoille                        17      8    11
+
+named mapped falls on big creeks that both passes miss: 
+                               region              name   area     d1     d2
+               Stowe & upper Lamoille    Winooski Falls 1665.0  268.0 4419.0
+               Stowe & upper Lamoille     Sloping Falls  109.0 2659.0 1960.0
+Mad River, Winooski & New Haven River    Dog Team Falls  302.0 2069.0 3642.0
+Mad River, Winooski & New Haven River    Moretown Falls  337.0 2599.0 2658.0
+Mad River, Winooski & New Haven River Putnamville Falls  122.0 1986.0 7332.0
+
+every precisely placed known fall, any source: pass 1: 20 / 66 | pass 1 + big-creek pass: 39 / 66
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+central_vt (/Users/mac/Fishing): known falls 120: found pass 1 40, both passes 69 | OSM/NHD-mapped 38: pass 1 14, both 22
+  drops: pass 1 524 {'cascade / knickpoint': 348, 'steep reach': 166, 'waterfall-like step': 10}; big-creek pass 240
+  waterfall candidates by status: {'unmapped cascade': 237, 'likely DEM artifact': 156, 'steep reach': 149, 'unmapped short fall (big creek)': 87, 'matches mapped waterfall': 61, 'dam / weir': 36, 'unmapped waterfall-like step': 4}
+#### lake_shares
+central_vt      reaches   8497 | flagged in-lake   317 (  113.7 km), outside every drawn lake    1.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    1.2 km inside counted lakes (1 reaches with 100+ m),   48.2 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+central_vt old: lines drawn with Lakes on 8502, 6409.0 km; reading reservoir 23, 3.8 km, of that outside the lakes the map draws 3.7 km (outside NHD's outlines too: 2.6 km); pieces with 100+ m outside the drawn lakes: 11, 3.2 km | Lakes-off layer: 632 lines, 533.4 km
+   of the 100+ m pieces, now drawn as a creek (put right): 10, 3.1 km; of those with the other version's fish score 40+: 8, 2.4 km
+central_vt new: lines drawn with Lakes on 8535, 6408.3 km; reading reservoir 2, 0.2 km, of that outside the lakes the map draws 0.2 km (outside NHD's outlines too: 0.2 km); pieces with 100+ m outside the drawn lakes: 1, 0.2 km | Lakes-off layer: 742 lines, 503.8 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  n               d   a  o  fs     m  out_m  out_all_m  other_fl  other_fs  other_a  lat   lon
+NaN Minor drainages 1.0  1  10 188.4  188.4      188.4 reservoir      10.0      1.0 43.8 -73.3
+#### water temperature fit
+{'area': 'central_vt', 'sites': 291, 'sd_sites': 3.16, 'mean_sites': 19.11, 'left_out_over_30c': 0, 'left_out_outliers': 2, 'fitted': '2026-11-21', 'ok': True, 'terms': ['air', 'log_area'], 'intercept': -12.637, 'coef': {'air': 1.534, 'log_area': 0.96}, 'rmse_loo': 2.33}
+#### map files
+19696972 Nov 21 22:59 output/central_vt/map3d_data.js
+5546854 Nov 21 22:45 output/central_vt/profiles_data.js
+19158006 Nov 21 22:59 output/central_vt/stream_map.html

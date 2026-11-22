@@ -1,0 +1,72 @@
+#### la checked 11-21 23:00:35
+#### failed steps or notes in this run's logs
+== START la 11-21 22:49:39
+== DONE la 11-21 22:58:46
+#### verify_install against the scratch build
+la
+  san_gabriel | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  santa_monica | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  san_bernardino | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  sespe | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  piru | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  sierra_pelona | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  san_jacinto | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  santa_ana_mtns | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+la (/Users/mac/Fishing)
+           box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   san_gabriel     4007           0.0                   14             0                      1.11     1126.3
+  santa_monica      705           0.0                    0             0                     36.96      214.1
+san_bernardino     3287           0.0                    0             0                      1.74      914.7
+         sespe     3483           0.0                   14             0                      0.40      884.6
+          piru     2452           0.0                    7             0                      0.73      667.6
+ sierra_pelona      633           0.0                   12             0                      0.61      171.9
+   san_jacinto     1698           0.0                    0             0                      0.40      464.4
+santa_ana_mtns     1800           0.0                    0             0                      0.17      492.1
+#### lake_outlets
+la (project): lakes with an outlet line 40; below them under half of NHDPlus: 3
+                     lake     ha  nhd_km2    ours                  sid    reach_name  ratio
+Prado Flood Control Basin  171.5   5680.0 2502.82   santa_ana_mtns:s26           NaN   0.44
+            Lake Elsinore 1277.1   1866.3    2.87 santa_ana_mtns:s1051 Temescal Wash   0.00
+               Quail Lake  101.8     77.4   10.28            piru:s438           NaN   0.13
+#### check_flow_drops
+la: sudden flow drops (flow per km2 of area_edge_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+la: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 36 / 54 | pass 1 + big-creek pass: 46 / 54
+  on smaller drainages:   pass 1: 81 / 158 | pass 1 + big-creek pass: 81 / 158
+  all:                    pass 1: 117 / 212 | pass 1 + big-creek pass: 127 / 212
+
+by range:
+                             falls  pass1  both
+region                                         
+Piru Creek & Castaic             1      0     0
+San Bernardino Mountains        15     11    13
+San Gabriel Mountains           69     39    43
+San Jacinto Mountains           28     21    21
+Santa Ana Mountains             46     15    16
+Santa Monica Mountains          21     11    14
+Sespe, Topatopa & Mt. Pinos     32     20    20
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 123 / 219 | pass 1 + big-creek pass: 134 / 219
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 49 / 172 | pass 1 + big-creek pass: 51 / 172
+#### falls
+la (/Users/mac/Fishing): known falls 412: found pass 1 185, both passes 199 | OSM/NHD-mapped 212: pass 1 117, both 127
+  drops: pass 1 5017 {'steep reach': 3273, 'cascade / knickpoint': 1580, 'waterfall-like step': 164}; big-creek pass 450
+  waterfall candidates by status: {'steep reach': 3111, 'unmapped cascade': 1272, 'matches mapped waterfall': 256, 'likely DEM artifact': 205, 'unmapped waterfall-like step': 119, 'unmapped short fall (big creek)': 83, 'dam / weir': 76}
+#### lake_shares
+la              reaches  18065 | flagged in-lake   459 (  210.0 km), outside every drawn lake    1.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.8 km inside counted lakes (0 reaches with 100+ m),   53.7 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+la old: lines drawn with Lakes on 17804, 15211.4 km; reading reservoir 47, 9.1 km, of that outside the lakes the map draws 9.1 km (outside NHD's outlines too: 5.8 km); pieces with 100+ m outside the drawn lakes: 24, 8.2 km | Lakes-off layer: 695 lines, 604.4 km
+   of the 100+ m pieces, now drawn as a creek (put right): 24, 8.2 km; of those with the other version's fish score 40+: 5, 2.8 km
+la new: lines drawn with Lakes on 17861, 15211.0 km; reading reservoir 11, 0.3 km, of that outside the lakes the map draws 0.3 km (outside NHD's outlines too: 0.2 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 828 lines, 555.2 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  none
+#### water temperature fit
+{'area': 'la', 'sites': 64, 'sd_sites': 4.84, 'mean_sites': 19.23, 'left_out_over_30c': 3, 'left_out_outliers': 1, 'fitted': '2026-11-21', 'ok': True, 'terms': ['air', 'elev_km'], 'intercept': 11.52, 'coef': {'air': 0.519, 'elev_km': -4.398}, 'rmse_loo': 2.95}
+#### map files
+43330400 Nov 21 23:00 output/la/map3d_data.js
+5857295 Nov 21 22:58 output/la/profiles_data.js
+21317692 Nov 21 23:00 output/la/stream_map.html

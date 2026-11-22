@@ -1,0 +1,68 @@
+#### n_georgia checked 11-21 23:15:37
+#### failed steps or notes in this run's logs
+== START n_georgia 11-21 23:05:38
+== DONE n_georgia 11-21 23:14:53
+#### verify_install against the scratch build
+n_georgia
+  cohutta | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  blue_ridge | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  rabun | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  hooch_tailwater | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+n_georgia (/Users/mac/Fishing)
+            box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+        cohutta     4274           0.0                    8             0                      0.52     1315.1
+     blue_ridge     4374           0.0                   16             0                      0.55     1254.0
+          rabun     4238           0.0                    1             0                      0.64     1160.8
+hooch_tailwater     2313           0.0                    0             0                      0.36      559.2
+#### lake_outlets
+n_georgia (project): lakes with an outlet line 89; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+n_georgia: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+n_georgia: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 18 / 38 | pass 1 + big-creek pass: 30 / 38
+  on smaller drainages:   pass 1: 84 / 155 | pass 1 + big-creek pass: 85 / 155
+  all:                    pass 1: 102 / 193 | pass 1 + big-creek pass: 115 / 193
+
+by range:
+                                                 falls  pass1  both
+region                                                             
+Chattahoochee tailwater (Buford Dam to Atlanta)      5      0     1
+Cohutta, Conasauga & Jacks                           8      4     5
+Rabun, Chattooga & Tallulah                        133     73    81
+Toccoa, Blue Ridge & Chattahoochee headwaters       47     25    28
+
+named mapped falls on big creeks that both passes miss: 
+                                       region                  name  area     d1     d2
+                   Cohutta, Conasauga & Jacks Tumbling Waters Falls  42.0 2296.0 2775.0
+Toccoa, Blue Ridge & Chattahoochee headwaters          Etowah Falls 170.0 4886.0 1624.0
+                  Rabun, Chattooga & Tallulah           Final Falls 410.0  279.0 4748.0
+                  Rabun, Chattooga & Tallulah         Homer's Falls 581.0  708.0 2405.0
+                  Rabun, Chattooga & Tallulah    Bulls Sluice Falls 419.0 2542.0 2805.0
+                  Rabun, Chattooga & Tallulah     First Falls Rapid 591.0  681.0 4083.0
+                  Rabun, Chattooga & Tallulah      Seven Foot Falls 435.0  947.0 1246.0
+
+every precisely placed known fall, any source: pass 1: 366 / 857 | pass 1 + big-creek pass: 413 / 857
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+n_georgia (/Users/mac/Fishing): known falls 925: found pass 1 384, both passes 441 | OSM/NHD-mapped 205: pass 1 103, both 117
+  drops: pass 1 846 {'cascade / knickpoint': 565, 'steep reach': 237, 'waterfall-like step': 44}; big-creek pass 284
+  waterfall candidates by status: {'matches mapped waterfall': 461, 'unmapped cascade': 193, 'likely DEM artifact': 140, 'steep reach': 126, 'unmapped short fall (big creek)': 91, 'dam / weir': 84, 'unmapped waterfall-like step': 4}
+#### lake_shares
+n_georgia       reaches  15199 | flagged in-lake   727 (  384.2 km), outside every drawn lake    2.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    1.2 km inside counted lakes (0 reaches with 100+ m),  102.7 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+n_georgia old: lines drawn with Lakes on 14915, 11274.9 km; reading reservoir 41, 10.3 km, of that outside the lakes the map draws 10.3 km (outside NHD's outlines too: 9.0 km); pieces with 100+ m outside the drawn lakes: 26, 9.5 km | Lakes-off layer: 1282 lines, 1035.1 km
+   of the 100+ m pieces, now drawn as a creek (put right): 26, 9.5 km; of those with the other version's fish score 40+: 17, 6.2 km
+n_georgia new: lines drawn with Lakes on 14965, 11270.1 km; reading reservoir 5, 0.2 km, of that outside the lakes the map draws 0.1 km (outside NHD's outlines too: 0.0 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 1439 lines, 966.8 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  none
+#### water temperature fit
+{'area': 'n_georgia', 'sites': 409, 'sd_sites': 2.35, 'mean_sites': 22.2, 'left_out_over_30c': 1, 'left_out_outliers': 18, 'fitted': '2026-11-21', 'ok': True, 'terms': ['elev_km'], 'intercept': 26.342, 'coef': {'elev_km': -11.379}, 'rmse_loo': 1.69}
+#### map files
+26443800 Nov 21 23:15 output/n_georgia/map3d_data.js
+12207714 Nov 21 23:14 output/n_georgia/profiles_data.js
+22824729 Nov 21 23:15 output/n_georgia/stream_map.html

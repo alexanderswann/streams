@@ -1,0 +1,72 @@
+#### adk_high_peaks checked 11-21 23:10:07
+#### failed steps or notes in this run's logs
+== START adk_high_peaks 11-21 23:05:46
+== DONE adk_high_peaks 11-21 23:09:33
+#### verify_install against the scratch build
+adk_high_peaks
+  high_peaks | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  boquet | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  saranac | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  wilmington | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  champlain | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  chateaugay | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+adk_high_peaks (/Users/mac/Fishing)
+       box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+high_peaks     2129           0.0                    5             0                      0.33      497.8
+    boquet      807           0.0                    0             0                      0.25      204.0
+   saranac     1160           0.0                   19             0                      0.17      250.5
+wilmington     1957           0.0                   19             0                      0.52      448.0
+ champlain     1058           0.0                    2             0                      0.21      320.4
+chateaugay     2628           0.0                   19             0                      0.56      675.3
+#### lake_outlets
+adk_high_peaks (project): lakes with an outlet line 182; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+adk_high_peaks: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_high_peaks: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 13 / 25 | pass 1 + big-creek pass: 21 / 25
+  on smaller drainages:   pass 1: 20 / 28 | pass 1 + big-creek pass: 20 / 28
+  all:                    pass 1: 33 / 53 | pass 1 + big-creek pass: 41 / 53
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Ausable Chasm, Keeseville, Willsboro & Westport            5      2     3
+Boquet, Elizabethtown, Moriah & Port Henry                 1      0     1
+High Peaks, Keene Valley, Newcomb & the Cold River        31     21    23
+Meacham, Loon Lake, the Chateaugay Lakes & Chazy Lake      2      0     2
+Saranac Lakes, Lake Placid, Keene & Jay                   14     10    12
+
+named mapped falls on big creeks that both passes miss: 
+                                            region            name   area     d1      d2
+High Peaks, Keene Valley, Newcomb & the Cold River   Millers Falls   68.0 2316.0 15384.0
+           Saranac Lakes, Lake Placid, Keene & Jay  Monument Falls  230.0  843.0  8385.0
+   Ausable Chasm, Keeseville, Willsboro & Westport Horseshoe Falls 1019.0  224.0  1158.0
+
+every precisely placed known fall, any source: pass 1: 32 / 59 | pass 1 + big-creek pass: 42 / 59
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_high_peaks (/Users/mac/Fishing): known falls 87: found pass 1 49, both passes 61 | OSM/NHD-mapped 55: pass 1 33, both 41
+  drops: pass 1 460 {'cascade / knickpoint': 239, 'steep reach': 214, 'waterfall-like step': 7}; big-creek pass 149
+  waterfall candidates by status: {'steep reach': 189, 'unmapped cascade': 186, 'likely DEM artifact': 82, 'matches mapped waterfall': 64, 'unmapped short fall (big creek)': 56, 'dam / weir': 23, 'unmapped waterfall-like step': 2}
+#### lake_shares
+adk_high_peaks  reaches   9739 | flagged in-lake  1197 (  505.3 km), outside every drawn lake    3.8 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    3.0 km inside counted lakes (0 reaches with 100+ m),   92.6 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+adk_high_peaks old: lines drawn with Lakes on 9093, 6692.2 km; reading reservoir 146, 25.1 km, of that outside the lakes the map draws 24.9 km (outside NHD's outlines too: 19.5 km); pieces with 100+ m outside the drawn lakes: 65, 22.0 km | Lakes-off layer: 1826 lines, 1305.0 km
+   of the 100+ m pieces, now drawn as a creek (put right): 62, 20.3 km; of those with the other version's fish score 40+: 61, 19.9 km
+adk_high_peaks new: lines drawn with Lakes on 9188, 6687.5 km; reading reservoir 14, 2.2 km, of that outside the lakes the map draws 2.2 km (outside NHD's outlines too: 2.1 km); pieces with 100+ m outside the drawn lakes: 3, 1.7 km | Lakes-off layer: 2098 lines, 1183.1 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+            n             d    a  o  fs     m  out_m  out_all_m  other_fl  other_fs  other_a  lat   lon
+          NaN Saranac River  1.6  2  17 661.3  661.2      660.0 reservoir      17.0      1.6 44.5 -74.1
+Fishing Brook Fishing Brook 61.6  4  25 652.3  651.7      651.7 reservoir      25.0     61.6 44.0 -74.3
+          NaN    Deer River  3.0  1  10 422.3  422.1      422.1 reservoir      12.0      3.0 44.7 -74.3
+#### water temperature fit
+{'area': 'adk_high_peaks', 'sites': 90, 'sd_sites': 3.85, 'mean_sites': 17.26, 'left_out_over_30c': 0, 'left_out_outliers': 0, 'fitted': '2026-11-21', 'ok': True, 'terms': ['elev_km', 'lake'], 'intercept': 19.018, 'coef': {'elev_km': -5.958, 'lake': 6.958}, 'rmse_loo': 3.18}
+#### map files
+18960962 Nov 21 23:10 output/adk_high_peaks/map3d_data.js
+5429263 Nov 21 23:09 output/adk_high_peaks/profiles_data.js
+17507780 Nov 21 23:10 output/adk_high_peaks/stream_map.html

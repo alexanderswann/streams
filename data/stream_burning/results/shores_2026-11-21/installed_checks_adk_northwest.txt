@@ -1,0 +1,82 @@
+#### adk_northwest checked 11-21 23:33:57
+#### failed steps or notes in this run's logs
+== START adk_northwest 11-21 23:20:38
+== DONE adk_northwest 11-21 23:23:56
+#### verify_install against the scratch build
+adk_northwest
+  beaver | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  long_lake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  tupper | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  st_regis | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  lake_ozonia | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+adk_northwest (/Users/mac/Fishing)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+     beaver     3035           0.0                    8             0                      0.83      744.3
+  long_lake     2194           0.0                    0             0                      0.40      414.1
+     tupper     1410           0.0                   17             0                      0.52      353.9
+   st_regis     1356           0.0                   16             0                      0.41      347.4
+lake_ozonia     1161           0.0                    6             0                      0.37      377.9
+#### lake_outlets
+adk_northwest (project): lakes with an outlet line 316; below them under half of NHDPlus: 9
+                lake     ha  nhd_km2  ours             sid         reach_name  ratio
+Stillwater Reservoir 2520.5    464.3  0.39    beaver:s2318                NaN   0.00
+          Lower Pond   63.9     12.4  5.38 long_lake:s2066 Browns Tract Inlet   0.43
+          Slang Pond   21.2     11.0  1.58      tupper:s36                NaN   0.14
+         Graves Pond    9.2     10.0  3.87     beaver:s812                NaN   0.39
+          Upper Pond   21.1      8.9  2.16 long_lake:s2083                NaN   0.24
+         Turtle Pond   28.7      8.4  1.03      tupper:s40                NaN   0.12
+            Dog Pond   10.1      5.9  1.67     beaver:s473                NaN   0.28
+           Long Pond   22.3      3.4  1.44   st_regis:s651   Long Pond Outlet   0.42
+           Boyd Pond   35.5      2.0  0.43  st_regis:s1021                NaN   0.22
+#### check_flow_drops
+adk_northwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_northwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 24 | pass 1 + big-creek pass: 18 / 24
+  on smaller drainages:   pass 1: 0 / 9 | pass 1 + big-creek pass: 6 / 9
+  all:                    pass 1: 3 / 33 | pass 1 + big-creek pass: 24 / 33
+
+by range:
+                                                                  falls  pass1  both
+region                                                                              
+Carry Falls, the Raquette reservoirs & the St. Regis                  5      1     4
+Lake Ozonia, the Deer and Little Salmon rivers                        3      1     3
+Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper          6      0     3
+Stillwater, Beaver River, Cranberry Lake & Five Ponds                11      0     8
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls      8      1     6
+
+named mapped falls on big creeks that both passes miss: 
+                                                          region            name  area      d1      d2
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Upper Falls  70.0  4365.0  4910.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper     Lower Falls  70.0  4429.0  5719.0
+    Raquette Lake, Blue Mountain Lake, Long Lake & Little Tupper  Raquette Falls  70.0  4415.0  5499.0
+Tupper Lake's north side, Piercefield, Massawepie & Newton Falls Jamestown Falls 165.0 24776.0 19653.0
+            Carry Falls, the Raquette reservoirs & the St. Regis Augerhole Falls  69.0 18219.0  7923.0
+
+every precisely placed known fall, any source: pass 1: 4 / 44 | pass 1 + big-creek pass: 32 / 44
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_northwest (/Users/mac/Fishing): known falls 81: found pass 1 6, both passes 42 | OSM/NHD-mapped 44: pass 1 3, both 24
+  drops: pass 1 57 {'cascade / knickpoint': 49, 'steep reach': 7, 'waterfall-like step': 1}; big-creek pass 172
+  waterfall candidates by status: {'unmapped short fall (big creek)': 89, 'matches mapped waterfall': 35, 'unmapped cascade': 32, 'dam / weir': 32, 'likely DEM artifact': 25, 'steep reach': 7}
+#### lake_shares
+adk_northwest   reaches   9156 | flagged in-lake  1757 (  893.9 km), outside every drawn lake    5.7 km:    1 reaches with 100+ m outside (   0.3 km),   1 untouched by a drawn lake | not flagged:    4.3 km inside counted lakes (0 reaches with 100+ m),  153.7 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+adk_northwest old: lines drawn with Lakes on 8361, 5916.3 km; reading reservoir 217, 39.0 km, of that outside the lakes the map draws 38.6 km (outside NHD's outlines too: 34.1 km); pieces with 100+ m outside the drawn lakes: 93, 33.6 km | Lakes-off layer: 2566 lines, 2028.6 km
+   of the 100+ m pieces, now drawn as a creek (put right): 86, 31.2 km; of those with the other version's fish score 40+: 82, 30.3 km
+adk_northwest new: lines drawn with Lakes on 8481, 5906.8 km; reading reservoir 19, 2.6 km, of that outside the lakes the map draws 2.6 km (outside NHD's outlines too: 2.2 km); pieces with 100+ m outside the drawn lakes: 6, 2.1 km | Lakes-off layer: 3031 lines, 1876.5 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+             n                             d      a  o  fs     m  out_m  out_all_m  other_fl  other_fs  other_a  lat   lon
+           NaN West Branch Oswegatchie River    1.4  1  21 575.3  575.3      575.3 reservoir      22.0      1.4 44.0 -75.0
+           NaN             Round Lake Outlet    1.3  2  15 540.5  540.5      540.5 reservoir      15.0      1.3 44.1 -74.7
+           NaN                Raquette River    1.3  2  19 423.3  423.3      423.3 reservoir      19.0      1.3 44.0 -74.6
+    Plum Brook               Minor drainages   16.5  3  17 267.2  267.2       30.9 reservoir      17.0     16.6 44.8 -74.9
+Raquette River                Raquette River 2204.7  7  22 215.1  214.6      214.6 reservoir      22.0   2204.7 44.5 -74.8
+           NaN             Round Lake Outlet    1.3  2  15 123.3  123.3      123.3 reservoir      15.0      1.3 44.1 -74.7
+#### water temperature fit
+{'area': 'adk_northwest', 'sites': 337, 'sd_sites': 3.36, 'mean_sites': 18.39, 'left_out_over_30c': 0, 'left_out_outliers': 1, 'fitted': '2026-11-21', 'ok': True, 'terms': ['elev_km', 'lake'], 'intercept': 20.02, 'coef': {'elev_km': -5.587, 'lake': 5.977}, 'rmse_loo': 2.87, 'group': 'adirondack', 'sites_by_area': {'adk_southwest': 123, 'adk_high_peaks': 90, 'adk_northwest': 63, 'adk_southeast': 61}, 'rmse_group': 3.13, 'sd_group': 3.59, 'own_sites': 63}
+#### map files
+16692304 Nov 21 23:33 output/adk_northwest/map3d_data.js
+4578886 Nov 21 23:33 output/adk_northwest/profiles_data.js
+16109203 Nov 21 23:33 output/adk_northwest/stream_map.html

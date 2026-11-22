@@ -1,0 +1,14 @@
+area             checked  =scratch fail outlets flowdrops dead     falls lake-valued lines outside lakes: old km -> new km (100+ m pieces; newly marked down)  map MB
+la                 23:00   8/8        0       3         0    0   199/412                            9.1 -> 0.3    (0 pieces, 0.0 km; 0 new)                 43.3
+jackson            23:04   7/7        0       0         0    0     13/27                           11.6 -> 0.0    (0 pieces, 0.0 km; 0 new)                 22.1
+n_georgia          23:15   4/4        0       0         0    0   441/925                           10.3 -> 0.1    (0 pieces, 0.0 km; 0 new)                 26.4
+central_vt         23:04   3/3        0       1         0    0    69/120                            3.7 -> 0.2    (1 pieces, 0.2 km; 0 new)                 19.7
+ne_ct              23:03   2/2        0       6         0    0      7/27                            9.4 -> 0.8    (1 pieces, 0.4 km; 0 new)                 10.5
+lexington_va       23:04   2/2        0       0         0    0     16/27                            0.2 -> 0.0    (0 pieces, 0.0 km; 0 new)                  8.2
+se_pa              23:03   2/2        0       0         0    0      0/13                            1.9 -> 0.0    (0 pieces, 0.0 km; 0 new)                 18.8
+smokies            23:24   7/7        0       1         0    0   122/211                            6.5 -> 0.0    (0 pieces, 0.0 km; 0 new)                 19.1
+adk_high_peaks     23:10   6/6        0       0         0    0     61/87                           24.9 -> 2.2    (3 pieces, 1.7 km; 0 new)                 19.0
+adk_northwest      23:33   5/5        0       9         0    0     42/81                           38.6 -> 2.6    (6 pieces, 2.1 km; 0 new)                 16.7
+adk_southwest      23:16   4/4        0       3         0    0     31/55                           23.3 -> 1.7    (3 pieces, 1.5 km; 0 new)                 13.4
+adk_southeast      23:32   5/5        0       3         0    0    69/143                           33.3 -> 1.8    (3 pieces, 1.5 km; 0 new)                 18.2
+{'falls': 1070, 'falls_n': 2128, 'outlets': 26, 'fd': 0, 'dead': 0, 'res_lines': 0, 'res_km': 9.7, 'big': 17, 'big_km': 7.4, 'new_down': 0, 'old_km': 172.8, 'mb': 235.5, 'n': 12}

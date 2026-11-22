@@ -1,0 +1,72 @@
+#### adk_southeast checked 11-21 23:32:45
+#### failed steps or notes in this run's logs
+== START adk_southeast 11-21 23:28:19
+== DONE adk_southeast 11-21 23:32:06
+#### verify_install against the scratch build
+adk_southeast
+  indian_lake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  minerva | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  siamese | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  sacandaga | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  lake_george | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+adk_southeast (/Users/mac/Fishing)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+indian_lake     2048           0.0                   15             0                      0.25      484.3
+    minerva      816           0.0                   13             0                      0.08      151.6
+    siamese      809           0.0                   17             0                      0.10      208.7
+  sacandaga     1923           0.0                    0             0                      0.50      466.4
+lake_george     3657           0.0                    3             0                      0.52      843.8
+#### lake_outlets
+adk_southeast (project): lakes with an outlet line 216; below them under half of NHDPlus: 3
+        lake   ha  nhd_km2  ours              sid reach_name  ratio
+Thurman Pond 50.8      9.7  1.76 lake_george:s821        NaN   0.18
+ Grassy Pond 14.7      6.2  2.97     minerva:s386        NaN   0.48
+Unknown Pond 15.1      4.5  1.71     minerva:s597        NaN   0.38
+#### check_flow_drops
+adk_southeast: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southeast: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 5 / 31 | pass 1 + big-creek pass: 22 / 31
+  on smaller drainages:   pass 1: 15 / 35 | pass 1 + big-creek pass: 15 / 35
+  all:                    pass 1: 20 / 66 | pass 1 + big-creek pass: 37 / 66
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Great Sacandaga Lake, Northville & Lake Luzerne           10      4     8
+Hudson Gorge, Minerva & the Essex Chain                    2      1     2
+Indian Lake, Cedar River, North Creek & Gore Mountain     19      2     4
+Lake George, Schroon Lake, Brant Lake & Pharaoh           30     13    21
+Siamese Ponds, Wells & Stony Creek                         5      0     2
+
+named mapped falls on big creeks that both passes miss: 
+                                               region           name   area     d1     d2
+Indian Lake, Cedar River, North Creek & Gore Mountain   Square Falls   93.0 5230.0 5887.0
+                   Siamese Ponds, Wells & Stony Creek    Auger Falls   66.0 1084.0 1852.0
+      Great Sacandaga Lake, Northville & Lake Luzerne Rockwell Falls 1443.0 2368.0  336.0
+      Lake George, Schroon Lake, Brant Lake & Pharaoh  Schroon Falls   27.0 3015.0 3072.0
+
+every precisely placed known fall, any source: pass 1: 21 / 71 | pass 1 + big-creek pass: 42 / 71
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_southeast (/Users/mac/Fishing): known falls 143: found pass 1 38, both passes 69 | OSM/NHD-mapped 70: pass 1 20, both 38
+  drops: pass 1 370 {'cascade / knickpoint': 250, 'steep reach': 111, 'waterfall-like step': 9}; big-creek pass 172
+  waterfall candidates by status: {'unmapped cascade': 181, 'steep reach': 104, 'likely DEM artifact': 102, 'unmapped short fall (big creek)': 58, 'matches mapped waterfall': 50, 'dam / weir': 34, 'unmapped waterfall-like step': 5}
+#### lake_shares
+adk_southeast   reaches   9253 | flagged in-lake  1562 (  756.2 km), outside every drawn lake    6.4 km:    3 reaches with 100+ m outside (   1.6 km),   2 untouched by a drawn lake | not flagged:    3.1 km inside counted lakes (0 reaches with 100+ m),  133.7 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+adk_southeast old: lines drawn with Lakes on 8519, 6044.2 km; reading reservoir 150, 33.5 km, of that outside the lakes the map draws 33.3 km (outside NHD's outlines too: 26.4 km); pieces with 100+ m outside the drawn lakes: 84, 30.6 km | Lakes-off layer: 2305 lines, 1865.4 km
+   of the 100+ m pieces, now drawn as a creek (put right): 80, 27.9 km; of those with the other version's fish score 40+: 73, 25.1 km
+adk_southeast new: lines drawn with Lakes on 8633, 6035.1 km; reading reservoir 12, 1.8 km, of that outside the lakes the map draws 1.8 km (outside NHD's outlines too: 0.1 km); pieces with 100+ m outside the drawn lakes: 3, 1.5 km | Lakes-off layer: 2693 lines, 1690.2 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  n              d    a  o  fs     m  out_m  out_all_m  other_fl  other_fs  other_a  lat   lon
+NaN Mettawee River 15.7  3  22 741.6  741.6        0.0 reservoir      22.0     15.7 43.5 -73.3
+NaN Mettawee River  6.0  2  19 519.9  519.9        4.3 reservoir      20.0      6.0 43.5 -73.3
+NaN Mettawee River  9.1  2  20 288.3  288.3        0.0 reservoir      20.0      9.1 43.5 -73.3
+#### water temperature fit
+{'area': 'adk_southeast', 'sites': 54, 'sd_sites': 2.99, 'mean_sites': 20.26, 'left_out_over_30c': 0, 'left_out_outliers': 1, 'fitted': '2026-11-21', 'ok': True, 'terms': ['log_area'], 'intercept': 16.849, 'coef': {'log_area': 1.741}, 'rmse_loo': 2.5}
+#### map files
+18246751 Nov 21 23:32 output/adk_southeast/map3d_data.js
+5042299 Nov 21 23:32 output/adk_southeast/profiles_data.js
+18846897 Nov 21 23:32 output/adk_southeast/stream_map.html

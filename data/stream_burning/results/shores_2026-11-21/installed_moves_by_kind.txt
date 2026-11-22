@@ -1,0 +1,154 @@
+la reaches 17908 -> 18096 | matched within 150 m: 17908 | 10+ moves: 130 up, 20 down
+                   n    km
+dir  kind                 
+down drainage      3   1.3
+     flow class    5   2.0
+     gradient      1   0.3
+     now lake      6   1.3
+     was lake      5   1.4
+up   flow class  112  62.5
+     now lake      1   0.1
+     other         4   1.1
+     was lake     13   3.9
+crossed 60: {'drainage': 0.1, 'flow class': 25.4, 'gradient': -0.3, 'now lake': -0.3, 'other': 0.4, 'was lake': 3.2} | unmatched new reaches at 60+: 4.9 km
+
+jackson reaches 10591 -> 10739 | matched within 150 m: 10578 | 10+ moves: 43 up, 19 down
+                     n   km
+dir  kind                  
+down approach time   1  1.3
+     flow class      1  1.2
+     now lake       13  1.5
+     other           4  4.5
+up   flow class      1  0.5
+     other          16  3.5
+     was lake       26  4.8
+crossed 60: {'approach time': -1.3, 'flow class': 0.5, 'now lake': -1.5, 'other': -0.4, 'was lake': 4.5} | unmatched new reaches at 60+: 26.8 km
+
+n_georgia reaches 15035 -> 15258 | matched within 150 m: 15023 | 10+ moves: 65 up, 28 down
+                         n   km
+dir  kind                      
+down drainage            2  0.2
+     now lake           22  3.3
+     water temperature   4  0.2
+up   drainage            1  0.2
+     other              23  3.8
+     was lake           38  6.8
+     water temperature   3  0.6
+crossed 60: {'drainage': -0.0, 'now lake': -0.6, 'other': 2.5, 'was lake': 2.6, 'water temperature': 0.5} | unmatched new reaches at 60+: 23.7 km
+
+central_vt reaches 8406 -> 8526 | matched within 150 m: 8410 | 10+ moves: 45 up, 11 down
+                         n   km
+dir  kind                      
+down now lake            5  0.8
+     other               6  0.5
+up   flow class         10  2.3
+     other               8  1.5
+     was lake           24  9.4
+     water temperature   3  0.6
+crossed 60: {'flow class': 2.2, 'other': 0.6, 'was lake': 7.8, 'water temperature': 0.6} | unmatched new reaches at 60+: 7.1 km
+
+ne_ct reaches 3692 -> 3880 | matched within 150 m: 3677 | 10+ moves: 56 up, 20 down
+                         n    km
+dir  kind                       
+down drainage            1   0.5
+     flow class          2   3.2
+     now lake            8   1.3
+     other               6   1.0
+     water temperature   3   0.5
+up   drainage            1   0.3
+     flow class         11   1.5
+     other               4   2.3
+     was lake           39  11.4
+     water temperature   1   0.1
+crossed 60: {'drainage': -0.2, 'flow class': 0.8, 'now lake': -0.7, 'other': -0.3, 'was lake': 4.5, 'water temperature': -0.1} | unmatched new reaches at 60+: 18.2 km
+
+lexington_va reaches 4316 -> 4329 | matched within 150 m: 4307 | 10+ moves: 23 up, 1 down
+                         n   km
+dir  kind                      
+down other               1  0.1
+up   flow class         11  2.5
+     other               1  0.2
+     was lake            5  1.5
+     water temperature   6  0.9
+crossed 60: {'flow class': 1.1, 'other': 0.1, 'water temperature': 0.1} | unmatched new reaches at 60+: 0.5 km
+
+se_pa reaches 4661 -> 4692 | matched within 150 m: 4666 | 10+ moves: 24 up, 8 down
+                         n   km
+dir  kind                      
+down now lake            4  0.3
+     other               4  0.4
+up   other               1  0.5
+     was lake            8  1.8
+     water temperature  15  2.7
+crossed 60: {'now lake': -0.1, 'other': -0.4, 'was lake': 1.1, 'water temperature': 1.4} | unmatched new reaches at 60+: 5.3 km
+
+smokies reaches 8943 -> 9086 | matched within 150 m: 8939 | 10+ moves: 36 up, 19 down
+                         n   km
+dir  kind                      
+down approach time       1  0.1
+     drainage            1  0.3
+     gradient            1  0.1
+     now lake            9  1.9
+     other               2  0.7
+     was lake            2  0.1
+     water temperature   3  0.5
+up   other              14  3.2
+     was lake           18  3.7
+     water temperature   4  0.2
+crossed 60: {'drainage': -0.6, 'now lake': -0.9, 'other': 4.7, 'was lake': 2.0, 'water temperature': 0.2} | unmatched new reaches at 60+: 29.5 km
+
+adk_high_peaks reaches 9451 -> 9808 | matched within 150 m: 9409 | 10+ moves: 100 up, 175 down
+                          n    km
+dir  kind                        
+down drainage             2   0.4
+     now lake            26   3.6
+     other                5   4.5
+     water temperature  142  96.7
+up   drainage             1   0.2
+     flow class           1   0.2
+     other               15   2.4
+     was lake            83  22.8
+crossed 60: {'drainage': 0.4, 'now lake': -2.3, 'other': -3.0, 'was lake': 13.7, 'water temperature': -38.8} | unmatched new reaches at 60+: 92.5 km
+
+adk_northwest reaches 8751 -> 9331 | matched within 150 m: 8683 | 10+ moves: 134 up, 208 down
+                          n    km
+dir  kind                        
+down drainage             6   3.0
+     now lake            38   5.9
+     other                7   7.4
+     was lake             1   0.5
+     water temperature  156  87.2
+up   drainage             1   0.2
+     other               15   3.3
+     was lake           117  40.7
+     water temperature    1   0.1
+crossed 60: {'drainage': -0.6, 'now lake': -4.1, 'other': -4.2, 'was lake': 34.0, 'water temperature': -55.9} | unmatched new reaches at 60+: 151.9 km
+
+adk_southwest reaches 7156 -> 7544 | matched within 150 m: 7142 | 10+ moves: 100 up, 229 down
+                          n     km
+dir  kind                         
+down drainage             1    0.1
+     now lake            26    4.2
+     other                4    4.6
+     water temperature  198  137.9
+up   flow class           1    0.2
+     other               14    3.0
+     was lake            83   23.4
+     water temperature    2    0.4
+crossed 60: {'drainage': -1.0, 'flow class': 0.2, 'now lake': -2.8, 'other': 0.7, 'was lake': 19.0, 'water temperature': -46.0} | unmatched new reaches at 60+: 88.5 km
+
+adk_southeast reaches 8853 -> 9376 | matched within 150 m: 8759 | 10+ moves: 101 up, 59 down
+                         n    km
+dir  kind                       
+down drainage            5   3.4
+     flow class          1   1.0
+     gradient            2   0.7
+     now lake           40   8.4
+     other              10   6.1
+     water temperature   1   0.1
+up   flow class          2   0.1
+     other               3   0.8
+     was lake           85  17.8
+     water temperature  11   3.6
+crossed 60: {'drainage': -1.3, 'flow class': 0.1, 'gradient': -1.6, 'now lake': -4.9, 'other': -5.9, 'was lake': 9.2, 'water temperature': 1.8} | unmatched new reaches at 60+: 129.7 km
+

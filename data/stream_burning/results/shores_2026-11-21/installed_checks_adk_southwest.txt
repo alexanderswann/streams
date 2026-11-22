@@ -1,0 +1,64 @@
+#### adk_southwest checked 11-21 23:16:27
+#### failed steps or notes in this run's logs
+== START adk_southwest 11-21 23:13:02
+== DONE adk_southwest 11-21 23:15:50
+#### verify_install against the scratch build
+adk_southwest
+  moose | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  west_canada_lakes | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  west_canada | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  speculator | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+adk_southwest (/Users/mac/Fishing)
+              box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+            moose     2748           0.0                   17             0                      0.65      763.7
+west_canada_lakes      621           0.0                    3             0                      0.15      130.9
+      west_canada     1867           0.0                    6             0                      0.44      555.4
+       speculator     2190           0.0                    0             0                      0.44      477.8
+#### lake_outlets
+adk_southwest (project): lakes with an outlet line 216; below them under half of NHDPlus: 3
+         lake    ha  nhd_km2  ours              sid              reach_name  ratio
+    Pine Lake  67.3     28.9 12.20 speculator:s1498                     NaN   0.42
+     Spy Lake 154.5      9.3  0.43  speculator:s543                     NaN   0.05
+Tamarack Lake  13.1      6.6  3.23      moose:s1106 Middle Settlement Creek   0.49
+#### check_flow_drops
+adk_southwest: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+adk_southwest: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 7 | pass 1 + big-creek pass: 5 / 7
+  on smaller drainages:   pass 1: 1 / 3 | pass 1 + big-creek pass: 1 / 3
+  all:                    pass 1: 4 / 10 | pass 1 + big-creek pass: 6 / 10
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Old Forge, the Fulton Chain, Moose River Plains & Lyons Falls      2      1     1
+Piseco, Speculator, Caroga & the West Branch Sacandaga             8      3     5
+
+named mapped falls on big creeks that both passes miss: 
+                                                region                    name  area     d1     d2
+Piseco, Speculator, Caroga & the West Branch Sacandaga West Stoney Creek Falls  15.0 1767.0 8908.0
+
+every precisely placed known fall, any source: pass 1: 8 / 20 | pass 1 + big-creek pass: 12 / 20
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+adk_southwest (/Users/mac/Fishing): known falls 55: found pass 1 16, both passes 31 | OSM/NHD-mapped 12: pass 1 4, both 6
+  drops: pass 1 103 {'cascade / knickpoint': 82, 'steep reach': 18, 'waterfall-like step': 3}; big-creek pass 128
+  waterfall candidates by status: {'unmapped short fall (big creek)': 62, 'unmapped cascade': 59, 'likely DEM artifact': 48, 'dam / weir': 23, 'matches mapped waterfall': 18, 'steep reach': 18, 'unmapped waterfall-like step': 1}
+#### lake_shares
+adk_southwest   reaches   7426 | flagged in-lake   985 (  443.6 km), outside every drawn lake    4.1 km:    1 reaches with 100+ m outside (   0.1 km),   0 untouched by a drawn lake | not flagged:    3.3 km inside counted lakes (1 reaches with 100+ m),  119.6 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+adk_southwest old: lines drawn with Lakes on 7136, 5441.5 km; reading reservoir 139, 23.3 km, of that outside the lakes the map draws 23.3 km (outside NHD's outlines too: 16.9 km); pieces with 100+ m outside the drawn lakes: 59, 20.5 km | Lakes-off layer: 1564 lines, 1307.2 km
+   of the 100+ m pieces, now drawn as a creek (put right): 56, 19.0 km; of those with the other version's fish score 40+: 55, 18.8 km
+adk_southwest new: lines drawn with Lakes on 7245, 5438.0 km; reading reservoir 11, 1.7 km, of that outside the lakes the map draws 1.7 km (outside NHD's outlines too: 1.6 km); pieces with 100+ m outside the drawn lakes: 3, 1.5 km | Lakes-off layer: 1864 lines, 1199.0 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+              n               d    a  o  fs     m  out_m  out_all_m  other_fl  other_fs  other_a  lat   lon
+Sacandaga River Sacandaga River 13.8  3  27 706.7  702.4      702.4 reservoir      27.0     13.8 43.5 -74.4
+            NaN     Moose River  2.7  1  12 586.7  586.1      581.0 reservoir      15.0      2.7 43.7 -74.9
+Sacandaga River Sacandaga River 12.2  3  23 172.6  172.1      172.1 reservoir      23.0     12.2 43.5 -74.4
+#### water temperature fit
+{'area': 'adk_southwest', 'sites': 123, 'sd_sites': 3.5, 'mean_sites': 18.29, 'left_out_over_30c': 0, 'left_out_outliers': 0, 'fitted': '2026-11-21', 'ok': True, 'terms': ['lake'], 'intercept': 17.358, 'coef': {'lake': 6.221}, 'rmse_loo': 3.02}
+#### map files
+13377680 Nov 21 23:16 output/adk_southwest/map3d_data.js
+4376101 Nov 21 23:15 output/adk_southwest/profiles_data.js
+13843325 Nov 21 23:16 output/adk_southwest/stream_map.html

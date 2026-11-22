@@ -1,0 +1,58 @@
+#### lexington_va checked 11-21 23:04:43
+#### failed steps or notes in this run's logs
+== START lexington_va 11-21 22:52:59
+== DONE lexington_va 11-21 22:55:15
+#### verify_install against the scratch build
+lexington_va
+  maury_goshen | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  blue_ridge_va | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+lexington_va (/Users/mac/Fishing)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ maury_goshen     2217           0.0                   16             0                      0.22      560.1
+blue_ridge_va     2103           0.0                    0             0                      0.28      551.7
+#### lake_outlets
+lexington_va (project): lakes with an outlet line 9; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+lexington_va: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+lexington_va: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 2 / 7 | pass 1 + big-creek pass: 3 / 7
+  on smaller drainages:   pass 1: 12 / 14 | pass 1 + big-creek pass: 12 / 14
+  all:                    pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+
+by range:
+                                                   falls  pass1  both
+region                                                               
+Blue Ridge: St. Mary's, Irish Creek & South River     19     14    15
+Maury River, Goshen Pass & Buffalo Creek               2      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                                           region          name   area     d1     d2
+         Maury River, Goshen Pass & Buffalo Creek    Lace Falls   34.0 1277.0 1135.0
+         Maury River, Goshen Pass & Buffalo Creek Balcony Falls 1769.0  291.0 8216.0
+Blue Ridge: St. Mary's, Irish Creek & South River Panther Falls   66.0  697.0 1354.0
+
+every precisely placed known fall, any source: pass 1: 14 / 21 | pass 1 + big-creek pass: 15 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+lexington_va (/Users/mac/Fishing): known falls 27: found pass 1 15, both passes 16 | OSM/NHD-mapped 22: pass 1 14, both 15
+  drops: pass 1 209 {'steep reach': 106, 'cascade / knickpoint': 99, 'waterfall-like step': 4}; big-creek pass 51
+  waterfall candidates by status: {'steep reach': 98, 'unmapped cascade': 73, 'likely DEM artifact': 34, 'unmapped short fall (big creek)': 24, 'matches mapped waterfall': 12, 'dam / weir': 9, 'unmapped waterfall-like step': 4}
+#### lake_shares
+lexington_va    reaches   4320 | flagged in-lake    48 (   17.7 km), outside every drawn lake    0.1 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.2 km inside counted lakes (0 reaches with 100+ m),   16.6 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+lexington_va old: lines drawn with Lakes on 4377, 3288.4 km; reading reservoir 5, 0.2 km, of that outside the lakes the map draws 0.2 km (outside NHD's outlines too: 0.0 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 153 lines, 161.1 km
+   of the 100+ m pieces, now drawn as a creek (put right): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+lexington_va new: lines drawn with Lakes on 4385, 3288.0 km; reading reservoir 0, 0.0 km, of that outside the lakes the map draws 0.0 km (outside NHD's outlines too: 0.0 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 162 lines, 151.3 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  none
+#### water temperature fit
+{'area': 'lexington_va', 'sites': 169, 'sd_sites': 2.76, 'mean_sites': 21.87, 'left_out_over_30c': 0, 'left_out_outliers': 6, 'fitted': '2026-11-21', 'ok': True, 'terms': ['elev_km', 'log_area'], 'intercept': 20.58, 'coef': {'elev_km': -5.965, 'log_area': 1.758}, 'rmse_loo': 1.77}
+#### map files
+8223828 Nov 21 23:00 output/lexington_va/map3d_data.js
+3187573 Nov 21 22:55 output/lexington_va/profiles_data.js
+8080134 Nov 21 23:00 output/lexington_va/stream_map.html

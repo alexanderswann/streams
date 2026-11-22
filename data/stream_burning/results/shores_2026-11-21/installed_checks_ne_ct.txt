@@ -1,0 +1,63 @@
+#### ne_ct checked 11-21 23:03:53
+#### failed steps or notes in this run's logs
+== START ne_ct 11-21 22:47:50
+== DONE ne_ct 11-21 22:49:39
+#### verify_install against the scratch build
+ne_ct
+  natchaug | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  quinebaug | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+ne_ct (/Users/mac/Fishing)
+      box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ natchaug     1849           0.0                   18             0                      0.25      413.4
+quinebaug     1964           0.0                    0             0                      0.39      462.1
+#### lake_outlets
+ne_ct (project): lakes with an outlet line 140; below them under half of NHDPlus: 6
+                    lake   ha  nhd_km2   ours             sid      reach_name  ratio
+               Acme Pond 13.8    289.9 135.75  quinebaug:s407    French River   0.47
+North Grosvenordale Pond 23.8    256.7 102.74  quinebaug:s211    French River   0.40
+       unnamed reservoir  9.0     10.4   4.95  quinebaug:s583 Wappoquia Brook   0.48
+             Arnold Pond 30.5      9.7   3.87 quinebaug:s1360   Roaring Brook   0.40
+   Number Four Reservoir 27.2      4.3   0.85    natchaug:s11             NaN   0.20
+              Clark Pond  8.2      3.0   1.19 quinebaug:s1045    Moosup River   0.40
+#### check_flow_drops
+ne_ct: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+ne_ct: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 9 | pass 1 + big-creek pass: 4 / 9
+  on smaller drainages:   pass 1: 0 / 14 | pass 1 + big-creek pass: 0 / 14
+  all:                    pass 1: 0 / 23 | pass 1 + big-creek pass: 4 / 23
+
+by range:
+                                falls  pass1  both
+region                                            
+Natchaug, Fenton & Willimantic     20      0     4
+Quinebaug, Five Mile & Moosup       3      0     0
+
+named mapped falls on big creeks that both passes miss: 
+                        region                   name  area      d1     d2
+Natchaug, Fenton & Willimantic     Diana's Pool Falls 143.0  4914.0 2113.0
+ Quinebaug, Five Mile & Moosup          Cargill Falls  16.0  3087.0  766.0
+ Quinebaug, Five Mile & Moosup Spencer Rock Waterfall  34.0 10841.0 8061.0
+
+every precisely placed known fall, any source: pass 1: 1 / 25 | pass 1 + big-creek pass: 5 / 25
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+ne_ct (/Users/mac/Fishing): known falls 27: found pass 1 1, both passes 7 | OSM/NHD-mapped 23: pass 1 0, both 4
+  drops: pass 1 18 {'cascade / knickpoint': 18}; big-creek pass 65
+  waterfall candidates by status: {'dam / weir': 43, 'likely DEM artifact': 14, 'unmapped short fall (big creek)': 11, 'unmapped cascade': 9}
+#### lake_shares
+ne_ct           reaches   3813 | flagged in-lake   487 (  209.8 km), outside every drawn lake    2.5 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    1.9 km inside counted lakes (1 reaches with 100+ m),   90.8 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+ne_ct old: lines drawn with Lakes on 3813, 2471.5 km; reading reservoir 60, 9.4 km, of that outside the lakes the map draws 9.4 km (outside NHD's outlines too: 7.7 km); pieces with 100+ m outside the drawn lakes: 27, 7.8 km | Lakes-off layer: 1011 lines, 784.8 km
+   of the 100+ m pieces, now drawn as a creek (put right): 26, 7.5 km; of those with the other version's fish score 40+: 9, 1.9 km
+ne_ct new: lines drawn with Lakes on 3837, 2469.0 km; reading reservoir 13, 0.8 km, of that outside the lakes the map draws 0.8 km (outside NHD's outlines too: 0.7 km); pieces with 100+ m outside the drawn lakes: 1, 0.4 km | Lakes-off layer: 1187 lines, 745.1 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+           n               d   a  o  fs     m  out_m  out_all_m  other_fl  other_fs  other_a  lat   lon
+Cutler Brook Quinebaug River 3.8  6  13 392.5  392.5      392.5 reservoir      13.0      3.8 41.6 -72.0
+#### water temperature fit
+{'area': 'ne_ct', 'sites': 60, 'sd_sites': 2.61, 'mean_sites': 21.4, 'left_out_over_30c': 0, 'left_out_outliers': 2, 'fitted': '2026-11-21', 'ok': True, 'terms': ['log_area'], 'intercept': 15.197, 'coef': {'log_area': 3.02}, 'rmse_loo': 1.51}
+#### map files
+10463757 Nov 21 23:03 output/ne_ct/map3d_data.js
+3033626 Nov 21 22:49 output/ne_ct/profiles_data.js
+17239842 Nov 21 23:03 output/ne_ct/stream_map.html

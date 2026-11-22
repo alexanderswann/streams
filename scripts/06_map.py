@@ -201,6 +201,7 @@ def draw_through(s_ll):
             i = max(donors, key=lambda j: km2_[j])
         return i
     coords, extra, used, n_up, n_head, n_own, n_creek, metres = {}, [], set(), 0, 0, 0, 0, 0.0
+    noname = set()                                         # pieces of `extra` that don't take their reach's name
     def xy(i):
         if i not in coords:
             coords[i] = [c_[:2] for c_ in sm[i].coords]
@@ -223,7 +224,26 @@ def draw_through(s_ll):
             if len(new) < 2:
                 continue
             used.update(ch)
-            own = lake_creek(r) if r["kind"] in ("dam", "pond") and km2_[r["hit"]] > 1.5 * r["km2"] else None
+            # (... or one that runs into the next lake's water: since 05_score.py cuts the links at lake shores,
+            # 2026-11-21, the reach it meets there is lake water, and the creek between two ponds drew with the lower
+            # pond's values: 530 m between Spencer Pond and Big Pond in NE Connecticut, fish 15 for 57)
+            own = lake_creek(r) if r["kind"] in ("dam", "pond") and (km2_[r["hit"]] > 1.5 * r["km2"]
+                                                                     or bd_[r["hit"]].startswith("in:")) else None
+            if own is not None and bd_[own].startswith("in:"):
+                own = None                                 # no creek found above the lake: as before
+            if own is None and bd_[r["hit"]].startswith("in:"):
+                # no reach of its own above (a pond's trickle under the size floor): it is drawn with the values of
+                # the main creek running into the lake it meets, as the uncut link gave it, with its own drainage
+                # and no name
+                i = r["hit"]
+                for _ in range(30):
+                    donors = ends_at.get(k1(sm[i].coords[0]), [])
+                    if not bd_[i].startswith("in:") or not donors:
+                        break
+                    i = max(donors, key=lambda j: km2_[j])
+                if not bd_[i].startswith("in:"):
+                    own = i
+                    noname.add(len(extra))
             if own is not None:
                 extra.append((own, shapely.LineString(new), r["km2"]))
                 n_creek += 1
@@ -250,6 +270,8 @@ def draw_through(s_ll):
         carried = np.array([np.nan if k_ is None else k_ for _, _, k_ in extra], float)
         if "area_full_km2" in add:                       # a lake's creek: the drainage the path carries
             add["area_full_km2"] = np.where(np.isnan(carried), add.area_full_km2.to_numpy(float), np.round(carried, 2))
+        if noname:
+            add["name"] = [None if n_ in noname else v_ for n_, v_ in enumerate(add["name"].values)]
         s_ll = pd.concat([s_ll, add], ignore_index=True)
     s_ll.attrs["drawn_extra"] = len(extra)
     print(f"creeks drawn through {n_head + n_own + n_up + n_creek} breaks below dams and at the outer boundary "
@@ -750,7 +772,9 @@ if lw_ is not None and len(lw_):
         kmv_ = s_ll.area_full_km2.fillna(s_ll.area_km2).fillna(0).to_numpy(float)
         st_, en_ = shapely.get_point(sm_, 0), shapely.get_point(sm_, -1)
         tst_, ten_ = shapely.STRtree(st_), shapely.STRtree(en_)
+        tln_ = shapely.STRtree(sm_)
         take_, riv_ = src_.copy(), np.zeros(len(out_), int)        # riv_: 1 below an outlet, 2 above an inlet
+        own_ = {}                                                  # piece -> the drainage that leaves the lake
         for k_, i in enumerate(src_):
             if not lakev_[i]:
                 continue
@@ -759,6 +783,28 @@ if lw_ is not None and len(lw_):
             at_e = shapely.Point(g_.coords[-1]).distance(en_[i]) <= 0.5
             if at_e and not at_s:
                 nb_ = [j for j in tst_.query(en_[i], predicate="dwithin", distance=1.0) if j != i]
+                if not nb_:
+                    # No reach starts where the line ends: draw_through's path below the dam ran into the middle of a
+                    # reach, or into the next lake. Since 05_score.py cuts the links at lake shores (2026-11-21) the
+                    # reach the path hangs on is always lake water, so the stretch from the dam to that spot read
+                    # reservoir (530 m between Big Pond and Spencer Pond in NE Connecticut, fish 15 where the uncut
+                    # link had read 57). It is the creek it runs into where that carries about what leaves the lake
+                    # (up to 1.5 times, as in draw_through). Else (a much bigger stream, or another lake's water) it
+                    # is the lake's own creek: the first reach above the lake not lying in it, with the drainage that
+                    # leaves the lake.
+                    hit_ = [j for j in tln_.query(en_[i], predicate="dwithin", distance=1.0) if j != i and not lakev_[j]]
+                    h_ = max(hit_, key=lambda j: kmv_[j]) if hit_ else None
+                    if h_ is not None and kmv_[h_] <= 1.5 * kmv_[i]:
+                        nb_ = [h_]
+                    else:
+                        u_ = i
+                        for _ in range(30):
+                            up_ = [j for j in ten_.query(st_[u_], predicate="dwithin", distance=1.0) if j != u_]
+                            if not lakev_[u_] or not up_:
+                                break
+                            u_ = max(up_, key=lambda j: kmv_[j])
+                        if not lakev_[u_]:
+                            nb_, own_[k_] = [u_], kmv_[i]
             elif at_s and not at_e:
                 nb_ = [j for j in ten_.query(st_[i], predicate="dwithin", distance=1.0) if j != i]
             else:
@@ -769,6 +815,8 @@ if lw_ is not None and len(lw_):
         if riv_.any():
             out_ = gpd.GeoDataFrame(s_ll.iloc[take_].drop(columns="geometry").reset_index(drop=True),
                                     geometry=out_.geometry.values, crs=EPSG)
+            if own_ and "area_full_km2" in out_:
+                out_.loc[list(own_), "area_full_km2"] = np.round(list(own_.values()), 2)
         long_ = (out_.length >= 20).values
         whole_ = [g_ for g_ in sm_[~cut_] if g_ is not None and not g_.is_empty]
         on_ = np.zeros(len(out_), bool)

@@ -1,0 +1,54 @@
+#### se_pa checked 11-21 23:03:29
+#### failed steps or notes in this run's logs
+== START se_pa 11-21 22:57:50
+== DONE se_pa 11-21 23:00:52
+#### verify_install against the scratch build
+se_pa
+  brandywine | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  ridley_valley | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+se_pa (/Users/mac/Fishing)
+          box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+   brandywine     2727           0.0                   15             0                      9.00      716.2
+ridley_valley     1946           0.0                    0             0                     52.63      601.3
+#### lake_outlets
+se_pa (project): lakes with an outlet line 23; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+se_pa: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+se_pa: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 0 / 3 | pass 1 + big-creek pass: 0 / 3
+  on smaller drainages:   pass 1: 0 / 8 | pass 1 + big-creek pass: 0 / 8
+  all:                    pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+
+by range:
+                                                      falls  pass1  both
+region                                                                  
+Brandywine, French Creek & White Clay                     4      0     0
+Ridley, Crum & Darby, Valley Creek & the Wissahickon      7      0     0
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 0 / 11 | pass 1 + big-creek pass: 0 / 11
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+se_pa (/Users/mac/Fishing): known falls 13: found pass 1 0, both passes 0 | OSM/NHD-mapped 11: pass 1 0, both 0
+  drops: pass 1 40 {'cascade / knickpoint': 40}; big-creek pass 51
+  waterfall candidates by status: {'likely DEM artifact': 36, 'dam / weir': 21, 'unmapped cascade': 18, 'unmapped short fall (big creek)': 10}
+#### lake_shares
+se_pa           reaches   4673 | flagged in-lake    70 (   32.1 km), outside every drawn lake    0.2 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.2 km inside counted lakes (0 reaches with 100+ m),   20.2 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+se_pa old: lines drawn with Lakes on 4740, 3518.3 km; reading reservoir 9, 1.9 km, of that outside the lakes the map draws 1.9 km (outside NHD's outlines too: 0.9 km); pieces with 100+ m outside the drawn lakes: 5, 1.7 km | Lakes-off layer: 185 lines, 165.7 km
+   of the 100+ m pieces, now drawn as a creek (put right): 5, 1.7 km; of those with the other version's fish score 40+: 4, 1.4 km
+se_pa new: lines drawn with Lakes on 4742, 3517.8 km; reading reservoir 0, 0.0 km, of that outside the lakes the map draws 0.0 km (outside NHD's outlines too: 0.0 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 207 lines, 156.5 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  none
+#### water temperature fit
+{'area': 'se_pa', 'sites': 230, 'sd_sites': 2.28, 'mean_sites': 21.82, 'left_out_over_30c': 0, 'left_out_outliers': 18, 'fitted': '2026-11-21', 'ok': True, 'terms': ['air', 'log_area'], 'intercept': -11.979, 'coef': {'air': 1.348, 'log_area': 1.122}, 'rmse_loo': 1.62}
+#### map files
+18825086 Nov 21 23:03 output/se_pa/map3d_data.js
+2957802 Nov 21 23:00 output/se_pa/profiles_data.js
+11817233 Nov 21 23:03 output/se_pa/stream_map.html

@@ -1,0 +1,68 @@
+#### jackson checked 11-21 23:04:08
+#### failed steps or notes in this run's logs
+== START jackson 11-21 22:38:34
+== DONE jackson 11-21 22:41:59
+#### verify_install against the scratch build
+jackson
+  teton_snake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  gros_ventre | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  hoback | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  jackson_lake | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  buffalo_fork | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  teton_valley | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  palisades | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+jackson (/Users/mac/Fishing)
+         box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ teton_snake     1648           0.0                   10             0                      0.48      506.4
+ gros_ventre     1455           0.0                   12             0                      0.15      326.6
+      hoback     2028           0.0                    0             0                      0.32      553.5
+jackson_lake     2532           0.0                   20             0                      0.34      700.4
+buffalo_fork      166           0.0                    1             0                      0.02       42.7
+teton_valley     1751           0.0                    8             0                      0.51      562.4
+   palisades     1133           0.0                    5             0                      1.40      256.4
+#### lake_outlets
+jackson (project): lakes with an outlet line 28; below them under half of NHDPlus: 0
+Empty DataFrame
+Columns: [lake, ha, nhd_km2, ours, sid, reach_name, ratio]
+Index: []
+#### check_flow_drops
+jackson: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+jackson: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 3 / 4 | pass 1 + big-creek pass: 3 / 4
+  on smaller drainages:   pass 1: 9 / 17 | pass 1 + big-creek pass: 9 / 17
+  all:                    pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+
+by range:
+                                                       falls  pass1  both
+region                                                                   
+Gros Ventre                                                1      1     1
+Hoback & Snake River Canyon                                2      1     1
+Jackson Lake, Jenny Lake & the northern Tetons            10      6     6
+Palisades Reservoir & Alpine                               1      0     0
+Teton Valley, Idaho: Driggs, Victor & the Teton River      1      0     0
+Tetons & Snake River                                       6      4     4
+
+named mapped falls on big creeks that both passes miss: none
+
+every precisely placed known fall, any source: pass 1: 12 / 21 | pass 1 + big-creek pass: 12 / 21
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+jackson (/Users/mac/Fishing): known falls 27: found pass 1 13, both passes 13 | OSM/NHD-mapped 23: pass 1 12, both 12
+  drops: pass 1 2480 {'steep reach': 1756, 'cascade / knickpoint': 642, 'waterfall-like step': 82}; big-creek pass 93
+  waterfall candidates by status: {'steep reach': 1740, 'unmapped cascade': 590, 'unmapped waterfall-like step': 75, 'likely DEM artifact': 61, 'unmapped short fall (big creek)': 53, 'matches mapped waterfall': 21, 'dam / weir': 1}
+#### lake_shares
+jackson         reaches  10713 | flagged in-lake   476 (  280.0 km), outside every drawn lake    1.3 km:    1 reaches with 100+ m outside (   0.1 km),   0 untouched by a drawn lake | not flagged:    0.6 km inside counted lakes (0 reaches with 100+ m),   40.0 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+jackson old: lines drawn with Lakes on 10517, 8570.8 km; reading reservoir 49, 11.6 km, of that outside the lakes the map draws 11.6 km (outside NHD's outlines too: 9.2 km); pieces with 100+ m outside the drawn lakes: 22, 10.4 km | Lakes-off layer: 739 lines, 713.9 km
+   of the 100+ m pieces, now drawn as a creek (put right): 21, 10.2 km; of those with the other version's fish score 40+: 17, 8.3 km
+jackson new: lines drawn with Lakes on 10578, 8569.7 km; reading reservoir 3, 0.0 km, of that outside the lakes the map draws 0.0 km (outside NHD's outlines too: 0.0 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 828 lines, 654.4 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  none
+#### water temperature fit
+{'area': 'jackson', 'sites': 145, 'sd_sites': 3.72, 'mean_sites': 13.38, 'left_out_over_30c': 3, 'left_out_outliers': 0, 'fitted': '2026-11-21', 'ok': True, 'terms': ['elev_km', 'log_area'], 'intercept': 19.853, 'coef': {'elev_km': -4.716, 'log_area': 1.553}, 'rmse_loo': 3.3}
+#### map files
+22074273 Nov 21 22:58 output/jackson/map3d_data.js
+6312805 Nov 21 22:41 output/jackson/profiles_data.js
+16526543 Nov 21 22:58 output/jackson/stream_map.html

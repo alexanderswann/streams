@@ -3225,3 +3225,259 @@ after publishing"; `data/stream_burning/results/installed_2026-11-21/`.
     the 31 firm cases (Seventh Lake's put-in is 458 m from its way out); testing "the pit is at NHD's outlet" instead
     catches them.
 - **New checks:** `drawn_cmp.py`, `putin.py`.
+
+## 2026-11-21, late: reaches cut at lake shores; the lake routing's side effects and four open items (side-effects session)
+Task: the user's "in a new session look into and fix all of these", relayed by the overview session: the lake
+routing's side effects (1-4 below) and four open items (5a-5d). Everything was measured first in scratch copies of
+all 12 maps, built from the drops on (04) with the same 03b outputs, against a baseline built the same way with the
+scripts of 80b42e8. Tools and per-map tables: `data/stream_burning/` (README, "Lake shores, side channels, drops
+below dams"; `results/shores_2026-11-21/`).
+
+**The table over the 12 maps, scratch baseline -> scratch build with everything below** (scratch scores take the
+access, sun and context values by place from the build before; the installed maps' own figures are under "Rebuild",
+where the water-temperature effect is larger because the trout-water factor scales it):
+- Reaches 106,609 -> 109,922. Creek scored as lake 352 -> 30 km; lake water scored as creek
+  339 -> 20 km.
+- Fish 60+ 42,177 -> 41,968 km. 10+ point moves: 1,462 up, 2,183 down.
+- Known falls found 1,025 -> 1,070 of 2,128; none lost. Drops 13,291 -> 13,764.
+- Flow drops 0 -> 0; reach ends dead on a box edge 0 -> 0. Lake outlets under half of NHDPlus 26 -> 26
+  (the new flags are the check's, item 3).
+- The 2,183 downs by what the reach is now:
+  - 1,679 lake water (90 %+ inside a drawn lake) that now reads as lake, 509 km; 89 more half to 90 % inside one
+    (15 km, 12 of them in the water).
+  - 342 creek reaches (213 km) on the water-temperature estimate, 329 of them in three Adirondack maps (5b).
+  - 51 with less drainage (38 km): creek pieces above a lake now measured on their own cells (smaller and steeper
+    than the link that ran on into the lake), and a dozen short new stubs matched to a bigger old reach beside them.
+  - 22 with a drier flow class (8.5 km): 13 creek pieces at LA reservoirs that read "reservoir" before and now take
+    the model's own class, 3 by a gauge's record (item 2), 4 unmapped pieces in adk_northwest, 2 single reaches.
+- The 1,462 ups: 953 creek stretches that read as lake (286 km) and 188 mostly-creek ones (34 km); 168 with a wetter
+  flow class (73 km; LA 131: the below-dam rule, item 2); 149 other (30 km: side channels sized as their river,
+  creeks above lakes); 4 with more drainage.
+
+**1. Why more scores went down than up with the lake routing (408 down, 265 up).**
+- Cause by cause, on the stream-burning session's tables:
+  - 222 are lake water (90 %+ inside a drawn lake) that now reads as lake.
+  - 54 were creek scored as lake: 42 links straddling a shore, 12 inside NHD's outline but outside the water the
+    lidar shows.
+  - 114 lost drainage a lake's water had put on them. 39 have an NHDPlus line to check against: the new figure
+    agrees with it at 32, the old one at 7. Those 7 are where crossbox put the water back in beside the routed
+    outflow line (item 3).
+  - 14 a drier flow class (Willow Creek and the LA dams, item 2); 4 other.
+- **Root cause of the 54:** pysheds draws one line per link between confluences, and `05b_flow.py`'s
+  half-its-length rule gave the whole link one class. A link from a creek into a lake was creek and lake at once.
+- **Fix, in `05_score.py`:** each link is cut where it crosses the shore of a lake a reach can lie in
+  (`flowlib.lake_water`, `cut_at_shores`; a stretch under 50 m stays with its neighbour). `05d_lakes.py` now runs
+  before `05_score.py` (`run_mid.sh`), and each lake's drainage label is looked up when the map is drawn
+  (`maplakes.py`).
+  - 3,268 cuts on 2,956 links over the 12 maps.
+  - The shores are every lake's that 05b can flag a reach in, not only lakes with level water in the lidar: with
+    those alone 880 m of the West Fork San Gabriel and 1.3 km of Devils Canyon above Cogswell Reservoir (drawn down
+    in the lidar) still read as lake.
+  - A creek piece is measured on its own cells. The brooks dropping into Lake George read their own 13-20 % slope
+    where the link, half of it flat water, had read 7-12 %: that is most of the "less drainage" downs.
+  - Creek pieces under the 1 km2 floor stay (they are stretches the map drew before).
+
+**2. LA: Willow Creek and the San Jacinto reach.**
+- **Willow Creek** below Lake Arrowhead went from seasonal to mostly dry because the routing stopped counting the
+  lake's shores as the creek's own ground. The model's figure below a dam is for the ground below the dam only
+  (05b leaves the water above a dam out): a floor, not evidence that the creek dries.
+- **Fix, in `scoring.py`, water rule (4), LA only (where the flows are natural flows):** below a lake or dam that
+  holds half a reach's drainage or more, the reach isn't put below NHD's class (perennial 1.0, intermittent 0.35).
+  Not where a gauge on the reach has a record, nor where the channel is bare in late summer. It only raises.
+  - 104 reaches, 61 km; 85 rise 10+ points. Willow Creek's five reaches read seasonal again (fish
+    3-11 -> 22-24; NHD: intermittent; channel greenness 0.76-0.83). Bear Creek below Big Bear Dam 51 -> 100, Big
+    Tujunga Creek 38 -> 84, the South Fork San Jacinto below Lake Hemet 24 -> 84, Bouquet Creek's unnamed reaches
+    4 -> 64.
+  - This changes the water term, which the user owns: said plainly in the report, one line to take out.
+- **The San Jacinto reach** (10 m, at the junction 1.4 km above the gauge near San Jacinto) took its flow from the
+  next NHDPlus line when the routing moved a vertex, so the gauge's line no longer claimed it.
+- **Fix, in `flowlib.py`:** a reach is on a gauge's model line where it took its flow from it or its middle lies
+  within 100 m of it (`gauge_own_lines`). Reaches with a gauge's record 1,170 -> 1,277 over the 12 maps;
+  3 go down 10+ points (that reach, 57 -> 13; one each on the East Fork of the West Fork Mojave and the Santa Ana
+  at E Street, both within 720 m of their gauge with 96-97 % of its drainage), 2 up.
+- **Measured and not installed:** carrying a gauge's record along its creek across junctions (1,170 -> 3,097
+  reaches). It put dry records on reaches 2-4 km above their gauge (Murray Canyon 58 -> 3, San Juan Creek above
+  La Novia 60 -> 10 along a channel green in late summer) and below junctions where another creek comes in. A
+  wet creek is never shown as dry.
+
+**3. The checks that got slightly worse.**
+- **Lake outlets** (la 1 -> 2, smokies 1 -> 2, adk_southeast 4 -> 6 in the stream-burning session's first
+  measurement): Little Rock Reservoir, Lake Junaluska, The Vly, Thurman Pond and Hewitt Pond. In each the river's
+  first stretch below the outlet was no reach (the floor, fixed in 80b42e8) or read only its own few cells.
+- **Root cause of the second:** crossbox put a lake's water back in at a cell found along NHD's outlet line, which
+  sits 20-250 m from the lake and as often beside the channel as on it. Its path joined the routed outflow line a
+  median 40-120 m down, 300 m or more at about 60 outlets.
+- **Fix, in `crossbox.py` (`_at_outflow`, cache version 17):** the water goes in at the top of the lake's routed
+  way out where the cell found lies within 100 m of that line and runs into it: 1,237 of 1,430 lake
+  dead ends. Where the routing leaves a lake somewhere else than NHD does (Stillwater Reservoir over a saddle 450 m
+  from its dam, Raquette Lake south over the Brown's Tract carry) NHD's cell stands.
+- Still under half of NHDPlus, the same before the lake routing: Thurman Pond 1.8 of 9.7 km2, Unknown Pond 1.7 of
+  4.5, Grassy Pond 3.0 of 6.2 (the DEM drains part of what NHDPlus gives them another way).
+- New flags, all the check's: Stillwater Reservoir (the Beaver River carries 414 km2 below it, NHDPlus 464; the
+  check looks by the dam, the routed way out is 450 m off), Number Four Reservoir (5.75 km2 goes on into Number
+  Three; NHDPlus 4.3), Spy Lake (10.1 km2 goes on, NHDPlus 9.3; the outlet reach lies inside NHD's bigger outline),
+  Boyd Pond (2.4 km2 in the pond's reach, NHDPlus 2.0).
+- **The lost fall** (adk_northwest 29 -> 28) is Rainbow Falls on the Raquette, in the bypassed channel 700 m below
+  Rainbow Falls Dam. The detectors size a channel on its own D8 area, which starts again near nothing below a lake;
+  the fall was found only while a path leaked out of the reservoir beside the dam. On the rebuilt map it is three
+  drops of 23, 35 and 39 ft at the GNIS point, "matches mapped waterfall".
+- **Fix, in `04_knickpoints.py` and `04b_bigcreek_steps.py`:** a channel's size counts the water carried past dams
+  (`crossbox.carried_km2`); `run_base.sh` runs `02b_download_flow.py` before the drops for it. Known falls found
+  1,025 -> 1,070 (adk_northwest 28 -> 42 of 81, Rainbow Falls among them; adk_southeast 61 -> 69;
+  adk_southwest 24 -> 31; n_georgia 434 -> 441), none lost.
+- With the detectors scanning from each dam down they found the dams: Buford Dam as a 49.5 m "waterfall-like step"
+  506 m from its mapped point, Carters Dam as a 115 m cascade. `05_score.py` now calls a drop the dam where its top
+  lies within 100 m of a dammed lake's outline, at the lake's level, and the step ends 3 m or more below it:
+  137 drops over the 12 maps, 18 of them further than 250 m from a mapped dam's point.
+
+**4. Two Jackson leftovers drawn with lake values.**
+- **Root cause:** `05b_flow.py` measured a reach's length in a lake against NHD's outline where the map draws the
+  lake from the lidar. The 312 m line by Lower Slide Lake lies half inside NHD's outline and not at all in the
+  water; Pacific Creek's 62 m between Emma Matilda Lake's ponds the same.
+- **Fix:** NHD's outline cut to the lidar's where the lakes layer drew that lake from lidar (`flowlib.as_drawn`).
+  158 reaches, 84 km: jackson 12, la 11, n_georgia 11, central_vt 4, ne_ct 10, lexington_va 2, se_pa 4, smokies 2,
+  adk_high_peaks 25, adk_northwest 27, adk_southwest 29, adk_southeast 21.
+
+**5a. Side channels named after big rivers.**
+- The name vote takes the nearest NHD line at two of three points, so a small reach beside a river took the
+  river's name. Two different things: the last stretch of a creek running along the river before it joins
+  (Cottonwood Creek's last 1.4 km read "Snake River"), and the arm of a split river that D8 sends no water down.
+- **Rule, in `05_score.py`:** a reach is looked at when reaches of its name draining 10 times as much (50 km2 or
+  more) run within 250 m along 60 % of it. Up its main stem: a reach of another name makes it that creek's lower
+  end, with that name (88 reaches); a stem lying along NHD's own lines of the river (60 % within 150 m)
+  makes it a side channel (214); else it ends a creek with no name and has none (366).
+- A side channel keeps the name, the maps say "(side channel)", it takes the flow evidence of the river reach
+  beside it (`05b_flow.py`) and the river's size (`scoring.py`). No real small creek is marked: a creek with its own
+  name upstream, or one whose stem leaves the river's lines, is not a side channel.
+- By map (creek's lower end / unnamed creek's end / side channels): la 12/60/26, jackson 14/51/18,
+  n_georgia 9/52/24, central_vt 8/48/22, ne_ct 7/5/13, lexington_va 3/11/16, se_pa 6/19/15, smokies 9/5/17,
+  adk_high_peaks 2/30/16, adk_northwest 4/24/16, adk_southwest 5/22/15, adk_southeast 9/39/16.
+
+**5b. Adirondack water-temperature estimates.**
+- Three of the four maps had no fit with skill (leave-one-out error 0.92-1.02 of the spread): every reach took its
+  map's mean and full credit.
+- What was missing: lakes. At the measured sites a creek with no lake upstream reads a median 16.6 C, one fed half
+  or more through a lake 21-22 C.
+- **`watertemp.py`: a lake term**, the share of a reach's drainage that reaches it through a lake (what crossbox
+  carries past dams and ponds over the full drainage), in full on creeks up to 50 km2 and fading to nothing at
+  500 km2. It enters a fit only where 10 measured sites are mostly lake water.
+  - High Peaks: elevation + lake, 90 sites, leave-one-out error 3.18 C against a spread of 3.85 (0.83).
+  - South-west: lake, 123 sites, 3.02 against 3.50 (0.86).
+  - South-east: its own fit on stream size, as before (2.50 against 2.99).
+  - North-west: still none on its own 63 sites (1.02 of the spread). It takes the fit on all four maps' 337 sites
+    (elevation + lake; 3.13 against 3.59), which misses its own sites by 2.87 C against their spread of 3.36
+    (`water_temp_group` in `config.py`: a map's own fit first, the region's only where it fits the map's own sites).
+- Every other area's fit is unchanged (Jackson has 3 such sites, the others fewer).
+- **Measured and not installed:**
+  - The plain share without the fade: a better overall fit (3.04 against 3.13 C on all four maps' sites), but it
+    reads rivers below dams as warm. The measured sites on lake-fed rivers of 200+ km2 are mixed (the Sacandaga
+    below Great Sacandaga Lake's dam 2.9 C below that fit, Lake George's outlet 0.9 C above; Jackson's 11 sites
+    1.4 C below). A river below a dam isn't marked down on that.
+  - One fit for all four maps: it missed the south-east map's sites by 3.10 C, more than their own spread (2.99)
+    and than that map's own fit (2.50).
+- The cost of the fade, said plainly: the 12 Adirondack sites on lake-fed rivers of 200+ km2 read 2.2 C above the
+  estimate on average. Warm lake-outlet rivers (the Saranac below its lakes, La Chute) keep the credit they had.
+- Effect on the installed maps: in the three maps with the lake term 496 creek reaches (322 km) lose 10+ points on
+  it (High Peaks 142, north-west 156, south-west 198; a median of 11 points): creeks fed almost wholly through a lake
+  (median share 0.96), estimated at about 23 C. 141 km go from 60+ to under 60. The south-east map doesn't move on it.
+- Its limits, said plainly: single sites are missed by about 3 C; the share counts any pond the water passes
+  through, however small (the Salmon River near Plattsburgh below a mill pond reads 73 F); and the north-west map's
+  borrowed fit passes the skill test by a small margin (0.87 of the spread on all four maps' sites, 0.85 on its
+  own; the line is 0.9), so it falls back to the map's mean if a rebuild runs before the other three maps have
+  written their site tables.
+
+**5c. Lake Champlain's depths.**
+- Source: the soundings of NOAA's electronic navigational charts (NOAA ENC, 13 cells over the lake, charts
+  14781-14784): 12,083 soundings of the 1870-1939 lake surveys, with the charts' 6 and 12 ft curves and the
+  charted shoreline.
+- Licence: NOAA's ENC user agreement, "You may download, use, and redistribute them without restriction", and
+  inside another product on condition that the charts' origin and the agreement are shown. The lake's popup names
+  charts.noaa.gov, gives the agreement's address and says the depths aren't for navigation.
+- `lake_bathymetry.py` grids them (50 m, linear) into 20 ft contours: 1,142 km2 and 25.9 km3 (the Lake Champlain
+  Basin Program gives 1,127 km2 and 25.8 km3); deepest sounding 399 ft off Split Rock; mean 74 ft, below low lake
+  level (93.0 ft above sea level, the chart datum).
+- Looked for and not open: Middlebury College's multibeam survey. Open and not read: NOAA's 2019-21 topobathy lidar
+  of the shallows, Vermont's 1992 digitizing of the same soundings, NOAA's 2018 multibeam of the north lake.
+
+**5d. The two waterfall sites' consent (still waiting; no one was emailed).**
+- World Waterfall Database: 106 rows in `data/known_falls_curated.csv`, 93 of them the only source for their fall
+  (central_vt 34, adk_high_peaks 15, adk_northwest 13, la 10, adk_southwest 9, adk_southeast 6, smokies 6).
+  nnywaterfalls.com: 116 rows, all the only source (adk_southeast 64, adk_southwest 26, adk_high_peaks 21,
+  adk_northwest 5).
+- On a yes: nothing changes in `02f_known_falls.py` or the CSV; note the permission in the CSV's header and README.
+- On a no: delete that site's rows from the CSV (a fall another source also has stays on that source), rerun
+  `02f_known_falls.py`, `05_score.py`, `06_map.py` and `12_profiles.py` for the areas above, publish. No code
+  changes.
+
+**Found on the rebuilt maps and fixed in the map step (`06_map.py`, `map_drainages.js`; drawing only):**
+- The stretch from a dam to where the lake's water goes on is drawn on the reach above it, or with the values of the
+  reach it runs into. With the links cut, both are lake water wherever the path starts at a lake's last reach or runs
+  into the next lake, so the stretch read reservoir: 530 m between Spencer Pond and Big Pond in NE Connecticut, fish 15
+  where the uncut link had read 57. It now takes the values of the creek it runs into (where that carries up to 1.5
+  times what leaves the lake), else of the lake's own creek; a pond's trickle with no reach of its own takes those of
+  the main creek feeding the lake it runs into, with its own drainage and no name.
+  Line drawn with a lake's values outside the lakes the map draws (`checks/drawn_lake_values.py`, the maps before
+  against the maps now): 173 -> 10 km over the 12 maps, 17 pieces of 100 m or more left (7 km), none newly marked
+  down.
+- A side channel's "Open profile" link carried "(side channel)" in the creek's name and opened no profile. It opens
+  the river's.
+
+**Also changed:** `run_rebuild_a.sh` takes `SKIP_03B=1` to start at the drops. `data/stream_burning/` got the
+scratch harness from 04 and seven checks. README updated.
+
+**Rebuild:** all 12 maps from the drops (`SKIP_03B=1 ./run_rebuild_a.sh`), 22:31-23:32: Jackson first as a
+check, the other eleven in two streams. No failed step.
+- Each installed build equals the scratch build measured beforehand, in all 55 boxes: drops, reaches, drainages,
+  flow classes (`checks/verify_install.py`). Flow drops 0, reach ends dead on a box edge 0, lake outlets under half
+  of NHDPlus 26, known falls found 1,070 of 2,128.
+- The maps' own tables, before -> after (reaches only, without the pieces drawn across dams): reaches 106,609 ->
+  109,922; line read as lake 3,917 -> 4,127 km; fish 60+ 42,721 -> 42,486 km. By map: la +31, jackson -3,
+  n_georgia +1, central_vt +5, ne_ct +4, lexington_va +2, se_pa 0, smokies -9, adk_high_peaks -66,
+  adk_northwest -91, adk_southwest -55, adk_southeast -52 (the Adirondack maps: lake water read as lake, and on
+  three of them the water-temperature estimate, 141 km).
+- 10+ point moves on the installed maps, matched by place: 857 up, 797 down. Up: 539 creek stretches that read as
+  lake, 149 a wetter flow class, 118 other, 46 water temperature. Down: 507 water temperature (496 in three
+  Adirondack maps), 197 lake water now read as lake, 49 other, 21 less drainage, 9 flow class, 14 others. Without
+  the Adirondack water temperature: 857 up, 301 down.
+- Pieces drawn across the breaks below dams: 1,076 -> 679 km (the water now goes in at the lake's outlet, so the
+  river below is a reach of its own).
+- After the first builds the map step got the fixes above; every map was redrawn with the final `06_map.py`, and
+  the north-west Adirondack map's fit, map, profiles and diagram were run once more after the other three maps had
+  written their site tables.
+- Map data 229.9 -> 235.5 MB over the 12 maps.
+- **Checked on the rendered maps** (http://localhost:8766):
+  - jackson: the line at Lower Slide Lake's head reads "Gros Ventre River (side channel)", year-round, fish 90, and
+    its profile link opens the Gros Ventre's; Pacific Creek between Emma Matilda Lake's ponds reads year-round,
+    fish 60.
+  - la: Willow Creek below Lake Arrowhead reads seasonal, fish 24, with the reason in its popup; the 10 m San
+    Jacinto reach reads mostly dry by its gauge (fish 13) and the reaches above it stay year-round (60); the West
+    Fork San Gabriel above Cogswell reads year-round, fish 83; Devils Canyon 92.
+  - central_vt: Lake Champlain's popup gives 399 ft, the chart source, the agreement's address and "not for
+    navigation"; the depth contours draw with the Lake depth layer on.
+  - ne_ct: the stretch between Spencer Pond and Big Pond reads as a creek (fish 57, 0.23 sq mi).
+  - adk_high_peaks: the Newcomb River below Newcomb Lake shows "summer water about 73 F (estimated from elevation
+    and the lake water in it)", fish 92.
+  - adk_northwest: Rainbow Falls on the Raquette is back, three drops at the GNIS point.
+- Per-map check output and the tables: `data/stream_burning/results/shores_2026-11-21/` (`installed_*`).
+- Not published by this session: handed to the overview session.
+
+**Left as it is, and why:**
+- Three Adirondack ponds read under half of NHDPlus as they did before the lake routing (Thurman 0.18, Unknown
+  0.38, Grassy 0.48): the DEM drains part of what NHDPlus gives them another way. No error at the outlet.
+- `lake_outlets.py` flags four outlets where the water does go on (item 3). The check isn't rewritten here.
+- 42 creek pieces (37 km) end above the point where carried water joins their link, 15 of them with ten times the
+  water just below. They are where the routing leaves a lake somewhere else than NHD does, so the water still goes
+  in at NHD's cell.
+- 30 km of creek still read as lake and 20 km of lake water as creek: stretches under 50 m.
+- The San Jacinto River 1.4-2.1 km above its gauge stays year-round (fish 59-60) beside the gauge's "mostly dry":
+  a dry record isn't carried upstream.
+- Warm rivers below Adirondack lakes keep full thermal credit (the fade), and the lake-fed creeks of three
+  Adirondack maps are marked down on an estimate that misses single sites by about 3 C.
+- Found on the way and not changed: North Georgia's fit (elevation only) reads its cold tailwaters warm. Its 17
+  measured sites on lake-fed rivers of 200+ km2 read 2.6 C below the fit, and the Chattahoochee below Buford Dam
+  (14.3 C) is left out as an outlier. `TAILWATERS` has entries for LA only.
+- Lower Piru Creek's popup credits Pyramid Lake's releases (the stream-burning session's note above).
+- One Jackson creek piece under the floor (palisades, 0.86 km2) went from usually flows to seasonal on its own
+  smaller drainage (0.12 -> 0.10 cfs, at the 0.1 cfs line). Four unmapped pieces between the Beaver River's
+  reservoirs read "no data" (fish 10) where their link read reservoir (20).
+- 5d waits on the two sites' replies.

@@ -538,6 +538,14 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   the same point of the shore in the layer shown while Lakes is off. Left out: joins over 150 m, ones that would cross
   another line, ones to a creek coming in by the dam, and where the line below the dam already runs by the shore. 290
   of the 393 cells below a dam on the eight shown maps, 1,048 of 1,436 over all 12 (median 28-57 m). Drawing only.
+- The stretch from a dam to where the lake's water goes on is creek, not lake (since 2026-11-21, late). `draw_through`
+  draws that path on the reach above it or with the values of the reach it runs into. With the links cut at lake
+  shores both are lake water wherever the path starts at a lake's last reach or runs into the next lake, and the
+  stretch read reservoir (530 m between Spencer Pond and Big Pond in NE Connecticut, fish 15 where the uncut link
+  had read 57). Now it takes the values of the creek it runs into where that carries about what leaves the lake (up
+  to 1.5 times); else those of the lake's own creek, the first reach above the lake not lying in it, with the
+  drainage that leaves the lake. A pond's trickle with no reach of its own takes the values of the main creek
+  feeding the lake it runs into, with its own drainage and no name. Drawing only.
 
 `07_road_closures.py` (no REGION needed) fetches **current road closures**. Run it, then `06_map.py`, whenever you
 want fresh closures on the map; the layer name shows when they were fetched. Sources:
@@ -889,7 +897,7 @@ linear) into 20 ft contours: 399 ft at the deepest sounding, off Split Rock; mea
 the Lake Champlain Basin Program gives 25.8. Depths are below low lake level, the chart datum (93.0 ft above sea
 level; the lake usually stands 2-3 ft higher). NOAA's user agreement: "You may download, use, and redistribute them
 without restriction", and inside another product on condition that the charts' origin and the agreement are shown;
-the lake's popup names charts.noaa.gov and links the agreement, and says the depths aren't for navigation. Looked
+the lake's popup names charts.noaa.gov, gives the agreement's address and says the depths aren't for navigation. Looked
 for and not open: Middlebury College's multibeam survey (not released for distribution). Also open, not read: NOAA's
 2019-21 topobathy lidar of the shallows (Vermont's 0.7 m grid, to about 20 ft), Vermont's 1992 digitizing of the same
 chart soundings, NOAA's 2018 multibeam of the north lake.

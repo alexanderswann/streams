@@ -1,0 +1,89 @@
+#### smokies checked 11-21 23:24:30
+#### failed steps or notes in this run's logs
+== START smokies 11-21 23:18:57
+== DONE smokies 11-21 23:23:25
+#### verify_install against the scratch build
+smokies
+  cades_cove | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  le_conte | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  cataloochee | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  tellico | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  snowbird | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  nantahala | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+  tuckasegee | flowdir = | area_km2 = | strahler = | knickpoints = | knickpoints_bigcreek = | reaches = | areas = | flows =
+#### standing
+smokies (/Users/mac/Fishing)
+        box  reaches  min_area_km2  ends_on_shared_edge  dead_on_edge  order3_cells_no_reach_km  order3_km
+ cades_cove     1909           0.0                    9             0                      0.22      536.7
+   le_conte     2089           0.0                    9             0                      0.28      625.2
+cataloochee     1431           0.0                    7             0                      0.16      337.7
+    tellico     1177           0.0                   11             0                      0.18      302.5
+   snowbird      524           0.0                    1             0                      0.06      160.4
+  nantahala      919           0.0                    7             0                      0.19      224.8
+ tuckasegee     1019           0.0                    0             0                      0.15      264.1
+#### lake_outlets
+smokies (project): lakes with an outlet line 19; below them under half of NHDPlus: 1
+      lake   ha  nhd_km2  ours             sid    reach_name  ratio
+Lake Emory 33.6    801.1 20.79 tuckasegee:s748 Watauga Creek   0.03
+#### check_flow_drops
+smokies: sudden flow drops (flow per km2 of area_full_km2 under 25% of both neighbours on the same creek, both flowing): 0
+#### validate
+smokies: mapped falls (OpenStreetMap or NHD among the sources), all ranges
+  on creeks >= 10 km2:    pass 1: 15 / 45 | pass 1 + big-creek pass: 25 / 45
+  on smaller drainages:   pass 1: 73 / 111 | pass 1 + big-creek pass: 74 / 111
+  all:                    pass 1: 88 / 156 | pass 1 + big-creek pass: 99 / 156
+
+by range:
+                                                               falls  pass1  both
+region                                                                           
+Abrams Creek, Cades Cove, Little River & Twentymile               19      8    12
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee     48     23    25
+Nantahala Lake, Gorge & Wesser                                    29     14    17
+Raven Fork, Cosby, Big Creek, Cataloochee & Maggie Valley         24     17    17
+Snowbird, Santeetlah & Joyce Kilmer                               12     10    10
+Tellico River, Bald River & Citico Creek                           5      3     4
+Tuckasegee, Alarka & Dillsboro                                    19     13    14
+
+named mapped falls on big creeks that both passes miss: 
+                                                       region                      name  area     d1      d2
+          Abrams Creek, Cades Cove, Little River & Twentymile          Bear Creek Falls 100.0  790.0  1126.0
+          Abrams Creek, Cades Cove, Little River & Twentymile Bear Creek Falls (Cheoah)  88.0  932.0  1273.0
+          Abrams Creek, Cades Cove, Little River & Twentymile           Lynn Camp Falls  30.0 1052.0   309.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee          Tom Branch Falls 103.0  502.0   732.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee  Little River Upper Falls  15.0 1823.0 10259.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Fish Camp Cascades  29.0  809.0 10958.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Cliff Branch Falls  36.0 1232.0  7837.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee   Lower Enloe Creek Falls  10.0  214.0   456.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee             Pothole Falls  47.0  507.0   207.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Big Rock Falls  47.0  415.0   279.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee               Raven Falls  51.0  506.0   453.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Island Slide Falls  51.0  232.0   726.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Buckshot Falls  52.0  423.0  1353.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        War Branch Cascade  27.0  786.0 10473.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee            Cataract Falls  15.0 1551.0  4827.0
+Elkmont, Gatlinburg, Greenbrier, Deep Creek & the Oconaluftee        Hitchin Post Falls  33.0 1076.0  5713.0
+                               Nantahala Lake, Gorge & Wesser           Nantahala Falls 151.0 1327.0   611.0
+                               Nantahala Lake, Gorge & Wesser         Jagged Rock Falls  94.0  235.0   327.0
+                               Nantahala Lake, Gorge & Wesser The Cascades on Nantahala  94.0  549.0   430.0
+                               Nantahala Lake, Gorge & Wesser         Camp Branch Falls  99.0  205.0  1357.0
+
+every precisely placed known fall, any source: pass 1: 100 / 187 | pass 1 + big-creek pass: 118 / 187
+CDFW fish-passage barriers no other source lists (not in the figures above): pass 1: 0 / 0 | pass 1 + big-creek pass: 0 / 0
+#### falls
+smokies (/Users/mac/Fishing): known falls 211: found pass 1 103, both passes 122 | OSM/NHD-mapped 166: pass 1 88, both 100
+  drops: pass 1 1652 {'steep reach': 1157, 'cascade / knickpoint': 455, 'waterfall-like step': 40}; big-creek pass 133
+  waterfall candidates by status: {'steep reach': 1028, 'unmapped cascade': 301, 'matches mapped waterfall': 193, 'likely DEM artifact': 148, 'unmapped short fall (big creek)': 67, 'dam / weir': 30, 'unmapped waterfall-like step': 16}
+#### lake_shares
+smokies         reaches   9068 | flagged in-lake   519 (  280.4 km), outside every drawn lake    0.8 km:    0 reaches with 100+ m outside (   0.0 km),   0 untouched by a drawn lake | not flagged:    0.3 km inside counted lakes (0 reaches with 100+ m),   13.1 km inside any drawn lake
+#### drawn_lake_values (map before -> now)
+smokies old: lines drawn with Lakes on 8640, 6512.5 km; reading reservoir 25, 6.5 km, of that outside the lakes the map draws 6.5 km (outside NHD's outlines too: 6.2 km); pieces with 100+ m outside the drawn lakes: 15, 5.9 km | Lakes-off layer: 632 lines, 463.8 km
+   of the 100+ m pieces, now drawn as a creek (put right): 15, 5.9 km; of those with the other version's fish score 40+: 12, 5.0 km
+smokies new: lines drawn with Lakes on 8683, 6512.8 km; reading reservoir 1, 0.0 km, of that outside the lakes the map draws 0.0 km (outside NHD's outlines too: 0.0 km); pieces with 100+ m outside the drawn lakes: 0, 0.0 km | Lakes-off layer: 725 lines, 422.4 km
+   of the 100+ m pieces, the old map drew as a creek (newly marked down): 0, 0.0 km; of those with the other version's fish score 40+: 0, 0.0 km
+  none
+#### water temperature fit
+{'area': 'smokies', 'sites': 247, 'sd_sites': 2.72, 'mean_sites': 19.31, 'left_out_over_30c': 0, 'left_out_outliers': 5, 'fitted': '2026-11-21', 'ok': True, 'terms': ['air', 'log_area'], 'intercept': -6.906, 'coef': {'air': 1.093, 'log_area': 0.926}, 'rmse_loo': 1.55}
+#### map files
+19131085 Nov 21 23:24 output/smokies/map3d_data.js
+10511610 Nov 21 23:23 output/smokies/profiles_data.js
+17747284 Nov 21 23:24 output/smokies/stream_map.html
