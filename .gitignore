@@ -32,3 +32,8 @@ __pycache__/
 
 # Shared built baselines (tools/baseline.sh in the overview notes): APFS clones of data/, output/, scripts/
 /baselines/
+
+# The audit's tables, download caches and reference downloads: rebuilt by audit/scripts/run_all.sh
+/audit/tables/
+/audit/cache/
+/audit/reference/
