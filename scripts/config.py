@@ -9,6 +9,7 @@ import os
 
 RES = 10                      # m, USGS 3DEP 1/3 arc-second
 TILE = 1500                   # px per download tile (large requests 500 on the server)
+STREAM_KM2 = 0.25             # channel initiation (2,500 cells at 10 m): 03b_stitch.py's stream lines start here
 
 # Per area: crs = NAD83 / UTM zone (EPSG code); home = drive-time origin; ranges = {key: dict(label, hu4, bbox)} with
 # bbox in that zone's metres and hu4 the NHD 4-digit hydrologic units that cover the box. Boxes of one area must not

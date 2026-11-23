@@ -30,11 +30,16 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              below kept flowing in under half of 5+ summers since 2011, and no trout are known on the reach, the gauge's
              share replaces the model's (today only the San Jacinto River near San Jacinto). (5) A trout record (trout
              found in the last 10 years, no later survey finding none): at least "usually flows" (TROUT_WATER), since
-             trout there mean water most summers
+             trout there mean water most summers. A lake's second outlet (05_score.py's side_lake) takes the
+             water term of the creek its lake's main outlet starts, and the evidence behind it, where that
+             reads it at least as wet as its own (second_outlets); NHD's class where NHD maps the channel
+             intermittent or ephemeral; and it never reads wetter than the creek it runs into below,
+             unless that is its lake's own river (side_lines_below)
   size       drainage area, log scale: 1 km^2 -> 0, 50+ km^2 -> 1. The full area (05c_drainages.py, area_streams.csv):
              with what flows in from neighbouring boxes and from above reservoirs, which each box's DEM routing
              misses (a creek crossing in from the next box, or leaving a dam, started again near nothing). A side
-             channel of a river (05_score.py) takes the drainage of the river reach beside it
+             channel of a river (05_score.py) takes the drainage of the river reach beside it, and a lake's second
+             outlet that of the creek its lake's main outlet starts
   thermal    0.5 water temperature + 0.35 summer shade + 0.15 mountainside northness (south-facing -0.15 ->
              north-facing +0.15). Water temperature is the reach's estimated July-August daytime water temperature
              (watertemp.py: fitted per area to measured creeks; in LA on August air + elevation; in three of the
@@ -190,6 +195,98 @@ TAILWATERS = _TAILWATERS.get(watertemp.AREA, {})
 
 def dam_of(s):
     return s["below_dam"].fillna("").astype(str) if "below_dam" in s else pd.Series("", index=s.index)
+
+
+SIDE_EVIDENCE = ("flow", "water", "water_class", "water_rule", "water_by_gauge", "flow_src", "dry_cfs", "dry_cfs_drought",
+                 "flow_years", "below_dam", "below_div", "div_gauge", "div_share", "div_years", "div_water", "green_p90",
+                 "green_p90_max", "green_sur", "green_water", "gauge_site", "gauge_name", "gauge_share", "gauge_summers",
+                 "gauge_years", "gauge_area_km2", "gauge_m", "gauge_below", "tailwater", "model_class", "water_floor")
+
+
+def second_outlets(s):
+    """The rows of the lakes' second outlets (05_score.py's side_lake) whose lake's main outlet starts a creek in the
+    table (side_sid), and that creek's row for each. A second outlet is its lake's water leaving by another channel:
+    it is scored on the water of that creek, with the evidence behind it (score(), SIDE_EVIDENCE), as the maps say,
+    where that reads it at least as wet as its own evidence does (one-sided: a channel's own wetter evidence stands).
+    On its own evidence its few km2, its own NHD line and its own ground below a dam spoke of a brook: below Lake
+    Hemet's dam it read mostly dry (fish 3) beside the South Fork San Jacinto River, year-round there (fish 64), on the
+    maps of 2026-11-22. Where the main outlet runs straight into the next lake, or its creek starts in the next box, it
+    keeps its own; and where either of the two lies in a lake (reservoir), as 05b_flow.py's copy for a river's side
+    channels."""
+    if not {"side_lake", "side_sid", "sid"} <= set(s.columns):
+        return np.array([], int), np.array([], int)
+    j = s["side_sid"].map(pd.Series(np.arange(len(s)), index=s["sid"].values)).to_numpy(float)
+    sec = np.flatnonzero(s["side_lake"].notna().to_numpy() & ~np.isnan(j))
+    of_ = j[sec].astype(int)
+    wc = s["water_class"].fillna("").astype(str).to_numpy() if "water_class" in s else np.full(len(s), "")
+    ok = (wc[sec] != "reservoir") & (wc[of_] != "reservoir")
+    return sec[ok], of_[ok]
+
+
+SIDE_NHD = "second outlet: NHD's class"          # water_rule of a second outlet NHD maps intermittent or ephemeral
+SIDE_BELOW = "second outlet: the line below"      # ... and of one that reads no wetter than the line it runs into
+SIDE_JOIN_M = 25.0      # a reach end this near a reach start runs into it (a cell and a half), as watertemp.LAKE_JOIN_M
+SIDE_DOWN = 300         # reaches followed down from the creek a lake's main outlet starts, to find its river
+
+
+def side_lines_below(s):
+    """The pieces of lakes' second outlets (05_score.py's side_lake) whose line runs into another creek below, and that
+    creek's row for each: the first reach not part of the second outlet that starts where its last piece ends. Not
+    where that reach lies on the way down from the creek its lake's main outlet starts (side_sid; SIDE_DOWN reaches,
+    through lakes): the second outlet rejoins its lake's own river there. Not where its line ends in a lake (a reach
+    lying in one), a pit or at the map's edge. A second outlet never reads wetter than the line it runs into: below
+    Lake Hemet's dam its spillway channel read year-round on the South Fork San Jacinto's water, above Spillway Canyon
+    Creek reading mostly dry (2026-11-22)."""
+    empty = np.array([], int), np.array([], int)
+    if not {"side_lake", "sid"} <= set(s.columns) or not s["side_lake"].notna().any():
+        return empty
+    import shapely, config
+    g = s.geometry if s.crs is None or s.crs == config.CRS else s.geometry.to_crs(config.CRS)
+    geom = np.array(g.values, dtype=object)
+    start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
+    lk = s["side_lake"].notna().to_numpy()
+    grp = (s["side_lake"].astype(str) + "|" + s["side_sid"].astype(str)).to_numpy() if "side_sid" in s else s["side_lake"].astype(str).to_numpy()
+    wet = np.array(s["water_class"].eq("reservoir") if "water_class" in s else np.zeros(len(s), bool), bool)
+    if "below_dam" in s:
+        wet = wet | s["below_dam"].fillna("").astype(str).str.startswith("in:").to_numpy()
+    big = num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float)
+    nxt_side, nxt = np.full(len(s), -1), np.full(len(s), -1)
+    i_, j_ = shapely.STRtree(start).query(end, predicate="dwithin", distance=SIDE_JOIN_M)
+    for i, j in sorted(zip(i_.tolist(), j_.tolist()), key=lambda ij: -big[ij[1]]):
+        if i == j:
+            continue
+        if lk[i] and lk[j] and grp[i] == grp[j]:
+            nxt_side[i] = j if nxt_side[i] < 0 else nxt_side[i]
+        elif not lk[j] and nxt[i] < 0:
+            nxt[i] = j                              # the biggest reach starting where this one ends
+    row = pd.Series(np.arange(len(s)), index=s["sid"].values)
+    main = s["side_sid"].map(row).to_numpy(float) if "side_sid" in s else np.full(len(s), np.nan)
+    river = {}
+    rows, below = [], []
+    for i in np.flatnonzero(lk & ~wet):
+        k, seen = i, {i}
+        while nxt_side[k] >= 0 and nxt_side[k] not in seen:     # down its own pieces to the last
+            k = nxt_side[k]
+            seen.add(k)
+        b = nxt[k]
+        if b < 0 or wet[b]:
+            continue                                # into a lake, a pit or off the map: no line below
+        m = main[i]
+        if np.isfinite(m):
+            m = int(m)
+            if m not in river:
+                way, c = {m}, m
+                for _ in range(SIDE_DOWN):
+                    c = nxt[c]
+                    if c < 0 or c in way:
+                        break
+                    way.add(c)
+                river[m] = way
+            if b in river[m]:
+                continue                            # it rejoins its lake's own river
+        rows.append(i)
+        below.append(b)
+    return np.array(rows, int), np.array(below, int)
 
 
 def tailwater(s):
@@ -375,6 +472,27 @@ def score(s):
     tr = trout_signs(s)[0] & cls.ne("reservoir") & (water < TROUT_WATER - 1e-9)
     water = water.where(~tr, TROUT_WATER)
     cls2[tr], rule[tr] = "usually flows", "trout record"
+    # a lake's second outlet (second_outlets): the water term of the creek its lake's main outlet starts, where that
+    # reads it at least as wet as its own evidence does and NHD doesn't map the channel itself intermittent or
+    # ephemeral; where NHD does, NHD's class; and never wetter than the line it runs into below, unless that line is
+    # the main outlet's own river (side_lines_below). Neither lowers one where trout are recorded on it
+    sec, of_ = second_outlets(s)
+    lk_ = s["side_lake"].notna().to_numpy() if "side_lake" in s else np.zeros(len(s), bool)
+    nhd_dry = lk_ & s.flow.isin(["intermittent", "ephemeral"]).to_numpy() & cls.ne("reservoir").to_numpy()
+    wet_ = (water.to_numpy()[of_] >= water.to_numpy()[sec] - 1e-9) & ~nhd_dry[sec]
+    sec, of_ = sec[wet_], of_[wet_]
+    water, cls2, rule, by_gauge = water.copy(), cls2.copy(), rule.copy(), by_gauge.copy()
+    for x_ in (water, cls2, rule, by_gauge):
+        x_.iloc[sec] = x_.to_numpy()[of_]
+    nd_ = np.flatnonzero(nhd_dry & ~pos.to_numpy())
+    water.iloc[nd_] = nhd_water.to_numpy()[nd_]
+    cls2.iloc[nd_], rule.iloc[nd_], by_gauge.iloc[nd_] = "no data", SIDE_NHD, False
+    cap_, below_ = side_lines_below(s)
+    drier_ = (water.to_numpy()[below_] < water.to_numpy()[cap_] - 1e-9) & ~pos.to_numpy()[cap_]
+    cap_, below_ = cap_[drier_], below_[drier_]
+    for x_ in (water, cls2, by_gauge):
+        x_.iloc[cap_] = x_.to_numpy()[below_]
+    rule.iloc[cap_] = SIDE_BELOW
     # a side channel of a river (05_score.py's side_of) is sized as the river beside it (river_km2): D8 sends a split
     # river's water down one arm, and the other arm's own few km2 say nothing of the water in it
     big = np.fmax(num(s, "area_full_km2").fillna(s.area_km2), num(s, "river_km2").fillna(0))
@@ -423,6 +541,15 @@ def score(s):
     s["heat_factor"] = np.round(heat, 2)
     s["tailwater"] = tw.where(tw.ne(""), None)
     s["channel_factor"] = chan
+    # a lake's second outlet on its creek's water (above), and the evidence behind it for the maps: its creek's, or the
+    # line's below where that caps it
+    s["on_outlet_creek"] = np.isin(np.arange(len(s)), sec) & ~np.isin(np.arange(len(s)), cap_)
+    for rows_, from_ in ((sec, of_), (cap_, below_)):
+        for c_ in [c_ for c_ in SIDE_EVIDENCE if c_ in s and len(rows_)]:
+            s.iloc[rows_, s.columns.get_loc(c_)] = s[c_].to_numpy()[from_]
+    if len(nd_) or len(cap_):
+        s.iloc[nd_, s.columns.get_loc("water_rule")] = SIDE_NHD
+        s.iloc[cap_, s.columns.get_loc("water_rule")] = SIDE_BELOW
     s["fish_score"] = np.clip(100 * water * (0.30 * size + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * burn * trout
                               * heat * chan, 0, 100).round(0)
     return s

@@ -38,7 +38,7 @@ LBL = dict(
             + ("CAL FIRE · " if has("cal_fire") else "NIFC fire history · ") + "NIFC WFIGS · USGS gauges &amp; debris-flow hazard · "
             + ("CDEC · " if has("cdec") else "") + ("TNC Natural Flows" if has("tnc_flows") else "NHDPlus V2 (EROM)")
             + " · PRISM Group, Oregon State University · known falls: OSM, USGS GNIS, Wikidata and the guides named in each")
-from scoring import attach, score
+from scoring import attach, score, SIDE_NHD, SIDE_BELOW
 import crossbox
 import areaclip      # an area that stops at a state line (config clip_state) shows nothing past it
 
@@ -1000,17 +1000,37 @@ s_show = s_show.assign(geometry=shapely.set_precision(s_show.geometry.simplify(0
 s_show = s_show[~s_show.geometry.is_empty & (s_show.geom_type == "LineString")]
 mid_ll = s_show.geometry.interpolate(0.5, normalized=True)
 nz = lambda v, nd=0: None if pd.isna(v) else round(float(v), nd) if nd else int(round(float(v)))
-# a side channel of a river (05_score.py's side_of) says so in its name and in its flow line
+# a side channel of a river (05_score.py's side_of), or a lake's second outlet (side_lake), says so in its name and in
+# its flow line
 _side = s_show.side_of.notna().values if "side_of" in s_show else np.zeros(len(s_show), bool)
+_lk = s_show.side_lake.notna().values if "side_lake" in s_show else np.zeros(len(s_show), bool)
+def side_text(r, sd_, lk_):
+    if lk_:
+        size_ = (("the creek the main outlet starts" if isinstance(getattr(r, "side_sid", None), str) else
+                  "the water the lake passes on at its outlet") + f" ({sqmi(r.river_km2)})")
+        rule_ = getattr(r, "water_rule", None)
+        return (f"a second outlet of {r.side_lake if r.side_lake != 'unnamed' else 'an unnamed lake'}: NHD maps the "
+                "lake's water leaving by this channel too, but the routing sends it all down the lake's main outlet, so "
+                "this channel's own drainage is small; "
+                + ("· " if pd.isna(r.river_km2) else
+                   f"it is scored on the size and flow of {size_}, and the flow shown is that creek's · "
+                   if getattr(r, "on_outlet_creek", False) == True else
+                   f"it is scored on the size of {size_}, and reads no wetter than the creek it runs into below, "
+                   f"whose flow is shown · " if rule_ == SIDE_BELOW else
+                   f"it is scored on the size of {size_}, and on NHD's class for this channel, {r.flow} · "
+                   if rule_ == SIDE_NHD else
+                   f"it is scored on the size of {size_}, and on this channel's own flow · "))
+    return (f"a side channel of the {r.side_of}, which drains {sqmi(r.river_km2)} beside it: the routing sends the whole "
+            f"river down one arm, so this arm's own drainage is small; it is scored on the river's size and flow · "
+            if sd_ else "")
 props = pd.DataFrame({
-    "n": np.where(_side, s_show["name"].astype(object) + " (side channel)", s_show["name"].where(s_show["name"].notna(), None)),
+    "n": [f"{n_} (side channel)" if (sd_ or lk_) and isinstance(n_, str) else n_ if isinstance(n_, str) else None
+          for n_, sd_, lk_ in zip(s_show["name"].values, _side, _lk)],
     "d": s_show.drainage, "k": s_show.fork, "o": s_show.strahler,
     "c": [fcol.get((d, f), dcol.get(d, MINOR_COL)) for d, f in zip(s_show.drainage, s_show.fork)],
     "fs": s_show.fish_score.round(0).astype(int),
     "fl": [f"summer: {c}" if isinstance(c, str) and c != "no data" else f"NHD {f}" for c, f in zip(s_show.water_class, s_show.flow)],
-    "dq": [(f"a side channel of the {r.side_of}, which drains {sqmi(r.river_km2)} beside it: the routing sends the whole "
-            f"river down one arm, so this arm's own drainage is small; it is scored on the river's size and flow · "
-            if sd_ else "") + summer_flow(r) for r, sd_ in zip(s_show.itertuples(), _side)],
+    "dq": [side_text(r, sd_, lk_) + summer_flow(r) for r, sd_, lk_ in zip(s_show.itertuples(), _side, _lk)],
     # drainage (km2, to 0.01 so the popups' square miles keep two places) and elevation (m): the pages show them in
     # square miles and feet
     "a": s_show.area_full_km2.fillna(s_show.area_km2).astype(float).round(2), "el": [nz(v) for v in s_show.elev_m], "gr": s_show.gradient_pct.astype(float).round(1),

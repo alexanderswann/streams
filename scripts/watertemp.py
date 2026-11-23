@@ -259,7 +259,49 @@ def _lake_frame(s):
     share = np.nan_to_num(lake_share(full - lake, full), nan=0.0)
     fade = np.nan_to_num(lake_share(np.zeros(len(s)), full), nan=0.0)       # all of a lake reach's water is lake water
     share = np.where(in_lake, fade, share)
-    return geom, share, in_lake, below_lake(geom, lake, in_lake, _lake_outlines())
+    d0 = below_lake(geom, lake, in_lake, _lake_outlines())
+    # a lake's second outlet (05_score.py's side_lake) runs out of the lake with the water of the creek the lake's
+    # outlet starts (side_sid), which it is scored on: it takes that creek's lake share, and its own distance below the
+    # lake (_side_below). Its own few km2 carry no lake water, so below_lake finds no lake above it
+    if {"side_lake", "side_sid", "sid"} <= set(s.columns):
+        sec = np.flatnonzero(s["side_lake"].notna().to_numpy() & s["side_sid"].notna().to_numpy() & ~in_lake)
+        j = s["side_sid"].iloc[sec].map(pd.Series(np.arange(len(s)), index=s["sid"].values)).to_numpy(float)
+        sec, j = sec[~np.isnan(j)], j[~np.isnan(j)].astype(int)
+        share[sec] = share[j]
+        d0[sec] = _side_below(geom[sec], s["side_sid"].to_numpy()[sec], geom[in_lake])
+    return geom, share, in_lake, d0
+
+
+def _side_below(geom, side_of, lake_reaches, limit=LAKE_NEAR_M):
+    """Metres below its lake at the start of each piece of lakes' second outlets (geom, upstream end first; side_of:
+    the creek each is a second outlet beside, which keeps two lakes' apart), as below_lake carries it down a main
+    outlet: 0 at a first piece starting within LAKE_AT_M of a lake's outline or a reach lying in one (else its distance
+    to the nearest), then down the pieces of its own line; inf past `limit`."""
+    import shapely
+    n = len(geom)
+    if not n:
+        return np.zeros(0)
+    length = shapely.length(geom)
+    start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
+    up = np.full(n, -1)
+    for i, k in zip(*(a_.tolist() for a_ in shapely.STRtree(end).query(start, predicate="dwithin", distance=LAKE_JOIN_M))):
+        if i != k and side_of[i] == side_of[k]:
+            up[i] = k
+    water = [w for w in (_lake_outlines(), lake_reaches) if w is not None and len(w)]
+    near = np.full(n, np.inf)
+    for w in water:
+        t = shapely.STRtree(w)
+        near = np.fmin(near, shapely.distance(start, w[t.nearest(start)]))
+    d0 = np.full(n, np.inf)
+    for i in range(n):
+        d, j, seen = 0.0, i, set()
+        while up[j] >= 0 and up[j] not in seen:     # up to the piece at the lake
+            seen.add(j)
+            j = up[j]
+            d += length[j]
+        d += 0.0 if near[j] <= LAKE_AT_M else near[j]
+        d0[i] = d if d <= limit else np.inf
+    return d0
 
 
 def lake_parts(s):
