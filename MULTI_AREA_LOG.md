@@ -4065,3 +4065,60 @@ passed (2026-11-22).
     Moonshine Pond). A follow-up gives them the cut; it rides with the map-step repairs (#7).
 - **Installed** 2026-11-23 00:24 ET on main as 6e0898c, after #1, #2 and #4, by the overview session, which
   rebuilds all 12 maps from 03b with the four changes and publishes after its checks.
+
+## 2026-11-23: water across swamps follows NHD's lines (stream-burning session)
+
+The user saw the Leicester River drawn ruler-straight across the Otter Creek wetland in central Vermont and said
+"Yes, fix them" (2026-11-22). pysheds' resolve_flats sends a flat's water to its outlet the shortest way; NHD HR maps
+where the channel runs.
+
+- **Rule** (`flatlines.py`, called by `03_hydrology.py` and by `03b_stitch.py`'s seam mends; README, 3.):
+  - A flat of filled ground drains along NHD HR's lines to its outlet.
+  - A line crossing a low rim takes the water out only where the water then stays on that line.
+  - Cells away from the lines keep resolve_flats' order.
+  - No per-area constant or named place.
+- **Measured in scratch** on all 12 maps from 03, with this change alone, against the live site c178411:
+  - Straight runs over filled ground 31.0 → 26.0 mi (fish 60+ 9.5 → 5.1). Line over fill 100 m+ from NHD
+    121.7 → 111.9 mi.
+  - NHD misses 1,765 → 1,700. Gauges within 10 % 419 → 423 of 516. NHDPlus points: 86 better, 30 worse, all 30
+    re-matches within 300 m.
+  - No drainage across a divide. `dem_cond` unchanged outside the treated flats.
+  - Known falls 865 → 864 (Rice's Falls).
+- **Three faults** caught by the full builds and missed by the window tests, all fixed before review:
+  - The wetland's outlet sat 2 cells off NHD's line, and Leicester came out straighter than before.
+  - Straight ways ran to the nearest line from far away.
+  - A rim crossing sent Alder Brook's headwaters to the Lamoille.
+
+  Lessons: test on the full grid, and check drainage moves map by map. Every piece that loses 1 km² must rejoin
+  its own river.
+- **Installed** 2026-11-23 ~03:40 ET on main as a9919eb, with the Parkway, brook-trout and completeness changes. All
+  12 maps were rebuilt from 03 and published 06:02 ET as site 9f6e867.
+- **After the install** (read-only, the project build against live 9f778f8):
+  - Leicester follows NHD's line, and Alder Brook's 22.4 km² stay on the Winooski.
+  - Straight runs 31.4 → 26.2 mi. Gauges within 10 % 447 → 451.
+  - 11 NHD lake outlets drawn on live are no longer drawn. All 11 come from this change: a rebuild of 9f778f8 with it
+    alone reproduces them metre for metre.
+- **The 11 outlets:**
+  - **Approved with the change (4):** an LA pond whose creek now takes NHD's other channel; a North Georgia side
+    channel; North Teton Creek Lake, whose own water now runs down NHD's line, under the channel start; and a
+    Jackson lake whose creek now follows NHD's line as lake water.
+  - **Accepted from the rebase check (2):** Hog Lake's Bautista Creek, drawn from ~275 m below; a 5.8 ac lake near
+    Lows Lake, drawn from ~150 m below.
+  - **Dunham Pond Brook (NE Connecticut, 0.30 mi), new:** the floor's three-point vote now misses NHD's line.
+  - **Four unnamed, NHD-intermittent pond outlets, new:** Howard Pond, a 4.7 ac pond and Star Mountain Pond in the
+    High Peaks, and Jackson's Dime Creek pond. The vote kept them only through the pond's own path.
+
+  Below the five new ones' ponds the creek runs on the same cells as before. The change routes the pond itself
+  along NHD's path, which merges or lengthens the links at the pond.
+- **Decision** (overview session, with edges-and-floor):
+  - The four pond outlets follow the size floor as the user chose it. A pond's own path electing its outlet was
+    never designed: ARTIFICIAL_PATH takes the area's class so that a river's path through its own lake reads as the
+    river.
+  - Whether small pond outlets should count as year-round is left to the user. Edges-and-floor measures both
+    answers; the floor stays as it is until then.
+  - The named creek lost, 0.46 mi, is within the standing approval.
+  - Follow-up: a name vote by share of length along the link (edges-and-floor).
+- **Known, left as it is:**
+  - Rice's Falls, no longer detected (04b's slope ratio 2.60 → 2.49 under 2.5; a 04b follow-up).
+  - Frank Pond's 29 m creek head now reads "reservoir": 05_score joins runs under 50 m to their neighbour.
+  - Grass Pond's second outlet runs into Lows Lake at once.

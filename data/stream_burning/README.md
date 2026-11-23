@@ -800,3 +800,122 @@ Log entry: "2026-11-21, late: reaches cut at lake shores" in `MULTI_AREA_LOG.md`
     the links cut it can pick a small creek piece: where the routed way out leaves the lake somewhere else
     (Stillwater Reservoir), where the next lake starts right below (Number Four Reservoir), or where the lidar's lake
     is smaller than NHD's (Spy Lake). Look at the reaches around the lake before reading such a flag as lost water.
+
+## Swamp flats: water across filled flats follows NHD's lines (installed 2026-11-23)
+
+The user saw the Leicester River drawn ruler-straight across the Otter Creek wetland (central Vermont, 2026-11-22).
+In a flat the fill levels, pysheds' resolve_flats sends the water to the flat's outlet the shortest way. NHD HR maps
+where the channel runs, so `scripts/flatlines.py` routes those flats along NHD's lines (the rule: README.md, the
+terrain step). Log entry: "2026-11-23: water across swamps follows NHD's lines" in `MULTI_AREA_LOG.md`.
+
+### How it was built, and what the full builds caught that window tests didn't
+1. **Window tests** (13 places, 6 km windows) passed the first rule. In the box's real grid, though, the Otter
+   Creek wetland's one low edge lies 2 cells off NHD's line. No line led out, and the whole flat took the shortest
+   ways to that edge. The first full build drew Leicester straighter than before (central_vt straight runs
+   3.8 → 5.8 mi). Fix: outlets are joined to the nearest named line within 100 m.
+2. **NHD's lines inside a flat break at hummocks the fill leaves above its level.** Water on the unwalked pieces cut
+   straight to the nearest walked one. Fix: pieces are joined through the flat (100 m), in rounds.
+3. **Water far from any line took new straight ways to the nearest one,** so the runs moved instead of shrinking.
+   Fix: beyond 100 m of a walked line, cells keep resolve_flats' order.
+4. **A crossing diverted Alder Brook's headwaters.** NHD's line leaves the 109 ha headwater wetland over a 0.15 m
+   rim. The flat below drains east, and 19 km² went to the Lamoille; drainage_moves.py flagged it ("lost AWAY from
+   NHDPlus"). Fix: crossings are followed on the finished surface and dropped unless the water stays on their line.
+   A new check then tested every map: each drawn piece that lost 1 km² or more must rejoin its own river below.
+   - 114 do.
+   - 30 short pieces at confluences couldn't be pinned.
+   - The 8 that "leave" are all LA's: urban washes leaving the map 1-4 km from before, and the California Aqueduct's
+     canal no longer drawn as a creek.
+
+### Results on all 12 maps (scratch build from 03 against the live site c178411)
+- **Straight runs:** over filled ground 31.0 → 26.0 mi (fish 60+: 9.5 → 5.1).
+  - 22 of 110 runs are gone, among them Leicester's, the Quinebaug's and the High Peaks' fish-94 run.
+  - Drawn line over fill 100 m+ from NHD: 121.7 → 111.9 mi.
+  - The runs left lie mostly where no NHD line runs (LA's closed basins, kettles), or where NHD and the terrain
+    disagree about a flat's way out.
+- **NHD agreement:** hragree misses 1,765 → 1,700; v2_ends "under half" 664 → 652; drawn line within 50 m of NHD
+  88.0 → 88.4 %.
+- **Gauges and NHDPlus points:** gauges within 10 % 419 → 423 of 516 (6 better, 1 worse). NHDPlus points 86 better,
+  30 worse; all 30 keep their stream within 300 m (re-matches after a shift).
+- **Line and fish score:** 50,379.5 → 50,490.8 mi; fish 60+ +98.5 mi.
+- **Builds and falls:** 0 dead ends, 0 flow drops; known falls 865 → 864 (Rice's Falls).
+- **Byte check, box by box:**
+  - `dem_cond` outside the treated flats: unchanged everywhere. 45,597 flats treated, 1,524 km².
+  - Flow directions outside them changed only where 03b's seam mends condition a piece again with the new rule:
+    Lake Champlain 33,686 cells (harmless: no drawn line on them), Lows Lake 110, the Raquette's piece 11. Also
+    below Morris Dam (13) and at 1 lake cell.
+  - Every area change lies downstream of a changed direction.
+- **Rebase** on 48141fc (site 9f778f8): the routing on central_vt, adk_northwest and la equals the trial's, and the
+  pre-handoff hard checks pass.
+
+### After the install: 11 lake outlets no longer drawn, all from this change
+Read-only check of the project build against live 9f778f8:
+- Leicester follows NHD's line, and Alder Brook's 22.4 km² stay on the Winooski.
+- Straight runs 31.4 → 26.2 mi. Gauges within 10 % 447 → 451.
+- outlets.py finds 11 NHD lake outlets that live draws and the build doesn't.
+
+A scratch rebuild of 9f778f8 with this change alone, from 03, reproduces each one metre for metre (Jackson's
+three, the North Georgia pond's side channel and the rest).
+
+| lake | acres | outlet creek, drainage | what the map shows now | line gone |
+|---|---:|---|---|---:|
+| Dunham Pond (ne_ct) | 10.5 | Dunham Pond Brook, NHD named and year-round, 0.28 sq mi | nothing from the pond to the confluence | 0.30 mi |
+| Hog Lake (la) | 3.7 | Bautista Creek, named, 0.35 sq mi | drawn from ~275 m below | 0.16 mi |
+| Howard Pond (adk_high_peaks) | 11.4 | unnamed, NHD intermittent, 0.27 sq mi | drawn from ~350 m below | 0.21 mi |
+| unnamed (adk_high_peaks) | 4.7 | unnamed, NHD intermittent, 0.35 sq mi | nothing to the river | 0.48 mi |
+| Star Mountain Pond (adk_high_peaks) | 3.6 | unnamed, NHD intermittent, 0.35 sq mi | drawn from ~600 m below | 0.37 mi |
+| unnamed, Dime Creek (jackson) | 4.6 | unnamed, NHD intermittent, 0.26 sq mi | nothing from the lake to the next lake | 0.10 mi |
+| unnamed (la) | 3.3 | unnamed, 0.81 sq mi | the creek takes NHD's other channel, 150-200 m north, and rejoins 0.6 km below | 0.42 mi (0.42 new) |
+| unnamed (n_georgia) | 10.0 | a side channel of the Chattahoochee, 1.84 sq mi | its inflow reaches the main channel inside the flat; NHD maps both | 1.00 mi (0.42 new) |
+| North Teton Creek Lake (jackson) | 3.8 | unnamed, 0.46 sq mi | the lake's own water now runs down NHD's line, 0.07 sq mi there, under the channel start (live drew a straight spur off the line); drawn from ~500 m below | 0.17 mi |
+| unnamed (adk_northwest) | 5.8 | unnamed, 0.15 sq mi | drawn from ~150 m below (live from ~75 m below), on NHD's line from there | 0.03 mi |
+| unnamed (jackson) | 8.2 | unnamed, 0.73 sq mi | follows NHD's line now (live: a straight line beside it), through a narrow NHD pond, so most of its first 300 m is lake water (shown while Lakes is off) | 1.12 mi (0.77 new) |
+
+None is drawn beside NHD's line at an offset; where a line starts lower, the distances fall steadily toward it.
+
+**Why the first six:** the routing below each pond is unchanged. Outside the ponds, the outflow links run on the
+same cells in both builds; where a few differ, the new ones are closer to NHD's line. Inside the pond, this change
+routes the water along NHD's artificial path, which merges or lengthens the links at the pond (in-pond cells 15 →
+27 at Dunham, 6 → 18 at Star Mountain Pond). The size floor (05_score.py) keeps a link under 1 km² that NHD names,
+or calls year-round at 2 of its 25/50/75 % vertices, and config counts an artificial path as year-round outside LA, so that a river's path through its own lake reads
+as the river. Replaying
+05_score up to its verdict on both builds shows what that does:
+- **Howard Pond, the 4.7 ac pond, Star Mountain Pond, the Dime Creek pond:** live kept them only because vote points
+  fell on the pond's path, or a 14-153 m link inside the pond voted year-round and passed "kept" down. Their own
+  creek is NHD intermittent and unnamed, under the floor as the user chose it.
+- **Dunham Pond Brook:** the D8 path below the pond runs up to 85 m from NHD's line in both builds; the longer link's
+  midpoint now lands there.
+- **Hog Lake:** the link now starts on an unmapped tributary above the lake.
+
+**Decision** (overview session, with edges-and-floor):
+- No change to the floor tonight.
+- A rule letting a pond's path vote for its outlet extends the user's floor to unnamed intermittent pond outlets.
+- Whether small pond outlets should count as year-round is the user's question. Edges-and-floor measures both
+  answers: yes keeps them, no also removes the creeks kept only through a lake's path elsewhere.
+- The named creek lost, 0.46 mi, is within the standing approval.
+- A 3-point vote on the link's part outside lakes would not bring back Dunham. Follow-up (edges-and-floor): a name
+  vote by share of length on the part outside lakes. Share within 60 m of the named line: Dunham Pond Brook
+  74 → 65 %; Bautista Creek 100 % of its 310 m below Hog Lake, though only 30 % of the whole new link.
+
+### Known, left as it is
+- **Rice's Falls:** the slope ratio fell 2.60 → 2.49, under 04b's 2.5. A pool above the fall is a filled flat, and
+  the D8 path now follows NHD's line through it, so the trend slope above rose 0.067 → 0.070. Follow-up 04b patch:
+  a step 4 m above the trend passes at 2.25. All 12 maps then find 135 → 139 known falls, none lost.
+- **Frank Pond (adk_northwest, 43.98411,-74.68520):** a 29 m creek head beside the shore now reads "reservoir"
+  (fish 18; live year-round, fish 80).
+  - The flat takes in the pond's wet fringe, so the water enters the pond after 34 m instead of running 68 m along
+    the shore.
+  - 05_score's shore cut joins runs under 50 m to their neighbour (flowlib.shore_cuts, LAKE_PIECE_M).
+  - It stays: a 34 m channel head isn't a reach of its own.
+- **Grass Pond's second outlet** (0.1 km) now runs into Lows Lake at once.
+- **Tried and not kept:** a line walk that follows NHD's digitized direction. It had no effect on the split channels.
+  NHD HR's lines carry no main-path or divergence attribute here, so nothing in the data says which branch of a
+  split should carry the water.
+
+### Checks
+They ran as scratch scripts and are not in `checks/` yet:
+- byte check outside the treated flats;
+- drawn pieces that lost 1 km² must rejoin their own river;
+- straight runs over filled ground, against NHD;
+- NHD lake outlets drawn;
+- point distances to the drawn lines at each outlet;
+- 05_score replayed up to the floor's verdict for the links near given points.

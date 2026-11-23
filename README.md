@@ -199,6 +199,23 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    own surface (where most of its water gathers is on the map's edge: Lake Champlain, Tellico, Hartwell) carries no
    stream lines since 2026-11-20: its flat water had drained to the edge along dozens of parallel made-up creeks.
    The creeks end at its shore, and `03b` lists such lakes per box (`lakes_off_map.gpkg`) for `05c`.
+   Since 2026-11-23 a flat of filled ground drains along NHD HR's lines instead of resolve_flats' shortest ways,
+   which drew ruler-straight lines across it (the Leicester River across the Otter Creek wetland). A flat qualifies
+   with 10 or more cells, half of them or more raised 5 cm or more by the fill: a swamp, a wetland, a valley flat
+   behind a sill. `flatlines.py` does it in 03, and in the pieces 03b conditions again at seams. The water runs
+   along the StreamRiver, ArtificialPath and Connector lines, named ones first, to the flat's outlet. A line that
+   leaves the flat over a rim 0.5 m high at most, and comes down below it within 200 m, takes the water out there.
+   That holds only where the water, followed on the finished surface, stays within 40 m of the line for 80 % of the
+   next 200 m; without that test a crossing sent 19 km² of Alder Brook's headwaters to the Lamoille. An outlet NHD's
+   line passes a few cells off, and a line broken by a hummock the fill left, are joined to it within 100 m. Cells
+   within 100 m of a walked line take the shortest way to it. Farther ones keep resolve_flats' order, so no new
+   straight way appears away from NHD's lines. Every other cell keeps its value, and `dem_filled.tif` and
+   `fill_depth.tif` don't change. Measured on all 12 maps before it went in (`data/stream_burning/`):
+   straight runs over filled ground 31.0 → 26.0 mi (fish 60+ 9.5 → 5.1); NHD lines the routing misses
+   1,765 → 1,700; gauges within 10 % 419 → 423 of 516; no drainage moved across a divide. A pond is a filled flat
+   too, so its water now follows NHD's path through it. That moves where the pond's links split, and with them the
+   size floor's three-point vote (5.). 11 lake outlets the maps drew before are no longer drawn, and a 29 m creek
+   head at Frank Pond became part of its pond's reach; both are listed in `data/stream_burning/README.md`.
    Since 2026-11-21 every cell of a lake that holds water drains to its outlet along NHD HR's lines through the lake
    where they run (`route_lake`: a least-cost path over the lake's cells, a step off the lines counting five along
    them), and the way the water takes below the outlet is a stream line down to the first stream it meets
