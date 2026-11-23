@@ -90,7 +90,7 @@ AREAS = {
         }),
 
     # ---- New areas: boxes from lon/lat extents; HU4 codes checked against the national WBD on 2026-11-18.
-    # Home points: the user's ZIPs, at the town centre (rural ZIPs span whole valleys).
+    # Home points: each map's drive-time starting point, a ZIP's town centre (rural ZIPs span whole valleys).
     # Grown on 2026-11-19 (user: "expand the wyoming map to include all of GTNP, driggs, and alpine"). Grand Teton NP's
     # boundary (NPS) spans x 504.2-546.4 km and y 4820.6-4881.2 km; Driggs is at x 491.1 and Palisades Reservoir lies
     # west of Alpine. Outer edges sit where no lake of 8+ ha is cut and no named creek crosses more than once:
