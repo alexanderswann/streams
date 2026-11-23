@@ -21,6 +21,9 @@ Two things in the conditioning that aren't standard:
     the big rivers (the White River at 519 km2, the Winooski at 464, the Hoback at 1,136) and each river's drainage
     started again from nothing below. LA's dry channels have no such steps, so it showed there only at reservoirs.
   - Flow paths still end at every lake and reservoir that holds water: see 03b_stitch.py.
+  - Flats of filled ground (a swamp, a wetland, a valley flat behind a sill, which the fill levels) are routed along
+    NHD HR's channel lines instead of resolve_flats' shortest ways, which drew straight lines across them
+    (flatlines.py, 2026-11-22).
 """
 import os
 import numpy as np, rasterio, rasterio.windows
@@ -28,6 +31,7 @@ if not hasattr(np, "in1d"):  # pysheds still calls np.in1d, removed in NumPy 2.4
     np.in1d = np.isin
 from pysheds.grid import Grid
 from config import *
+import flatlines
 
 HALO = 5000          # m of each neighbouring box's terrain conditioned along with this box
 FLAT_EPS = 1e-9      # m of rise a cell across a flat; 4 km of flat is 0.4 mm, under any step in the DEM
@@ -68,7 +72,8 @@ grid = Grid.from_raster(tmp)
 dem = grid.read_raster(tmp)
 pit_filled = grid.fill_pits(dem)
 flooded = grid.fill_depressions(pit_filled)
-inflated = grid.resolve_flats(flooded, eps=FLAT_EPS, max_iter=10000)
+# flats of filled ground (swamps, wetlands) routed along NHD HR's channel lines, the rest as resolve_flats has it
+inflated = flatlines.resolve(grid, dem, flooded, T, FLAT_EPS, 10000)
 
 # the box itself, cut back out of the halo
 c0, r0 = int(round((XMIN - T.c) / RES)), int(round((T.f - YMAX) / RES))

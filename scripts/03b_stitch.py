@@ -252,14 +252,17 @@ def raw_dem(group, where, rows, cols):
 
 def condition(z, Tw):
     """A piece of DEM conditioned the way 03_hydrology.py conditions a box: pits and depressions filled, flats
-    resolved with FLAT_EPS. float64, NaN where z has no ground."""
+    resolved with FLAT_EPS, flats of filled ground along NHD HR's lines (flatlines.py). float64, NaN where z has no
+    ground."""
     from pysheds.grid import Grid
     from pysheds.sview import Raster, ViewFinder
+    import flatlines
     nod = np.float32(-99999.0)
     vf = ViewFinder(affine=Tw, shape=z.shape, crs=CRS, nodata=nod)
     grid = Grid(viewfinder=vf)
-    flooded = grid.fill_depressions(grid.fill_pits(Raster(np.where(np.isnan(z), nod, z), viewfinder=vf)))
-    out = np.asarray(grid.resolve_flats(flooded, eps=FLAT_EPS, max_iter=10000), np.float64)
+    raw = Raster(np.where(np.isnan(z), nod, z), viewfinder=vf)
+    flooded = grid.fill_depressions(grid.fill_pits(raw))
+    out = flatlines.resolve(grid, raw, flooded, Tw, FLAT_EPS, 10000)       # as 03_hydrology.py does
     out[np.isnan(z)] = np.nan
     return out
 
