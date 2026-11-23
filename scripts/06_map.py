@@ -209,7 +209,12 @@ def draw_through(s_ll):
         cand = [pos[j] for j in ends.query(p0, predicate="dwithin", distance=80) if pos[j] != r["hit"]]
         if not cand:
             return None
-        i = min(cand, key=lambda i: shapely.Point(sm[i].coords[-1][:2]).distance(p0))
+        # the nearest end, and among ends as near (within 1 m: one confluence) the reach carrying the most water. The
+        # nearest alone fell to the spatial index's order, which a reach added anywhere on the map could flip: 25 m of
+        # the Champlain Canal below a lock pool (1,085 km2) took a 0.8 km2 creek's "mostly dry" when a lead-in was laid
+        # in another box (2026-11-23; on the published maps 3 pieces, 62 m, change, all year-round either way)
+        d_ = {i: shapely.Point(sm[i].coords[-1][:2]).distance(p0) for i in cand}
+        i = max((i for i in cand if d_[i] <= min(d_.values()) + 1.0), key=lambda i: (km2_[i], -d_[i]))
         for _ in range(30):
             donors = ends_at.get(k1(sm[i].coords[0]), [])
             if not bd_[i].startswith("in:") or not donors:
