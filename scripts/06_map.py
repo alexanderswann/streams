@@ -641,6 +641,12 @@ def water_word(w):
     return "mostly dry" if w <= 0.24 else "seasonal" if w <= 0.525 else "usually flows" if w <= 0.8575 else "year-round"
 
 
+def peers(flow):
+    """The creeks scoring.typical_water compares a reach with, by NHD's label (scoring.TYPICAL_GROUP)."""
+    return {"unmapped": "", "other": " that NHD gives no flow class", "ephemeral": " that NHD maps ephemeral or "
+            "intermittent"}.get(flow, f" that NHD maps {flow}")
+
+
 def summer_flow(r):
     """Popup line from the flow model (05b_flow.py) and the rules scoring.py applies to it: the class, why a rule set
     it where one did, the model's typical / drought-year low flow and share of summers flowing, and NHD's class.
@@ -648,10 +654,9 @@ def summer_flow(r):
     c = r.water_class
     rule = r.water_rule if isinstance(r.water_rule, str) else ""
     if rule == "no estimate":
-        nhd = {"unmapped": "doesn't map", "other": "gives no flow class"}.get(r.flow, f"maps {r.flow}")
         return (f"no flow estimate: the {LBL['flow']} has no line on this creek or below it on the map, so the score "
-                f"takes what the map's other creeks of its size that NHD {nhd} mostly read, or NHD's class where that "
-                f"says more: {water_word(r.water_term)} · NHD: {r.flow}")
+                f"takes what the map's creeks of its size{peers(r.flow)} read on the model's own estimates, or NHD's "
+                f"class where that says more: {water_word(r.water_term)} · NHD: {r.flow}")
     # scoring.py: a borrowed estimate (scaled from another creek, or leaving out the water above a dam) never reads
     # drier than a creek with no estimate, nor shows a creek NHD has no line for mostly dry (said where it changed the
     # class; within a class it only moved the score)
@@ -669,17 +674,16 @@ def summer_flow(r):
         why = ("an estimate scaled from another creek is no evidence that this one dries" if scaled else
                "most of this creek's drainage lies above a lake or dam, and the model counts only its own ground below "
                "it, which leaves out what seeps, spills or is released")
-        nhd = {"unmapped": "doesn't map", "other": "gives no flow class"}.get(r.flow, f"maps {r.flow}")
         if rule == "borrowed, no class":
             return (f"no flow class: {why}, and NHD has no line along it, so the map gives it none; the score takes what "
-                    f"the map's other creeks of its size that NHD doesn't map mostly read, or the estimate where that "
-                    f"says more ({water_word(r.water_term)}) · {said} · NHD: {r.flow}")
+                    f"the map's creeks of its size read on the model's own estimates, or the estimate where that says "
+                    f"more ({water_word(r.water_term)}) · {said} · NHD: {r.flow}")
         doubt = ""
         if not FLOW_DRIES and c in ("year-round", "usually flows") and r.flow in ("intermittent", "ephemeral", "unmapped"):
             doubt = (" (" + ("no NHD stream line along it" if r.flow == "unmapped" else f"NHD maps it {r.flow}")
                      + ": NHDPlus's mean flow can't see a creek drying, so it may stop flowing in a dry summer)")
-        return (f"{c}{doubt} · {why}, so the score takes what the map's other creeks of its size that NHD {nhd} mostly "
-                f"read, or NHD's class where that says more · {said} · NHD: {r.flow}")
+        return (f"{c}{doubt} · {why}, so the score takes what the map's creeks of its size{peers(r.flow)} read on the "
+                f"model's own estimates, or NHD's class where that says more · {said} · NHD: {r.flow}")
     if not isinstance(c, str) or c == "no data":
         return ""
     dam = r.below_dam if isinstance(r.below_dam, str) else ""

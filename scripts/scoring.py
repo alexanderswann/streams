@@ -9,7 +9,7 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              water from above a dam), valued as where there's no estimate (perennial 1.0, intermittent 0.35, a line NHD
              gives no class 0.3, no NHD line 0.15, ephemeral 0.05), and lifts every creek NHD maps perennial to
              year-round (water_floor). Where the model has no estimate (no line on the creek or below it on the map):
-             what the area's creeks like it read (typical_water: the same NHD label, a similar drainage), never below
+             what the area's creeks like it read on the model's own estimates (typical_water), never below
              NHD's class. A borrowed estimate is no more evidence than none, so it never reads drier than that either
              (borrowed()), nor shows a creek NHD has no line along mostly dry: such a reach reads, as one with no
              estimate does, as NHD labels it. Where the model sees creeks dry up (TNC's natural flows), NHD's class
@@ -403,26 +403,43 @@ def creeks(s):
     return pd.Series([root(i) for i in range(len(s))], index=s.index)
 
 
+TYPICAL_SIGMA = np.log(2)     # typical_water: a peer's weight falls to 0.61 at twice or half the reach's drainage
+TYPICAL_GROUP = {"perennial": ["perennial"], "intermittent": ["intermittent"], "ephemeral": ["ephemeral", "intermittent"],
+                 "unmapped": ["perennial", "intermittent", "ephemeral", "unmapped"], "other": ["other"]}
+
+
 def typical_water(s, cls, water, which=None):
-    """For each reach with no flow estimate (or each one in `which`): the median water term of the area's reaches that
-    have one, with the same NHD label and a drainage within a factor of 2 (4, then any size, where under 20 such
-    reaches); 0.5 where there are none at all. A failed look-up is no evidence about the creek, so it scores as the
-    area's creeks like it; so does a borrowed estimate that reads it drier (borrowed())."""
+    """For each reach with no flow estimate (or each one in `which`): what the map's creeks of its size and NHD label
+    read where the estimate is the model's own (flow_src "model"): the median of their water terms, each weighted by its
+    length and by how near its drainage is to the reach's (a Gaussian in log drainage, TYPICAL_SIGMA; drainage counted
+    from config.STREAM_KM2, where the map's creeks start). NHD's label sorts them (TYPICAL_GROUP): a creek NHD has no
+    line along is compared with creeks of every label, since the missing line says nothing of its water, and an
+    ephemeral one with the intermittent ones too. 0.5 where there are none. A failed look-up is no evidence about the
+    creek, nor is a borrowed estimate (borrowed()), and neither votes: until 2026-11-23 every reach with an estimate
+    did, each counted once, within a factor of 2 (4, then any, under 20), and drawing 43 more pond outlets moved two
+    Fivemile River pieces in NE CT from usually flows to seasonal with their own data unchanged (quinebaug:s918, fish
+    27 -> 14). On the model's own estimates the value moves only where the model's lines or its data do."""
     out = pd.Series(np.nan, index=s.index)
     which = (cls.eq("no data") if which is None else which).to_numpy(bool)
-    km2 = np.log(np.clip(num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float), 0.01, None))
-    has_ = cls.isin(WATER_CLASSES).to_numpy() & water.notna().to_numpy()
+    if not which.any():
+        return out.fillna(0.5)
+    config = __import__("config")
+    km = np.log(np.clip(num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float), config.STREAM_KM2, None))
+    src = s["flow_src"] if "flow_src" in s else pd.Series("", index=s.index)
+    own = src.eq("model").to_numpy() & cls.isin(WATER_CLASSES).to_numpy() & water.notna().to_numpy()
+    length = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(config.CRS).length.to_numpy()
     lab = s.flow.fillna("unmapped").to_numpy()
-    for f in np.unique(lab[which]):
-        peer = has_ & (lab == f)
-        order = np.argsort(km2[peer])
-        pa, pw = km2[peer][order], water.to_numpy(float)[peer][order]
-        for i in np.flatnonzero(which & (lab == f)):
-            for w in (np.log(2), np.log(4), np.inf):
-                lo, hi = np.searchsorted(pa, km2[i] - w), np.searchsorted(pa, km2[i] + w, side="right")
-                if hi - lo >= 20 or (w == np.inf and hi > lo):
-                    out.iat[i] = float(np.median(pw[lo:hi]))
-                    break
+    w_ = water.to_numpy(float)
+    for g in np.unique(lab[which]):
+        peer = own & np.isin(lab, TYPICAL_GROUP.get(g, [g]))
+        if not peer.any():
+            continue
+        o = np.argsort(w_[peer])
+        pk, pw, pl = km[peer][o], w_[peer][o], length[peer][o]
+        for i in np.flatnonzero(which & (lab == g)):
+            c = np.cumsum(pl * np.exp(-0.5 * ((pk - km[i]) / TYPICAL_SIGMA) ** 2))
+            if c[-1] > 0:
+                out.iat[i] = float(pw[np.searchsorted(c, 0.5 * c[-1])])
     return out.fillna(0.5)
 
 
