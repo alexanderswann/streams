@@ -28,10 +28,13 @@ from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_di
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 21
+VERSION = 22
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 OUTSIDE_FOLLOW_M = 15000   # a river entering from outside whose water the routing takes straight back out over the
                            # edge is handed over this far down its mapped line at most
+REENTER_M, REENTER_NEAR_M, REENTER_MAX, REENTER_NHD, REENTER_GROW = 200, 300, 5, 0.6, 2.0   # a river whose path
+                           # leaves the map where the mapped river stays in: its water goes in again where a path
+                           # from the river stays in this far, along NHD's detailed lines (see _build)
 OUTFLOW_NEAR_M = 100   # the cell found below a dam lies on the lake's routed way out within this distance of it
 
 
@@ -202,6 +205,25 @@ def walk(fd, r, c):
             break
         r, c = r + st[0], c + st[1]
     return r * W + c
+
+
+def _path(fd, rc, n):
+    """The flat cells of the D8 path from cell rc, or None where it leaves the box within n cells: over its rim, or
+    into a pit on its rim (pysheds' way out, as exit_points() reads it). A path that ends inside the box sooner (a lake,
+    a sink) stays in."""
+    H, W = fd.shape
+    r, c = rc
+    out = []
+    for _ in range(10 ** 6):
+        out.append(r * W + c)
+        st = D8.get(int(fd[r, c]))
+        if st is None:
+            rim = r in (0, H - 1) or c in (0, W - 1)
+            return None if rim and len(out) < n else out
+        if not (0 <= r + st[0] < H and 0 <= c + st[1] < W):
+            return out if len(out) >= n else None
+        r, c = r + st[0], c + st[1]
+    return out
 
 
 def _key(regions):
@@ -537,7 +559,7 @@ def _build(regions):
             below_[hs] = out_
         return below_[hs]
     riv = main[main.intersects(union.boundary)]
-    found, traces, skipped = [], [], defaultdict(int)
+    found, traces, skipped, reenter = [], [], defaultdict(int), []
     # what the edge links already bring in, per link: a river weaving along the boxes' edges (the Santa Clara at
     # Fillmore) comes in from the neighbouring box and from outside within a few km, and must count once
     edge_links = [l for l in links if l[4] == "edge"]
@@ -680,6 +702,77 @@ def _build(regions):
             traces.append((b, set(mine), more, f.hydroseq))
             found.append((f.gnis_name if isinstance(f.gnis_name, str) else "unnamed river", b, round(more, 2),
                           round(pt.x), round(pt.y), int(f.comid), kind))
+            if kind == "outside" and down:
+                reenter.append((f, b, k, mine, more, down, g))             # (second pass, below)
+    # A river can stay in the map where its path doesn't: the path leaves over the map's edge while the mapped river
+    # runs on inside, and that stretch had neither the river's water nor a line (Minister Creek on the SE PA map: in
+    # where its NHDPlus line crosses the north edge, its path out again 350 m on, the creek inside for 800 m more; live
+    # drew it from where its path comes back in). What left the box there, the river's water and what the box gathered
+    # on the way, goes in again at the first point down the mapped river, 50 m at a time while the river is still in
+    # this box and on its own lines (NHDPlus's drainage there at most REENTER_GROW times the line's that came in: a
+    # bigger river it has run into carries its water already: a tributary's 145 km2 went in again on a braid of the
+    # Santa Ana River beside the drawn river on the first try), whose path stays in the map for REENTER_M, runs along
+    # NHD's detailed lines (REENTER_NHD of its first REENTER_M within 30 m: NHDPlus's lines can lie 100 m off near an
+    # edge) and meets the path of no water taken in already (so no other put-in loses water to it, and none counts
+    # twice); and so on where that path leaves early too, each time further down the river. Biggest rivers first
+    # (2026-11-23).
+    taken = defaultdict(set)
+    for b_, tr_, *_ in traces:
+        taken[b_] |= tr_
+    nhd_hr = {}
+    for f, b, k, mine, more, down, g in sorted(reenter, key=lambda e: -e[4]):
+        fd_b, T_b = fds[b]
+        chain, seq = [(g, float(f.totdasqkm))], f.dnhydroseq      # the lines down the river, with their drainage
+        while seq in by_seq.index and len(chain) < 500 and sum(l_.length for l_, _ in chain[1:]) < OUTSIDE_FOLLOW_M:
+            nx_ = by_seq.loc[seq]
+            chain.append((nx_.geometry, float(nx_.totdasqkm)))
+            seq = nx_.dnhydroseq
+        on_ = shapely.STRtree([l_ for l_, _ in chain]).nearest(shapely.points([(q_.x, q_.y) for q_ in down]))
+        km2_down = np.array([chain[i][1] for i in on_])
+        Hh, Ww = fd_b.shape
+        if b not in nhd_hr:
+            nhd_hr[b] = _outflow_lines(b)
+        def along(p2):
+            if nhd_hr[b] is None:
+                return False
+            rr, cc = np.divmod(np.asarray(p2[:int(REENTER_M / RES) + 1]), Ww)
+            pts = shapely.points(np.column_stack(T_b * (cc + 0.5, rr + 0.5)))
+            near = nhd_hr[b][1].query(pts, predicate="dwithin", distance=30)[0]
+            return len(np.unique(near)) >= REENTER_NHD * len(pts)
+        path_, back, j_at = mine, more, -1
+        for n_ in range(1, REENTER_MAX + 1):
+            ex_, ey_ = exit_points(fd_b, T_b, [path_[-1]])
+            if np.isnan(ex_[0]):
+                break                                            # it ends in the box (a lake, a sink)
+            e_ = shapely.Point(ex_[0], ey_[0])
+            if union.contains(e_):
+                break                                            # into the next box, where 03b's routing goes on
+            j0 = int(np.argmin([q_.distance(e_) for q_ in down]))
+            if down[j0].distance(e_) > REENTER_NEAR_M:
+                break                                            # it leaves away from the mapped river
+            back += area_at(b, divmod(path_[-1], Ww))
+            again = None
+            for j in range(max(j0, j_at) + 1, len(down)):
+                q_ = down[j]
+                c_, r_ = ~T_b * (q_.x, q_.y)
+                r_, c_ = int(np.floor(r_)), int(np.floor(c_))
+                if not (union.contains(q_) and 0 <= r_ < Hh and 0 <= c_ < Ww):
+                    break                                        # the river has left this box too
+                if km2_down[j] > REENTER_GROW * float(f.totdasqkm):
+                    break                                        # it has run into a bigger river
+                p2 = _path(fd_b, (r_, c_), int(REENTER_M / RES) + 1)
+                if p2 is not None and taken[b].isdisjoint(p2) and along(p2):
+                    again = ((r_, c_), p2, q_, j)
+                    break
+            if again is None:
+                break
+            rc, path_, q_, j_at = again
+            taken[b] |= set(path_)
+            key2 = ("outside", int(f.comid), k, n_)
+            own[key2] = back
+            links.append((key2, b, int(rc[0]), int(rc[1]), "outside"))
+            found.append((f.gnis_name if isinstance(f.gnis_name, str) else "unnamed river", b, round(back, 2),
+                          round(q_.x), round(q_.y), int(f.comid), "again"))
     if found:
         big = sorted(found, key=lambda q: -q[2])
         print(f"crossbox: {len(found)} rivers entering from outside the boxes, {sum(q[2] for q in found):,.0f} km2 carried in "
