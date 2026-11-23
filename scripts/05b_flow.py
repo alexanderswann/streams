@@ -19,11 +19,14 @@ Evidence per reach:
      below it: the share of summers it kept FLOWING_CFS, since 2011 where it has 5+ of them, else over its record.
      Near the diversion (until tributaries add a quarter more drainage), a recent record is also passed on as
      div_water, which scoring.py uses as the water term where the creek is dry most summers.
+  5. NHD's class is a floor: an estimate inherited from another creek (2), or one that leaves out the water from above
+     a dam (3, natural flows), never puts a reach below NHD's class, and a creek NHD maps perennial reads year-round.
 
 Writes output/<region>/flow_streams.csv and flow_drops.csv:
   comid, flow_src, dry_cfs (typical year), dry_cfs_drought (2nd-worst of the years), flow_years (share of years
   with at least FLOWING_CFS through the dry season), water (0-1 score term), water_class, below_dam,
-  below_div, div_gauge, div_share, div_years, div_water,
+  below_div, div_gauge, div_share, div_years, div_water, model_class and water_floor (where NHD's class lifted the
+  reach (5): the model's own class, and why: perennial / inherited / dam),
   and the evidence scoring.py reads for creeks the model rates flowing that are dry most summers (2026-11-20):
   green_p90, green_p90_max, green_sur, green_water (the channel's late-summer greenness, flowlib.channel_green, where
   02g_greenness.py made rasters) and gauge_site, gauge_name, gauge_share, gauge_summers, gauge_years, gauge_area_km2,
@@ -201,7 +204,7 @@ class Walk:
         cells, ids = np.concatenate(cells)[::-1], np.concatenate(ids)[::-1]
         self.cells, first = np.unique(cells, return_index=True)      # a cell two reaches share is the later one's
         self.ids = ids[first]
-        self.next_, self.own, self.jumps, self._jumped = {}, {}, {}, False
+        self.next_, self.own = {}, {}
 
     def walk(self, cell, skip=-1):
         """Down from `cell` to the first line cell of a reach other than `skip`, over up to 4 km of unmapped channel
@@ -218,7 +221,6 @@ class Walk:
             if st is None and cell in self.dams and cell not in seen:     # through the lake, on below its outlet
                 seen.add(cell)
                 cell = self.dams[cell]
-                self._jumped = True
                 continue
             if st is None or not (0 <= r + st[0] < H and 0 <= c + st[1] < W):
                 return -1, cell
@@ -227,9 +229,7 @@ class Walk:
 
     def next(self, i):
         if i not in self.next_:
-            self._jumped = False
             self.next_[i] = self.walk(int(self.end[i]), skip=i)
-            self.jumps[i] = self._jumped          # the way to the next reach went through a lake
         return self.next_[i]
 
     def onward(self, i=None, cell=None):
@@ -363,7 +363,6 @@ with rasterio.open(f"{DERIVED}/flowdir.tif") as src:
 here.mid, here.area = mid, {False: area_box, True: area_edge}
 _WALK[REGION] = here
 nxt = np.array([here.next(i)[0] for i in range(len(s))], dtype=np.int64)
-jump = np.array([here.jumps.get(i, False) for i in range(len(s))])
 
 # ---- a way that ends in a lake draining off the map ----
 # 03b_stitch.py leaves no stream lines on a lake whose water leaves the map (its lakes_off_map.gpkg, 2026-11-20), so the
@@ -375,8 +374,8 @@ jump = np.array([here.jumps.get(i, False) for i in range(len(s))])
 # box runs into such a lake within 4 km (on through lakes below their outlets), the search takes that lake's NHDPlus line
 # nearest the cell where the way enters the water (a line at least half inside the lake, with flows; at any distance, as
 # the old search ran on across the lake's lines: off Port Kent the line Big Brook had taken is 3.5-4.1 km out), as it
-# took the lake reaches' lines before (restored at the user's word, 2026-11-20). It counts as found through a lake
-# (below): it can raise a creek's water estimate, never lower it below NHD's class.
+# took the lake reaches' lines before (restored at the user's word, 2026-11-20). An inherited estimate like any other:
+# it never puts a reach below NHD's class (below).
 LAKE_LINE, LAKE_USED, wet_, lines_ = {}, set(), None, None
 if os.path.exists(f"{DERIVED}/lakes_off_map.gpkg"):
     from rasterio import features as rio_features
@@ -419,10 +418,6 @@ def lake_line(k):
     return LAKE_LINE[k]
 
 
-VIA = {}            # per area kind: the reaches whose segment was found down a way that went through a lake
-FROM_LAKE = {}      # per area kind: the reaches whose segment is the line of a lake draining off the map (above)
-
-
 def in_box(area, edge):
     """Each reach's model segment in this box, given the reaches' drainage areas (edge: with the water from other
     boxes): the nearest segment of similar drainage ("model"), or off the model network that of the first modelled
@@ -432,23 +427,19 @@ def in_box(area, edge):
     here.own[edge] = comid.copy()
     src_ = np.where(~np.isnan(comid), "model", None).astype(object)
     last = np.full(len(s), -1)
-    via = np.zeros(len(s), bool)
-    from_lake = np.zeros(len(s), bool)     # the segment is a lake's line (above), here or inherited from below
     for i in np.flatnonzero(np.isnan(comid)):
-        k, j, hops, lk_ = i, nxt[i], 0, bool(jump[i])
+        k, j, hops = i, nxt[i], 0
         while j >= 0 and np.isnan(comid[j]) and hops < 60:
-            k, j, hops, lk_ = j, nxt[j], hops + 1, lk_ or bool(jump[j])
+            k, j, hops = j, nxt[j], hops + 1
         if j >= 0 and not np.isnan(comid[j]):
             comid[i], src_[i] = comid[j], "scaled"
-            via[i], from_lake[i] = lk_ or from_lake[j], from_lake[j]
         elif j < 0:
             c_ = lake_line(k)              # the way ends in a lake draining off the map (above)
             if np.isnan(c_):
                 last[i] = k
             else:
-                comid[i], src_[i], via[i], from_lake[i] = c_, "scaled", True, True
+                comid[i], src_[i] = c_, "scaled"
                 LAKE_USED.add(int(i))
-    VIA[edge], FROM_LAKE[edge] = via, from_lake
     return comid, src_, last
 
 
@@ -529,28 +520,57 @@ box_df, box_div = segments(area_box)
 ev = evidence(box_df, box_div)
 across = ACROSS[False]
 nhd = s.flow.map({"perennial": 1.0, "intermittent": 0.35, "unmapped": 0.15, "ephemeral": 0.05}).fillna(0.3)
-eff = lambda e: e.water.where(e.water_class.fillna("no data").ne("no data") & e.water.notna(), nhd)  # as scoring.py
+
+# ---- NHD's class as a floor ----
+# NHD's perennial and intermittent labels are about this creek. An estimate inherited from another creek (the first
+# modelled reach below it, in this box or the one it runs on into, down a way through a lake, or the line of a lake
+# draining off the map) isn't, and neither is one that leaves out the water from above a lake or dam holding half the
+# drainage (where the flows are natural flows: the model's figure there is for the creek's own ground below the dam,
+# the least that runs there; what seeps, spills or is released comes on top). So such an estimate never puts a reach
+# below NHD's class, valued as the map values it where there's no estimate (`nhd`: perennial year-round, intermittent
+# and a line NHD gives no class seasonal, no NHD line mostly dry), and a creek NHD maps perennial reads year-round
+# whatever the model says ("never show a wet creek as dry"): outside California the model is NHDPlus's mean flow with
+# no drying in it, which read 671 perennial brooks in north-east Connecticut below year-round (398 with trout found),
+# and in LA the natural-flow model read 145 mi that NHD maps perennial mostly dry (audit, 2026-11-22). Only a USGS
+# gauge's record (scoring.py: on the creek, or below a diversion) puts a reach below NHD's class. Before 2026-11-22 this
+# was five rules, each written for one kind of inherited estimate (Ticonderoga's creeks, Smith and Skinner brooks,
+# Partridge Brook, Dry Creek by the Sespe box edge, Willow Creek below Lake Arrowhead), and a plain inherited estimate
+# in the box had none.
+held = np.zeros(len(s), bool)                          # below a lake or dam holding half the drainage, natural flows
+if has("tnc_flows") and os.path.exists(f"{OUT}/area_streams.csv"):
+    t_ = pd.read_csv(f"{OUT}/area_streams.csv").set_index("sid")
+    full_, edge_ = s.sid.map(t_.area_full_km2), s.sid.map(t_.area_edge_km2)
+    held = ((full_ - edge_) >= 0.5 * full_).fillna(False).values
+    if "cut_sid" in s:      # a creek's first stretch below a lake, cut off for its water temperature alone (cut_sid: the
+        row_ = s.cut_sid.map(pd.Series(np.arange(len(s)), index=s.sid.values)).fillna(-1).astype(int).values
+        held = np.where(row_ >= 0, held[np.maximum(row_, 0)], held)     # rest of its line), is held as that rest is
 
 
-def lake_floor(e, edge):
-    """A lake's line (the edge-lake search above) can raise a creek's water estimate, never lower it below NHD's class:
-    where it would, the reach reads as it did with no segment, in each pass before the two are weighed below. (Applied
-    only after weighing, a low estimate from the lake made the other pass's estimate look higher and win: four creeks
-    off Ticonderoga, perennial on NHD, went from "no data" to "usually flows" from the Poultney, 46-59 -> 34-40.)"""
-    low_ = FROM_LAKE.get(edge, np.zeros(len(s), bool)) & (eff(e) < nhd - 1e-9).values
-    if low_.any():
-        e = e.copy()
-        e.loc[low_] = evidence(box_df.assign(comid=np.nan, flow_src="none"), box_div).loc[low_, e.columns]
-    return e
+def floor_of(e):
+    """(water term after NHD's floor, why it was lifted: 'perennial', 'inherited', 'dam', or None) for the reaches of
+    flow evidence e. Only estimates are lifted: not a reach in a lake, nor one with no estimate."""
+    f = nhd.values
+    why = np.where(s.flow.eq("perennial").values, "perennial", np.where(e.flow_src.eq("scaled").values, "inherited",
+                                                                        np.where(held, "dam", "")))
+    lift = (e.water_class.isin(["mostly dry", "seasonal", "usually flows", "year-round"]).values
+            & (e.water.values < f - 1e-9) & (why != ""))
+    return np.where(lift, f, e.water.values), np.where(lift, why, None)
 
 
-ev = lake_floor(ev, False)
+def eff(e):
+    """The water term scoring.py starts from: the estimate after NHD's floor, NHD's class where there is none."""
+    has_ = e.water_class.fillna("no data").ne("no data") & e.water.notna()
+    return pd.Series(floor_of(e)[0], index=e.index).where(has_, nhd)
+
+
 if (area_edge != area_box).any():
     # With the water from other boxes. Where that would lower a reach's water estimate, keep the old one: the drop
     # comes from the model now matching a creek it didn't before, or a side creek inheriting a different segment,
     # not from evidence that the creek dries (Dry Creek by the Sespe box edge, where trout were found: perennial on
-    # NHD, 38 % of summers in the model). Possible trout water stays in until the evidence is near-certain.
-    ev_edge = lake_floor(evidence(*segments(area_edge, edge=True)), True)
+    # NHD, 38 % of summers in the model). Possible trout water stays in until the evidence is near-certain. The two
+    # are weighed after NHD's floor: before it, a low estimate from a lake's line made the other pass's estimate look
+    # higher and win (four creeks off Ticonderoga, perennial on NHD, 46-59 -> 34-40, 2026-11-20).
+    ev_edge = evidence(*segments(area_edge, edge=True))
     keep = (eff(ev_edge) < eff(ev) - 1e-9).values
     # ... but only an old estimate that is about this creek. Below a pond the box's own area starts again from
     # nothing, so the old estimate there is whatever small line happened to match it: the Pachaug River inside
@@ -568,29 +588,10 @@ if (area_edge != area_box).any():
         ev_edge[c_] = ev_edge[c_].where(~keep, ev[c_])
     ev = ev_edge
     across = np.where(keep, ACROSS[False], ACROSS[True])
-    via_final = np.where(keep, VIA[False], VIA.get(True, VIA[False]))
-# A segment found in the box a creek runs on into may raise its water estimate, never lower it below what the map had
-# for it (NHD's class, as "no data"): as with the area from other boxes above, a side creek inheriting a segment further
-# down is no evidence that it dries. In ne_ct (2026-11-19) Smith and Skinner brooks, trout water NHD calls perennial,
-# would have gone to "usually flows" (fish 59 -> 45 and 58 -> 37). Possible trout water stays in until the evidence is
-# near-certain.
 far = pd.Series(across, index=s.index).where(ev.flow_src.eq("scaled").values)
-lower = (far.notna() & (eff(ev) < nhd - 1e-9)).values
-if lower.any():
-    ev.loc[lower] = evidence(box_df.assign(comid=np.nan, flow_src="none"), box_div).loc[lower]
-    far[lower] = None
-if far.notna().any() or lower.any():
+if far.notna().any():
     print(f"creeks whose way leaves this box with no modelled reach below them here, scaled from one in the box they "
-          f"run on into: {int(far.notna().sum())} ({', '.join(f'{b} {n}' for b, n in far.value_counts().items())}); "
-          f"{int(lower.sum())} more keep NHD's class, which that segment would lower")
-# The same for a segment found down a way that went through a lake (on from the cell below its outlet): a creek running
-# into a pond inherits the river below it, which is no evidence that the creek itself dries (Partridge Brook and three
-# more brooks above ponds in north-east Connecticut, 2026-11-20). Possible trout water stays in.
-via_final = globals().get("via_final", VIA[False])
-lk2 = (pd.Series(via_final, index=s.index) & ev.flow_src.eq("scaled") & (eff(ev) < nhd - 1e-9)).values
-if lk2.any():
-    ev.loc[lk2] = evidence(box_df.assign(comid=np.nan, flow_src="none"), box_div).loc[lk2]
-print(f"creeks scaled from a segment found through a lake that keep NHD's class, which it would lower: {int(lk2.sum())}")
+          f"run on into: {int(far.notna().sum())} ({', '.join(f'{b} {n}' for b, n in far.value_counts().items())})")
 for b in sorted(STALE):
     print(f"NOTE: {out_dir(b)}/area_streams.csv doesn't list {b}'s current reaches, so creeks running on into {b} were "
           f"matched there on that box's own drainage areas: run 05b_flow.py for {REGION} again after 05c_drainages.py "
@@ -636,6 +637,17 @@ on_ = ev.comid.map(dam).fillna("").str.startswith("in:").values & ev.flow_src.eq
 if on_.any():
     print(f"reaches outside a lake on a model line that runs mostly through it, read as creeks: {int(on_.sum())} "
           f"({int(ev.below_dam[on_].notna().sum())} of them below the lake)")
+# NHD's floor (above), on the evidence each reach ends with: water_floor says why a reach was lifted and model_class
+# what the model said (the cfs and summers flowing stay the model's)
+w_, why_ = floor_of(ev)
+lift_ = pd.notna(why_)
+ev["model_class"] = ev.water_class.where(lift_)
+ev["water_floor"] = why_
+ev["water"] = np.round(w_, 2)
+ev.loc[lift_, "water_class"] = pd.cut(w_[lift_], [-1, 0.24, 0.525, 0.8575, 1.0],
+                                      labels=["mostly dry", "seasonal", "usually flows", "year-round"]).astype(str)
+print("reaches NHD's class lifts: " + ", ".join(f"{k} {n}" for k, n in pd.Series(why_[lift_]).value_counts().items())
+      + f" (of them to a wetter class than the model's: {int((lift_ & (ev.model_class != ev.water_class)).sum())})")
 # ---- evidence for creeks the model rates flowing that are dry most summers (scoring.py's water (1) and (2)) ----
 # The channel's late-summer greenness (02g_greenness.py's rasters, where the area has the late_summer_green source)
 # and the record of a USGS gauge on the reach's own creek (flowlib.gauge_record). scoring.py decides, one-sided: it
@@ -677,7 +689,7 @@ if miss.any():      # drops on channels below the 1 km2 map floor: match the mod
     m["flow_src"] = np.where(m.comid.notna(), "model", "none")
     m["pt"] = m.geometry.values
     m["inside"] = m.index.isin(gpd.sjoin(m[["geometry"]], wbd_[["geometry"]], predicate="within").index) if len(wb_) else False
-    kpe.loc[miss, cols] = evidence(m, box_div)[cols].values
+    kpe.loc[miss, cols] = evidence(m, box_div).reindex(columns=cols).values
 pd.concat([kp[["did"]], kpe], axis=1).to_csv(f"{OUT}/flow_drops.csv", index=False)
 
 print(LABEL, "| reaches", len(s), "| source", ev.flow_src.value_counts().to_dict())

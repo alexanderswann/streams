@@ -510,7 +510,7 @@ CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn
            "cpad_access"]
 FLOWC = ["water_class", "dry_cfs", "dry_cfs_drought", "flow_years", "flow_src", "below_dam",   # 05b_flow.py
          "below_div", "div_share", "div_years", "gauge_name", "gauge_share", "gauge_years", "green_p90",
-         "water_by_gauge", "water_rule"]                                                     # (the last two: scoring.py)
+         "model_class", "water_floor", "water_by_gauge", "water_rule"]                       # (the last two: scoring.py)
 for c_ in CONTEXT + FLOWC:   # older context files may lack a column
     if c_ not in s_ll:
         s_ll[c_] = None
@@ -628,10 +628,27 @@ def gauge_label(name):
     return out + (f", {st}" if st else "")
 
 
+# the flow model sees creeks dry up (TNC's monthly natural flows); NHDPlus's mean flow, scaled by the gauges' years,
+# doesn't: there a creek of the right size reads year-round whatever it does in a dry summer, so NHD's doubt goes beside it
+FLOW_DRIES = has("tnc_flows")
+
+
+def water_word(w):
+    """The flow class a water term stands for (flowlib.water_term's limits on the share of summers flowing)."""
+    return "mostly dry" if w <= 0.24 else "seasonal" if w <= 0.525 else "usually flows" if w <= 0.8575 else "year-round"
+
+
 def summer_flow(r):
-    """Popup line from the flow model (05b_flow.py): class, typical / drought-year low flow, share of summers flowing.
+    """Popup line from the flow model (05b_flow.py) and the rules scoring.py applies to it: the class, why a rule set
+    it where one did, the model's typical / drought-year low flow and share of summers flowing, and NHD's class.
     Below a gauged diversion, the record of the USGS gauge below it too; where the score uses it, it comes first."""
     c = r.water_class
+    rule = r.water_rule if isinstance(r.water_rule, str) else ""
+    if rule == "no estimate":
+        nhd = {"unmapped": "doesn't map", "other": "gives no flow class"}.get(r.flow, f"maps {r.flow}")
+        return (f"no flow estimate: the {LBL['flow']} has no line on this creek or below it on the map, so the score "
+                f"takes what the map's other creeks of its size that NHD {nhd} mostly read, or NHD's class where that "
+                f"says more: {water_word(r.water_term)} · NHD: {r.flow}")
     if not isinstance(c, str) or c == "no data":
         return ""
     dam = r.below_dam if isinstance(r.below_dam, str) else ""
@@ -650,25 +667,43 @@ def summer_flow(r):
     if gauge and r.water_by_gauge == True:
         return (f"{c} · {gauge}, which the score uses · the {src}, which can't see the diversion: " + ", ".join(bits)
                 + f" · NHD: {r.flow}")
-    # scoring.py's water (1) and (2): a gauge on this creek, or a bare channel in late summer, overrides the model
-    if r.water_rule == "gauge" and pd.notna(r.gauge_share):
+    # scoring.py's water (1) and (2): a gauge on this creek, or a creek bare in late summer, overrides the model
+    if rule == "gauge" and pd.notna(r.gauge_share):
         return (f"{c} · the USGS gauge on this creek ({gauge_label(r.gauge_name)}) kept flowing {r.gauge_share:.0%} of "
                 f"summers in {r.gauge_years}, which the score uses · the {src}: " + ", ".join(bits) + f" · NHD: {r.flow}")
-    if r.water_rule == "bare channel":
+    if rule == "bare channel":
         nhd = {"unmapped": "doesn't map it as a stream"}.get(r.flow, f"maps it {r.flow}")
-        return (f"{c} · likely dry most summers: no green along the channel in late summer (satellite, 2022–24), and "
-                f"NHD {nhd}; the score takes it as seasonal · the {src} said: " + ", ".join(bits))
+        return (f"{c} · likely dry most summers: no green along the channel in late summer anywhere on this creek between "
+                f"its confluences (satellite, 2022–24), and NHD {nhd}; the score takes it as seasonal · the {src} said: "
+                + ", ".join(bits))
     # scoring.py's water (3): a tailwater, which its dam's releases keep flowing
-    if r.water_rule == "tailwater releases":
+    if rule == "tailwater releases":
         tw = r.tailwater if isinstance(getattr(r, "tailwater", None), str) else "the dam"
         return (f"{c} · below {tw}: its releases keep it flowing every summer, which the score uses · the {src}, "
                 f"which sees only the natural flow, said: " + ", ".join(bits) + f" · NHD: {r.flow}")
-    # scoring.py's water (4): below a lake or dam the model's figure is the creek's own ground, a floor
-    if r.water_rule == "below a dam":
-        return (f"{c} · most of this creek's drainage lies above a lake or dam, and the {src} counts only its own "
-                f"ground below it (" + ", ".join(bits) + f"), which leaves out what seeps, spills or is released: the "
-                f"score takes NHD's class · NHD: {r.flow}")
-    return (" · ".join([c] + bits) + f" ({src})" + (f" · below {dam}: releases set the flow" if dam else "")
+    # scoring.py's water (5): trout found here
+    if rule == "trout record":
+        return (f"{c} · trout were found here, so it holds water most summers, whatever the model says · the {src}: "
+                + ", ".join(bits) + f" · NHD: {r.flow}")
+    # 05b_flow.py's floor: NHD's class where the estimate isn't about this creek's own water, or NHD maps it perennial
+    # (said where it changed the class; within a class it only moved the score)
+    if rule == "NHD class" and isinstance(r.model_class, str) and r.model_class != c:
+        mc = r.model_class
+        if r.water_floor == "dam":
+            return (f"{c} · most of this creek's drainage lies above a lake or dam, and the {src} counts only its own "
+                    f"ground below it (" + ", ".join(bits) + f"), which leaves out what seeps, spills or is released: "
+                    f"the map takes NHD's class · NHD: {r.flow}")
+        nhd = {"unmapped": "NHD has no line along it", "other": "NHD gives its line no flow class"}.get(r.flow,
+                                                                                                  f"NHD maps it {r.flow}")
+        why = ("NHD maps it perennial, and a creek NHD maps perennial is never shown drier" if r.water_floor == "perennial"
+               else f"{nhd}, and an estimate scaled from another creek doesn't put a creek below what the map gives that")
+        return (f"{c} · {why}: the {src}{',' if r.flow_src == 'scaled' else ''} had it {mc} (" + ", ".join(bits)
+                + f") · NHD: {r.flow}")
+    doubt = ""
+    if not FLOW_DRIES and c in ("year-round", "usually flows") and r.flow in ("intermittent", "ephemeral", "unmapped"):
+        doubt = (" (" + ("no NHD stream line along it" if r.flow == "unmapped" else f"NHD maps it {r.flow}")
+                 + ": NHDPlus's mean flow can't see a creek drying, so it may stop flowing in a dry summer)")
+    return (" · ".join([c + doubt] + bits) + f" ({src})" + (f" · below {dam}: releases set the flow" if dam else "")
             + (f" · {gauge}" if gauge else "") + f" · NHD: {r.flow}")
 
 

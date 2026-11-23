@@ -2,31 +2,35 @@
 
 fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0.25 remoteness) x burn x trout x heat
                      x channel
-  water      dry-season flow from the TNC Natural Flows model (02b_download_flow.py, 05b_flow.py): 0.05 + 0.95 x the
-             share of years since 2011 the reach kept >= 0.1 cfs through July-October; 0.3 in a reservoir. Where the
-             model has no data, the NHD flow class: perennial 1.0, intermittent 0.35, unmapped 0.15, ephemeral 0.05.
-             Below a gauged diversion (flowlib.DIVERSIONS) the model can't see the water leave in a canal. Where the
-             USGS gauge just below kept flowing in under half of 5+ summers since 2011, and no trout are known on the
-             reach, the gauge's share replaces the model's (today only the San Jacinto River near San Jacinto).
-             Creeks the model rates flowing that are dry most summers (2026-11-20; on the gauges of all 12 areas, 31 of
-             LA's 53 gauged creeks dry most summers were rated usually flows / year-round). One-sided, as the user put
-             it: "id rather rate a dry creek as year round than a year round creek as dry". (1) A bare channel: where
-             the model's typical summer low is under DRY_MARGINAL_CFS (there it can't tell: 25 of 31 such gauged LA
-             creeks are dry most summers), the channel shows no green in late summer (Sentinel-2, 02g_greenness.py:
-             under GREEN_BARE in the median summer and GREEN_BARE_ANY_YEAR in every one, and no strip greener than the
-             slopes around), NHD maps it intermittent, ephemeral or not at all, and there's no trout record, dam,
-             tailwater, open water or fire since GREEN_BURN_SINCE: "seasonal" (GREEN_SEASONAL), never lower. Every
-             gauged creek there that flows has a green channel (0.67-0.86). (2) A USGS gauge on the reach's own creek
-             (5+ summers since 2011, within flowlib.GAUGE_KM on its model line, 2/3-1.5 x its drainage; not a canal):
+  water      dry-season flow from the flow model (02b_download_flow.py, 05b_flow.py: TNC's natural flows in California,
+             elsewhere NHDPlus's mean flow scaled by the area's gauges): 0.05 + 0.95 x the share of years since 2011 the
+             reach kept >= 0.1 cfs through July-October; 0.3 in a reservoir. 05b_flow.py takes NHD's class as a floor
+             where the estimate isn't about the creek's own water (inherited from another creek, or leaving out the
+             water from above a dam), valued as where there's no estimate (perennial 1.0, intermittent 0.35, a line NHD
+             gives no class 0.3, no NHD line 0.15, ephemeral 0.05), and lifts every creek NHD maps perennial to
+             year-round (water_floor). Where the model has no estimate (no line on the creek or below it on the map):
+             what the area's creeks like it read (typical_water: the same NHD label, a similar drainage), never below
+             NHD's class. Then, in order, as the user put it: "id rather rate a dry creek as year round than a year
+             round creek as dry" (2026-11-20), so only (1), (2) and (4) lower, each on evidence:
+             (1) A bare channel, decided for each creek between confluences (creeks()): a reach passes where the
+             model's typical summer low is under DRY_MARGINAL_CFS (there it can't tell: 25 of 31 such gauged LA creeks
+             are dry most summers), the channel shows no green in late summer (Sentinel-2, 02g_greenness.py: under
+             GREEN_BARE in the median summer and GREEN_BARE_ANY_YEAR in every one, and no strip greener than the slopes
+             around), NHD maps it intermittent, ephemeral or not at all, and there's no trout record, dam, tailwater,
+             open water or fire since GREEN_BURN_SINCE. A creek whose reaches all pass, or are read mostly dry by the
+             model already, and none of which shows water (a trout record, a dam or tailwater, NHD perennial, open
+             water, a channel GREEN_WET or greener: every flowing gauged creek in the test read 0.67-0.86), reads
+             "seasonal" (GREEN_SEASONAL), never lower. (2) A USGS gauge on the reach's own creek (5+
+             summers since 2011, within flowlib.GAUGE_KM on its model line, 2/3-1.5 x its drainage; not a canal):
              0.05 + 0.95 x its share of summers flowing. It raises a reach anywhere (Piru Creek below Pyramid Dam flows
              every summer on its releases), and lowers one only at or below the gauge and where no trout are known on
              the creek it stands for. (3) A tailwater (TAILWATERS) with no gauge record on the reach: full, since its
-             dam's releases keep it flowing every summer, which the natural-flow model can't see. (4) Below a lake or
-             dam that holds at least DAM_HELD of a reach's drainage (where the flows are natural flows: LA), the
-             model's figure is for the creek's own ground below it, since 05b_flow.py leaves the water from above a
-             dam out. That is a floor (what seeps, spills or is released comes on top), not evidence that the creek
-             dries, so it doesn't put the reach below NHD's class: perennial 1.0, intermittent 0.35. A gauge record on
-             the reach (2) still stands, and so does a channel bare in late summer (the greenness test of (1))
+             dam's releases keep it flowing every summer, which the natural-flow model can't see. (4) Below a gauged
+             diversion (flowlib.DIVERSIONS) the model can't see the water leave in a canal: where the USGS gauge just
+             below kept flowing in under half of 5+ summers since 2011, and no trout are known on the reach, the gauge's
+             share replaces the model's (today only the San Jacinto River near San Jacinto). (5) A trout record (trout
+             found in the last 10 years, no later survey finding none): at least "usually flows" (TROUT_WATER), since
+             trout there mean water most summers
   size       drainage area, log scale: 1 km^2 -> 0, 50+ km^2 -> 1. The full area (05c_drainages.py, area_streams.csv):
              with what flows in from neighbouring boxes and from above reservoirs, which each box's DEM routing
              misses (a creek crossing in from the next box, or leaving a dam, started again near nothing). A side
@@ -148,8 +152,13 @@ GREEN_STRIP = 0.2              # a channel this much greener than the slopes aro
                                # palms: 0.31; it flows every summer)
 GREEN_BURN_SINCE = 2018        # a fire strips the riparian green for years: not read where the reach burned since
 GREEN_SEASONAL = 0.35          # a bare channel's water term: "seasonal", as NHD's intermittent, never lower
-DAM_HELD = 0.5                 # water (4): a lake or dam holds this share of a reach's drainage or more (as
-                               # flowlib.below_dam_comids follows a reservoir down while it controls half the drainage)
+GREEN_WET = 0.67               # a channel as green as this in late summer shows water: every gauged creek in the
+                               # marginal zone that flows most summers read 0.67-0.86 (2026-11-20)
+BARE_SHARE = 1.0               # (1) a creek between confluences reads dry most summers where this share of its length is
+                               # bare or read mostly dry (all of it: lowering a stretch that fails the test is not near-certain)
+CREEK_RATIO = 0.8              # reaches carrying within this ratio of each other's drainage are one creek between
+                               # confluences (no tributary of a quarter or more joins): the pairs of the audit's jump test
+TROUT_WATER = 0.69             # (5) a trout record's floor: "usually flows", the middle of its range (50-85 % of summers)
 # Thermal term: estimated July-August daytime water temperature (watertemp.py), C. Trout feed and grow well up to
 # about 20 C and can't hold out in water that stays at 25 C. On LA's trout records (1,566 reaches) this gives the same
 # mean credit as the 700-2300 m elevation band it replaced (0.91), and none of them zero
@@ -233,20 +242,110 @@ def heat_factor(s):
     return np.where(trout_signs(s)[0] | s.trout_water.notna() | below | air.isna(), 1.0, f)
 
 
+def creeks(s):
+    """Each reach's creek between confluences (an id): reaches joined end to end where the smaller carries at least
+    CREEK_RATIO of the larger's drainage, so no tributary of a quarter or more of it joins between them (the pairs the
+    audit's test of sudden changes along a creek looks at). A reach lying in a lake joins none. The reach below
+    another is the one whose first point is its last (the confluence cell belongs to the reach below); at a box edge,
+    the nearest other reach within 15 m of its end that doesn't end there itself."""
+    import shapely
+    from config import CRS
+    g = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(CRS).values
+    first, last = shapely.get_point(g, 0), shapely.get_point(g, -1)
+    t_first, t_line = shapely.STRtree(first), shapely.STRtree(g)
+    km2 = num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float)
+    lake = (s["water_class"].astype(str).eq("reservoir") if "water_class" in s else pd.Series(False, index=s.index)).to_numpy()
+    parent = np.arange(len(s))
+
+    def root(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(len(s)):
+        c = [j for j in t_first.query(last[i], predicate="dwithin", distance=1.0) if j != i]
+        if not c:
+            c = [j for j in t_line.query(last[i], predicate="dwithin", distance=15.0)
+                 if j != i and shapely.distance(last[j], last[i]) > 1.0]
+            c = sorted(c, key=lambda j: shapely.distance(g[j], last[i]))[:1]
+        if not c:
+            continue
+        j = max(c, key=lambda j_: km2[j_])
+        lo, hi = sorted((km2[i], km2[j]))
+        if lake[i] == lake[j] and hi > 0 and lo / hi >= CREEK_RATIO:
+            a, b = root(i), root(j)
+            if a != b:
+                parent[a] = b
+    return pd.Series([root(i) for i in range(len(s))], index=s.index)
+
+
+def typical_water(s, cls, water):
+    """For each reach with no flow estimate: the median water term of the area's reaches that have one, with the same
+    NHD label and a drainage within a factor of 2 (4, then any size, where under 20 such reaches); 0.5 where there are
+    none at all. A failed look-up is no evidence about the creek, so it scores as the area's creeks like it."""
+    out = pd.Series(np.nan, index=s.index)
+    km2 = np.log(np.clip(num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float), 0.01, None))
+    has_ = cls.isin(["mostly dry", "seasonal", "usually flows", "year-round"]).to_numpy() & water.notna().to_numpy()
+    lab = s.flow.fillna("unmapped").to_numpy()
+    for f in np.unique(lab[cls.eq("no data").to_numpy()]):
+        peer = has_ & (lab == f)
+        order = np.argsort(km2[peer])
+        pa, pw = km2[peer][order], water.to_numpy(float)[peer][order]
+        for i in np.flatnonzero(cls.eq("no data").to_numpy() & (lab == f)):
+            for w in (np.log(2), np.log(4), np.inf):
+                lo, hi = np.searchsorted(pa, km2[i] - w), np.searchsorted(pa, km2[i] + w, side="right")
+                if hi - lo >= 20 or (w == np.inf and hi > lo):
+                    out.iat[i] = float(np.median(pw[lo:hi]))
+                    break
+    return out.fillna(0.5)
+
+
 def score(s):
     nhd_water = s.flow.map({"perennial": 1.0, "intermittent": 0.35, "unmapped": 0.15, "ephemeral": 0.05}).fillna(0.3)
     cls = s["water_class"].fillna("no data") if "water_class" in s else pd.Series("no data", index=s.index)
-    water = num(s, "water").where(cls.ne("no data"), nhd_water)      # the flow model, else the NHD class
+    water = num(s, "water")
+    cls2, rule = cls.copy(), pd.Series("", index=s.index)
+    # (0) 05b_flow.py's floor: an estimate inherited from another creek, or one that leaves out the water from above a
+    # dam, never puts a reach below NHD's class, and NHD-perennial creeks read year-round (water_floor says why)
+    fl = s["water_floor"] if "water_floor" in s else pd.Series(None, index=s.index, dtype=object)
+    rule[fl.notna() & cls.ne("no data")] = "NHD class"
+    # no flow estimate (the model has no line on the creek or below it on the map): the area's creeks like it, never
+    # below NHD's class
+    no_est = cls.eq("no data") | water.isna()
+    if no_est.any():
+        water = water.where(~no_est, np.fmax(typical_water(s, cls, water), nhd_water))
+        rule[no_est] = "no estimate"
     # creeks the model rates flowing that are dry most summers (module docstring, water (1) and (2)); 05b_flow.py
     # writes the evidence: green_* (the channel's late-summer greenness) and gauge_* (a gauge on the creek)
     pos = trout_signs(s)[0] | s.trout_water.notna()
-    cls2, rule = cls.copy(), pd.Series("", index=s.index)
     green, src = num(s, "green_p90"), s["flow_src"] if "flow_src" in s else pd.Series("", index=s.index)
-    bare = (cls.isin(["year-round", "usually flows", "seasonal"]) & (num(s, "dry_cfs") < DRY_MARGINAL_CFS)
-            & (green < GREEN_BARE) & (num(s, "green_p90_max") < GREEN_BARE_ANY_YEAR)
-            & (green - num(s, "green_sur") < GREEN_STRIP) & (num(s, "green_water").fillna(0) < 0.05)
-            & s.flow.isin(["intermittent", "ephemeral", "unmapped"]) & ~pos & dam_of(s).eq("") & tailwater(s).eq("")
-            & ~(num(s, "burn_year") >= GREEN_BURN_SINCE) & src.isin(["model", "scaled"]) & (water > GREEN_SEASONAL + 1e-9))
+    dam_tw = dam_of(s).ne("") | tailwater(s).ne("")
+    # (1) a bare channel, decided for each creek between confluences (creeks()): a reach passes where the model's low
+    # flow is marginal, the channel bare in late summer with no greener strip and no open water, NHD calls it no more
+    # than intermittent, and no trout record, dam, tailwater or fire since GREEN_BURN_SINCE is there; a creek reads
+    # "seasonal" where all of it passes or is read mostly dry by the model already, and none of it shows water: a trout
+    # record, a dam or tailwater, NHD perennial, open water, or a channel as green as the flowing gauged creeks'
+    # (GREEN_WET). Decided reach by reach (before 2026-11-22) the class flipped along one river: about twenty times on
+    # the Santa Clara, 207 sudden changes over 91 mi in LA (audit). A creek that passes on only part of its length keeps
+    # the model's class: a stretch with a riparian strip or a confidently flowing model reach isn't near-certainly dry
+    passes = ((num(s, "dry_cfs") < DRY_MARGINAL_CFS) & (green < GREEN_BARE) & (num(s, "green_p90_max") < GREEN_BARE_ANY_YEAR)
+              & (green - num(s, "green_sur") < GREEN_STRIP) & (num(s, "green_water").fillna(0) < 0.05)
+              & s.flow.isin(["intermittent", "ephemeral", "unmapped"]) & ~pos & ~dam_tw
+              & ~(num(s, "burn_year") >= GREEN_BURN_SINCE) & src.isin(["model", "scaled"])
+              & cls.isin(["year-round", "usually flows", "seasonal"]))
+    if green.notna().any():
+        ck = creeks(s)
+        creek = cls.ne("reservoir")
+        L = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(__import__("config").CRS).length.to_numpy()
+        dry_len = pd.Series(L * (passes | cls.eq("mostly dry")).to_numpy() * creek.to_numpy(), index=s.index).groupby(ck).sum()
+        all_len = pd.Series(L * creek.to_numpy(), index=s.index).groupby(ck).sum()
+        shows = (pos | dam_tw | s.flow.eq("perennial") | (num(s, "green_water").fillna(0) >= 0.05) | (green >= GREEN_WET))
+        veto = (shows & creek).groupby(ck).any()
+        bare = (ck.map(dry_len / all_len.where(all_len > 0)) >= BARE_SHARE - 1e-6) & ~ck.map(veto).astype(bool) & creek
+        bare &= cls.isin(["year-round", "usually flows", "seasonal"]) & src.isin(["model", "scaled"]) & (water > GREEN_SEASONAL + 1e-9)
+    else:
+        bare = pd.Series(False, index=s.index)
     water, cls2[bare], rule[bare] = water.where(~bare, GREEN_SEASONAL), "seasonal", "bare channel"
     gsh = num(s, "gauge_share")
     gwt = 0.05 + 0.95 * gsh
@@ -265,30 +364,17 @@ def score(s):
     tw_up = tailwater(s).ne("") & (water < 1.0) & ~rec
     water = water.where(~tw_up, 1.0)
     cls2[tw_up], rule[tw_up] = "year-round", "tailwater releases"
-    # (4) below a lake or dam that holds most of a creek's drainage, the natural-flow figure is for the creek's own
-    # ground below it (05b_flow.py scales the model's flow by the drainage without the water from above dams: a dam can
-    # hold it back). That is the least that runs there, not evidence that the creek dries: seepage, spills and releases
-    # come on top, and a natural lake passes its water on. So it doesn't put a reach below NHD's class. Willow Creek
-    # below Lake Arrowhead, intermittent on NHD and green along its channel in late summer, went from seasonal to
-    # mostly dry (fish 33-39 -> 3-11) when the routing stopped counting the lake's shores as its own ground
-    # (03b_stitch.route_lake, 2026-11-21); Bear Creek below Big Bear Dam (trout water, perennial on NHD) read seasonal on
-    # 4 km2 of its 193. Not where a gauge on the reach has a record (2), nor where the channel is bare in late summer
-    # (the greenness test of (1)): those are evidence. Only where the flows are natural flows (LA): elsewhere the
-    # flow table has the dams in it and 05b scales by the full drainage.
-    held = (num(s, "area_full_km2") - num(s, "area_edge_km2")) >= DAM_HELD * num(s, "area_full_km2")
-    bare_ch = ((green < GREEN_BARE) & (num(s, "green_p90_max") < GREEN_BARE_ANY_YEAR)
-               & (green - num(s, "green_sur") < GREEN_STRIP))
-    dam_up = (has("tnc_flows") & held & cls.isin(["mostly dry", "seasonal", "usually flows", "year-round"])
-              & (water < nhd_water - 1e-9) & gsh.isna() & ~tw_up & ~bare_ch & ~bare)
-    water = water.where(~dam_up, nhd_water)
-    cls2[dam_up] = pd.cut(nhd_water[dam_up], [-1, 0.24, 0.525, 0.8575, 1.0],
-                          labels=["mostly dry", "seasonal", "usually flows", "year-round"]).astype(str)
-    rule[dam_up] = "below a dam"
-    # below a gauged diversion the model can't see the canal: where the gauge just below kept flowing in under half
+    # (4) below a gauged diversion the model can't see the canal: where the gauge just below kept flowing in under half
     # its summers since 2011 (05b_flow.py's div_water) and no trout are known here, its record is the water term
     gw = num(s, "div_water")
     by_gauge = (gw < 0.5) & ~(trout_signs(s)[0] | s.trout_water.notna())
     water = water.where(~by_gauge, 0.05 + 0.95 * gw)
+    # (5) a trout record: trout found since THIS_YEAR - 10 with no later survey finding none (trout_signs) means water
+    # most summers, whatever the model says: at least "usually flows". In LA 81 such reaches (53 mi) read mostly dry or
+    # seasonal (Arroyo Trabuco: "mostly dry, 0.0 cfs"; audit, 2026-11-22). Nothing above lowers such a reach.
+    tr = trout_signs(s)[0] & cls.ne("reservoir") & (water < TROUT_WATER - 1e-9)
+    water = water.where(~tr, TROUT_WATER)
+    cls2[tr], rule[tr] = "usually flows", "trout record"
     # a side channel of a river (05_score.py's side_of) is sized as the river beside it (river_km2): D8 sends a split
     # river's water down one arm, and the other arm's own few km2 say nothing of the water in it
     big = np.fmax(num(s, "area_full_km2").fillna(s.area_km2), num(s, "river_km2").fillna(0))
@@ -321,9 +407,9 @@ def score(s):
     burn = burn_factor(year, sev)
     trout, heat, chan = trout_factor(s), heat_factor(s), channel_factor(s)
     s = s.copy()
-    changed = rule.ne("")
+    changed = rule.ne("") & rule.ne("no estimate") & rule.ne("NHD class")
     s.loc[changed, "water_class"] = cls2[changed]
-    s["water_rule"] = rule.where(changed & ~by_gauge, None)
+    s["water_rule"] = rule.where(rule.ne("") & ~by_gauge, None)
     s["water_by_gauge"] = by_gauge
     if by_gauge.any():
         s.loc[by_gauge, "water_class"] = np.where(gw[by_gauge] <= 0.2, "mostly dry", "seasonal")
