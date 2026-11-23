@@ -21,6 +21,7 @@ from rasterio.merge import merge
 from rasterio.enums import Resampling
 from scipy import ndimage
 from shapely.geometry import box, shape
+import netfetch
 
 os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
 os.environ.setdefault("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", ".tif")
@@ -38,12 +39,13 @@ NODATA = -9999.0
 def _get(url, **params):
     for attempt in range(5):
         try:
-            r = requests.get(url, params=params, headers=UA, timeout=180)
+            r = netfetch.get(url, params=params, headers=UA, timeout=180)
             if r.ok:
                 return r.json()
         except (requests.RequestException, ValueError):
             pass
-        time.sleep(5 * (attempt + 1))
+        if attempt < 4:
+            netfetch.wait(5 * (attempt + 1), url)
     raise RuntimeError(f"no answer from {url}")
 
 
@@ -58,25 +60,29 @@ def catalog(bounds_ll, cache):
     if os.path.exists(p) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p) < 30 * 86400:
         js = json.load(open(p))
     else:
-        w, s, e, n = bounds_ll
-        items, off = [], 0
-        while True:
-            d = _get(TNM, datasets="Digital Elevation Model (DEM) 1 meter", bbox=f"{w},{s},{e},{n}", max=500,
-                     offset=off, outputFormat="JSON")
-            items += d.get("items", [])
-            off += 500
-            if off >= d.get("total", 0):
-                break
-        wu = _get(WU, where="1=1", geometryType="esriGeometryEnvelope", spatialRel="esriSpatialRelIntersects",
-                  geometry=json.dumps(dict(xmin=w, ymin=s, xmax=e, ymax=n, spatialReference={"wkid": 4326})),
-                  outFields="workunit,project,collect_start,collect_end,ql", returnGeometry="true", outSR=4326,
-                  maxAllowableOffset=0.0005, f="geojson")
-        js = dict(tiles=[dict(title=x["title"], url=x["downloadURL"], bbox=x["boundingBox"], pub=x.get("publicationDate"))
-                         for x in items if x.get("downloadURL", "").endswith(".tif")],
-                  units=wu)
-        with open(p + ".tmp", "w") as f:
-            json.dump(js, f)
-        os.replace(p + ".tmp", p)
+        def refresh():     # (a refresh that fails keeps the earlier catalogue: a dated NOTE)
+            w, s, e, n = bounds_ll
+            items, off = [], 0
+            while True:
+                d = _get(TNM, datasets="Digital Elevation Model (DEM) 1 meter", bbox=f"{w},{s},{e},{n}", max=500,
+                         offset=off, outputFormat="JSON")
+                items += d.get("items", [])
+                off += 500
+                if off >= d.get("total", 0):
+                    break
+            wu = _get(WU, where="1=1", geometryType="esriGeometryEnvelope", spatialRel="esriSpatialRelIntersects",
+                      geometry=json.dumps(dict(xmin=w, ymin=s, xmax=e, ymax=n, spatialReference={"wkid": 4326})),
+                      outFields="workunit,project,collect_start,collect_end,ql", returnGeometry="true", outSR=4326,
+                      maxAllowableOffset=0.0005, f="geojson")
+            js = dict(tiles=[dict(title=x["title"], url=x["downloadURL"], bbox=x["boundingBox"], pub=x.get("publicationDate"))
+                             for x in items if x.get("downloadURL", "").endswith(".tif")],
+                      units=wu)
+            with open(p + ".tmp", "w") as f:
+                json.dump(js, f)
+            os.replace(p + ".tmp", p)
+            return js
+        js = netfetch.keep_old(p, refresh, "lidar catalogue")
+        js = json.load(open(p)) if js is None else js
     t = pd.DataFrame(js["tiles"])
     t["project"] = t.url.str.extract(r"/1m/Projects/([^/]+)/")[0]
     tiles = gpd.GeoDataFrame(t, geometry=[box(b["minX"], b["minY"], b["maxX"], b["maxY"]) for b in t.bbox], crs=4326)

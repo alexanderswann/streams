@@ -34,6 +34,7 @@ can't be reached; GNIS files are kept in data/raw/_national/gnis.
 import glob, io, json, os, re, time, zipfile, requests, shapely, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from config import *
 from geomatch import overpass, esri, UA
+import netfetch
 
 OUTF = f"{SHARED}/known_falls.gpkg"
 # the curated lists: known_falls_curated.csv and any known_falls_curated_<name>.csv beside it (gawaterfalls.com's
@@ -296,8 +297,7 @@ os.makedirs(GNIS_DIR, exist_ok=True)
 def gnis_file(name, url):
     p = f"{GNIS_DIR}/{name}"
     if not os.path.exists(p):
-        r = requests.get(url, headers=UA, timeout=300)
-        r.raise_for_status()
+        r = netfetch.fetch("GET", url, headers=UA, timeout=300)
         with open(p + ".tmp", "wb") as f:
             f.write(r.content)
         os.replace(p + ".tmp", p)
@@ -319,7 +319,7 @@ for st in STATES.get(AREA, ()):
                           sep="|", dtype=str, encoding="utf-8-sig")
         frames.append(old.rename(columns={"FEATURE_ID": "id", "FEATURE_NAME": "name", "FEATURE_CLASS": "cls",
                                           "PRIM_LAT_DEC": "lat", "PRIM_LONG_DEC": "lon"}))
-    except (requests.RequestException, OSError, zipfile.BadZipFile) as e:
+    except (requests.RequestException, RuntimeError, OSError, zipfile.BadZipFile) as e:
         print(f"NOTE: GNIS for {st} not available ({str(e)[:100]})")
     for g in frames:
         g = g[g.cls.isin(["Falls", "Rapids"])]
@@ -342,9 +342,8 @@ def wikidata():
       ?item wdt:P31/wdt:P279* ?cls . VALUES ?cls {{ wd:Q34038 wd:Q695793 wd:Q7658373 }}
       OPTIONAL {{ ?article schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> }}
       SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }} }}"""
-    r = requests.get("https://query.wikidata.org/sparql", params={"query": sparql, "format": "json"},
-                     headers={**UA, "Accept": "application/sparql-results+json"}, timeout=180)
-    r.raise_for_status()
+    r = netfetch.fetch("GET", "https://query.wikidata.org/sparql", params={"query": sparql, "format": "json"},
+                       headers={**UA, "Accept": "application/sparql-results+json"}, timeout=180)
     return r.json()["results"]["bindings"]
 seen_q = set()
 for x in cached(f"{SHARED}/wikidata_falls.json", 30, wikidata, "Wikidata falls") or []:

@@ -36,13 +36,15 @@ NODATA = -32768
 def search(bbox_ll, year):
     body = {"collections": ["sentinel-2-l2a"], "bbox": list(bbox_ll), "limit": 200,
             "datetime": f"{year}-08-15T00:00:00Z/{year}-09-30T23:59:59Z", "query": {"eo:cloud_cover": {"lt": 10}}}
+    import netfetch
     for k in range(5):
         try:
-            r = requests.post(STAC, json=body, timeout=90)
+            r = netfetch.post(STAC, json=body, timeout=90)
             r.raise_for_status()
             return r.json()["features"]
         except Exception:
-            time.sleep(5 * (k + 1))
+            if k < 4:
+                netfetch.wait(5 * (k + 1), STAC)
     raise RuntimeError(f"Earth Search: no answer for {bbox_ll} {year}")
 
 

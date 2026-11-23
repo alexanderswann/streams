@@ -39,39 +39,43 @@ os.makedirs(CACHE, exist_ok=True)
 
 
 def cached(name, fetch, days=CACHE_DAYS):
-    """fetch() result cached as JSON (OSM elements) or GeoJSON (GeoDataFrame) under data/raw/_shared/cache."""
+    """fetch() result cached as JSON (OSM elements) or GeoJSON (GeoDataFrame) under data/raw/_shared/cache. Written
+    through a temporary file, and only from a whole answer; when a refresh fails, the earlier copy is used (with a
+    dated NOTE, netfetch.keep_old)."""
     import json
+    import netfetch
     path = f"{CACHE}/{name}"
     fresh = os.path.exists(path) and time.time() - os.path.getmtime(path) < days * 86400 \
         and os.environ.get("REFRESH") != "1"
     if name.endswith(".json"):
         if fresh:
             return json.load(open(path))
-        out = fetch()
-        json.dump(out, open(path, "w"))
-        return out
+        def refresh():
+            out = fetch()
+            json.dump(out, open(path + ".tmp", "w"))
+            os.replace(path + ".tmp", path)
+            return out
+        out = netfetch.keep_old(path, refresh, f"{name} (trails)")
+        return json.load(open(path)) if out is None else out
     if fresh:
         return gpd.read_file(path)
-    out = fetch()
-    if len(out):
-        out.to_file(path, driver="GeoJSON")
-    return out
+    def refresh_gj():
+        out = fetch()
+        if len(out):
+            out.to_file(path + ".tmp", driver="GeoJSON")
+            os.replace(path + ".tmp", path)
+        return out
+    out = netfetch.keep_old(path, refresh_gj, f"{name} (trails)") if os.path.exists(path) else refresh_gj()
+    return gpd.read_file(path) if out is None else out
 
 
 def overpass(q):
-    for attempt in range(14):  # public Overpass servers 502/429 under load (and allow about two queries at once
-        # per address, so several ranges running side by side queue up); retry for ~25 min and alternate mirrors
-        url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
-        try:
-            # 20 s to connect (a dead mirror), and the query's own time limit plus a minute to answer
-            wait = int(m.group(1)) + 60 if (m := re.search(r"\[timeout:(\d+)\]", q)) else 900
-            r = requests.post(url, data={"data": q}, timeout=(20, wait), headers=UA)
-            if r.ok and "elements" in r.json():
-                return r.json()["elements"]
-        except (requests.RequestException, ValueError):
-            pass
-        time.sleep(min(30 * (attempt + 1), 120))
-    raise RuntimeError("Overpass failed")
+    """An Overpass query's elements (netfetch.overpass: the mirrors in turn; a timed-out answer is not taken)."""
+    import netfetch
+    return netfetch.overpass(q)
+
+
+import netfetch
 
 
 def esri_lines(url, bbox, fields):
@@ -80,7 +84,7 @@ def esri_lines(url, bbox, fields):
     while True:
         for attempt in range(4):
             try:
-                r = requests.get(f"{url}/query", headers=UA, timeout=300, params=dict(
+                r = netfetch.get(f"{url}/query", headers=UA, timeout=300, params=dict(
                     where="1=1", geometry=",".join(map(str, bbox)), geometryType="esriGeometryEnvelope", inSR=4326,
                     spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=4326, f="geojson",
                     resultOffset=off, resultRecordCount=1000))
@@ -89,7 +93,8 @@ def esri_lines(url, bbox, fields):
                     break
             except (requests.RequestException, ValueError):
                 js = {}
-            time.sleep(10 * (attempt + 1))
+            if attempt < 3:
+                netfetch.wait(10 * (attempt + 1), url)
         if "features" not in js:    # a server that is down is not a layer with nothing in the box: stop, don't return less
             raise RuntimeError(f"{url}: no usable answer after 4 tries ({str(js)[:200]})")
         batch = js["features"]

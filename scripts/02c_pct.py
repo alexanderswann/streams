@@ -22,18 +22,9 @@ rel._["route"="hiking"]->.r;
 .r out body;
 way(r.r)({S},{W},{N},{E});
 out geom;"""
-for attempt in range(6):  # public Overpass servers 502/429 under load; retry and alternate mirrors
-    url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
-    try:
-        r = requests.post(url, data={"data": q}, timeout=(20, 600),
-                          headers={"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"})
-        if r.ok:
-            break
-    except requests.RequestException:
-        pass
-    time.sleep(20 * (attempt + 1))
-r.raise_for_status()
-els = r.json()["elements"]
+import netfetch     # the public Overpass mirrors in turn; when they can't be read, the last good copy
+els = netfetch.last_good(f"overpass-trail-{netfetch.key(q)}", lambda: netfetch.overpass(q, tries=6, read=600),
+                         f"{NAME} (OpenStreetMap)")
 
 rels = [e for e in els if e["type"] == "relation"]
 section = {}

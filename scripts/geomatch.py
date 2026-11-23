@@ -3,50 +3,47 @@ queries, a relief test, and matching OSM lines to official lines."""
 import os, re, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from scipy.ndimage import maximum_filter, minimum_filter
 from config import EPSG, raw_dir
+import netfetch
 
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
 
 
 def overpass(q):
-    for attempt in range(14):  # public Overpass servers 502/429 under load (and allow about two queries at once
-        # per address, so several ranges running side by side queue up); retry for ~25 min and alternate mirrors
-        url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
-        try:
-            # 20 s to connect (a dead mirror), and the query's own time limit plus a minute to answer
-            wait = int(m.group(1)) + 60 if (m := re.search(r"\[timeout:(\d+)\]", q)) else 900
-            r = requests.post(url, data={"data": q}, timeout=(20, wait), headers=UA)
-            if r.ok and "elements" in r.json():
-                return r.json()["elements"]
-        except (requests.RequestException, ValueError):
-            pass
-        time.sleep(min(30 * (attempt + 1), 120))
-    raise RuntimeError("Overpass failed")
+    """An Overpass query's elements: the public mirrors in turn for up to ~25 min; an answer the server cut short
+    (a timed-out query) is not taken (netfetch.overpass)."""
+    return netfetch.overpass(q)
 
 
 def esri(url, bbox, fields, where="1=1"):
-    """All features of an ArcGIS layer in a lon/lat box (EPSG:4326 out), paging through the server's record limit."""
-    feats, off = [], 0
-    while True:
-        js = {}
-        for attempt in range(4):
-            try:
-                r = requests.get(f"{url}/query", headers=UA, timeout=300, params=dict(
-                    where=where, geometry=",".join(map(str, bbox)), geometryType="esriGeometryEnvelope", inSR=4326,
-                    spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=4326, f="geojson",
-                    resultOffset=off, resultRecordCount=1000))
-                js = r.json()
-                if "features" in js:
-                    break
-            except (requests.RequestException, ValueError):
-                js = {}
-            time.sleep(10 * (attempt + 1))
-        if "features" not in js:    # a server that is down is not a layer with nothing in the box: stop, don't return less
-            raise RuntimeError(f"{url}: no usable answer after 4 tries ({str(js)[:200]})")
-        batch = js["features"]
-        feats += [f for f in batch if f.get("geometry")]
-        if len(batch) < 1000 and not js.get("properties", {}).get("exceededTransferLimit"):
-            break
-        off += len(batch)
+    """All features of an ArcGIS layer in a lon/lat box (EPSG:4326 out), paging through the server's record limit.
+    A layer that can't be read is its last good copy (netfetch.py: a dated NOTE); one never read stops the step."""
+    def fetch():
+        feats, off = [], 0
+        while True:
+            js = {}
+            for attempt in range(4):
+                try:
+                    r = netfetch.get(f"{url}/query", headers=UA, timeout=300, params=dict(
+                        where=where, geometry=",".join(map(str, bbox)), geometryType="esriGeometryEnvelope", inSR=4326,
+                        spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=4326, f="geojson",
+                        resultOffset=off, resultRecordCount=1000))
+                    js = r.json()
+                    if "features" in js:
+                        break
+                except (requests.RequestException, ValueError):
+                    js = {}
+                if attempt < 3:
+                    netfetch.wait(10 * (attempt + 1), url)
+            if "features" not in js:    # a server that is down is not a layer with nothing in the box: stop, don't return less
+                raise RuntimeError(f"{url}: no usable answer after 4 tries ({str(js)[:200]})")
+            batch = js["features"]
+            feats += [f for f in batch if f.get("geometry")]
+            if len(batch) < 1000 and not js.get("properties", {}).get("exceededTransferLimit"):
+                break
+            off += len(batch)
+        return feats
+    feats = netfetch.last_good(f"esri-{netfetch.key(url, [float(v) for v in bbox], fields, where)}", fetch,
+                               re.sub(r".*/services/|/(?:Feature|Map)Server", "", url))
     return gpd.GeoDataFrame.from_features(feats, crs=4326) if feats else gpd.GeoDataFrame(geometry=[], crs=4326)
 
 
@@ -67,8 +64,8 @@ def wilderness_path():
     ext = json.load(open(ext_path)) if os.path.exists(ext_path) else None
     if not os.path.exists(path) or ext is None or not (ext[0] <= env[0] and ext[1] <= env[1] and ext[2] >= env[2]
                                                       and ext[3] >= env[3]):
-        js = requests.get("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_Wilderness_01/MapServer/0/query",
-                          headers=UA, timeout=300, params=dict(
+        js = netfetch.fetch("GET", "https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_Wilderness_01/MapServer/0/query",
+                            headers=UA, timeout=300, params=dict(
                               where="1=1", geometry=",".join(map(str, env)), geometryType="esriGeometryEnvelope",
                               inSR=4326, outSR=EPSG, outFields="WILDERNESSNAME", f="geojson")).json()
         w = gpd.GeoDataFrame.from_features(js["features"], crs=CRS)

@@ -127,6 +127,23 @@ profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes 0
 `mid_<area>.log` and `late_<area>.log`. Run long builds under `caffeinate -i` (a sleeping Mac froze two downloads).
 OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass server second.
 
+**Network drops** (2026-11-22, after two drops stalled a 12-map rebuild for 90 and 47 minutes). Every download goes
+through `scripts/netfetch.py`: 15 s to connect, the source's own read timeout, a hard limit on each attempt (a stuck DNS
+lookup or a server trickling bytes is cut too), and a breaker that stops asking a host (or the whole network) that
+didn't answer three (five) requests in a row, for two minutes. A download that still fails is read from its last good
+copy (`data/raw/<area>/_shared/netcache`, or the step's own cache file), with a dated `NOTE <area> <time>: ... using the
+last good copy, of <date>` in the log; where the map shows the data, its source wording says "(as of <date>)" (road
+closures' source and the closures date under the access lines, fire perimeters' source, trout records' labels, trout
+waters' designation, critical habitat, land layers, the debris-flow hazard). A server over its request limit that asks
+for a wait over two minutes (HTTP 429: the USGS Water Data API asked for 35) isn't waited for when there is a copy. A
+partial answer (a page that failed, an Overpass answer cut short by its server's time limit, an ArcGIS error sent as
+HTTP 200, a web page without its `</html>`) is never used or kept as a copy. Only a source with no copy at all fails its
+step: a road-closure feed too, so `run_late.sh` keeps the last whole closure list rather than one with a feed left out. The drivers run a failed step that downloads once more after `NET_PAUSE` s (120; a `RETRY` line in the log),
+and stop the area at a step that still fails (`FAILED`, then `== STOPPED`; `run_rebuild_a.sh` skips the mid and late
+steps after a failed routing step, the late ones after a failed `run_mid.sh`). `run_late.sh` still goes on without
+fresh closures or a new water-temperature fit, with its NOTE. Testing: `NET_FAIL=1` (or a regex of URLs) makes every
+download fail at once, as with no network; `NET_LOG=1` logs each request with its answer and time.
+
 ## Outputs (`output/la/`)
 Everything the maps, popups, creek profiles and GPX files show is in imperial units: feet, miles, square miles,
 acres and °F (flows in cfs), with scale bars and the measuring tool in feet and miles (owner's choice, 2026-11-19).
@@ -529,7 +546,7 @@ Re-run it if the official route changes (OSM follows the PCTA route, including r
   USFS trailhead recreation sites and USFS recreation pages marked "Trailhead" (with a link and the Forest Service's
   open / closed status: closed trailheads are greyed out); points within 150 m are merged, official names first.
 - The road and trail downloads are cached for a week in `data/raw/<area>/_shared/cache` (closures for a day); `REFRESH=1`
-  forces new downloads.
+  forces new downloads. A refresh that fails keeps the cached copy, with a dated NOTE (`netfetch.py`).
 
 **Map cartography** (`06_map.py` with `map_drainages.js` + `map_style.css`, inlined into the HTML):
 - Streams are coloured **by drainage**. Neighbouring drainages never share a hue, and forks are lighter or darker

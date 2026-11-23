@@ -29,6 +29,7 @@ Map attribution: (c) OpenStreetMap contributors (ODbL), USFS.
 import os, re, html, json, time, numpy as np, pandas as pd, geopandas as gpd, shapely
 from config import REGIONS, CRS, ROOT, SHARED, has, MIN_RELIEF_M
 from geomatch import overpass, esri, relief_at, follow, wilderness_path
+import netfetch
 
 EDW = "https://apps.fs.usda.gov/arcx/rest/services/EDW"
 TAGS = ["name", "ref", "highway", "service", "surface", "tracktype", "smoothness", "4wd_only", "access",
@@ -49,23 +50,33 @@ for key, (W, S, E, N) in boxes.items():
     if os.path.exists(cache_p) and time.time() - os.path.getmtime(cache_p) < 7 * 86400 and os.environ.get("REFRESH") != "1":
         els = json.load(open(cache_p))
     else:   # written only after a download: re-saving a cached copy made it look new, so it never turned a week old
-        els = overpass(f"""[out:json][timeout:600];
+        def dl(S=S, W=W, N=N, E=E):
+            els = overpass(f"""[out:json][timeout:600];
 (way["highway"~"^(primary|secondary|tertiary|unclassified|track)$"]({S},{W},{N},{E});
  way["highway"~"^(residential|service)$"]["surface"~"^(unpaved|gravel|fine_gravel|compacted|dirt|earth|ground|sand|rock)$"]({S},{W},{N},{E});
  way["highway"~"^(residential|service)$"]["tracktype"]({S},{W},{N},{E}););
 out geom;
 (nwr["amenity"="parking"]({S},{W},{N},{E}); node["highway"="trailhead"]({S},{W},{N},{E}););
 out center tags;""")
-        os.makedirs(f"{SHARED}/cache", exist_ok=True)
-        json.dump(els, open(cache_p + ".tmp", "w"))
-        os.replace(cache_p + ".tmp", cache_p)
+            os.makedirs(f"{SHARED}/cache", exist_ok=True)
+            json.dump(els, open(cache_p + ".tmp", "w"))
+            os.replace(cache_p + ".tmp", cache_p)
+            return els
+        # (when Overpass can't be reached the older download stays, with a dated NOTE: netfetch.keep_old)
+        els = netfetch.keep_old(cache_p, dl, f"OSM roads and parking ({key})")
+        els = json.load(open(cache_p)) if els is None else els
     # cycleways: a separate query (and cache) so the big one above stays cached
     cyc_p = f"{SHARED}/cache/access_osm_cycleway_{key}.json"
     if os.path.exists(cyc_p) and time.time() - os.path.getmtime(cyc_p) < 7 * 86400 and os.environ.get("REFRESH") != "1":
         cyc = json.load(open(cyc_p))
     else:
-        cyc = overpass(f'[out:json][timeout:300];way["highway"="cycleway"]({S},{W},{N},{E});out geom;')
-        json.dump(cyc, open(cyc_p, "w"))
+        def dl_cyc(S=S, W=W, N=N, E=E):
+            cyc = overpass(f'[out:json][timeout:300];way["highway"="cycleway"]({S},{W},{N},{E});out geom;')
+            json.dump(cyc, open(cyc_p + ".tmp", "w"))
+            os.replace(cyc_p + ".tmp", cyc_p)
+            return cyc
+        cyc = netfetch.keep_old(cyc_p, dl_cyc, f"OSM cycleways ({key})")
+        cyc = json.load(open(cyc_p)) if cyc is None else cyc
     els = els + cyc
     for e in els:
         t = e.get("tags", {})

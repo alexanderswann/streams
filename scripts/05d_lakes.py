@@ -29,6 +29,7 @@ Each attribute comes from the best source there is for it, and the sources are c
 Writes data/derived/<area>/_shared/lakes.gpkg (one row per lake, the area's CRS) and prints the cross-checks.
 """
 import os, re, json, time, requests, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
+import netfetch     # downloads fail fast; a refresh that fails keeps the earlier copy (a dated NOTE)
 from rasterio import features
 from rasterio.windows import from_bounds
 from shapely.geometry import box
@@ -631,12 +632,16 @@ p_osm = f"{CACHE}/osm_water.json"
 if os.path.exists(p_osm) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p_osm) < 7 * 86400:
     els = json.load(open(p_osm))
 else:
-    w_, s_, e_, n_ = boxes.to_crs(4326).total_bounds
-    els = overpass(f'[out:json][timeout:300];(way["natural"="water"]({s_},{w_},{n_},{e_});'
-                   f'way["landuse"="reservoir"]({s_},{w_},{n_},{e_}););out tags geom;')
-    with open(p_osm + ".tmp", "w") as f:
-        json.dump(els, f)
-    os.replace(p_osm + ".tmp", p_osm)
+    def osm_water():
+        w_, s_, e_, n_ = boxes.to_crs(4326).total_bounds
+        els = overpass(f'[out:json][timeout:300];(way["natural"="water"]({s_},{w_},{n_},{e_});'
+                       f'way["landuse"="reservoir"]({s_},{w_},{n_},{e_}););out tags geom;')
+        with open(p_osm + ".tmp", "w") as f:
+            json.dump(els, f)
+        os.replace(p_osm + ".tmp", p_osm)
+        return els
+    els = netfetch.keep_old(p_osm, osm_water, "OSM water")
+    els = json.load(open(p_osm)) if els is None else els
 NOT_LAKE = {"river", "stream", "canal", "ditch", "drain", "wastewater", "pool", "fountain", "moat", "lock", "stream_pool"}
 op = [(dict(e.get("tags", {}), osm_id=e.get("id")), shapely.Polygon([(p["lon"], p["lat"]) for p in e["geometry"]])) for e in els
       if e.get("geometry") and len(e["geometry"]) >= 4 and e["geometry"][0] == e["geometry"][-1]
@@ -831,12 +836,16 @@ def gbif_salmonids():
     p = f"{CACHE}/gbif_salmonidae.csv"
     if os.path.exists(p) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p) < 7 * 86400:
         return pd.read_csv(p)
+    t = netfetch.keep_old(p, lambda: _gbif(p), "GBIF trout records")
+    return pd.read_csv(p) if t is None else t
+
+def _gbif(p):
     w, s, e, n = boxes.to_crs(4326).total_bounds
-    fam = requests.get("https://api.gbif.org/v1/species/match", params=dict(name="Salmonidae", rank="FAMILY",
-                       kingdom="Animalia"), headers=UA, timeout=60).json()["usageKey"]
+    fam = netfetch.fetch("GET", "https://api.gbif.org/v1/species/match", params=dict(name="Salmonidae", rank="FAMILY",
+                         kingdom="Animalia"), headers=UA, timeout=60).json()["usageKey"]
     recs, off = [], 0
     while True:
-        r = requests.get("https://api.gbif.org/v1/occurrence/search", headers=UA, timeout=120, params=dict(
+        r = netfetch.fetch("GET", "https://api.gbif.org/v1/occurrence/search", headers=UA, timeout=120, params=dict(
             familyKey=fam, decimalLatitude=f"{s - 0.02},{n + 0.02}", decimalLongitude=f"{w - 0.02},{e + 0.02}",
             hasCoordinate="true", hasGeospatialIssue="false", limit=300, offset=off)).json()
         recs += r["results"]
@@ -845,7 +854,7 @@ def gbif_salmonids():
             break
     names = {}
     for k in {x["datasetKey"] for x in recs}:
-        names[k] = requests.get(f"https://api.gbif.org/v1/dataset/{k}", headers=UA, timeout=60).json().get("title", k)
+        names[k] = netfetch.fetch("GET", f"https://api.gbif.org/v1/dataset/{k}", headers=UA, timeout=60).json().get("title", k)
     t = pd.DataFrame([dict(gbif=x.get("key"), dataset=names[x["datasetKey"]], species=x.get("species"),
                            common=x.get("vernacularName"), year=x.get("year"), date=(x.get("eventDate") or "")[:10],
                            lat=x.get("decimalLatitude"), lon=x.get("decimalLongitude"),

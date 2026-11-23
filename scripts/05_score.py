@@ -133,14 +133,17 @@ s["flow"] = vote(nhd_k, "flow").fillna("unmapped")
 osm_wp = f"{RAW}/osm_waterways.gpkg"    # OSM named rivers and streams, cached a week
 if not os.path.exists(osm_wp) or time.time() - os.path.getmtime(osm_wp) > 7 * 86400:
     from geomatch import overpass
-    w0, s0, e0, n0 = gpd.GeoSeries([shapely.box(*REGIONS[REGION]["bbox"])], crs=CRS).to_crs(4326).total_bounds
-    els = [e for e in overpass(f'[out:json][timeout:600];way["waterway"~"^(river|stream)$"]["name"]'
-                               f'({s0:.5f},{w0:.5f},{n0:.5f},{e0:.5f});out geom;') if len(e.get("geometry") or []) >= 2]
-    if els:
-        gpd.GeoDataFrame({"name": [e["tags"]["name"] for e in els]}, crs=4326,
-                         geometry=[shapely.LineString([(q["lon"], q["lat"]) for q in e["geometry"]]) for e in els]
-                         ).to_crs(CRS).to_file(osm_wp + ".tmp.gpkg", driver="GPKG")
-        os.replace(osm_wp + ".tmp.gpkg", osm_wp)
+    import netfetch      # when Overpass can't be reached, the older download stays (a dated NOTE)
+    def osm_names():
+        w0, s0, e0, n0 = gpd.GeoSeries([shapely.box(*REGIONS[REGION]["bbox"])], crs=CRS).to_crs(4326).total_bounds
+        els = [e for e in overpass(f'[out:json][timeout:600];way["waterway"~"^(river|stream)$"]["name"]'
+                                   f'({s0:.5f},{w0:.5f},{n0:.5f},{e0:.5f});out geom;') if len(e.get("geometry") or []) >= 2]
+        if els:
+            gpd.GeoDataFrame({"name": [e["tags"]["name"] for e in els]}, crs=4326,
+                             geometry=[shapely.LineString([(q["lon"], q["lat"]) for q in e["geometry"]]) for e in els]
+                             ).to_crs(CRS).to_file(osm_wp + ".tmp.gpkg", driver="GPKG")
+            os.replace(osm_wp + ".tmp.gpkg", osm_wp)
+    netfetch.keep_old(osm_wp, osm_names, f"OSM stream names ({REGION})")
 if os.path.exists(osm_wp):
     nhd_named = s["name"].notna().sum()
     s["name"] = s["name"].fillna(vote(gpd.read_file(osm_wp).to_crs(CRS), "name"))

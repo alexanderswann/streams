@@ -86,22 +86,26 @@ MIN_SITES = 25          # fewer measured sites than this: no fit (the score fall
 
 
 def _cached(name, fetch):
+    """A download kept 30 days; when it can't be refreshed, the earlier one stays (netfetch.py: a dated NOTE)."""
+    import netfetch
     os.makedirs(CACHE, exist_ok=True)
     p = f"{CACHE}/{name}"
     if not (os.path.exists(p) and time.time() - os.path.getmtime(p) < 30 * 86400):
-        fetch(p + ".tmp")
-        os.replace(p + ".tmp", p)
+        def refresh():
+            fetch(p + ".tmp")
+            os.replace(p + ".tmp", p)
+        netfetch.keep_old(p, refresh, f"Water Quality Portal ({name})")
     return p
 
 
 def _wqp(kind, bounds):
     W, S, E, N = bounds
     def fetch(p):
-        r = requests.get(f"https://www.waterqualitydata.us/data/{kind}/search", timeout=900, params=dict(
+        import netfetch
+        r = netfetch.fetch("GET", f"https://www.waterqualitydata.us/data/{kind}/search", tries=2, timeout=900, params=dict(
             bBox=f"{W:.3f},{S:.3f},{E:.3f},{N:.3f}", characteristicName="Temperature, water", siteType="Stream",
             startDateLo="01-01-1995", mimeType="csv", **({"dataProfile": "narrowResult"} if kind == "Result" else {})),
             headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
-        r.raise_for_status()
         open(p, "wb").write(r.content)
     return pd.read_csv(_cached(f"wqp_{kind.lower()}_temp.csv", fetch), low_memory=False)
 
@@ -122,7 +126,8 @@ def air_tif():
             return p_
     z = f"{NATIONAL}/prism_tmean_aug_us.zip"       # GDAL's /vsizip/ wants the .zip extension
     if not os.path.exists(z):
-        urllib.request.urlretrieve(PRISM + ".zip", z + ".part")
+        import netfetch
+        netfetch.urlretrieve(PRISM + ".zip", z + ".part")
         os.replace(z + ".part", z)
     with rasterio.open(f"/vsizip/{z}/{os.path.basename(PRISM)}.tif") as src:
         win = from_bounds(W - 0.05, S - 0.05, E + 0.05, N + 0.05, src.transform).round_offsets().round_lengths()

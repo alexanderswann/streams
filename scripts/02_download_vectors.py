@@ -18,7 +18,8 @@ def hu4_gpkg(hu):
     z = f"{NHD_DIR}/NHD_H_{hu}_HU4_GPKG.zip"
     if not os.path.exists(z):
         url = f"https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHD/HU4/GPKG/NHD_H_{hu}_HU4_GPKG.zip"
-        with requests.get(url, stream=True, timeout=600) as r:
+        import netfetch
+        with netfetch.get(url, stream=True, timeout=600) as r:
             r.raise_for_status()
             with open(z, "wb") as f:
                 for chunk in r.iter_content(1 << 20):

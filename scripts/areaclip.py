@@ -25,8 +25,8 @@ def outline(crs=CRS):
     if not st:
         return None
     if not os.path.exists(ZIP):
-        r = requests.get(URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
-        r.raise_for_status()
+        import netfetch
+        r = netfetch.fetch("GET", URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
         with open(ZIP + ".tmp", "wb") as f:
             f.write(r.content)
         os.replace(ZIP + ".tmp", ZIP)

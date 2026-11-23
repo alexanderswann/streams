@@ -15,10 +15,14 @@
   gauge_sites.gpkg      gauge locations, drainage area, and the span and count of their daily values
 
 No REGION needed. Re-run to refresh; downloads are cached per COMID batch / site for CACHE_DAYS (REFRESH=1 forces).
+A download that fails (no network, a server that doesn't answer: netfetch.py) keeps its earlier copy, with a dated NOTE
+in the log: the gauge list and their sites (kept as last good copies), a Natural Flows batch, a gauge's daily record.
+Only one with no copy at all stops the step (the NHDPlus table and the level paths are fetched only when missing).
 """
 import os, time, json, requests, numpy as np, pandas as pd, geopandas as gpd
 from shapely.geometry import box
 from config import REGIONS, CRS, SHARED, AREA, has
+import netfetch
 
 FLOW = f"{SHARED}/flow"
 os.makedirs(f"{FLOW}/nf_batches", exist_ok=True)
@@ -44,19 +48,19 @@ def get(url, headers=None, **kw):
     r, waits = None, 0
     for attempt in range(5):
         try:
-            r = requests.get(url, headers={**UA, **(headers or {})}, timeout=300, **kw)
+            r = netfetch.get(url, headers={**UA, **(headers or {})}, timeout=300, **kw)
             if r.ok:
                 return r
             if r.status_code == 429 and waits < 3:
                 s = r.headers.get("Retry-After", "")
                 s = int(s) if s.isdigit() else 600
-                print(f"{url.split('/')[2]} is rate limiting: waiting {s // 60 + 1} min", flush=True)
-                time.sleep(s + 5)
+                netfetch.rate_wait(s + 5, url)     # (or the last good copy, when the wait is long)
                 waits += 1
                 continue
         except requests.RequestException:
             pass
-        time.sleep(5 * (attempt + 1))
+        if attempt < 4:
+            netfetch.wait(5 * (attempt + 1), url)
     if r is None:
         raise requests.ConnectionError(f"no response from {url}")
     r.raise_for_status()
@@ -68,7 +72,7 @@ v2_meta = v2_path + ".regions.json"     # the ranges the cached download covers:
 if not os.path.exists(v2_path) or not os.path.exists(v2_meta) or set(json.load(open(v2_meta))) != set(REGIONS):
     parts = []
     for w, s, e, n in boxes:
-        r = get("https://api.water.usgs.gov/geoserver/wmadata/ows", params=dict(
+        r = get("https://api.water.usgs.gov/geoserver/wmadata/ows", limit=3600, params=dict(   # (a big one-time download)
             service="WFS", version="1.0.0", request="GetFeature", typeName="wmadata:nhdflowline_network",
             outputFormat="application/json", srsName="EPSG:4326", bbox=f"{w},{s},{e},{n},EPSG:4326",
             # divergence / streamcalc / dnminorhyd: NHDPlus's marks for split channels (flowlib.minor_arms), since
@@ -99,11 +103,13 @@ for i in range(0, len(comids) if has("tnc_flows") else 0, B):
     files.append(f)                                                    # never reuses a batch of other COMIDs
     if fresh(f):
         continue
-    r = get("https://flow-api.codefornature.org/v2/stream/", params=dict(
-        comids=",".join(map(str, chunk)), statistics="mean,min", variables="estimated,p10,p90",
-        begin_year=FIRST_YEAR, begin_month=DRY_MONTHS[0], end_month=DRY_MONTHS[1]))
-    open(f + ".tmp", "w").write(r.text)
-    os.replace(f + ".tmp", f)
+    def batch(chunk=chunk, f=f):
+        r = get("https://flow-api.codefornature.org/v2/stream/", params=dict(
+            comids=",".join(map(str, chunk)), statistics="mean,min", variables="estimated,p10,p90",
+            begin_year=FIRST_YEAR, begin_month=DRY_MONTHS[0], end_month=DRY_MONTHS[1]))
+        open(f + ".tmp", "w").write(r.text)
+        os.replace(f + ".tmp", f)
+    netfetch.keep_old(f, batch, "Natural Flows (TNC)")
     if len(files) % 25 == 0:
         print(f"natural flows: {len(files)} of {-(-len(comids) // B)} batches", flush=True)
     time.sleep(0.3)
@@ -135,15 +141,17 @@ def items(coll, **params):
 
 # daily-mean discharge series (statistic 00003) in each box. A series spanning under 5 years can't have 5 years of
 # values, so it's dropped before downloading; a missing begin or end keeps it.
-ts = pd.DataFrame([f["properties"] for w, s, e, n in boxes for f in items(
-    "time-series-metadata", bbox=f"{w:.4f},{s:.4f},{e:.4f},{n:.4f}", parameter_code="00060", statistic_id="00003",
-    skipGeometry="true", limit=10000)])
+ts = pd.DataFrame(netfetch.last_good(f"usgs-series-{netfetch.key(boxes.tolist())}", lambda: [
+    f["properties"] for w, s, e, n in boxes for f in items(
+        "time-series-metadata", bbox=f"{w:.4f},{s:.4f},{e:.4f},{n:.4f}", parameter_code="00060", statistic_id="00003",
+        skipGeometry="true", limit=10000)], "USGS gauge series"))
 span = pd.to_datetime(ts.end, utc=True) - pd.to_datetime(ts.begin, utc=True)
 ids = sorted(set(ts.monitoring_location_id[~(span < pd.Timedelta(days=5 * 365 - 2))]))
 # name, site type and drainage area (sq mi); 40 sites a request, since long URLs are refused
-ml = [f for i in range(0, len(ids), 40) for f in items(
-    "monitoring-locations", id=",".join(ids[i:i + 40]), limit=1000,
-    properties="monitoring_location_name,site_type_code,drainage_area")]
+ml = netfetch.last_good(f"usgs-sites-{netfetch.key(boxes.tolist())}", lambda: [
+    f for i in range(0, len(ids), 40) for f in items(
+        "monitoring-locations", id=",".join(ids[i:i + 40]), limit=1000,
+        properties="monitoring_location_name,site_type_code,drainage_area")], "USGS gauge sites")
 gs = gpd.GeoDataFrame.from_features(ml, crs=4326)
 gs["site_no"] = [f["id"].removeprefix("USGS-") for f in ml]
 # streams and their canal and ditch subtypes, as WaterServices' siteType=ST gave
@@ -173,14 +181,16 @@ for s in gs.site_no:
         batches.append(([], 0))
     batches[-1] = (batches[-1][0] + [s], batches[-1][1] + d)
 for i, (b, _) in enumerate(batches, 1):
-    t = pd.DataFrame([x["properties"] for x in items(
-        "daily", monitoring_location_id=",".join(f"USGS-{s}" for s in b), parameter_code="00060", statistic_id="00003",
-        properties="monitoring_location_id,time,value,time_series_id", skipGeometry="true", limit=50000)],
-        columns=["monitoring_location_id", "time", "value", "time_series_id"])
-    for s in b:
-        f = f"{FLOW}/daily_{s}.csv"
-        record(t[t.monitoring_location_id == f"USGS-{s}"]).to_csv(f + ".tmp", index=False)
-        os.replace(f + ".tmp", f)
+    def records(b=b):    # (written only when the whole batch came: a failed one keeps the earlier records)
+        t = pd.DataFrame([x["properties"] for x in items(
+            "daily", monitoring_location_id=",".join(f"USGS-{s}" for s in b), parameter_code="00060", statistic_id="00003",
+            properties="monitoring_location_id,time,value,time_series_id", skipGeometry="true", limit=50000)],
+            columns=["monitoring_location_id", "time", "value", "time_series_id"])
+        for s in b:
+            f = f"{FLOW}/daily_{s}.csv"
+            record(t[t.monitoring_location_id == f"USGS-{s}"]).to_csv(f + ".tmp", index=False)
+            os.replace(f + ".tmp", f)
+    netfetch.keep_old([f"{FLOW}/daily_{s}.csv" for s in b], records, "USGS daily discharge")
     if i % 10 == 0 or i == len(batches):
         print(f"gauge daily records: {i} of {len(batches)} requests", flush=True)
     time.sleep(0.3)

@@ -23,6 +23,7 @@ Each contour line belongs to the lake it lies in, each sounding to the lake it f
 Writes data/derived/<area>/_shared/lake_depth.gpkg (lid, depth_ft, depth_m, major, src).
 """
 import os, re, json, requests, numpy as np, pandas as pd, geopandas as gpd, shapely
+import netfetch
 from rasterio import features
 from rasterio.transform import from_origin
 from config import AREA, REGIONS, CRS, SHARED, SHARED_DERIVED
@@ -73,7 +74,7 @@ def vt_soundings(lk, bounds_ll):
     if not os.path.exists(VT_CSV):
         import zipfile, io
         os.makedirs(os.path.dirname(VT_CSV), exist_ok=True)
-        r = requests.get(VT_URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+        r = netfetch.get(VT_URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
         r.raise_for_status()
         zipfile.ZipFile(io.BytesIO(r.content)).extractall(os.path.dirname(VT_CSV))
     w, s, e, n = bounds_ll
@@ -137,7 +138,7 @@ def usgs_little_rock(lk, bounds_ll):
     Depth is taken below the lake's own lidar water level (here 3,273 ft, the spillway crest), cell by cell."""
     if not os.path.exists(LR_CSV):
         os.makedirs(os.path.dirname(LR_CSV), exist_ok=True)
-        with requests.get(LR_URL, stream=True, timeout=1200, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"}) as r:
+        with netfetch.get(LR_URL, stream=True, timeout=1200, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"}) as r:
             r.raise_for_status()
             with open(LR_CSV + ".part", "wb") as f:
                 for chunk in r.iter_content(1 << 20):
@@ -252,7 +253,7 @@ def usgs_chambers(lk, bounds_ll):
         os.makedirs(CH_DIR, exist_ok=True)
         zp = f"{CH_DIR}/sim3346_spatial_data.zip"
         if not os.path.exists(zp):
-            r = requests.get(CH_URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+            r = netfetch.get(CH_URL, timeout=600, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
             r.raise_for_status()
             with open(zp + ".part", "wb") as f:
                 f.write(r.content)
@@ -315,7 +316,7 @@ def _enc_cells(box_ll):
     p = f"{ENC_DIR}/ENCProdCat.xml"
     try:
         if not os.path.exists(p):
-            r = requests.get(ENC_CAT, timeout=300, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+            r = netfetch.get(ENC_CAT, timeout=300, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
             r.raise_for_status()
             with open(p + ".part", "wb") as f:
                 f.write(r.content)
@@ -353,7 +354,7 @@ def noaa_champlain(lk, bounds_ll):
         z = f"{ENC_DIR}/{cell}.zip"
         try:
             if not os.path.exists(z):
-                r = requests.get(ENC_ZIP.format(cell), timeout=300, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
+                r = netfetch.get(ENC_ZIP.format(cell), timeout=300, headers={"User-Agent": "stream-analysis/0.1 (personal GIS project)"})
                 r.raise_for_status()
                 with open(z + ".part", "wb") as f:
                     f.write(r.content)

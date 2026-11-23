@@ -1,5 +1,6 @@
 """Download a 10 m USGS 3DEP DEM for the study area, tiled, and mosaic it."""
 import os, time, requests, numpy as np, rasterio
+import netfetch
 from rasterio.merge import merge
 from config import *
 
@@ -25,12 +26,13 @@ for x0 in range(XMIN, XMAX, step):
                       interpolation="RSP_BilinearInterpolation", noData=-9999, f="image")
         for attempt in range(6):   # the 3DEP server answers 502 / 504 now and then; tiles already on disk are kept
             try:
-                r = requests.get(URL, params=params, timeout=600)
+                r = netfetch.get(URL, params=params, timeout=600)
                 if r.ok and r.content[:2] in (b"II", b"MM"):   # a TIFF, not an error page
                     break
             except requests.RequestException:
                 pass
-            time.sleep(20 * (attempt + 1))
+            if attempt < 5:
+                netfetch.wait(20 * (attempt + 1), URL)
         else:
             raise SystemExit(f"3DEP download failed for tile {x0},{y0} after 6 tries; run again to resume")
         open(p + ".tmp", "wb").write(r.content)

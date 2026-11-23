@@ -24,6 +24,7 @@ Stocking and fish surveys at lakes come from 11_context.py's trout evidence (tro
 import os, re, json, time, requests, numpy as np, pandas as pd, geopandas as gpd
 from config import NATIONAL, SHARED
 from geomatch import esri
+import netfetch
 
 UA = {"User-Agent": "stream-analysis/0.1 (personal GIS project)"}
 NLA_DIR = f"{NATIONAL}/nla"
@@ -44,7 +45,7 @@ def _fetch(url, path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         for attempt in range(4):
             try:
-                r = requests.get(url, headers=UA, timeout=300)
+                r = netfetch.get(url, headers=UA, timeout=300)
                 if r.ok:
                     with open(path + ".tmp", "wb") as f:
                         f.write(r.content)
@@ -52,7 +53,8 @@ def _fetch(url, path):
                     break
             except requests.RequestException:
                 pass
-            time.sleep(10 * (attempt + 1))
+            if attempt < 3:
+                netfetch.wait(10 * (attempt + 1), url)
     return path
 
 
@@ -293,21 +295,24 @@ def _socrata(dsid, where=None, limit=50000):
     p = f"{SHARED}/cache/ny_{dsid}.json"
     if os.path.exists(p) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p) < 7 * 86400:
         return json.load(open(p))
-    rows, off = [], 0
-    while True:
-        prm = {"$limit": limit, "$offset": off}
-        if where:
-            prm["$where"] = where
-        r = requests.get(f"{NYDATA}/{dsid}.json", params=prm, headers=UA, timeout=180)
-        r.raise_for_status()
-        got = r.json()
-        rows += got
-        off += limit
-        if len(got) < limit:
-            break
-    with open(p + ".tmp", "w") as f:
-        json.dump(rows, f)
-    os.replace(p + ".tmp", p)
+    def fetch():     # written only from the whole answer; a refresh that fails keeps the earlier copy
+        rows, off = [], 0
+        while True:
+            prm = {"$limit": limit, "$offset": off}
+            if where:
+                prm["$where"] = where
+            got = netfetch.fetch("GET", f"{NYDATA}/{dsid}.json", params=prm, headers=UA, timeout=180).json()
+            rows += got
+            off += limit
+            if len(got) < limit:
+                break
+        with open(p + ".tmp", "w") as f:
+            json.dump(rows, f)
+        os.replace(p + ".tmp", p)
+        return rows
+    rows = netfetch.keep_old(p, fetch, f"data.ny.gov {dsid}")
+    if rows is None:
+        return json.load(open(p))
     return rows
 
 

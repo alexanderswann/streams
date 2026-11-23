@@ -309,7 +309,7 @@ def level_paths():
     levelpathi (the path the line's river follows), uplevelpat, dnlevelpat. From the USGS service 02b_download_flow.py
     reads the flowlines from, for the same boxes (each range's box and 2 km around it). 05c_drainages.py uses it to keep
     a river's trunk on the arm NHDPlus continues it up. Cached in FLOW; fetched again when ranges are added."""
-    import requests, time
+    import netfetch
     path, meta = f"{FLOW}/nhdplus_v2_paths.csv", f"{FLOW}/nhdplus_v2_paths.csv.regions.json"
     if os.path.exists(path) and os.path.exists(meta) and set(json.load(open(meta))) == set(REGIONS):
         return pd.read_csv(path)
@@ -319,7 +319,7 @@ def level_paths():
     for w, s, e, n in area.to_crs(4326).bounds.values:
         for k in range(4):
             try:
-                r = requests.get("https://api.water.usgs.gov/geoserver/wmadata/ows", timeout=300, params=dict(
+                r = netfetch.get("https://api.water.usgs.gov/geoserver/wmadata/ows", timeout=300, limit=3600, params=dict(
                     service="WFS", version="1.0.0", request="GetFeature", typeName="wmadata:nhdflowline_network",
                     outputFormat="application/json", srsName="EPSG:4326", bbox=f"{w},{s},{e},{n},EPSG:4326",
                     propertyName="comid,levelpathi,uplevelpat,dnlevelpat,uphydroseq,hydroseq,dnhydroseq"),
@@ -330,7 +330,7 @@ def level_paths():
             except Exception:
                 if k == 3:
                     raise
-                time.sleep(10 * (k + 1))
+                netfetch.wait(10 * (k + 1), "https://api.water.usgs.gov")
     t = pd.DataFrame(rows).drop_duplicates("comid")
     t.to_csv(path + ".tmp", index=False)
     os.replace(path + ".tmp", path)

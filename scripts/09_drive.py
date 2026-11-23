@@ -33,21 +33,11 @@ ext = json.load(open(ext_path)) if os.path.exists(ext_path) else None
 if not os.path.exists(major_path) or ext is None or not (ext[0] <= W and ext[1] <= S and ext[2] >= E and ext[3] >= N):
     q = f"""[out:json][timeout:600];
     way["highway"~"^(motorway|trunk|primary|secondary)(_link)?$"]({S},{W},{N},{E}); out geom;"""
-    for attempt in range(6):
-        url = ("https://overpass.openstreetmap.fr/api/interpreter", "https://overpass-api.de/api/interpreter")[attempt % 2]   # (the kumi mirror stopped answering in Nov 2026)
-        try:
-            r = requests.post(url, data={"data": q}, timeout=(20, 900),
-                              headers={"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"})
-            if r.ok:
-                break
-        except requests.RequestException:
-            pass
-        time.sleep(20 * (attempt + 1))
-    r.raise_for_status()
+    import netfetch      # the mirrors in turn; a timed-out (cut short) answer is not taken
     feats = [{"type": "Feature", "properties": {"highway": el["tags"].get("highway"), "name": el["tags"].get("name"),
               "oneway": el["tags"].get("oneway")},
               "geometry": {"type": "LineString", "coordinates": [[g["lon"], g["lat"]] for g in el["geometry"]]}}
-             for el in r.json()["elements"] if el["type"] == "way"]
+             for el in netfetch.overpass(q, tries=6, read=900) if el["type"] == "way"]
     gpd.GeoDataFrame.from_features(feats, crs=4326).to_crs(CRS).to_file(major_path)
     json.dump([W, S, E, N], open(ext_path, "w"))
 major = gpd.read_file(major_path)

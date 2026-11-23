@@ -42,11 +42,14 @@ Which sources an area has is in config.py (`sources`); all were checked against 
   tu_brook_trout  Trout Unlimited's latest brook trout portfolio (the EBTJV wild brook trout patches), CT to GA
 A "no trout" record is only made from an electrofishing sample that lists other species and no trout (CT). Nothing
 else here lowers a score: when unsure, a possible trout stream stays in.
-Downloads are cached for a week in <area>/_shared/cache (REFRESH=1 forces).
+Downloads are cached for a week in <area>/_shared/cache (REFRESH=1 forces). A source that can't be refreshed keeps its
+earlier download, with a dated NOTE, and its records' labels and its waters' designation say "(as of <date>)"
+(netfetch.py); only a source never downloaded is left out (_try) or stops the step.
 """
 import os, io, re, time, datetime as dt, requests, shapely, numpy as np, pandas as pd, geopandas as gpd
 from shapely.geometry import box
 from config import REGIONS, CRS, EPSG, SHARED, has
+import netfetch
 
 UA = {"User-Agent": "stream-analysis/0.1 (personal GIS project)"}
 CACHE = f"{SHARED}/cache"
@@ -62,12 +65,13 @@ _EMPTY = gpd.GeoDataFrame(geometry=[], crs=CRS)
 def _post(url, **params):
     for attempt in range(4):
         try:
-            r = requests.post(url, headers=UA, timeout=(20, 300), data=params)
+            r = netfetch.post(url, headers=UA, timeout=(20, 300), data=params)
             if r.ok and "error" not in r.text[:60]:
                 return r
         except requests.RequestException:
             pass
-        time.sleep(5 * (attempt + 1))
+        if attempt < 3:
+            netfetch.wait(5 * (attempt + 1), url)
     raise RuntimeError(f"no answer from {url}")
 
 
@@ -76,7 +80,7 @@ def fetch(key, url, where="1=1", fields="*"):
     features by id, which also works on the servers that refuse paging (Vermont's)."""
     os.makedirs(CACHE, exist_ok=True)
     p = f"{CACHE}/trout_{key}.geojson"
-    if not (os.path.exists(p) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p) < 7 * 86400):
+    def refresh():     # written only when every part came (an earlier download stays when it fails)
         ids = _post(f"{url}/query", where=where, geometry=f"{_W},{_S},{_E},{_N}", geometryType="esriGeometryEnvelope",
                     inSR=4326, spatialRel="esriSpatialRelIntersects", returnIdsOnly="true", f="json").json().get("objectIds") or []
         feats = []
@@ -87,6 +91,8 @@ def fetch(key, url, where="1=1", fields="*"):
         with open(p + ".tmp", "w") as f:
             f.write(g.to_json() if len(g) else '{"type": "FeatureCollection", "features": []}')
         os.replace(p + ".tmp", p)
+    if not (os.path.exists(p) and os.environ.get("REFRESH") != "1" and time.time() - os.path.getmtime(p) < 7 * 86400):
+        netfetch.keep_old(p, refresh, f"trout source {key}")
     g = gpd.read_file(p) if os.path.getsize(p) > 60 else _EMPTY
     if not len(g):
         return _EMPTY
@@ -286,8 +292,9 @@ def _pfbc_stocked():
     """(year, service) of the newest of PFBC's yearly stocked-sections services (TroutStocked2025,
     TroutStockedSections_2026, ...): a new one is published each season."""
     try:
-        names = [s["name"].split("/")[-1] for s in requests.get(f"{PFBC}?f=json", headers=UA, timeout=60).json()["services"]]
-    except (requests.RequestException, ValueError, KeyError):
+        names = netfetch.last_good("pfbc-services", lambda: [s["name"].split("/")[-1] for s in netfetch.fetch(
+            "GET", f"{PFBC}?f=json", headers=UA, timeout=60).json()["services"]], "PFBC's list of services")
+    except (requests.RequestException, RuntimeError, ValueError, KeyError):
         return None, None
     yrs = {int(m.group(1)): n for n in names if (m := re.fullmatch(r"TroutStocked(?:Sections)?_?(\d{4})", n))}
     return (max(yrs), yrs[max(yrs)]) if yrs else (None, None)
@@ -345,6 +352,8 @@ def _try(key, url, **kw):
     Smokies sources are many and some are yearly services that get renamed)."""
     try:
         return fetch(key, url, **kw)
+    except netfetch.NetworkDown:     # the network, not the source: a drop doesn't thin the evidence quietly
+        raise
     except (RuntimeError, requests.RequestException, KeyError, ValueError) as e:
         print(f"NOTE: trout source {key} not read ({e})")
         return _EMPTY
@@ -358,8 +367,9 @@ def _ncwrc_newest(kind):
     """(year, service) of the newest of NCWRC's yearly Public Mountain Trout Waters services (PMTW_Streams_2026,
     PMTW_Impoundments_2026, ...); 2026's if the list can't be read."""
     try:
-        names = [s["name"].split("/")[-1] for s in requests.get(f"{NCWRC}?f=json", headers=UA, timeout=60).json()["services"]]
-    except (requests.RequestException, ValueError, KeyError):
+        names = netfetch.last_good("ncwrc-services", lambda: [s["name"].split("/")[-1] for s in netfetch.fetch(
+            "GET", f"{NCWRC}?f=json", headers=UA, timeout=60).json()["services"]], "NCWRC's list of services")
+    except (requests.RequestException, RuntimeError, ValueError, KeyError):
         names = []
     yrs = {int(m.group(1)): n for n in names if (m := re.fullmatch(rf"PMTW_{kind}_(\d{{4}})", n))}
     return (max(yrs), yrs[max(yrs)]) if yrs else (2026, f"PMTW_{kind}_2026")
@@ -566,9 +576,11 @@ def _load():
         ev, wa = [], []
         for src, fn in _BY_SOURCE:
             if has(src):
+                before = netfetch.stale_names()
                 e, w = fn()
-                ev += e
-                wa += w
+                old = netfetch.stale_names() - before      # this source's downloads read from an earlier copy
+                ev += [netfetch.tag(x, "label", *old) for x in e]
+                wa += [netfetch.tag(x, "Designation", *old) for x in w]
         _done = (ev, wa)
     return _done
 

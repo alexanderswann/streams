@@ -39,11 +39,18 @@ still be in force then (in_season), by the closure's own dates and words, never 
   - a closure the router could not lay on its road (drawn as a straight line, placed = False) cuts nothing.
 The closures not counted that are in force today become a dated note on the access line of the routes that use them
 (note, joined by 09_drive.py: "Teton Park Road closed for winter until Apr 30 (as of Nov 22)").
+
+A feed that can't be read (no network, a server that doesn't answer, an ArcGIS error sent as HTTP 200, a page cut
+short: netfetch.py) is its last good copy, with a dated NOTE in the log: its closures' source says "(as of <date>)", and
+the fetch time written for the map and the access-line notes is the oldest copy's. Closures that have ended since are
+dropped as usual (NOW is today). A feed with no copy at all stops the step, the park and state feeds too, which used to
+be left out with only a print (run_late.sh then keeps the last whole closure list, dated, and says so).
 """
 import json, os, re, time, datetime as dt, requests, shapely, numpy as np, pandas as pd, geopandas as gpd, networkx as nx
 from shapely.geometry import LineString, Point, box, shape
 from shapely.ops import linemerge, substring
 from config import REGIONS, CRS, EPSG, ROOT, MAP_OUT, raw_dir, has
+import netfetch
 CA = has("ca_closures")
 
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
@@ -92,16 +99,27 @@ SIDE = re.compile(r"ramp|connector|rest area|vista|weigh|inspection|park\s*(?:an
 
 area = gpd.GeoSeries([box(*v["bbox"]).buffer(2000) for v in REGIONS.values()], crs=CRS).union_all()
 
-def get_json(url, params=None):
-    for attempt in range(4):
-        try:
-            r = requests.get(url, params=params, headers=UA, timeout=120)
-            if r.ok:
-                return r.json()
-        except requests.RequestException:
-            pass
-        time.sleep(5 * (attempt + 1))
-    raise RuntimeError(f"no usable answer from {url} after 4 tries")
+def get_json(url, params=None, what=None, need="features"):
+    """A feed's JSON (4 tries); when it can't be read, its last good copy (netfetch.py). `what` is the source the
+    closures carry, for their "(as of <date>)". `need` is what a whole answer holds (a key, or list for a JSON list):
+    an ArcGIS error sent as HTTP 200 ({"error": ...}) is no answer, not a feed with no closures."""
+    def whole(r):
+        js = r.json()
+        return isinstance(js, list) if need is list else isinstance(js, dict) and need in js
+    return netfetch.last_good(f"feed-{netfetch.key(url, params)}", lambda: netfetch.fetch(
+        "GET", url, tries=4, pause=(5, 10, 15), ok=lambda r: r.ok and whole(r), params=params, headers=UA,
+        timeout=120).json(), what or url)
+
+
+def get_text(url, what):
+    """A web page (3 tries), whole (it ends in </html>); when it can't be read, its last good copy."""
+    return netfetch.last_good(f"page-{netfetch.key(url)}", lambda: netfetch.fetch(
+        "GET", url, headers=UA, timeout=120, ok=lambda r: r.ok and "</html>" in r.text[-2000:].lower()).text, what)
+
+
+# a feed that can't be read and has no copy yet stops the step rather than leave its closures out: run_late.sh then keeps
+# the last whole closure list, which the map dates by itself (road_closures.json)
+NO_FEED = (netfetch.FetchError, netfetch.NetworkDown)
 
 # ---- OSM highway graph for routing Caltrans begin/end points ----
 roads = pd.concat([gpd.read_file(f"{raw_dir(r)}/osm_roads.gpkg") for r in REGIONS], ignore_index=True)
@@ -141,7 +159,7 @@ rows = []
 
 # ---- Caltrans LCS ----
 for d in ((6, 7, 8, 12) if CA else ()):
-    data = get_json(f"https://cwwp2.dot.ca.gov/data/d{d}/lcs/lcsStatusD{d:02d}.json")["data"]
+    data = get_json(f"https://cwwp2.dot.ca.gov/data/d{d}/lcs/lcsStatusD{d:02d}.json", what="Caltrans", need="data")["data"]
     seen = set()
     for rec in data:
         l = rec["lcs"]; c = l["closure"]; b = l["location"]["begin"]; e = l["location"]["end"]
@@ -185,10 +203,10 @@ if CA:
     print("Caltrans", len(rows))
 
 # ---- County Public Works ----
-def county(url, fields, mk, where="1=1"):
+def county(url, fields, mk, where="1=1", what=None):
     if not CA:
         return 0
-    js = get_json(url, dict(where=where, outFields=",".join(fields), outSR=EPSG, f="geojson"))
+    js = get_json(url, dict(where=where, outFields=",".join(fields), outSR=EPSG, f="geojson"), what)
     n = 0
     for f in js.get("features", []):
         if not f.get("geometry"):
@@ -222,7 +240,8 @@ def la(p):
                 long_term=due is None or due - NOW > dt.timedelta(days=7),   # as for Caltrans: no date, or over a week off
                 t0=reopening(p.get("ACTUALCLOSUREDATEFORMATTED")), t1=due)
 print("LA County", county("https://dpw.gis.lacounty.gov/dpw/rest/services/Road_Closures/MapServer/0/query",
-                          ["MAIN_", "FROM_", "TO_", "REASON", "ACTUALCLOSUREDATEFORMATTED", "ESTIMATEDREOPENING"], la))
+                          ["MAIN_", "FROM_", "TO_", "REASON", "ACTUALCLOSUREDATEFORMATTED", "ESTIMATEDREOPENING"], la,
+                          what="LA County DPW"))
 
 def ms(v):
     return dt.datetime.fromtimestamp(v / 1000).strftime("%Y-%m-%d") if v else ""
@@ -244,7 +263,7 @@ def sb(p):
                 long_term=not p.get("endtime"), t0=ms_dt(p.get("starttime")), t1=ms_dt(p.get("endtime")))
 print("SB County", county("https://services.arcgis.com/ZZ0KZXZVmgB1v555/arcgis/rest/services/"
                           "RoadClosures_89e62fc252ba4ce3b88ac0b524ebd6f0_public/FeatureServer/1/query",
-                          ["street", "subtype", "description", "starttime", "endtime"], sb))
+                          ["street", "subtype", "description", "starttime", "endtime"], sb, what="San Bernardino County DPW"))
 
 def riverside(p):
     if str(p.get("IsClosed", "Y")).strip().upper() in ("N", "NO", "0", "FALSE"):
@@ -256,7 +275,7 @@ def riverside(p):
 print("Riverside County", county("https://gis.countyofriverside.us/arcgis/rest/services/road_closures/"
                                  "roadClosures_wMap_prod/MapServer/11/query",
                                  ["RoadName", "RoadFrom", "RoadTo", "ClosureReason", "ClosedOn", "OpenedOn", "IsClosed"],
-                                 riverside))
+                                 riverside, what="Riverside County TLMA"))
 
 # Ventura County publishes points (with the road name and its from / to cross streets), not lines. The closure
 # line is the named road between where it meets the from and to roads (a state route such as "SR33" matches any
@@ -266,7 +285,7 @@ def ventura():
         return 0
     js = get_json("https://services5.arcgis.com/LU8yNTyyh8FrdvWy/arcgis/rest/services/ActiveRoadClosures/FeatureServer/0/query",
                   dict(where="RoadStatus='Closed'", outFields="RoadName,From_,To_,StartDate,EndDate,ClosureType,Description",
-                       outSR=EPSG, f="geojson"))
+                       outSR=EPSG, f="geojson"), "Ventura County PWA")
     norm = lambda t: " ".join(w for w in str(t or "").lower().replace(".", " ").split()
                               if w not in {"road", "rd", "street", "st", "avenue", "ave", "highway", "hwy"})
     n = 0
@@ -307,11 +326,11 @@ print("Ventura County", ventura())
 
 # ---- outside California ----
 W_, S_, E_, N_ = gpd.GeoSeries([area], crs=CRS).to_crs(4326).total_bounds
-def arc(url, where="1=1", fields="*"):
+def arc(url, where="1=1", fields="*", what=None):
     """Features of an ArcGIS layer in the area, as (properties, geometry in the area's CRS)."""
     js = get_json(f"{url}/query", dict(where=where, geometry=f"{W_},{S_},{E_},{N_}", geometryType="esriGeometryEnvelope",
                                        inSR=4326, spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=EPSG,
-                                       f="geojson"))
+                                       f="geojson"), what)
     g = gpd.GeoDataFrame.from_features(js.get("features", []), crs=CRS) if js.get("features") else None
     return [] if g is None else [(row._asdict(), row.geometry) for row in g[g.geometry.notna() & g.intersects(area)].itertuples()]
 def line_of(g):
@@ -340,7 +359,8 @@ def add(source, road, severity, reason, start, end, geom, always=False, frm=None
 
 if has("grte_roads"):     # Grand Teton National Park: 1 open, 2 travel impacted, 3 closed, 4-6 over-snow travel only
     n0 = len(rows)
-    for p, g in arc("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRTE_MajorRoadStatus_(PublicView)/FeatureServer/0"):
+    for p, g in arc("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRTE_MajorRoadStatus_(PublicView)/FeatureServer/0",
+                    what="Grand Teton NP"):
         st = pd.to_numeric(p.get("CurrentStatus"), errors="coerce")
         if pd.notna(st) and st >= 2:
             add("Grand Teton NP", p.get("RDNAME"), "full closure" if st >= 3 else "lane / one-way",
@@ -350,7 +370,7 @@ if has("grte_roads"):     # Grand Teton National Park: 1 open, 2 travel impacted
 if has("teton_county"):
     n0 = len(rows)
     for p, g in arc("https://services9.arcgis.com/6ukHJ1QHS9lvQoRO/arcgis/rest/services/RoadClosures_public_e8ea8c3a825645f3b74f657c09433efd/FeatureServer/1",
-                    where="activeincid='Yes'"):
+                    where="activeincid='Yes'", what="Teton County"):
         full = "all" in str(p.get("laneimpact") or "").lower()
         add("Teton County", p.get("street"), "full closure" if full else "lane / one-way",
             txt(p.get("reason"), p.get("description")), from_ms(p.get("starttime")),
@@ -373,7 +393,8 @@ if has("gdot_511"):
             out.append((lon / 1e5, lat / 1e5))
         return out
     n0 = len(rows)
-    for p, g in arc("https://services1.arcgis.com/2iUE8l8JKrP2tygQ/arcgis/rest/services/GDOT_511_Events_Public_View/FeatureServer/0"):
+    for p, g in arc("https://services1.arcgis.com/2iUE8l8JKrP2tygQ/arcgis/rest/services/GDOT_511_Events_Public_View/FeatureServer/0",
+                    what="Georgia 511"):
         geom = g
         try:
             pts = polyline(p.get("EncodedPolyline") or "")
@@ -389,7 +410,7 @@ if has("gdot_511"):
 if has("ne_compass"):
     n0 = len(rows)
     iso = lambda v: pd.Timestamp(v).tz_convert(None).to_pydatetime() + (dt.datetime.now() - dt.datetime.utcnow()) if v else None
-    for f in get_json("https://api.dx.ne-compass.com/wzdx-latest/").get("features", []):
+    for f in get_json("https://api.dx.ne-compass.com/wzdx-latest/", what="New England Compass (VTrans)").get("features", []):
         pr, cd = f.get("properties", {}), f.get("properties", {}).get("core_details", {})
         try:
             g = gpd.GeoSeries([shape(f["geometry"])], crs=4326).to_crs(CRS).iloc[0]
@@ -406,7 +427,7 @@ if has("ne_compass"):
 if has("id_511"):     # the same WZDx format as New England Compass's
     n0 = len(rows)
     iso = lambda v: pd.Timestamp(v).tz_convert(None).to_pydatetime() + (dt.datetime.now() - dt.datetime.utcnow()) if v else None
-    for f in get_json("https://511.idaho.gov/api/wzdx").get("features", []):
+    for f in get_json("https://511.idaho.gov/api/wzdx", what="Idaho 511 (ITD)").get("features", []):
         pr, cd = f.get("properties", {}), f.get("properties", {}).get("core_details", {})
         try:
             g = gpd.GeoSeries([shape(f["geometry"])], crs=4326).to_crs(CRS).iloc[0]
@@ -426,8 +447,10 @@ if has("vdot_511"):
     for path in ("eventUnfiltered/active_construction.geojson", "incidentUnfiltered/major_incidents.geojson",
                  "incidentUnfiltered/minor_incidents.geojson", "incidentUnfiltered/weather_closures.geojson"):
         try:
-            feats = get_json(f"{base}/{path}").get("features", [])
-        except RuntimeError:
+            feats = get_json(f"{base}/{path}", what="Virginia 511").get("features", [])
+        except RuntimeError as e:
+            if isinstance(e, NO_FEED):
+                raise
             print("  Virginia 511: no answer for", path)
             continue
         for f in feats:
@@ -448,9 +471,10 @@ if has("vdot_511"):
 if has("blri_roads"):     # the Parkway's closures page: a table of milepost sections with Open / Closed / Ungated
     n0 = len(rows)
     try:
-        html = requests.get("https://www.nps.gov/blri/planyourvisit/roadclosures.htm", headers=UA, timeout=120).text
+        html = get_text("https://www.nps.gov/blri/planyourvisit/roadclosures.htm", "Blue Ridge Parkway (NPS)")
         mp = {round(float(p.get("milepost")), 1): g for p, g in arc(
-            "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/SEAC_BLRI_Mileposts/FeatureServer/2") if p.get("milepost") is not None}
+            "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/SEAC_BLRI_Mileposts/FeatureServer/2",
+            what="Blue Ridge Parkway mileposts (geometry)") if p.get("milepost") is not None}
         cell = lambda t: " ".join(re.sub(r"<[^>]+>", " ", t).replace("&nbsp;", " ").replace("&amp;", "&").split())
         for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", html):
             tds = [cell(t) for t in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)]
@@ -465,14 +489,16 @@ if has("blri_roads"):     # the Parkway's closures page: a table of milepost sec
             g, ok = route(mp[ka].coords[0], mp[kb].coords[0])
             add("Blue Ridge Parkway (NPS)", f"Blue Ridge Parkway, milepost {a_:g}–{b_:g}", "full closure", " · ".join(tds[1:]), None, None,
                 g, always=True, placed=ok)
-    except requests.RequestException:
+    except (requests.RequestException, RuntimeError) as e:
+        if isinstance(e, NO_FEED):
+            raise
         print("  Blue Ridge Parkway: page not reachable")
     print("Blue Ridge Parkway", len(rows) - n0)
 if has("ncdot_tims"):     # NCDOT's incidents and work zones (TIMS, the feed behind DriveNC): lines, and points for the rest
     n0, seen = len(rows), set()
     TIMS = "https://services.arcgis.com/NuWFvHYDMVmmxMeM/arcgis/rest/services/NCDOT_TIMS_Incidents/FeatureServer"
     for lyr in (1, 0):                   # the same event is in both layers: its line first
-        for p, g in arc(f"{TIMS}/{lyr}"):
+        for p, g in arc(f"{TIMS}/{lyr}", what="NCDOT (DriveNC)"):
             cond = str(p.get("Condition") or "").strip().lower()
             if p.get("Id") in seen or cond == "open":       # "Open": shoulder work and the like, every lane open
                 continue
@@ -486,7 +512,8 @@ if has("tdot_smartway"):  # TDOT SmartWay events: points, and the road is named 
     n0 = len(rows)
     # one direction's impact shuts it: "Northbound closed", "all lanes (of 2 lanes) blocked", "road closed"
     shut = lambda v: bool(re.search(r"(?i)\ball lanes\b[^,;]*\b(?:blocked|closed)\b|^\s*\w+bound closed\b|\broad (?:is )?closed\b", str(v or "")))
-    for p, g in arc("https://spatial.tdot.tn.gov/ArcGIS/rest/services/Smartway/Smartway_Events/FeatureServer/0"):
+    for p, g in arc("https://spatial.tdot.tn.gov/ArcGIS/rest/services/Smartway/Smartway_Events/FeatureServer/0",
+                    what="TDOT SmartWay"):
         imp, opp = p.get("VEHICLE_IMPACT"), p.get("OPPOSITE_VEHICLE_IMPACT")
         if not re.search(r"(?i)blocked|closed", txt(imp, opp)):
             continue
@@ -509,7 +536,8 @@ if has("grsm_roads"):     # Great Smoky Mountains NP: its alerts (closures by ro
         return r"\b" + r"\s+".join(alt.get(w.lower(), re.escape(w) + "'?s?") for w in n) + r"\b" if n else None
     try:
         park = {}
-        for p, g in arc("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRSM_ROADS/FeatureServer/0", fields="RDNAME"):
+        for p, g in arc("https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GRSM_ROADS/FeatureServer/0", fields="RDNAME",
+                        what="Great Smoky Mountains NP roads (geometry)"):
             nm = " ".join(str(p.get("RDNAME") or "").split())
             if nm and not re.search(r"(?i)parking|pullout|overlook|\bsign\b|campground", nm):
                 park.setdefault(nm, []).append(g)
@@ -524,7 +552,7 @@ if has("grsm_roads"):     # Great Smoky Mountains NP: its alerts (closures by ro
                 hit = list(osm_named.geometry[osm_named["name"].str.contains(k, case=False, regex=True)].values)
             return line_of(shapely.union_all(hit)) if hit else None
         done = set()
-        alerts = get_json("https://www.nps.gov/grsm/park-alerts-grsm.json")
+        alerts = get_json("https://www.nps.gov/grsm/park-alerts-grsm.json", what="Great Smoky Mountains NP", need=list)
         when = lambda s: dt.datetime.strptime(" ".join(s.split()), "%B, %d %Y %H:%M:%S") if s and s.strip() else None
         for a in alerts if isinstance(alerts, list) else []:
             if not (a.get("road_closure_name") or a.get("road_closure_road_names")) or str(a.get("is_active")) != "1":
@@ -538,7 +566,7 @@ if has("grsm_roads"):     # Great Smoky Mountains NP: its alerts (closures by ro
                     add("Great Smoky Mountains NP", nm, "full closure", txt(a.get("title"), a.get("road_closure_description")),
                         when(a.get("road_closure_start_date")), when(a.get("road_closure_end_date")), g, always=True)
         # the seasonal roads table: "4/1-11/29" -> closed outside those dates (this year's); "TBD", "Year-round" -> nothing
-        html = requests.get("https://www.nps.gov/grsm/planyourvisit/seasonalroads.htm", headers=UA, timeout=120).text
+        html = get_text("https://www.nps.gov/grsm/planyourvisit/seasonalroads.htm", "Great Smoky Mountains NP")
         cell = lambda t: " ".join(re.sub(r"<[^>]+>", " ", t).replace("&nbsp;", " ").replace("&amp;", "&").split())
         for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", html):
             tds = [cell(t) for t in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)]
@@ -552,6 +580,8 @@ if has("grsm_roads"):     # Great Smoky Mountains NP: its alerts (closures by ro
                 f"closed for the season (open {m[1]}/{m[2]}–{m[3]}/{m[4]} this year)" + (f" · {tds[2]}" if len(tds) > 2 else ""),
                 start, end, g, always=True)
     except (requests.RequestException, RuntimeError, ValueError) as e:
+        if isinstance(e, NO_FEED):
+            raise
         print("  Great Smoky Mountains NP: not reachable", e)
     print("Great Smoky Mountains NP", len(rows) - n0)
 if has("cherokee_nf"):    # Cherokee NF (Tennessee): its road construction table, with begin / end points and dates in words
@@ -577,7 +607,7 @@ if has("cherokee_nf"):    # Cherokee NF (Tennessee): its road construction table
             return d0.replace(hour=23, minute=59) if last else d0
         return (dt.datetime(y + (b == 12), b % 12 + 1, 1) - dt.timedelta(minutes=1)) if last else dt.datetime(y, a, 1)
     try:
-        html = requests.get("https://www.fs.usda.gov/r08/cherokee/conditions/road-construction", headers=UA, timeout=120).text
+        html = get_text("https://www.fs.usda.gov/r08/cherokee/conditions/road-construction", "Cherokee NF (USFS)")
         cell = lambda t: " ".join(re.sub(r"<[^>]+>", " ", t).replace("&nbsp;", " ").replace("&amp;", "&").split())
         trs = [[cell(t) for t in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)] for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", html)]
         head = [h.replace("_", " ") for h in next((r for r in trs if any("Lat" in c for c in r)), [])]
@@ -599,7 +629,9 @@ if has("cherokee_nf"):    # Cherokee NF (Tennessee): its road construction table
             add("Cherokee NF (USFS)", f"FS {col(r, 'Road Number')} {col(r, 'Road Name')}", "full closure" if full else "phased closure",
                 txt(why, f"milepost {col(r, 'Milepost')}" if col(r, "Milepost") else ""), start, words_date(col(r, "End Date"), last=True),
                 g, always=True, placed=ok)
-    except requests.RequestException:
+    except (requests.RequestException, RuntimeError) as e:
+        if isinstance(e, NO_FEED):
+            raise
         print("  Cherokee NF: page not reachable")
     print("Cherokee NF", len(rows) - n0)
 
@@ -643,7 +675,13 @@ if cal.any():
     agg["reason"] = agg.reason + np.where(agg.nights > 1, " · " + agg.nights.astype(str) + " scheduled windows", "")
     cl = pd.concat([gpd.GeoDataFrame(agg.drop(columns="nights"), crs=CRS), cl[~cal]], ignore_index=True)
 cl = gpd.GeoDataFrame(cl.drop(columns=["work", "always"], errors="ignore"), crs=CRS)
-cl["fetched"] = NOW.strftime("%Y-%m-%d %H:%M")
+# a feed read from its last good copy: its closures say so, and the fetch time is the oldest copy's (the date under the
+# access lines and on the notes, 06_map.py and 09_drive.py); the layers the feeds' lines are drawn on don't count
+OLD = [w for w in netfetch.stale_names() if not w.endswith("(geometry)")]
+if OLD:
+    cl["source"] = [s + netfetch.asof(s) for s in cl.source]
+FETCHED = netfetch.stale(*OLD) if OLD else NOW
+cl["fetched"] = FETCHED.strftime("%Y-%m-%d %H:%M")
 
 
 def season_rule(r):
@@ -718,7 +756,7 @@ else:   # nothing closed (or no feed for this area): no layer, and the later ste
 FEEDS = ("ca_closures", "grte_roads", "teton_county", "gdot_511", "ne_compass", "id_511", "vdot_511", "blri_roads",
          "ncdot_tims", "tdot_smartway", "grsm_roads", "cherokee_nf")
 with open(f"{MAP_OUT}/road_closures.json", "w") as f_:
-    json.dump(dict(fetched=NOW.strftime("%Y-%m-%d %H:%M"), feeds=sum(map(has, FEEDS)), closures=int(len(cl)),
+    json.dump(dict(fetched=FETCHED.strftime("%Y-%m-%d %H:%M"), feeds=sum(map(has, FEEDS)), closures=int(len(cl)),
                    counted=int(cl.in_season.sum()) if len(cl) else 0, season=SEASON.strftime("%Y-%m-%d")), f_)
 
 # ---- static: gated / no public vehicles (OSM) ----

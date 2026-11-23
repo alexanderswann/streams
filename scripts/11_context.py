@@ -17,6 +17,10 @@
     Designated habitat, not closure boundaries: Forest Service closures are usually smaller
   - CDFW Heritage and Wild Trout Waters (special regulations, strong sign of wild trout)
 Writes output/context/*.gpkg and output/<region>/context_streams.csv, context_drops.csv.
+A download that fails (no network, a server that doesn't answer) is read from its last good copy (netfetch.py), with a
+dated NOTE in the log and "(as of <date>)" in the source wording the map shows: the fire perimeters' source, the trout
+records' labels, the trout waters' designation, critical habitat's unit, the land layers' unit or owner, the debris-flow
+hazard. The gauges' readings carry their own times. Only a source with no copy at all stops the step.
 """
 import os, re, glob, time, difflib, urllib.request, datetime as dt, requests, shapely, rasterio, numpy as np, pandas as pd, geopandas as gpd
 from rasterio.transform import from_origin
@@ -27,6 +31,7 @@ from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir,
 from scoring import HEAT_START
 from geomatch import wilderness_path
 import troutdata
+import netfetch     # every download: timeouts, a breaker, and the last good copy when one fails (2026-11-22)
 
 FIRE_SINCE = 2016
 # USFWS critical habitat kept as "stream species": LA's by name; elsewhere any fish, mussel or stream amphibian
@@ -43,46 +48,63 @@ area = gpd.GeoSeries([box(*v["bbox"]).buffer(3000) for v in REGIONS.values()], c
 area_u = area.union_all()
 W, S, E, N = area.to_crs(4326).total_bounds
 
-def esri(url, where="1=1", fields="*", page=1000):
+ESRI_BUDGET = 20 * 60      # s for one layer, all its pages and tries: then its last good copy
+
+
+def esri(url, where="1=1", fields="*", page=1000, what=None):
     """Every feature of an ArcGIS layer in the study area. A server that can't answer a full page (the Forest
-    Service ownership layer over the Chattahoochee: a thousand detailed parcels at once) is asked for smaller ones."""
-    feats, off = [], 0
-    while True:
-        js = None
-        for attempt in range(12):
-            try:
-                r = requests.get(f"{url}/query", headers=UA, timeout=300, params=dict(
-                    where=where, geometry=f"{W},{S},{E},{N}", geometryType="esriGeometryEnvelope", inSR=4326,
-                    spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=EPSG, f="geojson",
-                    resultOffset=off, resultRecordCount=page))
-                if r.ok and "features" in r.json():
-                    js = r.json()
+    Service ownership layer over the Chattahoochee: a thousand detailed parcels at once) is asked for smaller ones,
+    and for bigger ones again after each page it answers: after a network drop on 2026-11-22 LA's CPAD went on one
+    feature at a time. A layer that can't be read (12 tries of a page, ESRI_BUDGET s, or the host out: netfetch.py)
+    is its last good copy, `what` in the log and in netfetch.asof()."""
+    what = what or re.sub(r".*/services/|/(?:Feature|Map)Server", "", url)
+    def fetch():
+        feats, off, size, t0 = [], 0, page, time.time()
+        while True:
+            js, served = None, 0                    # failures in a row where the server was reached
+            for attempt in range(12):
+                try:
+                    r = netfetch.get(f"{url}/query", headers=UA, timeout=300, params=dict(
+                        where=where, geometry=f"{W},{S},{E},{N}", geometryType="esriGeometryEnvelope", inSR=4326,
+                        spatialRel="esriSpatialRelIntersects", outFields=fields, outSR=EPSG, f="geojson",
+                        resultOffset=off, resultRecordCount=size))
+                    if r.ok and "features" in r.json():
+                        js = r.json()
+                        break
+                    served += 1
+                except requests.ConnectionError:    # no connection (a drop): says nothing about the page's size
+                    served = 0
+                except (requests.RequestException, ValueError):
+                    served += 1
+                if time.time() - t0 > ESRI_BUDGET:
                     break
-            except (requests.RequestException, ValueError):
-                pass
-            if attempt >= 1 and page > 1:       # two failures at this size: a quarter of the page, down to one
-                page = max(1, page // 4)        # feature (ten whole-forest parcel maps are too much for one answer)
-            time.sleep(5 * min(attempt + 1, 4))
-        if js is None:
-            raise RuntimeError(f"no usable answer from {url}")
-        batch = js["features"]
-        feats += batch
-        if len(batch) < page or not js.get("properties", {}).get("exceededTransferLimit", len(batch) == page):
-            break
-        off += len(batch)
+                if served >= 2 and size > 1:        # two failures at this size: a quarter of the page, down to one
+                    size = max(1, size // 4)        # feature (ten whole-forest parcel maps are too much for one answer)
+                netfetch.wait(5 * min(attempt + 1, 4), url)
+            if js is None:
+                raise RuntimeError(f"no usable answer from {url}")
+            batch = js["features"]
+            feats += batch
+            if len(batch) < size or not js.get("properties", {}).get("exceededTransferLimit", len(batch) == size):
+                break
+            off += len(batch)
+            size = min(page, size * 4)
+        return feats
+    feats = netfetch.last_good(f"esri-{netfetch.key(url, where, fields, W, S, E, N, EPSG)}", fetch, what)
     g = gpd.GeoDataFrame.from_features(feats, crs=CRS) if feats else gpd.GeoDataFrame(geometry=[], crs=CRS)
     return g[g.intersects(area_u)] if len(g) else g
 
 # ---- fires ----
 if has("cal_fire"):
     fires = esri("https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Historic_Fire_Perimeters/"
-                 "FeatureServer/0", where=f"YEAR_ >= {FIRE_SINCE}", fields="YEAR_,FIRE_NAME,GIS_ACRES,ALARM_DATE")
+                 "FeatureServer/0", where=f"YEAR_ >= {FIRE_SINCE}", fields="YEAR_,FIRE_NAME,GIS_ACRES,ALARM_DATE",
+                 what="CAL FIRE perimeters")
     fires = fires.rename(columns={"YEAR_": "year", "FIRE_NAME": "fire", "GIS_ACRES": "acres"})
     HIST = "CAL FIRE"
 else:   # outside California: the interagency fire perimeter history (NIFC), every agency's perimeters in one layer
     fires = esri("https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
                  "InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0",
-                 where=f"FIRE_YEAR_INT >= {FIRE_SINCE}", fields="FIRE_YEAR_INT,INCIDENT,GIS_ACRES")
+                 where=f"FIRE_YEAR_INT >= {FIRE_SINCE}", fields="FIRE_YEAR_INT,INCIDENT,GIS_ACRES", what="NIFC perimeters")
     fires = fires.rename(columns={"FIRE_YEAR_INT": "year", "INCIDENT": "fire", "GIS_ACRES": "acres"})
     HIST = "NIFC"
     if len(fires):   # this layer has unnamed and self-crossing perimeters
@@ -92,7 +114,8 @@ else:   # outside California: the interagency fire perimeter history (NIFC), eve
 if len(fires):
     fires["year"] = fires.year.astype(int)
     fires["fire"] = fires.fire.str.title()
-    fires = fires.dissolve(by=["fire", "year"], as_index=False, aggfunc={"acres": "sum"}).assign(src=HIST)
+    fires = fires.dissolve(by=["fire", "year"], as_index=False, aggfunc={"acres": "sum"}).assign(
+        src=HIST + netfetch.asof(f"{HIST} perimeters"))
 else:
     fires = gpd.GeoDataFrame({"fire": pd.Series(dtype=str), "year": pd.Series(dtype=int), "acres": pd.Series(dtype=float),
                               "src": pd.Series(dtype=str)}, geometry=[], crs=CRS)
@@ -102,15 +125,16 @@ SEV = {"Very Low or Unburned": 0.15, "Low": 0.4, "Moderate": 0.75, "High": 1.0} 
 known = set(zip(fires.fire.str.lower(), fires.year))
 wf = esri("https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_YearToDate/"
           "FeatureServer/0", where="attr_IncidentTypeCategory = 'WF'",
-          fields="poly_IncidentName,poly_GISAcres,attr_FireDiscoveryDateTime")
+          fields="poly_IncidentName,poly_GISAcres,attr_FireDiscoveryDateTime", what="WFIGS perimeters")
 if len(wf):
     wf = wf.assign(fire=wf.poly_IncidentName.str.strip().str.title(), acres=wf.poly_GISAcres.astype(float),
                    year=pd.to_datetime(wf.attr_FireDiscoveryDateTime, unit="ms").dt.year)
     wf = wf[(wf.acres >= 10).values & np.array([(f.lower(), y) not in known for f, y in zip(wf.fire, wf.year)], bool)]
-    wf = wf.dissolve(by=["fire", "year"], as_index=False, aggfunc={"acres": "max"}).assign(src="WFIGS")
+    wf = wf.dissolve(by=["fire", "year"], as_index=False, aggfunc={"acres": "max"}).assign(
+        src="WFIGS" + netfetch.asof("WFIGS perimeters"))
     known |= set(zip(wf.fire.str.lower(), wf.year))
 baer = esri("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_BurnedAreaEmergencyResponse_01/MapServer/1",
-            fields="baer_name,soil_burn_severity,est_containment_date,created_date")
+            fields="baer_name,soil_burn_severity,est_containment_date,created_date", what="BAER burn severity")
 if len(baer):
     nm = baer.baer_name.fillna("")
     when = pd.to_datetime(baer.est_containment_date.fillna(baer.created_date), unit="ms", errors="coerce")
@@ -123,7 +147,7 @@ if len(baer):
     new = baer[np.array([(f.lower(), y) not in known for f, y in zip(baer.fire, baer.year)], bool)]
     if len(new):
         bo = new.dissolve(by=["fire", "year"], as_index=False)
-        bo = bo.assign(acres=bo.area / 4046.86, src="BAER")
+        bo = bo.assign(acres=bo.area / 4046.86, src="BAER" + netfetch.asof("BAER burn severity"))
         wf = pd.concat([wf, bo[bo.acres >= 10][["fire", "year", "acres", "src", "geometry"]]], ignore_index=True)
     baer = baer[baer.sev.notna()][["fire", "year", "sev", "geometry"]]
 if len(wf):
@@ -132,13 +156,13 @@ fires["year"] = fires.year.astype(int)
 fires.to_crs(4326).to_file(f"{CTX}/fires.gpkg")
 print("fires", len(fires), fires.src.value_counts().to_dict(), "| big:",
       sorted(fires[fires.acres > 5000].apply(lambda r: f"{r.fire} {r.year}", axis=1)),
-      "| added this year:", sorted(f"{r.fire} {r.year} ({r.acres:.0f} ac)" for r in fires[fires.src != HIST].itertuples()
+      "| added this year:", sorted(f"{r.fire} {r.year} ({r.acres:.0f} ac)" for r in fires[~fires.src.str.startswith(HIST)].itertuples()
                                    if r.acres >= 100))
 print("BAER burn severity polygons", len(baer), sorted(set(baer.fire + " " + baer.year.astype(str))) if len(baer) else [])
 # USGS post-fire debris-flow hazard (combined likelihood and volume class) for channels below burns of the last 4
 # years; the hazard fades as the slopes revegetate
 dfh = esri("https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/USGS_Post_Fire_Hazard_Assessment_Data/"
-           "FeatureServer/5", fields="SCH_Legend,fire_id")
+           "FeatureServer/5", fields="SCH_Legend,fire_id", what="USGS debris-flow hazard")
 if len(dfh):
     dfh["hz"] = dfh.SCH_Legend.map({"Low": 1, "Moderate": 2, "High": 3})
     dfh["year"] = pd.to_numeric(dfh.fire_id.str.extract(r"((?:19|20)\d\d)")[0], errors="coerce")
@@ -159,21 +183,22 @@ if "wilderness" not in wild:   # no wilderness in the area
     wild["wilderness"] = pd.Series(dtype=str)
 wild.to_crs(4326).to_file(f"{CTX}/wilderness.gpkg")
 own = esri("https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_BasicOwnership_02/MapServer/0",
-           fields="ownerclassification,forestname")
+           fields="ownerclassification,forestname", what="Forest Service ownership")
 if not len(own):   # no national forest in the area (northeastern Connecticut)
     own = gpd.GeoDataFrame({"ownerclassification": pd.Series(dtype=str), "forestname": pd.Series(dtype=str)}, geometry=[], crs=CRS)
 nonfs = own[~own.ownerclassification.str.contains("USDA FOREST SERVICE", case=False, na=False)]
 nonfs = nonfs[nonfs.area > 2000]  # skip slivers
+nonfs = netfetch.tag(nonfs, "ownerclassification", "Forest Service ownership")
 nonfs.to_crs(4326).to_file(f"{CTX}/non_fs_land.gpkg")
 # California Protected Areas Database (CPAD 2026a): parks and open space with their public access. Only restricted
 # and no-public-access holdings are kept; land outside CPAD and outside the national forests is private.
 if has("cpad"):
     cpad = esri("https://gis.cnra.ca.gov/arcgis/rest/services/Boundaries/CPAD_AccessType/MapServer/0",
-                where="ACCESS_TYP <> 'Open Access'", fields="ACCESS_TYP,UNIT_NAME,MNG_AGNCY")
+                where="ACCESS_TYP <> 'Open Access'", fields="ACCESS_TYP,UNIT_NAME,MNG_AGNCY", what="CPAD")
 else:   # outside California: PAD-US (USGS), holdings recorded as restricted (RA) or closed (XA) to the public.
     #     Most eastern holdings are "unknown" (UK) there: those aren't flagged
     cpad = esri("https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/PADUS_Public_Access/FeatureServer/0",
-                where="Pub_Access IN ('RA','XA')", fields="Pub_Access,Unit_Nm,MngNm_Desc")
+                where="Pub_Access IN ('RA','XA')", fields="Pub_Access,Unit_Nm,MngNm_Desc", what="PAD-US")
     if len(cpad):
         # PAD-US files federal wilderness, forest and park units as "restricted" (rules on use, not on entry):
         # they are open on foot, so they aren't flagged
@@ -186,6 +211,7 @@ else:   # outside California: PAD-US (USGS), holdings recorded as restricted (RA
                            UNIT_NAME=cpad.Unit_Nm, MNG_AGNCY=cpad.MngNm_Desc, geometry=cpad.geometry.buffer(0))
         cpad = cpad[["ACCESS_TYP", "UNIT_NAME", "MNG_AGNCY", "geometry"]]
 cpad = cpad[cpad.area > 2000] if len(cpad) else cpad
+cpad = netfetch.tag(cpad, "UNIT_NAME", "CPAD", "PAD-US")
 cpad.to_crs(4326).to_file(f"{CTX}/cpad_restricted.gpkg")
 print("restricted / no public access holdings (CPAD in California, PAD-US elsewhere):", len(cpad), cpad.ACCESS_TYP.value_counts().to_dict() if len(cpad) else {})
 print("wilderness", list(wild.wilderness), "| non-FS parcels in forests", len(nonfs),
@@ -193,14 +219,17 @@ print("wilderness", list(wild.wilderness), "| non-FS parcels in forests", len(no
 
 # ---- critical habitat ----
 fws = esri("https://services.arcgis.com/QVENGdaPbd4LUkLV/arcgis/rest/services/USFWS_Critical_Habitat/FeatureServer/0",
-           fields="comname,unitname,effectdate")
+           fields="comname,unitname,effectdate", what="USFWS critical habitat")
 CA = has("cdfw_trout")
 if len(fws):
     fws = fws[fws.comname.isin(AQUATIC) if CA else fws.comname.fillna("").str.contains(AQUATIC_RE)]
 fws = fws.rename(columns={"comname": "species", "unitname": "unit"}) if len(fws) else fws.assign(species=None, unit=None)
+fws = netfetch.tag(fws, "unit", "USFWS critical habitat")
 nmfs = esri("https://services2.arcgis.com/C8EMgrsFcRFL6LrL/arcgis/rest/services/NMFS_ESA_Critical_Habitat_gdb/FeatureServer/0",
-            where="COMNAME LIKE '%teelhead%'", fields="COMNAME,LISTENTITY") if CA else gpd.GeoDataFrame(geometry=[], crs=CRS)
-nmfs = nmfs.assign(species="Southern California steelhead", unit=nmfs.get("LISTENTITY"))
+            where="COMNAME LIKE '%teelhead%'", fields="COMNAME,LISTENTITY", what="NMFS critical habitat") \
+    if CA else gpd.GeoDataFrame(geometry=[], crs=CRS)
+nmfs = netfetch.tag(nmfs.assign(species="Southern California steelhead", unit=nmfs.get("LISTENTITY")), "unit",
+                    "NMFS critical habitat")
 habitat = pd.concat([fws[["species", "unit", "geometry"]],
                      nmfs[["species", "unit", "geometry"]].assign(geometry=nmfs.buffer(30))], ignore_index=True)
 habitat = gpd.GeoDataFrame(habitat, crs=CRS)
@@ -214,8 +243,9 @@ habitat.to_crs(4326).to_file(f"{CTX}/critical_habitat.gpkg")
 print("critical habitat", habitat.species.value_counts().to_dict())
 
 # ---- wild trout waters ----
-trout = esri("https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds1356_fpu/FeatureServer/0",
-             fields="Name,Designation,Designation_Boundary") if CA else []
+trout = netfetch.tag(esri("https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds1356_fpu/FeatureServer/0",
+                          fields="Name,Designation,Designation_Boundary", what="CDFW Wild Trout Waters"),
+                     "Designation", "CDFW Wild Trout Waters") if CA else []
 if not len(trout):   # outside California: each state's trout waters and the brook trout patches (troutdata.py)
     trout = troutdata.waters()
 if "broad" not in trout:
@@ -248,7 +278,8 @@ def air_along(gdf):
 BIOS = "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services"
 LAKE = r"(?i)\b(?:lakes?|ponds?|reservoir)\b"
 ev = []
-hwt = esri(f"{BIOS}/HWT_Project_Map_WFL1/FeatureServer/14", fields="ProjectYear,WaterName,SpeciesPresent") if CA else []
+hwt = esri(f"{BIOS}/HWT_Project_Map_WFL1/FeatureServer/14", fields="ProjectYear,WaterName,SpeciesPresent",
+           what="CDFW surveys") if CA else []
 if len(hwt):   # CDFW Heritage & Wild Trout Program: electrofishing / snorkel surveys and what they found
     spp = hwt.SpeciesPresent.fillna("").str.strip()
     found = spp.str.contains("trout", case=False)
@@ -256,8 +287,9 @@ if len(hwt):   # CDFW Heritage & Wild Trout Program: electrofishing / snorkel su
     ev.append(hwt.assign(kind="CDFW survey", water=hwt.WaterName.str.strip(), year=yr_, trout=found, lake=False, url=None,
                          label=[f"CDFW survey {y:.0f}: " + (sp if t else "no trout found"
                                                             + (f" (found {sp})" if sp and sp.lower() != "none" else ""))
-                                for y, sp, t in zip(yr_, spp, found)]))
-plant = esri(f"{BIOS}/biosds2897_fmu/FeatureServer/0", fields="WaterName,WeekOfPlantStart,FishType") if CA else []
+                                + netfetch.asof("CDFW surveys") for y, sp, t in zip(yr_, spp, found)]))
+plant = esri(f"{BIOS}/biosds2897_fmu/FeatureServer/0", fields="WaterName,WeekOfPlantStart,FishType",
+             what="CDFW stocking") if CA else []
 if len(plant):   # CDFW trout stocking (planting) locations
     plant["when"] = pd.to_datetime(plant.WeekOfPlantStart, errors="coerce")
     plant = plant[plant.FishType.str.contains("trout", case=False, na=False).values
@@ -269,31 +301,37 @@ if len(plant):   # CDFW trout stocking (planting) locations
         ev.append(pg.assign(kind="CDFW stocking", water=pg.WaterName, year=pg["last"].dt.year, trout=True,
                             lake=pg.WaterName.str.contains(LAKE), url=None,
                             label=[f"stocked with trout {n}x in the last 12 months, last the week of {d:%b %-d, %Y}"
-                                   for n, d in zip(pg.n, pg["last"])]))
+                                   + netfetch.asof("CDFW stocking") for n, d in zip(pg.n, pg["last"])]))
 ev += troutdata.evidence()     # the other states' surveys and stocking (none in California)
 def inat(taxon):
-    """Research-grade iNaturalist sightings of a taxon in the study box with an exact (not obscured) location."""
-    rows, above = [], 0
-    for _ in range(50):
-        res = None
-        for attempt in range(3):
-            try:
-                r = requests.get("https://api.inaturalist.org/v1/observations", headers=UA, timeout=120, params=dict(
-                    taxon_name=taxon, quality_grade="research", swlat=S, swlng=W, nelat=N, nelng=E, per_page=200,
-                    order_by="id", order="asc", id_above=above))
-                res = r.json()["results"]
-                break
-            except (requests.RequestException, ValueError, KeyError):
-                time.sleep(10 * (attempt + 1))
-        if res is None:
-            raise RuntimeError("iNaturalist failed")
-        rows += [o for o in res if o.get("location") and not o.get("obscured")
-                 and (o.get("positional_accuracy") or 0) <= 500]
-        if len(res) < 200:
-            return rows
-        above = res[-1]["id"]
-        time.sleep(1.1)   # iNaturalist asks API users for about one request a second
-    return rows
+    """Research-grade iNaturalist sightings of a taxon in the study box with an exact (not obscured) location: the
+    fields used below. When iNaturalist can't be read, its last good copy (netfetch.py)."""
+    def fetch():
+        rows, above = [], 0
+        for _ in range(50):
+            res = None
+            for attempt in range(3):
+                try:
+                    r = netfetch.get("https://api.inaturalist.org/v1/observations", headers=UA, timeout=120, params=dict(
+                        taxon_name=taxon, quality_grade="research", swlat=S, swlng=W, nelat=N, nelng=E, per_page=200,
+                        order_by="id", order="asc", id_above=above))
+                    res = r.json()["results"]
+                    break
+                except (requests.RequestException, ValueError, KeyError):
+                    if attempt < 2:
+                        netfetch.wait(10 * (attempt + 1), "https://api.inaturalist.org")
+            if res is None:
+                raise RuntimeError("iNaturalist failed")
+            rows += [{k: o.get(k) for k in ("observed_on", "uri", "location")} | {"taxon": {
+                         k: (o.get("taxon") or {}).get(k) for k in ("preferred_common_name", "name")}}
+                     for o in res if o.get("location") and not o.get("obscured")
+                     and (o.get("positional_accuracy") or 0) <= 500]
+            if len(res) < 200:
+                return rows
+            above = res[-1]["id"]
+            time.sleep(1.1)   # iNaturalist asks API users for about one request a second
+        return rows
+    return netfetch.last_good(f"inat-{netfetch.key(taxon, W, S, E, N)}", fetch, "iNaturalist")
 # rainbow and brown trout everywhere; brook trout and cutthroat where they live (none of either in the LA ranges)
 obs = inat("Oncorhynchus mykiss") + inat("Salmo trutta")
 if not CA:
@@ -305,7 +343,7 @@ if obs:
         year=[int(o["observed_on"][:4]) if o.get("observed_on") else np.nan for o in obs],
         lake=False,
         label=[f"iNaturalist {o.get('observed_on') or ''}: {(t.get('preferred_common_name') or t.get('name') or 'trout').lower()}"
-               for o, t in zip(obs, tx)]),
+               + netfetch.asof("iNaturalist") for o, t in zip(obs, tx)]),
         geometry=gpd.points_from_xy([float(o["location"].split(",")[1]) for o in obs],
                                     [float(o["location"].split(",")[0]) for o in obs]), crs=4326).to_crs(CRS)
     ev.append(nat[nat.intersects(area_u)])
@@ -389,31 +427,34 @@ def canopy_tif(r, tile=1500):
     p_ = f"{raw_dir(r)}/canopy_tcc.tif"
     if os.path.exists(p_) and time.time() - os.path.getmtime(p_) < 90 * 86400:
         return p_
-    t1 = requests.get(TCC, params={"f": "json"}, headers=UA, timeout=120).json()["timeInfo"]["timeExtent"][1]
-    x0, y0, x1, y1 = REGIONS[r]["bbox"]
-    w_, h_ = int(np.ceil((x1 - x0) / 30)), int(np.ceil((y1 - y0) / 30))
-    arr = np.full((h_, w_), 255, np.uint8)
-    for ty in range(0, h_, tile):
-        for tx in range(0, w_, tile):
-            w, h = min(tile, w_ - tx), min(tile, h_ - ty)
-            bb = (x0 + tx * 30, y1 - (ty + h) * 30, x0 + (tx + w) * 30, y1 - ty * 30)
-            for attempt in range(4):
-                try:
-                    rr = requests.get(f"{TCC}/exportImage", headers=UA, timeout=300, params=dict(
-                        bbox=",".join(map(str, bb)), bboxSR=EPSG, imageSR=EPSG, size=f"{w},{h}", format="tiff",
-                        pixelType="U8", interpolation="RSP_NearestNeighbor", time=t1, f="image"))
-                    with rasterio.MemoryFile(rr.content) as mf, mf.open() as src:
-                        a = src.read(1)
-                    break
-                except Exception:
-                    time.sleep(15 * (attempt + 1))
-            else:
-                raise RuntimeError("canopy cover download failed")
-            arr[ty:ty + min(h, a.shape[0]), tx:tx + min(w, a.shape[1])] = a[:h, :w]
-    with rasterio.open(p_ + ".tmp", "w", driver="GTiff", height=h_, width=w_, count=1, dtype="uint8", crs=CRS,
-                       transform=from_origin(x0, y1, 30, 30), nodata=255, compress="deflate") as dst:
-        dst.write(arr, 1)
-    os.replace(p_ + ".tmp", p_)
+    def fetch():     # (an older raster stays when the download fails: netfetch.keep_old)
+        t1 = netfetch.fetch("GET", TCC, params={"f": "json"}, headers=UA, timeout=120).json()["timeInfo"]["timeExtent"][1]
+        x0, y0, x1, y1 = REGIONS[r]["bbox"]
+        w_, h_ = int(np.ceil((x1 - x0) / 30)), int(np.ceil((y1 - y0) / 30))
+        arr = np.full((h_, w_), 255, np.uint8)
+        for ty in range(0, h_, tile):
+            for tx in range(0, w_, tile):
+                w, h = min(tile, w_ - tx), min(tile, h_ - ty)
+                bb = (x0 + tx * 30, y1 - (ty + h) * 30, x0 + (tx + w) * 30, y1 - ty * 30)
+                for attempt in range(4):
+                    try:
+                        rr = netfetch.get(f"{TCC}/exportImage", headers=UA, timeout=300, params=dict(
+                            bbox=",".join(map(str, bb)), bboxSR=EPSG, imageSR=EPSG, size=f"{w},{h}", format="tiff",
+                            pixelType="U8", interpolation="RSP_NearestNeighbor", time=t1, f="image"))
+                        with rasterio.MemoryFile(rr.content) as mf, mf.open() as src:
+                            a = src.read(1)
+                        break
+                    except Exception:
+                        if attempt < 3:
+                            netfetch.wait(15 * (attempt + 1), TCC)
+                else:
+                    raise RuntimeError("canopy cover download failed")
+                arr[ty:ty + min(h, a.shape[0]), tx:tx + min(w, a.shape[1])] = a[:h, :w]
+        with rasterio.open(p_ + ".tmp", "w", driver="GTiff", height=h_, width=w_, count=1, dtype="uint8", crs=CRS,
+                           transform=from_origin(x0, y1, 30, 30), nodata=255, compress="deflate") as dst:
+            dst.write(arr, 1)
+        os.replace(p_ + ".tmp", p_)
+    netfetch.keep_old(p_, fetch, f"tree canopy cover ({r})")
     return p_
 
 def canopy_pct(gdf, r):
@@ -445,51 +486,51 @@ def canopy_pct(gdf, r):
 WDAPI = "https://api.waterdata.usgs.gov"
 def get(url, tries=4, **params):
     """GET with retries: the USGS and CDEC servers drop connections now and then. A server over its request limit
-    (HTTP 429) is waited out as long as it asks, twice at most."""
+    (HTTP 429) is waited out as long as it asks, twice at most. None when the server answers with errors only;
+    netfetch.NetworkDown when it doesn't answer at all (then the gauges are their last good snapshot)."""
     key = os.environ.get("USGS_API_KEY") if url.startswith(WDAPI) else None
     hdr, waits = {**UA, **({"X-Api-Key": key} if key else {})}, 0
     for attempt in range(tries):
         try:
-            r = requests.get(url, headers=hdr, timeout=300, params=params)
+            r = netfetch.get(url, headers=hdr, timeout=300, params=params)
             if r.ok:
                 return r
             if r.status_code == 429 and waits < 2:
                 s = r.headers.get("Retry-After", "")
                 s = int(s) if s.isdigit() else 600
-                print(f"{url.split('/')[2]} is rate limiting: waiting {s // 60 + 1} min", flush=True)
-                time.sleep(s + 5)
+                netfetch.rate_wait(s + 5, url)     # (or the last good copy, when the wait is long)
                 waits += 1
                 continue
         except requests.RequestException:
             pass
-        time.sleep(10 * (attempt + 1))
+        netfetch.wait(10 * (attempt + 1) if attempt < tries - 1 else 0, url)
     return None
 def chunks(xs, n):
     """Site ids go in the URL, and long URLs are refused (83 ids in one statistics request got a 403)."""
     return [xs[i:i + n] for i in range(0, len(xs), n)]
+def answer(r, what):
+    if r is None:
+        raise RuntimeError(f"no answer from USGS for {what}")
+    return r.json()
 # Latest discharge of each gauge in the box that reported in the last 183 days: the API also keeps long-retired gauges
 # with their last reading (WaterServices' siteStatus=active left those out). Times come in UTC.
-lc = get(f"{WDAPI}/ogcapi/v1/collections/latest-continuous/items", f="json", bbox=f"{W:.4f},{S:.4f},{E:.4f},{N:.4f}",
-         parameter_code="00060", time="P183D", properties="monitoring_location_id,time,value", limit=10000).json()
-rows = []
-for ft in lc["features"]:
-    pr, (lon, lat) = ft["properties"], ft["geometry"]["coordinates"][:2]
-    rows.append(dict(site=pr["monitoring_location_id"].removeprefix("USGS-"), name="",
-                     cfs=pd.to_numeric(pr["value"], errors="coerce"),
-                     time=pd.Timestamp(pr["time"]).tz_convert("America/Los_Angeles").strftime("%Y-%m-%d %H:%M"),
-                     lon=lon, lat=lat))
-gauges = gpd.GeoDataFrame(rows, geometry=gpd.points_from_xy([r["lon"] for r in rows], [r["lat"] for r in rows]), crs=4326)
-gauges = gauges[gauges.to_crs(CRS).intersects(area_u)].sort_values("site").drop_duplicates("site")
-gauges = gauges[gauges.cfs >= 0]
-names = {}   # the latest values don't carry the station name
-for ids in chunks(list("USGS-" + gauges.site), 40):
-    ml = get(f"{WDAPI}/ogcapi/v1/collections/monitoring-locations/items", f="json", id=",".join(ids),
-             properties="monitoring_location_name", skipGeometry="true", limit=1000).json()
-    names.update({ft["id"].removeprefix("USGS-"): ft["properties"]["monitoring_location_name"] for ft in ml["features"]})
-gauges["name"] = gauges.site.map(names).fillna("").str.title()
-# diversions, flumes, spillways and tunnels measure plumbing, not the creek
-gauges = gauges[~gauges.name.str.contains(r"\b(?:Div|Diversion|Spill|Spillway|Forebay|Flume|Tunnel|Supp)\b", case=False)]
+def latest(lc):
+    rows = []
+    for ft in lc["features"]:
+        pr, (lon, lat) = ft["properties"], ft["geometry"]["coordinates"][:2]
+        rows.append(dict(site=pr["monitoring_location_id"].removeprefix("USGS-"), name="",
+                         cfs=pd.to_numeric(pr["value"], errors="coerce"),
+                         time=pd.Timestamp(pr["time"]).tz_convert("America/Los_Angeles").strftime("%Y-%m-%d %H:%M"),
+                         lon=lon, lat=lat))
+    g = gpd.GeoDataFrame(rows, geometry=gpd.points_from_xy([r["lon"] for r in rows], [r["lat"] for r in rows]), crs=4326)
+    g = g[g.to_crs(CRS).intersects(area_u)].sort_values("site").drop_duplicates("site")
+    return g[g.cfs >= 0]
+def named(g, names):    # (the latest values don't carry the station name)
+    g = g.assign(name=g.site.map(names).fillna("").str.title())
+    # diversions, flumes, spillways and tunnels measure plumbing, not the creek
+    return g[~g.name.str.contains(r"\b(?:Div|Diversion|Spill|Spillway|Forebay|Flume|Tunnel|Supp)\b", case=False)]
 today = dt.date.today()
+missed = []      # statistics requests the server refused (their gauges show "no history")
 def day_stats(sites):
     """Percentiles of the daily mean flow on today's month/day over each gauge's approved record, 20 gauges a request.
     Where the flow on this date was 0 in every year the API gives "nan" percentiles, so the maximum comes too: a
@@ -503,6 +544,7 @@ def day_stats(sites):
                     computation_type=["percentile", "maximum"], page_size=1000, next_token=tok)
             if r is None:
                 print("USGS statistics request failed for", ", ".join(ids))
+                missed.extend(ids)
                 break
             js = r.json()
             for ft in js.get("features", []):
@@ -522,7 +564,21 @@ def day_stats(sites):
             if not tok:
                 break
     return st
-st = day_stats(list(gauges.site))
+def snapshot():
+    """The latest discharge, the station names and today's percentiles: one snapshot, kept as the last good copy
+    unless a statistics request was refused (used then, but not kept)."""
+    lc = answer(get(f"{WDAPI}/ogcapi/v1/collections/latest-continuous/items", f="json",
+                    bbox=f"{W:.4f},{S:.4f},{E:.4f},{N:.4f}", parameter_code="00060", time="P183D",
+                    properties="monitoring_location_id,time,value", limit=10000), "the latest discharge")
+    g, names = latest(lc), {}
+    for ids in chunks(list("USGS-" + g.site), 40):
+        ml = answer(get(f"{WDAPI}/ogcapi/v1/collections/monitoring-locations/items", f="json", id=",".join(ids),
+                        properties="monitoring_location_name", skipGeometry="true", limit=1000), "station names")
+        names.update({ft["id"].removeprefix("USGS-"): ft["properties"]["monitoring_location_name"] for ft in ml["features"]})
+    snap = dict(lc=lc, names=names, st=day_stats(list(named(g, names).site)))
+    return netfetch.Partial(snap, f"no percentiles for {len(missed)} gauges") if missed else snap
+snap = netfetch.last_good(f"usgs-gauges-{netfetch.key(W, S, E, N)}", snapshot, "USGS gauges")
+gauges, st = named(latest(snap["lc"]), snap["names"]), snap["st"]
 for p in ("p10", "p25", "p50", "p75", "p90"):
     gauges[p] = [st.get(x, {}).get(p, np.nan) for x in gauges.site]
 gauges["years"] = [st.get(x, {}).get("years") for x in gauges.site]
@@ -547,11 +603,12 @@ CDEC = [("PIR", 20, "Piru Creek above Pyramid Lake (CDEC)", 34.665, -118.823),
         ("PYM", 23, "Pyramid Dam release to lower Piru Creek (CDEC)", 34.644153, -118.764528)]
 if not has("cdec"):
     CDEC = []
-try:
-    js = [] if not CDEC else get("https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet", Stations=",".join(c[0] for c in CDEC),
-             SensorNums=",".join(str(c[1]) for c in CDEC), dur_code="H", Start=(today - dt.timedelta(days=3)).isoformat(),
-             End=(today + dt.timedelta(days=1)).isoformat()).json()
-except (AttributeError, ValueError):
+try:     # (its readings carry their times: a last good copy shows its own)
+    js = [] if not CDEC else netfetch.last_good("cdec-piru", lambda: answer(get(
+        "https://cdec.water.ca.gov/dynamicapp/req/JSONDataServlet", Stations=",".join(c[0] for c in CDEC),
+        SensorNums=",".join(str(c[1]) for c in CDEC), dur_code="H", Start=(today - dt.timedelta(days=3)).isoformat(),
+        End=(today + dt.timedelta(days=1)).isoformat()), "CDEC"), "CDEC gauges")
+except (AttributeError, ValueError, RuntimeError):
     js = []
 crow = []
 for st_id, sens, name, lat, lon in CDEC:
@@ -608,8 +665,10 @@ def attrs(gdf, key, buf):
         dj = gpd.sjoin(g, dfh, predicate="intersects")
         if len(dj):
             top = dj.sort_values(["hz", "year"]).groupby(key).last()
+            w_ = netfetch.when("USGS debris-flow hazard")    # (scoring.py reads the class and the year from it)
             out["debris_flow"] = out[key].map(top.hz.map({1: "low", 2: "moderate", 3: "high"})
-                                              + " (" + top.year.astype(int).astype(str) + " fire)")
+                                              + " (" + top.year.astype(int).astype(str) + " fire"
+                                              + (f"; hazard map as of {w_}" if w_ else "") + ")")
     return out
 
 for r in REGIONS:
