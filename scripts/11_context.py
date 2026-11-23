@@ -391,6 +391,26 @@ def cut_lines(s):
     line = pd.Series(s.sid.values, index=s.index)
     return line.where(s.cut_sid.isna(), s.cut_sid) if "cut_sid" in s else line
 
+CREEK_SHARE = 0.25      # of a link's creek a designation must cover to be read on every creek piece of the link
+def creek_lines(s):
+    """The creek each reach is part of for the designated trout waters it reads (attrs). 05_score.py cuts a link where
+    it crosses the shore of a lake the map draws, at the outlet of a lake that passes its water on, and 200 m below a
+    lake, and every creek piece of one link (link_id) reads the designated trout waters and brook trout patches on the
+    whole link, as the uncut link did: measured on its own, a short piece where a creek runs through a pond or across a
+    delta to a lake fell outside the 30 m a designation is read within (Big Elk Creek's last 48 m above Palisades
+    Reservoir, Canada Creek's 51 m; on the 12 maps of 2026-11-23 about 1.9 mi lost its designation and 10+ of its fish
+    score). A piece lying in a lake keeps its own, and a link never takes another's (a tributary's mouth is a link of
+    its own); a designation read on the whole link counts only where it covers CREEK_SHARE of the link's creek (attrs):
+    the last 11 m of an unnamed tributary in the Hoback box, past a pond, touch Bailey Creek's line, and on that touch
+    its whole 2.6 km read as Bailey Creek's trout water. Records keep cut_lines (they go by the creek's name, so a named
+    creek's pieces on both sides of a pond share them already), and so do fires and critical habitat."""
+    line = cut_lines(s)
+    if "link_id" not in s or "in_lake" not in s:
+        return line
+    lid = s.link_id.where(~s.in_lake.fillna(False).astype(bool))
+    many = lid.notna() & lid.duplicated(keep=False)
+    return line.where(~many, lid)
+
 KIND_WORDS = {"creek", "ck", "cr", "river", "r", "brook", "bk", "branch", "br", "run", "stream", "kill", "canyon", "cyn",
               "wash", "the", "of", "to"}
 SHORT = {"n": "north", "s": "south", "e": "east", "w": "west", "m": "middle", "nb": "north", "sb": "south", "eb": "east",
@@ -696,7 +716,15 @@ def attrs(gdf, key, buf):
         out["cpad_access"] = out[key].map(cj.ACCESS_TYP + ": " + cj.UNIT_NAME.fillna(""))
     h = gpd.sjoin(g, habitat[["species", "geometry"]], predicate="intersects")
     out["crit_habitat"] = out[key].map(h.groupby(key).species.agg(lambda s: ", ".join(sorted(set(s)))))
-    t = gpd.sjoin(g, trout[["Name", "Designation", "broad", "wild_brook", "geometry"]], predicate="intersects")
+    gt = g              # the designated trout waters: every creek piece of a link reads them on the whole link (creek_lines)
+    if key == "sid":
+        cl = creek_lines(gdf)
+        many = cl.duplicated(keep=False).to_numpy()
+        if many.any():
+            gt = g.copy()
+            whole = g[many].assign(_line=cl[many].values).dissolve("_line").geometry
+            gt.loc[many, "geometry"] = whole.reindex(cl[many].values).values
+    t = gpd.sjoin(gt, trout[["Name", "Designation", "broad", "wild_brook", "geometry"]], predicate="intersects")
     t["label"] = (t.Designation + ": " + t.Name).str.replace(r": $", "", regex=True)
     # one label per reach: a mapped stream's designation before a catchment-wide one, then the reach's own stream's by
     # name (same_water), then the one that covers most of the reach. Only which label shows, here and in brook_water
@@ -705,6 +733,11 @@ def attrs(gdf, key, buf):
     # than a tributary's or a misnamed one's (the Little River in the Smokies showed Brier Branch): 881 popups on the
     # 12 maps named another stream (2026-11-22)
     t["cover"] = shapely.area(shapely.intersection(t.geometry.values, trout.geometry.reindex(t.index_right).values))
+    if gt is not g:     # read on the whole link: only a designation covering CREEK_SHARE of it, or one the piece touches
+        own_ = gpd.sjoin(g, trout[["geometry"]], predicate="intersects")
+        own_ = set(zip(own_[key], own_.index_right))
+        t = t[(t.cover >= CREEK_SHARE * shapely.area(t.geometry.values))
+              | np.array([(k_, j_) in own_ for k_, j_ in zip(t[key], t.index_right)], dtype=bool)]
     names = gdf["name"] if key == "sid" and "name" in gdf else pd.Series(None, index=gdf.index, dtype=object)
     t["own"] = [same_water(a, b) for a, b in zip(names.reindex(t.index), t.Name)]
     t = t.sort_values(["broad", "own", "cover"], ascending=[True, False, False])
