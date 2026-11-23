@@ -904,7 +904,17 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
   a drainage within a factor of 2 (4, then any size, where under 20 such reaches; `typical_water`), never below NHD's
   class: perennial 1.0, intermittent 0.35, a line NHD gives no class 0.3, no NHD line 0.15, ephemeral 0.05. A failed
   look-up is no evidence about the creek; until 2026-11-22 it took NHD's class alone, so one on a creek NHD doesn't
-  map scored 0.15.
+  map scored 0.15. Outside California, where the flow is NHDPlus's mean flow with no drying in it, a borrowed estimate
+  (scaled from another creek) never reads drier than that typical value either, and one on a creek NHD has no line
+  along that still reads mostly dry shows NHD's label, as a reach with no estimate does (`scoring.borrowed`, since
+  2026-11-23): floored at NHD's class alone, 103 drawn pieces (61 mi) had read "mostly dry" where the maps said "NHD
+  unmapped", among them a piece of a creek in the Champlain lowland (44.5371, -73.4192) between pieces NHD maps
+  perennial that read year-round. In LA, whose natural flows see creeks dry up, NHD's class stays the floor: the
+  area's typical value mixes mountain creeks with desert washes, and lifting LA's borrowed estimates to it put 19
+  more two-class jumps along its creeks and read two dry gauged creeks wet (Temescal Wash at Corona Lake, Castaic
+  Creek below Castaic Lake). Left: 79 LA pieces (46 mi) that read "NHD unmapped" before 2026-11-22 read "mostly dry"
+  on the same scores; the rules before then threw away only an estimate borrowed through a lake, from another box or
+  from an off-map lake, and `05b_flow.py` doesn't yet record which kind a borrowed estimate is.
   Below a gauged diversion, the gauge's own share replaces the model's only when three things hold: it kept flowing
   in under half of 5+ summers since 2011, the reach is close below the diversion, and no trout are known there.
   Today that is only the San Jacinto River near San Jacinto, which the gauge found flowing in 19% of summers. Trout

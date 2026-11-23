@@ -4268,3 +4268,48 @@ is".
   - `troutdata._vt` keeps catchments whose `trout_stat` contains "Trout", so "No Trout" catchments would pass (none
     in the area today);
   - on a phone, a reach's popup can open past the screen's right edge. The overview session took this as a page fix.
+
+## 2026-11-23, night: a borrowed estimate never reads drier than no estimate, outside LA (flow-class session)
+
+Found checking the installed summer-flow fix (f71709a) on the project build against the site before it: 103 drawn
+pieces (61 mi) read "mostly dry" where the maps had said "NHD unmapped". The old rules threw away an estimate
+borrowed from another creek when it read below NHD's class; 05b_flow.py's floor keeps it at NHD's class, valued as the
+maps value NHD's label (no NHD line 0.15, ephemeral 0.05), while a reach with no estimate at all now takes what the
+area's creeks like it read (typical_water). So a borrowed estimate that said dry fared worse than none: a piece of a
+creek in the Champlain lowland (champlain:s250, 44.5371, -73.4192, 10 km2) read mostly dry between pieces NHD maps
+perennial that read year-round, a 3-class jump. The overview asked for the fix the same night.
+
+- **Rule** (`scoring.py`, `borrowed()`; README, the fish score's water term): where the flow model can't see creeks dry
+  up (NHDPlus's mean flow: every map but LA), a borrowed estimate (scaled from another creek, or below a lake or dam
+  holding half the drainage where the flows are natural flows) is floored at the larger of NHD's class and
+  typical_water for its NHD label and drainage; one on a creek NHD has no line along that still reads mostly dry
+  shows NHD's label, as a reach with no estimate does. In LA NHD's class stays the floor, as installed.
+- **Three versions in scratch** (06_map + 12_profiles on all 12 maps, on main 48141fc + the brook patch, against that
+  base; `tools/prehandoff.sh` each time):
+  - v1 floored LA too: 19 more two-class jumps along LA creeks (San Juan, Santiago, Temescal Wash, Gorman, Las
+    Virgenes: borrowed estimates lifted to year-round beside the model's seasonal or mostly dry) and two dry gauged
+    creeks read wet (Temescal Wash at Corona Lake, Castaic Creek below Castaic Lake). LA's typical value mixes
+    mountain creeks with desert washes.
+  - v2 kept LA on NHD's class but showed NHD's label on 1,138 LA reaches (824 mi) whose borrowed estimate reads
+    mostly dry; 1,012 of those pieces had read so on the maps before 2026-11-22, long-standing reads the user hadn't
+    asked about. (A narrower option, "where 05b's floor lifted the estimate", was wrong: the old rules threw away only
+    estimates borrowed through a lake, from another box or from an off-map lake, and the floor lifts every kind.)
+  - v3, installed: LA's maps byte-identical to the base; the other 11 as v2. 1,604 reaches wetter (859 mi), 819 a
+    class up, none drier, no fish lower; fish 60+ 71,539 -> 71,712 reaches. Of the 103 pieces, the 23 outside LA read a
+    class from their peers (19 year-round, 4 seasonal); of the 86 that had read seasonal, 15 read year-round.
+    champlain:s250 year-round (fish 8 -> 51); Jackson 43.2055, -110.3220 year-round (fish 84); NE CT 41.5488, -72.0056
+    usually flows (45). Standing checks as the base: trout found shown dry 0, NHD-perennial below year-round 38 (each
+    set by its gauge), gauges unchanged (LA same class 83.67 %), sudden changes 241 -> 242 (two new in Jackson, neither
+    a creek shown drier; champlain:s250's gone).
+- **On the project build** (rebuilt from 03 with the swamp fix, brook sizing and this; checked against site 9f778f8):
+  LA's reach table carries no rule of this change; on the drawn pieces identical to the live site's, 692 outside
+  LA read wetter (274 mi) and none drier; of the 103 / 86 pieces still drawn the same on all three maps, every one
+  outside LA reads wetter (17 year-round and 4 seasonal from mostly dry, 12 year-round from seasonal), LA's as they
+  were; champlain:s250 year-round (fish 51), Jackson 43.2055, -110.3220 year-round (84), NE CT 41.5488, -72.0056
+  usually flows (45). Trout found shown dry 0; NHD-perennial below year-round 31 (18.7 mi), each set by its gauge;
+  no wet gauged creek shown dry.
+- **Left:** 79 LA pieces (46 mi) that read "NHD unmapped" before 2026-11-22 read "mostly dry", on the scores they had
+  then: 05b_flow.py doesn't record which kind of borrowed estimate it keeps. With that record (05b, with #7's 05b
+  rerun), only the kind the old rules threw away would read as NHD labels it.
+- **Installed** 2026-11-23 as 152b561 (patch md5 ae92aa6b) by the overview session, in the rebuild of all 12 maps from
+  03 that carried the swamp fix (a9919eb) and the brook sizing (f24e043).
