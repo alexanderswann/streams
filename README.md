@@ -461,21 +461,33 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    the unit-area flow of the first modelled segment downstream ("scaled"); the way down is the D8 walk from the reach's
    end, on through a lake from the cell below its outlet (crossbox's links), with each line vertex rounded to its cell
    (a vertex is a cell corner; until 2026-11-20 truncation put about half of them one row or column off, and walks
-   that ought to stop in a lake slipped past it beside the channel). A segment found down a way that went through a
-   lake may raise a creek's estimate but never lower it below NHD's class, as for one found in another box: a brook
-   running into a pond inherits the river below it, which is no evidence that the brook dries. A way that ends in a
-   lake draining off the map (`03b`'s `lakes_off_map.gpkg`, which carries no reaches) takes that lake's NHDPlus line
-   nearest where the way enters the water, under the same rule, applied in each of the two passes (own area, and with
-   the water from other boxes) before they are weighed (since 2026-11-20).
+   that ought to stop in a lake slipped past it beside the channel). A way that ends in a lake draining off the map
+   (`03b`'s `lakes_off_map.gpkg`, which carries no reaches) takes that lake's NHDPlus line nearest where the way enters
+   the water (since 2026-11-20).
    `data/check_flow_drops.py` is the standing check for sudden flow drops (a reach under a quarter of the flow per
    km2 of both the reach above it and the one below it on the same creek). Where a creek has none below it in its own
    box (by either area) and its way leaves the box, the search goes on in the box it runs into: `03b_stitch.py` routes
    an area's boxes as one surface, but each box's reaches end at its rim, so until 2026-11-20 such creeks read "no
    data" (10 % of Jackson's reaches within 1.5 km of an edge between boxes; 569 reaches over the 12 areas). That box's
    reaches are matched as its own run matches them, with the water from other boxes from its `area_streams.csv`, so
-   run `05c_drainages.py` for every box before `05b_flow.py`. A segment found in another box may raise a creek's
-   estimate, never lower it below NHD's class (possible trout water stays in). Reaches in or below a reservoir are flagged,
-   since releases set their flow. A reach lying at least half inside an NHD lake or reservoir with no model segment of
+   run `05c_drainages.py` for every box before `05b_flow.py`.
+   **NHD's class is the floor of a borrowed estimate** (since 2026-11-22; until then five rules each covered one kind
+   of borrowed estimate, and a plain one in the reach's own box had none). An estimate scaled from another creek (the
+   first modelled segment below, in the reach's box or the one it runs into, down a way through a lake, or an off-map
+   lake's line) is about the creek below: a brook running into a pond inherits the river below it, which is no
+   evidence that the brook dries. So is one that leaves out the water from above a lake or dam holding half the
+   drainage (LA, natural flows: the model's figure is for the creek's own ground below the dam, the least that runs
+   there; what seeps, spills or is released comes on top). Neither puts a reach below NHD's class, valued as the score
+   values NHD's label where there's no estimate: perennial 1.0, intermittent 0.35, a line NHD gives no class 0.3, no
+   NHD line 0.15, ephemeral 0.05. A creek NHD maps perennial reads year-round whatever the model says: outside
+   California the model is NHDPlus's mean flow, with no drying in it, and it read 671 perennial brooks in north-east
+   Connecticut below year-round (398 with trout found); in LA the natural-flow model read 145 mi that NHD maps
+   perennial mostly dry. Only a USGS gauge's record (`scoring.py`: on the creek, or below a diversion) puts a reach
+   below NHD's class. The floor is applied to each of the two passes (own area, and with the water from other boxes)
+   before they are weighed, and once at the end (a creek cut 200 m below a lake is read whole, so both of its pieces
+   take its line's floor). Columns `model_class` (the model's class where the floor raised the reach) and `water_floor`
+   (perennial, inherited or dam). Reaches in or below a reservoir are flagged, since releases set their flow.
+   A reach lying at least half inside an NHD lake or reservoir with no model segment of
    its own is a reservoir reach too (until 2026-11-19 such reaches read "no data" or took the flow of the river below
    the dam, and were scored as streams: Fontana Lake's arms at fish 83), and since 2026-11-20 so is one with a segment
    of its own, where the lake holds water (`03b`'s level test puts a pit at its outlet): a reach matched to the creek's
@@ -796,9 +808,16 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
 
 ## Fish score (0–100, heuristic; `scripts/scoring.py`)
 `water × (30% size + 30% thermal + 15% gradient + 25% remoteness) × burn × trout × heat × channel`
-- **water:** dry-season flow from the Natural Flows model (`05b_flow.py`): 0.05 + 0.95 × the share of summers since
-  2011 the reach kept ≥0.1 cfs through July–October; 0.3 in a reservoir. Reaches the model doesn't cover (about 9%)
-  fall back to the NHD class: perennial 1.0, intermittent 0.35, unmapped 0.15, ephemeral 0.05.
+- **water:** dry-season flow from the Natural Flows model (outside California NHDPlus's mean flow × the area's gauge
+  index, which has no drying in it; `05b_flow.py`): 0.05 + 0.95 × the share of summers since 2011 the reach kept
+  ≥0.1 cfs through July–October; 0.3 in a reservoir. An estimate borrowed from another creek, or one below a dam that
+  leaves the dam's water out, never puts a reach below NHD's class, and a creek NHD maps perennial reads year-round
+  (`05b_flow.py`'s floor, since 2026-11-22; only a gauge's record goes lower). A reach with no estimate (no model line
+  on the creek or below it on the map) takes the median water term of the area's reaches with the same NHD label and
+  a drainage within a factor of 2 (4, then any size, where under 20 such reaches; `typical_water`), never below NHD's
+  class: perennial 1.0, intermittent 0.35, a line NHD gives no class 0.3, no NHD line 0.15, ephemeral 0.05. A failed
+  look-up is no evidence about the creek; until 2026-11-22 it took NHD's class alone, so one on a creek NHD doesn't
+  map scored 0.15.
   Below a gauged diversion, the gauge's own share replaces the model's only when three things hold: it kept flowing
   in under half of 5+ summers since 2011, the reach is close below the diversion, and no trout are known there.
   Today that is only the San Jacinto River near San Jacinto, which the gauge found flowing in 19% of summers. Trout
@@ -811,7 +830,11 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
   in late summer (`green_p90` under 0.45 in the median summer and 0.5 in every one, and not 0.2 greener than the slopes
   around, which keeps desert palm oases like Andreas Canyon), NHD intermittent, ephemeral or unmapped, and no trout
   record, dam, tailwater, open water or fire since 2018: water 0.35 ("seasonal"), never lower. Every gauged creek in
-  that range that flows most summers has a green channel (0.67–0.86). (2) A **gauge on the creek**: 0.05 + 0.95 × its
+  that range that flows most summers has a green channel (0.67–0.86). Since 2026-11-22 the test is decided per creek
+  between confluences (`creeks()`: reaches end to end with drainage within 0.8 of each other): a creek reads seasonal
+  only where all of it passes or already reads mostly dry, and none of it shows water (a trout record, a dam or
+  tailwater, NHD perennial, open water, a channel 0.67 green or more). Decided reach by reach, it had changed a
+  creek's class from one reach to the next. (2) A **gauge on the creek**: 0.05 + 0.95 × its
   share of summers flowing. It raises a reach anywhere (Piru Creek below Pyramid Dam flows every summer on its releases,
   where the natural-flow model said seasonal), and lowers one only at or below the gauge and where no trout are known
   on the creek it stands for. Measured before installing: none of the 221 gauged creeks that flow most summers is
@@ -824,15 +847,23 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
   lake or dam** that holds half or more of a reach's drainage (LA, where the flows are natural flows), the model's
   figure is for the creek's own ground below it, since `05b_flow.py` leaves the water from above a dam out. That is
   the least that runs there (what seeps, spills or is released comes on top, and a natural lake passes its water on),
-  not evidence that the creek dries, so it doesn't put the reach below NHD's class: perennial 1.0, intermittent 0.35
-  (since 2026-11-21). Not where a gauge on the reach has a record, nor where the channel is bare in late summer.
+  not evidence that the creek dries, so it doesn't put the reach below NHD's class (since 2026-11-21; since
+  2026-11-22 part of `05b_flow.py`'s floor, on NHD's whole scale). A gauge on the reach still sets it.
   Willow Creek below Lake Arrowhead had gone from seasonal to mostly dry when the routing stopped counting the lake's
   shores as its own ground; Bear Creek below Big Bear Dam, trout water that NHD maps perennial, read seasonal on 4 km²
-  of its 193. 105 LA reaches rise. Popups say
-  which rule set the class and why. The
-  model and NHD
+  of its 193. (5) A **trout record** (trout found since 2016, with no later survey finding none; `trout_signs`) lifts
+  a reach to at least "usually flows" (water 0.69): trout don't live in a creek that is dry most summers. In LA the
+  model had 81 such reaches mostly dry or seasonal (Arroyo Trabuco at 33.6005, -117.6313: 0.0 cfs, now "usually
+  flows"). Popups say which rule set the class and why (the floor only where it changed the class). Outside
+  California, where NHDPlus's mean flow can't see a creek drying, a popup's "year-round" or "usually flows" carries
+  NHD's doubt where NHD calls the line intermittent or ephemeral or has none. Measured in scratch on all 12 maps
+  before installing (2026-11-22, against site 6c72e2e): no reach lower; trout found since 2016 shown dry 96 → 0;
+  NHD-perennial shown below year-round 1,729 reaches → 38, each set by a gauge's record; sudden changes of class
+  along a creek 272 → 213; the gauges as before. The model and NHD
   often disagree: of NHD's 2,430 "perennial" reaches the model has 619 drying in some or most summers, and 850 NHD
-  "ephemeral" reaches flowing through most summers. Popups show the model's typical and drought-year low flow.
+  "ephemeral" reaches flowing through most summers; the map shows NHD's perennial ones year-round unless a gauge's
+  record says otherwise (at the gauges NHD's perennial is right at 187 of 192 outside LA and 9 of 14 in LA, so some
+  LA creeks shown year-round will be dry). Popups show the model's typical and drought-year low flow.
   Desert-side canyons with year-round water score high on water alone. The heat gate below takes down only the low
   desert ones (Whitewater, Palm Canyon Wash, Tahquitz). Murray and upper Andreas canyons stay up because it isn't
   certain they're too warm.

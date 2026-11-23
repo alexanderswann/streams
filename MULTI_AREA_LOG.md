@@ -3892,3 +3892,58 @@ fire's burn markdown of 0.9, which 945d3ac no longer applies).
 and one rebuild of all 12 maps; this entry went in as a docs commit while that rebuild ran. **Not done yet:** the
 installed build's figures, checked on its drawn maps against the ones above (all 12, the five measured above only
 to the reach scores included), follow in a later entry.
+
+## 2026-11-22: the summer-flow class never drier than NHD's; trout records; bare channels per creek (flow-class session)
+
+The audit's findings 2 and 3 (decisions 2, 3 and 5b). Outside LA the summer flow is NHDPlus's mean flow × the area's
+gauge index, which has no drying in it, so most maps read 94-99.6 % of their miles year-round; north-east Connecticut
+the reverse, with 671 brooks NHD maps perennial shown below year-round (398 with trout found). In LA 81 reaches with
+trout found since 2016 read mostly dry or seasonal (Arroyo Trabuco, 33.6005, -117.6313: 0.0 cfs), 145 mi NHD maps
+perennial read mostly dry, and the bare-channel test passed one reach and not the next along a creek. Five rules each
+put NHD's class back under one kind of borrowed estimate, and a plain one in the reach's own box had none. A failed
+look-up scored as a creek NHD doesn't map (0.15). The user's rule: never show a wet creek as dry; their choice on
+2026-11-22, 17:15 ET: install as built.
+
+- **Rule** (README, step 7 and the fish score's water term):
+  - `05b_flow.py`: NHD's class is the floor of a borrowed estimate (scaled from another creek, in the box or the next,
+    down a way through a lake, or an off-map lake's line) and of one that leaves out the water from above a lake or
+    dam holding half the drainage (LA's natural flows), valued as the score values NHD's label (perennial 1.0,
+    intermittent 0.35, a line with no class 0.3, no line 0.15, ephemeral 0.05). A creek NHD maps perennial reads
+    year-round whatever the model says; only a USGS gauge's record goes lower. In place of `lake_floor`, the next
+    box's `lower` and `far`, `lk2` and `scoring.py`'s below-a-dam rule. New columns `model_class`, `water_floor`.
+  - `scoring.py`: the bare-channel test per creek between confluences (`creeks()`: drainage within 0.8, the pairs the
+    audit's jump test uses); a trout record lifts a reach to at least "usually flows" (0.69); a reach with no estimate
+    takes the median water term of the area's reaches with its NHD label and a similar drainage (`typical_water`),
+    never below NHD's value.
+  - `06_map.py`: the popup says which rule set the class; outside California "year-round" and "usually flows" carry
+    NHD's doubt where NHD calls the line intermittent or ephemeral or has none. The hover text is unchanged.
+- **Measured in scratch on all 12 maps against site 6c72e2e** (scripts of 9cc42e3 with this change; the audit's
+  runner on the drawn maps, `audit/tables/flowclass_scratch/`):
+  - Same lines drawn; no reach lower in class or score anywhere.
+  - Trout found since 2016 shown mostly dry or seasonal: LA 81 → 0, NE Connecticut 15 → 0.
+  - NHD-perennial shown below year-round: 1,729 reaches (1,047 mi) → 38 (19 mi), each set by a gauge's record (LA 15,
+    central Vermont 10, High Peaks 13).
+  - Year-round share of drawn miles: NE Connecticut 61.4 → 89.4 %, LA 15.6 → 20.1 %, central Vermont 95.3 → 98.7 %,
+    the others +0-1. Reaches raised a class: LA 1,701 (846 mi), NE Connecticut 670 (437 mi), central Vermont 155,
+    Jackson 95, North Georgia 28, Adirondack southeast 26, the rest 0-11.
+  - Sudden changes of class along a creek: 272 → 213 (LA 207 → 170, two classes or more 150 → 112; Jackson 15 → 5);
+    none left from the bare-channel test.
+  - Gauges: as before on every map (no wet gauged creek shown dry; LA same class 80.9 → 81.3 %).
+  - Fish 60+ drawn miles: LA 851 → 1,083, NE Connecticut 701 → 787, Jackson 3,339 → 3,350, each Adirondack map +2-7
+    (before 945d3ac). NHD's doubt shown on 15,576 drawn pieces outside LA.
+  - On the rendered maps: Arroyo Trabuco "usually flows · trout were found here"; Kahn Brook, CT (41.5856, -72.1654)
+    year-round with the floor named; Yeaman Creek, WY (43.3448, -111.2644) year-round with NHD's doubt; Hunting
+    Creek, VA (37.5411, -79.4392) "no flow estimate …", fish 19 → 55.
+- **Left:** in LA about 54 of the remaining sudden changes sit where NHD's own perennial line starts or stops along a
+  creek (the floor follows NHD reach by reach), 23 where the model matched different lines along a creek, 14 at a
+  gauge's record (not carried upstream, on purpose), about 45 the burn term (since changed by 945d3ac). The floor
+  lifts 384 LA lines NHD gives no class (canals, flood channels, connectors) and 240 NHD-intermittent ones from mostly
+  dry to seasonal; their scores stay low (median 11, none at 60+); a floor on perennial and intermittent only would
+  have put 92 reaches below their values. At the gauges NHD's perennial is right at 187 of 192 outside LA but 9 of 14
+  in LA, so some LA creeks now year-round will be dry. The cfs figure is unchanged (about 3× high on small Vermont
+  creeks, 7× in Tallulah Gorge).
+- **Installed** 2026-11-23 00:24 ET as `f71709a` on main, by the overview session in the night's combined install (after
+  the reach cut below lakes, ee00f41; before edges and size floor, a37db23, and second outlets, 6e0898c), with one
+  rebuild of all 12 maps; this entry went in as a docs commit while that rebuild ran. **Not done yet:** this piece's
+  check on the project build against the scratch figures above (identical reaches; fish 60+ also moves with
+  945d3ac and the size floor's new creeks), in a later entry.
