@@ -31,11 +31,18 @@ streams = gpd.read_file(f"{DERIVED}/dem_streams.gpkg")
 # edges and 5.7 mi below dams, on the 12 maps of 2026-11-22: the Little Tennessee below Chilhowee Dam, the
 # Chattahoochee below Buford Dam). The D8 path from that cell to the first line is a link of its own, on cell corners
 # as 03b's lines are (crossbox.lead_ins).
+# So is water carried across an edge two boxes share (crossbox.py's "edge" links, STREAM_KM2 or more) where this box's
+# routing has no line at the cell it comes in at: a creek's own water runs on across the edge on 03b's lines, but water
+# carried in from outside the map or past a dam isn't in the next box's area, so its line started again only where
+# 0.25 km2 of that box's own had gathered (2026-11-23: a lead-in from outside ran to its box's rim and stopped, Still
+# Brook in central Vermont and a creek into the Smokies' le_conte box; 5 such crossings on the 12 maps, 3 of them in
+# Lake Champlain, where a lead-in stops).
 import crossbox
 _leads = crossbox.lead_ins(REGION, streams.geometry,
-                           [e for e in crossbox.inflows(REGION, through_dams=True) if e[3] == "outside"])
-print(f"lines from where a river from outside the map goes in to its first link: {len(_leads)}, "
-      f"{sum(g.length for g in _leads) / 1000:.1f} km")
+                           [e for e in crossbox.inflows(REGION, through_dams=True)
+                            if e[3] == "outside" or (e[4] == "edge" and e[2] >= STREAM_KM2)])
+print(f"lines from where a river from outside the map, or water carried across a box edge, goes in to its first "
+      f"link: {len(_leads)}, {sum(g.length for g in _leads) / 1000:.1f} km")
 streams = pd.concat([streams, gpd.GeoDataFrame(geometry=_leads, crs=CRS)], ignore_index=True)
 nhd = gpd.read_file(f"{RAW}/nhd_flowlines.gpkg")
 nhd_pts = gpd.read_file(f"{RAW}/nhd_points.gpkg")
