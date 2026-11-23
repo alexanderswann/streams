@@ -10,8 +10,12 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              gives no class 0.3, no NHD line 0.15, ephemeral 0.05), and lifts every creek NHD maps perennial to
              year-round (water_floor). Where the model has no estimate (no line on the creek or below it on the map):
              what the area's creeks like it read (typical_water: the same NHD label, a similar drainage), never below
-             NHD's class. Then, in order, as the user put it: "id rather rate a dry creek as year round than a year
-             round creek as dry" (2026-11-20), so only (1), (2) and (4) lower, each on evidence:
+             NHD's class. A borrowed estimate is no more evidence than none, so it never reads drier than that either
+             (borrowed()), nor shows a creek NHD has no line along mostly dry: such a reach reads, as one with no
+             estimate does, as NHD labels it. Where the model sees creeks dry up (TNC's natural flows), NHD's class
+             alone stays the floor. Then, in order, as the user put it: "id rather rate a dry
+             creek as year round than a year round creek as dry" (2026-11-20), so only (1), (2) and (4) lower, each on
+             evidence:
              (1) A bare channel, decided for each creek between confluences (creeks()): a reach passes where the
              model's typical summer low is under DRY_MARGINAL_CFS (there it can't tell: 25 of 31 such gauged LA creeks
              are dry most summers), the channel shows no green in late summer (Sentinel-2, 02g_greenness.py: under
@@ -174,6 +178,8 @@ BARE_SHARE = 1.0               # (1) a creek between confluences reads dry most 
 CREEK_RATIO = 0.8              # reaches carrying within this ratio of each other's drainage are one creek between
                                # confluences (no tributary of a quarter or more joins): the pairs of the audit's jump test
 TROUT_WATER = 0.69             # (5) a trout record's floor: "usually flows", the middle of its range (50-85 % of summers)
+WATER_CUTS = [-1, 0.24, 0.525, 0.8575, 1.0]   # the water term's class limits: 0.05 + 0.95 x 20 / 50 / 85 % of summers
+WATER_CLASSES = ["mostly dry", "seasonal", "usually flows", "year-round"]
 # Thermal term: estimated July-August daytime water temperature (watertemp.py), C. Trout feed and grow well up to
 # about 20 C and can't hold out in water that stays at 25 C. On LA's trout records (1,566 reaches) this gives the same
 # mean credit as the 700-2300 m elevation band it replaced (0.91), and none of them zero
@@ -397,25 +403,44 @@ def creeks(s):
     return pd.Series([root(i) for i in range(len(s))], index=s.index)
 
 
-def typical_water(s, cls, water):
-    """For each reach with no flow estimate: the median water term of the area's reaches that have one, with the same
-    NHD label and a drainage within a factor of 2 (4, then any size, where under 20 such reaches); 0.5 where there are
-    none at all. A failed look-up is no evidence about the creek, so it scores as the area's creeks like it."""
+def typical_water(s, cls, water, which=None):
+    """For each reach with no flow estimate (or each one in `which`): the median water term of the area's reaches that
+    have one, with the same NHD label and a drainage within a factor of 2 (4, then any size, where under 20 such
+    reaches); 0.5 where there are none at all. A failed look-up is no evidence about the creek, so it scores as the
+    area's creeks like it; so does a borrowed estimate that reads it drier (borrowed())."""
     out = pd.Series(np.nan, index=s.index)
+    which = (cls.eq("no data") if which is None else which).to_numpy(bool)
     km2 = np.log(np.clip(num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float), 0.01, None))
-    has_ = cls.isin(["mostly dry", "seasonal", "usually flows", "year-round"]).to_numpy() & water.notna().to_numpy()
+    has_ = cls.isin(WATER_CLASSES).to_numpy() & water.notna().to_numpy()
     lab = s.flow.fillna("unmapped").to_numpy()
-    for f in np.unique(lab[cls.eq("no data").to_numpy()]):
+    for f in np.unique(lab[which]):
         peer = has_ & (lab == f)
         order = np.argsort(km2[peer])
         pa, pw = km2[peer][order], water.to_numpy(float)[peer][order]
-        for i in np.flatnonzero(cls.eq("no data").to_numpy() & (lab == f)):
+        for i in np.flatnonzero(which & (lab == f)):
             for w in (np.log(2), np.log(4), np.inf):
                 lo, hi = np.searchsorted(pa, km2[i] - w), np.searchsorted(pa, km2[i] + w, side="right")
                 if hi - lo >= 20 or (w == np.inf and hi > lo):
                     out.iat[i] = float(np.median(pw[lo:hi]))
                     break
     return out.fillna(0.5)
+
+
+def borrowed(s, cls):
+    """Reaches whose flow estimate is borrowed, not about the creek's own water: scaled from another creek (05b_flow.py's
+    flow_src "scaled": the first modelled reach below, in this box or the next, down a way through a lake, or an off-map
+    lake's line), or, where the flows are natural flows, below a lake or dam holding half the drainage, where the model
+    counts only the creek's own ground below it (05b_flow.py's `held`; a first stretch cut below a lake as its line)."""
+    src = s["flow_src"] if "flow_src" in s else pd.Series("", index=s.index)
+    out = src.eq("scaled").to_numpy(dtype=bool, copy=True)
+    if has("tnc_flows") and {"area_full_km2", "area_edge_km2"} <= set(s.columns):
+        full, edge = num(s, "area_full_km2"), num(s, "area_edge_km2")
+        held = ((full - edge) >= 0.5 * full).fillna(False).to_numpy()
+        if "cut_sid" in s:
+            row_ = s["cut_sid"].map(pd.Series(np.arange(len(s)), index=s["sid"].values)).fillna(-1).astype(int).to_numpy()
+            held = np.where(row_ >= 0, held[np.maximum(row_, 0)], held)
+        out |= held
+    return pd.Series(out, index=s.index) & cls.isin(WATER_CLASSES)
 
 
 def score(s):
@@ -430,9 +455,34 @@ def score(s):
     # no flow estimate (the model has no line on the creek or below it on the map): the area's creeks like it, never
     # below NHD's class
     no_est = cls.eq("no data") | water.isna()
+    bor = borrowed(s, cls) & ~no_est
+    typ = typical_water(s, cls, water, no_est | bor)
     if no_est.any():
-        water = water.where(~no_est, np.fmax(typical_water(s, cls, water), nhd_water))
+        water = water.where(~no_est, np.fmax(typ, nhd_water))
         rule[no_est] = "no estimate"
+    # a borrowed estimate (borrowed()) is no more evidence about the creek than none: it never reads drier than what a
+    # reach with no estimate takes, and on a creek NHD has no line along it never shows it mostly dry: the reach then
+    # reads as NHD labels it, as one with no estimate does, scored on the larger of the two. Floored at NHD's class
+    # alone (2026-11-23), 103 drawn pieces (61 mi) read "mostly dry" where the maps had said "NHD unmapped" (the
+    # Champlain lowland's champlain:s250, 10 km2 between pieces of its creek NHD maps perennial, read year-round).
+    # Where the flow model sees creeks dry up (TNC's natural flows) the estimate stays on NHD's class (05b_flow.py's
+    # floor): the area's typical value there mixes mountain creeks with desert washes (lifting LA's borrowed estimates
+    # to it put 19 more two-class jumps along its creeks and read two dry gauged creeks wet: Temescal Wash at Corona
+    # Lake, Castaic Creek below Castaic Lake), and its borrowed reads that say mostly dry are the maps' own (of 1,090
+    # such pieces on LA creeks NHD doesn't map, 1,012 read so before 2026-11-22; measured 2026-11-23)
+    model_class = s["model_class"].copy() if "model_class" in s else pd.Series(None, index=s.index, dtype=object)
+    up = no_cls = pd.Series(False, index=s.index)
+    if not has("tnc_flows"):
+        floor_ = np.fmax(typ, nhd_water)
+        up = bor & (water < floor_ - 1e-9)
+        model_class[up & model_class.isna()] = cls[up & model_class.isna()]
+        water = water.where(~up, floor_)
+        cls2[up] = pd.cut(water[up], WATER_CUTS, labels=WATER_CLASSES).astype(str)
+        rule[up] = "typical"
+        no_cls = bor & s.flow.eq("unmapped") & (water <= WATER_CUTS[1] + 1e-9)
+        model_class[no_cls & model_class.isna()] = cls[no_cls & model_class.isna()]
+        cls2[no_cls], rule[no_cls] = "no data", "borrowed, no class"
+        cls = cls.where(~(up | no_cls), cls2)      # the rules below read the class these give
     # creeks the model rates flowing that are dry most summers (module docstring, water (1) and (2)); 05b_flow.py
     # writes the evidence: green_* (the channel's late-summer greenness) and gauge_* (a gauge on the creek)
     pos = trout_signs(s)[0] | s.trout_water.notna()
@@ -546,6 +596,7 @@ def score(s):
     burn = burn_factor(year, sev)
     trout, heat, chan = trout_factor(s), heat_factor(s), channel_factor(s)
     s = s.copy()
+    s["model_class"] = model_class                 # the borrowed estimate's own class where the rules above lifted it
     changed = rule.ne("") & rule.ne("no estimate") & rule.ne("NHD class")
     s.loc[changed, "water_class"] = cls2[changed]
     s["water_rule"] = rule.where(rule.ne("") & ~by_gauge, None)
