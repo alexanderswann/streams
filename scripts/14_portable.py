@@ -113,6 +113,7 @@ const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/
 L.control.layers({"Light gray": gray, "USGS topo": topo, "Satellite": photo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
 L.control.scale({metric: false}).addTo(map);
 __PHONE_JS__
+__SCORE_JS__
 phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD · Trails © OpenStreetMap contributors · USFS · iNaturalist · PRISM Group, Oregon State University");
 
@@ -145,7 +146,7 @@ const ROADNAME = {paved: "paved", graded: "graded dirt (car when dry)", high_cle
 function pop(p, a) {
   const where = p.d === p.k ? esc(p.d) : `${esc(p.k)} · ${esc(p.d)}`;
   return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where} · ${esc(a.label)}</div>` +
-    `<table><tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr>` +
+    `<table>${fsRow(p)}` +          // map_score.js: the score, and its breakdown on hover or tap
     `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
     `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || String(p.fl || "").replace(/^NHD /, ""))}</td></tr>` +
     `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
@@ -331,6 +332,7 @@ sync();
 """
 _page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f_)).read()
 html = HTML.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
+html = html.replace("__SCORE_JS__", _page_file("map_score.js"))      # the fish score's breakdown in the popups
 html = html.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace("__BLOBS__", "\n".join(blobs))
 path = f"{OUT}/stream_maps_all.html"
 with open(path, "w", encoding="utf-8") as f:

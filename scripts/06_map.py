@@ -1064,6 +1064,100 @@ def side_text(r, sd_, lk_):
     return (f"a side channel of the {r.side_of}, which drains {sqmi(r.river_km2)} beside it: the routing sends the whole "
             f"river down one arm, so this arm's own drainage is small; it is scored on the river's size and flow · "
             if sd_ else "")
+# The fish score's breakdown in the stream popups (map_score.js: on hover on a computer, on a tap on a phone). Each
+# reach carries its terms as scoring.score() combines them, in one short string (fx) the page multiplies out the same
+# way, in the same order, so it comes to the score shown. Space-separated: the water term; the size term; the summer
+# water temperature (°C, one decimal, as the popup shows it); tree canopy and terrain shade (%); northness
+# (hundredths); the typical approach (min) and the minutes of it ridden. "-" is a value missing: score() then takes
+# canopy 0, terrain 20, northness 0, approach 0. Then flags: t trout evidence (x 1.2), b sized as wild brook trout
+# water, w tailwater, c built channel (x 0.2); and, where they apply, B burn, H heat gate, C the water-temperature part
+# of the thermal term (where the temperature shown doesn't give it: 0 at 25 °C and up, 1 at 20 °C and under), A the
+# drainage the size term reads (where not the one shown), G the gradient (where not the one shown), N the northness
+# (where not in hundredths). The page reads the gradient from gr. Water, size, burn, heat and C carry three decimals,
+# or more where that takes the page's sum off the reach's score: checked here on every drawn reach, and a reach whose
+# string still doesn't come to its score (score() changed and the page not) gets none, so no breakdown is shown wrong.
+def _fs_dec(v, d=None):
+    """v to d decimals (all its digits with d None), without a leading 0 or trailing zeros: 0.6309 -> '.631'."""
+    t = repr(float(v)) if d is None else f"{v:.{d}f}"
+    if "." in t and "e" not in t:
+        t = t.rstrip("0").rstrip(".")
+    t = "0" if t in ("", "-0") else t
+    return t.replace("0.", ".", 1) if t.startswith(("0.", "-0.")) else t
+
+
+def _fs_page(W, S, c1, cp, sp, nn, am, bm, gr, B, T, H, Ch):
+    """The score as map_score.js works it out, operation by operation as scoring.score() does, before rounding."""
+    terrain, canopy = sp / 100, min(max(cp / 100, 0.0), 1.0)
+    shade = min(max((1 - (1 - terrain) * (1 - 0.8 * canopy)) / 0.45, 0.0), 1.0)
+    north = min(max((nn + 0.15) / 0.30, 0.0), 1.0)
+    thermal = 0.5 * c1 + 0.35 * shade + 0.15 * north
+    grad = min(max(1 - max(max(1 - gr, gr - 8), 0.0) / 10, 0.0), 1.0)
+    remote = min(max((am + bm) / 120, 0.0), 1.0)
+    x = 100 * W * (0.30 * S + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * B * T * H * Ch
+    return min(max(x, 0.0), 100.0)
+
+
+def fs_parts(s):
+    """fx for each row of s (above), and the number of rows left without one because it doesn't come to their score."""
+    if not {"t_water", "t_size", "t_cool", "t_burn", "t_heat", "t_big"} <= set(s.columns):
+        return [None] * len(s), 0
+    n_bad, out = 0, []
+    col = lambda c: (pd.to_numeric(s[c], errors="coerce") if c in s else pd.Series(np.nan, index=s.index)).to_numpy(float)
+    W, S, C1, B, H, BIG = (col(c) for c in ("t_water", "t_size", "t_cool", "t_burn", "t_heat", "t_big"))
+    T, CH, FS = col("trout_factor"), col("channel_factor"), col("fish_score")
+    CP, SP, NN, AM, BM = col("canopy_pct"), col("shade_pct"), col("northness"), col("approach_med_min"), col("bike_med_min")
+    GR, WT = col("gradient_pct"), col("water_aug")
+    A = s.area_full_km2.fillna(s.area_km2).astype(float).round(2).to_numpy()
+    brook = s["brook_size"].fillna(False).astype(bool).to_numpy() if "brook_size" in s else np.zeros(len(s), bool)
+    tw = s["tailwater"].notna().to_numpy() if "tailwater" in s else np.zeros(len(s), bool)
+
+    def whole(v):                                   # a count or percent: as an integer where it is one
+        return "-" if np.isnan(v) else str(int(v)) if float(int(v)) == v else _fs_dec(v)
+    for i in range(len(s)):
+        if np.isnan(FS[i]) or np.isnan(W[i]) or np.isnan(S[i]) or np.isnan(C1[i]) or np.isnan(GR[i]):
+            out.append(None)
+            continue
+        nn = 0.0 if np.isnan(NN[i]) else float(NN[i])
+        k = int(round(nn * 100))
+        flags = [f for f, on in (("t", T[i] == 1.2), ("b", brook[i]), ("w", tw[i]), ("c", CH[i] == 0.2)) if on]
+        if round(float(GR[i]), 1) != GR[i]:          # the page reads gr, the gradient to one decimal
+            flags.append("G" + _fs_dec(GR[i]))
+        if k / 100 != nn:
+            flags.append("N" + _fs_dec(nn))
+        if not np.isnan(BIG[i]) and round(float(BIG[i]), 2) != A[i]:
+            flags.append("A" + _fs_dec(BIG[i], 2))
+        wt_ = None if np.isnan(WT[i]) else float(f"{WT[i]:.1f}")
+        c1_page = 1.0 if tw[i] else None if wt_ is None else min(max((25 - wt_) / 5, 0.0), 1.0)
+        need_c = c1_page is None or C1[i] != c1_page
+        head = ["-" if wt_ is None else f"{wt_:.1f}", whole(CP[i]), whole(SP[i]), "-" if np.isnan(NN[i]) else str(k),
+                whole(AM[i]), whole(BM[i])]
+        cp, sp = (0.0 if np.isnan(CP[i]) else CP[i]), (20.0 if np.isnan(SP[i]) else SP[i])
+        am, bm = (0.0 if np.isnan(AM[i]) else AM[i]), (0.0 if np.isnan(BM[i]) else BM[i])
+        for d in (3, 4, 5, 6, 8, None):
+            w_, s_, extra, c1, b_, h_ = _fs_dec(W[i], d), _fs_dec(S[i], d), list(flags), c1_page, 1.0, 1.0
+            if need_c:
+                extra.append("C" + _fs_dec(C1[i], d))
+                c1 = float(extra[-1][1:])
+            if B[i] != 1:
+                extra.append("B" + _fs_dec(B[i], d))
+                b_ = float(extra[-1][1:])
+            if H[i] != 1:
+                extra.append("H" + _fs_dec(H[i], d))
+                h_ = float(extra[-1][1:])
+            x = _fs_page(float(w_), float(s_), c1, cp, sp, nn, am, bm, float(GR[i]), b_, float(T[i]), h_, float(CH[i]))
+            if round(x) == FS[i]:
+                out.append(" ".join([w_, s_] + head + extra))
+                break
+        else:
+            n_bad += 1
+            out.append(None)
+    return out, n_bad
+
+
+fx_, fx_bad = fs_parts(s_show)
+print(f"fish score breakdown (fx): {sum(v is not None for v in fx_)} of {len(fx_)} drawn reaches"
+      + (f"; WARNING: {fx_bad} left without, as theirs didn't come to their score (map_score.js and scoring.score() "
+         f"differ)" if fx_bad else ", each coming to its score"))
 props = pd.DataFrame({
     "n": [f"{n_} (side channel)" if (sd_ or lk_) and isinstance(n_, str) else n_ if isinstance(n_, str) else None
           for n_, sd_, lk_ in zip(s_show["name"].values, _side, _lk)],
@@ -1109,6 +1203,7 @@ props = pd.DataFrame({
                                         s_show.channel_factor)],
     # where the reach stands among this area's reaches (scores aren't comparable between areas)
     "rk": s_show.area_rank_pct.astype(int),
+    "fx": fx_,                                    # the score's terms, for its breakdown (fs_parts above)
     "y": mid_ll.y.round(5), "x": mid_ll.x.round(5)})
 props["_lk"] = s_show.lk_.values
 s_feat = gpd.GeoDataFrame(props, geometry=s_show.geometry.values, crs=4326).sort_values(["o", "fs"])
@@ -1345,11 +1440,11 @@ m.get_root().header.add_child(folium.Element(
     '<script src="map3d_data.js"></script>\n<script>(function (D) {'
     + " ".join(f"window.{g} = D.{k};" for g, k in SHARED_3D.items()) + "})(window.MAP3D || {});</script>"))
 # map_phone.css/.js (the one-line credits on phones and the "my location" button) are shared with 13_overview.py and
-# 14_portable.py
+# 14_portable.py; map_score.js (the fish score's breakdown in the stream popups) with the 3D page and 14_portable.py
 _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
-    + _page_file("map_phone.js") + _page_file("map_drainages.js") + "</script>"))
+    + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("map_drainages.js") + "</script>"))
 
 # every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
@@ -1666,7 +1761,7 @@ tag3d = '<script src="map3d_data.js"></script>'
 assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
     f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
-                           + ");</script>"))
+                           + ");</script>\n<script>" + _page_file("map_score.js") + "</script>"))
 
 print("streams", len(s_ll), "| drops", len(kp_ll))
 print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string())

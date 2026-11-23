@@ -111,7 +111,7 @@ function initDrainageMap(map, ctrl) {
     const prof = pn ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
                     : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
-      `<table><tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr>` +
+      `<table>${fsRow(p)}` +           // map_score.js: the score, and its breakdown on hover or tap
       `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
       `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +

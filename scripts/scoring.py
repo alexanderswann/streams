@@ -623,6 +623,11 @@ def score(s):
     if len(nd_) or len(cap_):
         s.iloc[nd_, s.columns.get_loc("water_rule")] = SIDE_NHD
         s.iloc[cap_, s.columns.get_loc("water_rule")] = SIDE_BELOW
+    # the terms as the line below combines them, unrounded, for the popups' breakdown of each reach's score (06_map.py's
+    # fs_parts, map_score.js): water, size and the drainage it reads, the water-temperature part of the thermal term
+    # (in full on a tailwater), burn and heat. The pages work out the others from their inputs, as above
+    s["t_water"], s["t_size"], s["t_big"] = water.to_numpy(float), np.asarray(size, float), np.asarray(big, float)
+    s["t_cool"], s["t_burn"], s["t_heat"] = np.where(tw.ne(""), 1.0, cool), np.asarray(burn, float), np.asarray(heat, float)
     s["fish_score"] = np.clip(100 * water * (0.30 * size + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * burn * trout
                               * heat * chan, 0, 100).round(0)
     return s

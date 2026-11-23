@@ -591,7 +591,7 @@
     const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
                      : `<span class="dm">Unnamed reach (no profile)</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
-      `<tr><td>Fish score</td><td><b>${p.fs}</b>${p.rk != null ? ` · ahead of ${p.rk}% of reaches here` : ""}</td></tr><tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
+      `${fsRow(p)}<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +     // fsRow: map_score.js
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}${(D.lbl || {}).acc_asof ? `<div class="dm">${esc(D.lbl.acc_asof)}</div>` : ""}</td></tr>` +
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
