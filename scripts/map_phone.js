@@ -4,7 +4,8 @@
 //  - on a phone the credits fold to one line: a tap opens them, another tap (not on a link) folds them again;
 //  - a "my location" button under the zoom buttons: a tap asks the browser where you are and puts the map there, with
 //    a blue dot and a ring for the fix's accuracy. The dot then keeps moving with you; another tap centres on it again;
-//  - popups keep clear of the buttons at the top (keepPopupsClear).
+//  - popups keep clear of the buttons at the top, and their heads and open fish-score breakdowns of the legend too
+//    (keepPopupsClear).
 function phoneControls(map) {
   keepPopupsClear(map);
   const attr = map.attributionControl && map.attributionControl.getContainer();
@@ -80,23 +81,47 @@ function phoneControls(map) {
 // content changes: on a phone a stream popup's first lines, its name and fish score, sat under the buttons at the top
 // left. Once Leaflet's own pan is done, and when the fish score's breakdown opens or folds on a tap (map_score.js's
 // "fs-toggle"), the map pans the popup (or the open breakdown) to the right of the buttons where it fits there (a wide
-// screen), else below them; and brings the breakdown's foot up into view where there is room above. Not on hover: the
-// popup would move away from the pointer.
+// screen), else below them; and brings the popup's head (its first lines down to the fish score, or its name) or the
+// open breakdown up into view, above the controls at the bottom too. Where that is taller than the room the area map's
+// legend leaves, the legend folds while it needs the room (on a phone it stands open over the lower half at first: at
+// 320 x 568 it covered the popup's name and fish score, at 375 x 812 the breakdown's last rows, the score among them)
+// and comes back when the breakdown folds (if folded for it) or the popup closes. Not on hover: the popup would move
+// away from the pointer.
 function keepPopupsClear(map) {
-  let open = null;
+  let open = null, folded = [];          // the legends folded for the popup: [legend, for its head (else its breakdown)]
+  // those folded for the breakdown come back when it folds, all of them when the popup closes and no other opens in its
+  // place (those still folded: one the user opened again is left as it is)
+  const unfold = all => { folded = folded.filter(([d, head]) => {
+    if (head && !all) return true;
+    if (d.classList.contains("min")) d.querySelector(".lx").click();
+    return false; }); };
   const union = els => {
     const r = els.map(e => e.getBoundingClientRect()).filter(b => b.width && b.height);
     return r.length ? {left: Math.min(...r.map(b => b.left)), top: Math.min(...r.map(b => b.top)),
                        right: Math.max(...r.map(b => b.right)), bottom: Math.max(...r.map(b => b.bottom))} : null;
   };
-  const clear = () => {
+  // A pan or zoom of Leaflet's still under way: the popup measured now is where it was, and a pan of ours started now
+  // cuts Leaflet's short. On a big area map the page is busy as the popup opens, the check at 350 ms came before
+  // Leaflet's own pan had moved, and its pan down kept the popup 33 px past the left edge (375 px). It waits for the
+  // pan's end. The user's own drag is left alone.
+  const busy = () => !!((map._panAnim && map._panAnim._inProgress) || map._animatingZoom);
+  let waiting = false;
+  const clear = (again = 1) => {
     const el = open && open.isOpen() && open.getElement();
-    if (!el) return;
-    // with the breakdown open it is what must be seen whole and clear of the buttons (the popup's head may go under
-    // them meanwhile: on a 568 px screen the two don't fit at once); folded, the popup
+    if (!el || (map.dragging && map.dragging._draggable && map.dragging._draggable._moving)) return;
+    if (busy()) {
+      if (!waiting) { waiting = true; map.once("moveend", () => { waiting = false; setTimeout(() => clear(again)); }); }
+      return;
+    }
+    // with the breakdown open it is what must be seen whole and clear of the controls (the popup's head may go under
+    // them meanwhile: on a 568 px screen the two don't fit at once); folded, the popup's head, down to its fish score
+    // (or its name)
+    const w = el.querySelector(".leaflet-popup-content-wrapper") || el;
     const shown = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
-    const p = union(shown.length ? shown : [el.querySelector(".leaflet-popup-content-wrapper") || el]);
+    const p = union(shown.length ? shown : [w]);
     if (!p) return;
+    const h = !shown.length && (w.querySelector(".fsr") || w.querySelector("b"));
+    const foot = h ? Math.min(p.bottom, h.getBoundingClientRect().bottom) : p.bottom;
     const c = map.getContainer(), m = c.getBoundingClientRect();
     const tl = union([...c.querySelectorAll(".leaflet-top.leaflet-left .leaflet-control")]);
     const tr = union([...c.querySelectorAll(".leaflet-top.leaflet-right .leaflet-control")]);
@@ -108,29 +133,48 @@ function keepPopupsClear(map) {
       const room = (tr && p.top < tr.bottom ? tr.left : m.right) - 5;
       if (right && p.right + right <= room) dx = right;
       else dy = Math.max(...hits.map(b => b.bottom)) + 6 - p.top;
-      if (dy > m.height / 2) dy = 0;          // a panel opened that tall is the user's: leave the popup where it is
     }
-    // the open breakdown's foot (its score) comes up into view, above the controls at the bottom too (the area
-    // map's legend, the scale, the credits line) where there is room under the buttons at the top
-    const floor = Math.min(m.bottom, ...[...c.querySelectorAll(".leaflet-bottom .leaflet-control")]
-      .map(b => b.getBoundingClientRect()).filter(b => b.width && b.height && p.left + dx < b.right && p.right + dx > b.left)
-      .map(b => b.top)) - 5;
-    if (!dy && shown.length && p.bottom > floor) {
+    // a panel opened at the top over half the map is the user's: leave the popup where it is. Else what must be seen
+    // comes up into view, above the controls at the bottom too (the area map's legend, the scale, the credits line),
+    // where there is room under the controls at the top
+    if (dy > m.height / 2) dy = 0;
+    else {
+      const floor = Math.min(m.bottom, ...[...c.querySelectorAll(".leaflet-bottom .leaflet-control")]
+        .map(b => b.getBoundingClientRect()).filter(b => b.width && b.height && p.left + dx < b.right && p.right + dx > b.left)
+        .map(b => b.top)) - 5;
       const ceil = Math.max(m.top, ...[tl, tr].filter(b => across(b, dx)).map(b => b.bottom)) + 6;
-      dy = -Math.max(0, Math.min(p.bottom - floor, p.top - ceil));
+      const lg = foot - p.top > floor - ceil ? [...c.querySelectorAll(".lgd:not(.min)")]
+        .filter(d => { const b = d.getBoundingClientRect(); return p.left + dx < b.right && p.right + dx > b.left; }) : [];
+      if (lg.length) {                         // taller than the room the open legend leaves: the legend folds
+        lg.forEach(d => { d.querySelector(".lx").click(); folded.push([d, !shown.length]); });
+        requestAnimationFrame(() => clear(again));
+        return;
+      }
+      if (foot + dy > floor) dy = Math.max(floor - foot, ceil - p.top);
+      // above the room: a popup lifted for its breakdown kept its name off the top of the screen once it folded (a
+      // pixel's slack: Leaflet's own pan leaves 5 px, the room 6)
+      else if (p.top + dy < ceil - 1) dy = ceil - p.top;
     }
-    if (dx || dy) map.panBy([-dx, -dy]);
+    if (!dx && !dy) return;
+    map.panBy([-dx, -dy]);
+    if (again && shown.length) map.once("moveend", () => clear(again - 1));
   };
   // After Leaflet's own pan, and again at 350 ms and 1 s: on a slow phone its pan ran past a single check, which then
   // saw the popup mid-way and was spent (320 px). A check moves the popup only where it still overlaps the controls;
   // the listener goes after 1 s, so a pan of the user's own later is left alone.
   map.on("popupopen", e => {
     open = e.popup;
-    const p = e.popup, now = () => { if (open === p) clear(); };
+    folded.forEach(f => { f[1] = true; });   // a popup opened in place of another keeps the legends folded for that one
+    const p = e.popup, now = () => { if (open === p) clear(0); };
     map.on("moveend", now);
     setTimeout(now, 350);
     setTimeout(() => { now(); map.off("moveend", now); }, 1000);
   });
-  map.on("popupclose", e => { if (open === e.popup) open = null; });
-  document.addEventListener("fs-toggle", clear);
+  // Leaflet closes a popup before it opens the next in its place: the legends come back only if none opened
+  map.on("popupclose", e => { if (open === e.popup) { open = null; setTimeout(() => { if (!open) unfold(true); }); } });
+  document.addEventListener("fs-toggle", () => {
+    const el = open && open.isOpen() && open.getElement();
+    if (el && !el.querySelector(".fsr.open")) unfold(false);
+    clear();
+  });
 }

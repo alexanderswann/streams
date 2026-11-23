@@ -724,30 +724,95 @@
     // screen with its close button (375 px: 75..415; 320 px: -160..160). There a popup opens under or over the point,
     // whichever has more room, is held to the screen's width (the CSS above), and the map pans it clear of the controls
     // and panels, its head (name, fish score, close button) first where it is taller than the room; when its fish-score
-    // breakdown opens or folds (map_score.js's "fs-toggle") the map pans the breakdown whole into view. Desktop as before.
+    // breakdown opens or folds (map_score.js's "fs-toggle") the map pans the breakdown whole into view. What must be
+    // seen, the popup's head down to its fish score (or its name) and the open breakdown, is never left under a panel:
+    // where it is taller than the room the controls and panels leave, the open panels across it fold while it needs the
+    // room. Desktop as before.
     const narrow = () => window.innerWidth <= 640;
-    let popped = null;
-    const onScreen = (again = 1) => {
+    let popped = null, folded = [];          // the panels folded for the popup: [panel, for its head (else its breakdown)]
+    let gen = 0, pass = null;                // the placement under way, and the check waiting for the end of its pan
+    // those folded for the breakdown come back when it folds, all of them when the popup closes and no other opens in
+    // its place (those still folded: one the user opened again is left as it is)
+    const unfold = all => { folded = folded.filter(([p, head]) => {
+      if (head && !all) return true;
+      if (p.classList.contains("min")) p.querySelector(".tg").click();
+      return false; }); };
+    // The popup's point moves (dx, dy) on the screen. On a tilted map panBy moves a point high on the screen less than
+    // its offset (a popup tapped left of centre stopped 14 px past the left edge); a ground point read back from the
+    // screen through the raised terrain can land on another ridge (a pass so read jumped the map 1 km); a shift worked
+    // out on flat ground at sea level misses by the height of the land (1,300 m up, a 100 px move came to 3.6 km); and
+    // the popup's own measured moves make a poor guide, as a move up or down also moves it sideways. So the centre is
+    // solved for: where the point, at its own height, shows on the screen for a centre is read from a copy of the
+    // map's camera moved there (easeTo keeps the camera's height), and a few Newton steps find the centre that puts it
+    // where it should go. A second pass takes up anything left; where the solve fails, panBy as before.
+    const shift = (dx, dy) => {
+      const tf = map.transform, ll = popped.getLngLat(), c0 = map.getCenter();
+      const at = c => { const t = tf.clone(); t.setCenter(c); return t.locationToScreenPoint(ll, map.terrain); };
+      try {
+        const s = at(c0), T = [s.x + dx, s.y + dy];
+        let c = c0, p = s;
+        for (let i = 0; i < 6 && Math.hypot(T[0] - p.x, T[1] - p.y) > 0.5; i++) {
+          const e = 1e-5, px = at(new maplibregl.LngLat(c.lng + e, c.lat)), py = at(new maplibregl.LngLat(c.lng, c.lat + e));
+          const a = (px.x - p.x) / e, b = (py.x - p.x) / e, g = (px.y - p.y) / e, d = (py.y - p.y) / e, det = a * d - b * g;
+          if (!det) break;
+          const ex = T[0] - p.x, ey = T[1] - p.y;
+          c = new maplibregl.LngLat(c.lng + (d * ex - b * ey) / det, c.lat + (a * ey - g * ex) / det);
+          p = at(c);
+        }
+        if (Math.hypot(T[0] - p.x, T[1] - p.y) <= 2) return map.easeTo({center: c, duration: 300});
+      } catch (err) { /* an older or newer MapLibre without these: panBy */ }
+      map.panBy([-dx, -dy], {duration: 300});
+    };
+    const onScreen = (again = 2) => {
       const el = popped && popped.isOpen() && popped.getElement();
       if (!el) return;
-      const shown = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
-      const t = (shown[0] || el.querySelector(".maplibregl-popup-content")).getBoundingClientRect();
-      const m = map.getContainer().getBoundingClientRect();
-      const dx = t.left < m.left + 6 ? m.left + 6 - t.left : t.right > m.right - 6 ? m.right - 6 - t.right : 0;
-      // the controls and panels across its width; a panel opened over half the map is the user's, and left alone
+      const c = el.querySelector(".maplibregl-popup-content");
+      const box = [...el.querySelectorAll(".fsb")].find(b => getComputedStyle(b).display !== "none");
+      const t = (box || c).getBoundingClientRect();
+      // what must be seen whole: the open breakdown, else the popup's head, down to its fish score (or its name)
+      const h = !box && (c.querySelector(".fsr") || c.querySelector("b"));
+      const need = h ? Math.min(t.bottom, h.getBoundingClientRect().bottom) - t.top : t.height;
+      const m = map.getContainer().getBoundingClientRect(), r = c.getBoundingClientRect();
+      // across, the popup whole (it is held to the screen's width), with the breakdown open too (opened mid-pan, the
+      // breakdown alone was kept on the screen and the popup stood 2 px past its edge); whole pixels, rounded outwards,
+      // so the margins of 6 px hold however the move falls
+      const dx = r.left < m.left + 6 ? Math.ceil(m.left + 6 - r.left) : r.right > m.right - 6 ? Math.floor(m.right - 6 - r.right) : 0;
+      // the controls and panels across its width
+      const across = o => o.width && o.height && t.left + dx < o.right && t.right + dx > o.left;
+      const panels = [...document.querySelectorAll(".panel")].filter(p => across(p.getBoundingClientRect()));
       const obs = [...document.querySelectorAll(".maplibregl-ctrl-top-left .maplibregl-ctrl, .maplibregl-ctrl-top-right " +
-        ".maplibregl-ctrl, .maplibregl-ctrl-bottom-left .maplibregl-ctrl, .maplibregl-ctrl-bottom-right .maplibregl-ctrl, .panel")]
-        .map(o => o.getBoundingClientRect())
-        .filter(o => o.width && o.height && o.height < m.height / 2 && t.left + dx < o.right && t.right + dx > o.left);
+        ".maplibregl-ctrl, .maplibregl-ctrl-bottom-left .maplibregl-ctrl, .maplibregl-ctrl-bottom-right .maplibregl-ctrl")]
+        .map(o => o.getBoundingClientRect()).concat(panels.map(p => p.getBoundingClientRect())).filter(across);
       const mid = m.top + m.height / 2;
       const ceil = Math.max(m.top, ...obs.filter(o => o.top + o.bottom < 2 * mid).map(o => o.bottom)) + 6;
       const floor = Math.min(m.bottom, ...obs.filter(o => o.top + o.bottom >= 2 * mid).map(o => o.top)) - 6;
-      const dy = t.top < ceil || t.height > floor - ceil ? ceil - t.top : t.bottom > floor ? floor - t.bottom : 0;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      map.panBy([-dx, -dy], {duration: 300});
-      if (again) map.once("moveend", () => onScreen(again - 1));     // a tilted map moves the point a little off
+      // taller than the room: the open panels across it fold (on a phone's first view the legend panel stands open over
+      // the lower half: at 320 x 568 it covered the popup's fish score, at 375 x 812 the breakdown's last rows)
+      const g = gen, fold = need > floor - ceil ? panels.filter(p => !p.classList.contains("min")) : [];
+      if (fold.length) {
+        fold.forEach(p => { p.querySelector(".tg").click(); folded.push([p, !box]); });
+        requestAnimationFrame(() => { if (g === gen) onScreen(again); });
+        return;
+      }
+      const dy = t.top < ceil || t.height > floor - ceil ? Math.ceil(ceil - t.top) : t.bottom > floor ? Math.floor(floor - t.bottom) : 0;
+      if (!dx && !dy) return;
+      shift(dx, dy);
+      // the check after the pan runs a frame after its end, never inside it: a pan started while another runs ends that
+      // one, whose "moveend" MapLibre fires from inside the new easeTo, and an easeTo nested there leaves two frame
+      // callbacks on one ease (a tap on the score mid-pan stopped the map: "this._onEaseFrame is not a function").
+      // A newer placement drops it, and so does a move of the user's own.
+      if (again) {
+        pass = () => { pass = null; requestAnimationFrame(() => { if (g === gen && !map.isMoving()) onScreen(again - 1); }); };
+        map.once("moveend", pass);
+      }
     };
-    document.addEventListener("fs-toggle", () => { if (narrow()) onScreen(); });
+    // a placement from the start: for a popup just opened, or its breakdown opened or folded
+    const place = () => { gen++; if (pass) { map.off("moveend", pass); pass = null; } onScreen(); };
+    document.addEventListener("fs-toggle", () => {
+      if (!narrow() || !popped || !popped.isOpen()) return;
+      if (!popped.getElement().querySelector(".fsr.open")) unfold(false);
+      place();
+    });
     map.on("click", e => {
       let f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
       if (!f) return;
@@ -759,10 +824,12 @@
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
       if (!narrow()) { new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map); return; }
-      popped = new maplibregl.Popup({maxWidth: (window.innerWidth - 16) + "px",
+      folded.forEach(x => { x[1] = true; });  // a popup opened in place of another keeps the panels folded for that one
+      const pop = popped = new maplibregl.Popup({maxWidth: (window.innerWidth - 16) + "px",
                                      anchor: e.point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
         .setLngLat(e.lngLat).setHTML(html).addTo(map);
-      onScreen();
+      pop.on("close", () => { if (popped === pop) { popped = null; unfold(true); } });
+      place();
     });
     // keep the 2D link pointed at the current view
     const sync = () => { const c = map.getCenter();
