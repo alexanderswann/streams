@@ -152,16 +152,21 @@ def nhd_says(geoms, km2, lines, big_geoms, big_km2):
     return ok
 # The floor reads NHD's natural channels only. Its canals and ditches (FType 336), pipelines (428) and underground
 # conduits (420) are built, and so is a line named after one, as the paths and connectors NHD lays along an aqueduct
-# through its reservoirs are (a name it gives a built channel of the box and no stream line, FType 460). On the first
-# try 9.7 mi of LA's new lines were named after the California and Los Angeles aqueducts, the Gage and Riverside canals
-# and flood-control channels (fish 0-9, 2026-11-22). A stream line NHD names after a channel (a canyon's creek above its
+# through its reservoirs are: a name it gives a built channel of the box, where its stream lines (FType 460) carry under
+# BUILT_STREAM_SHARE of its length. On the first try 9.7 mi of LA's new lines were named after the California and Los
+# Angeles aqueducts, the Gage and Riverside canals and flood-control channels (fish 0-9, 2026-11-22); NHD files 3 m of
+# the West Branch California Aqueduct's 41 km as a stream line, which let 0.5 mi of it in while the test was "no stream
+# line at all" (2026-11-23; the next name down on the 12 maps, Kimball Canal, has 12 % on stream lines, and real creeks
+# with a channelized stretch 20 % and more). A stream line NHD names after a channel (a canyon's creek above its
 # flood-control channel) is still read, and so are the paths of a river through its own water.
-BUILT_FTYPES = (336, 420, 428)
+BUILT_FTYPES, BUILT_STREAM_SHARE = (336, 420, 428), 0.1
 def floor_lines(nl):
-    """The NHD lines `nl` (gnis_name, ftype, flow, geometry) the floor reads: no built channel, nor a line named after
-    one."""
+    """The NHD lines `nl` (gnis_name, ftype, flow, geometry, in metres) the floor reads: no built channel, nor a line
+    named after one."""
     built = nl.ftype.isin(BUILT_FTYPES)
-    built_name = set(nl.gnis_name[built].dropna()) - set(nl.gnis_name[nl.ftype.eq(460)].dropna())
+    length = nl.geometry.length
+    share = length.where(nl.ftype.eq(460), 0.0).groupby(nl.gnis_name).sum() / length.groupby(nl.gnis_name).sum()
+    built_name = {n for n in set(nl.gnis_name[built].dropna()) if share.get(n, 0.0) < BUILT_STREAM_SHARE}
     nl = nl[~built & ~nl.gnis_name.isin(built_name)]
     return nl[["gnis_name", "flow", "geometry"]].reset_index(drop=True)
 full0 = s.area_km2 + carried
