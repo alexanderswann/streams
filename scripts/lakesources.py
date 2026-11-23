@@ -43,20 +43,27 @@ NLA = {  # cycle: (url, the columns that hold latitude, longitude, depth, date; 
 
 
 def _fetch(url, path):
+    """`url` downloaded once to `path` (EPA's NLA tables don't change); one that can't be fetched is left out, with a
+    dated NOTE (it had none, and a server or network that was out stopped the step instead)."""
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        for attempt in range(4):
-            try:
-                r = netfetch.get(url, headers=UA, timeout=300)
-                if r.ok:
-                    with open(path + ".tmp", "wb") as f:
-                        f.write(r.content)
-                    os.replace(path + ".tmp", path)
-                    break
-            except requests.RequestException:
-                pass
-            if attempt < 3:
-                netfetch.wait(10 * (attempt + 1), url)
+        try:
+            for attempt in range(4):
+                try:
+                    r = netfetch.get(url, headers=UA, timeout=300)
+                    if r.ok:
+                        with open(path + ".tmp", "wb") as f:
+                            f.write(r.content)
+                        os.replace(path + ".tmp", path)
+                        break
+                except requests.RequestException:
+                    pass
+                if attempt < 3:
+                    netfetch.wait(10 * (attempt + 1), url)
+        except netfetch.NetworkDown:
+            pass
+        if not os.path.exists(path):
+            netfetch.note(f"EPA NLA table {os.path.basename(path)} not downloaded: its lake depths are left out")
     return path
 
 

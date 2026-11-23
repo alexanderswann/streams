@@ -21,11 +21,14 @@ size shrank to one feature and never grew back), 47 minutes on another connectio
         clears the host.
   fetch(method, url, tries=3, pause=..., ok=...)  a few tries of request() until ok(response); FetchError (a
       RuntimeError) when none gives a usable answer
-  last_good(name, fetch, what)    fetch()'s result (anything JSON can hold), kept as the last good copy in
+  last_good(name, fetch, what, also=())    fetch()'s result (anything JSON can hold), kept as the last good copy in
       data/raw/<area>/_shared/netcache/<name>.json.gz. When fetch() fails (no network, a server that answers
       nonsense): that copy, a dated NOTE in the log, and asof(what) gives its date. The error again when there is none.
+      `also`: names the copy was kept under before (tried in turn when `name` has none).
   keep_old(path, fetch, what)     the same for a download kept as a file of its own (a week or a month): fetch()
       rewrites `path`; when it fails the earlier file stays, with the NOTE.
+An empty answer (a box with no closed roads, no named stream) is an answer: it is kept like any other, since without
+a copy the step can't run offline. A partial answer, or an error page, is not.
   asof(*what)                     ' (as of Nov 21)' when any of those sources came from a last good copy in this step,
       else '': for the source wording the map shows (closures' source, fire perimeters' source, trout records' label).
 
@@ -36,7 +39,8 @@ Switches (environment), for tests:
   NET_FAIL=1         every request fails at once, as with no network; NET_FAIL=<regex>: only the URLs it matches
   NET_LOG=1          one line per request: method, host and path, the answer or the error, seconds
 GDAL's own downloads (/vsicurl/ in lakelidar.py) get the same connect timeout, a stall limit and three tries through
-its GDAL_HTTP_* settings, set here unless already set.
+its GDAL_HTTP_* settings, set here unless already set. NET_FAIL doesn't reach them: a test that should cut them too
+sets GDAL_HTTP_PROXY=http://127.0.0.1:9 (a closed port).
 """
 import os, re, sys, json, gzip, time, hashlib, threading, datetime as dt
 from urllib.parse import urlsplit
@@ -330,11 +334,12 @@ def rate_wait(seconds, url):
     time.sleep(seconds)
 
 
-def last_good(name, fetch, what):
-    """fetch()'s result, saved as `name`'s last good copy; when fetch() fails, that copy (see the module's docstring).
-    A Partial answer is used and not saved."""
+def last_good(name, fetch, what, also=()):
+    """fetch()'s result, saved as `name`'s last good copy; when fetch() fails, that copy (see the module's docstring),
+    or else the first there of the copies under the older names `also`. A Partial answer is used and not saved."""
     path = f"{_dir()}/{name}.json.gz"
-    _copy_at_hand.append(os.path.exists(path))
+    olds = [path] + [f"{_dir()}/{a}.json.gz" for a in also]
+    _copy_at_hand.append(any(os.path.exists(p) for p in olds))
     try:
         data = fetch()
         if isinstance(data, Partial):
@@ -342,10 +347,13 @@ def last_good(name, fetch, what):
             return data.data
     except Exception as e:             # noqa: BLE001 (any network or server failure)
         old = None
-        if os.path.exists(path):
+        for p in olds:
+            if not os.path.exists(p):
+                continue
             try:
-                with gzip.open(path, "rt") as f:
+                with gzip.open(p, "rt") as f:
                     old = json.load(f)
+                break
             except (OSError, ValueError) as e2:
                 note(f"the last good copy of {what} can't be read ({_short(e2)})")
         if old is None:

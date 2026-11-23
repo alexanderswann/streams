@@ -14,9 +14,13 @@ def overpass(q):
     return netfetch.overpass(q)
 
 
-def esri(url, bbox, fields, where="1=1"):
+def esri(url, bbox, fields, where="1=1", file_as=None):
     """All features of an ArcGIS layer in a lon/lat box (EPSG:4326 out), paging through the server's record limit.
-    A layer that can't be read is its last good copy (netfetch.py: a dated NOTE); one never read stops the step."""
+    A layer that can't be read is its last good copy (netfetch.py: a dated NOTE); one never read stops the step.
+    The copy is kept under the box asked for. A box that moves with the data (05d_lakes.py asks PAD-US over the lakes'
+    own extent, which a lake changed at the edge moves) gives `file_as`, a name of its own: the copy is kept under
+    that name with its box, and offline a copy fetched for another box is cut to this one (the features that meet it,
+    as the server answers), with a NOTE when it doesn't cover all of it."""
     def fetch():
         feats, off = [], 0
         while True:
@@ -42,8 +46,19 @@ def esri(url, bbox, fields, where="1=1"):
                 break
             off += len(batch)
         return feats
-    feats = netfetch.last_good(f"esri-{netfetch.key(url, [float(v) for v in bbox], fields, where)}", fetch,
-                               re.sub(r".*/services/|/(?:Feature|Map)Server", "", url))
+    what, bb = re.sub(r".*/services/|/(?:Feature|Map)Server", "", url), [float(v) for v in bbox]
+    exact = f"esri-{netfetch.key(url, bb, fields, where)}"
+    if file_as is None:
+        feats = netfetch.last_good(exact, fetch, what)
+    else:          # (a copy kept before 2026-11-23 is under the exact box's name: a list of features)
+        got = netfetch.last_good(f"esri-{netfetch.key(url, fields, where, file_as)}",
+                                 lambda: dict(bbox=bb, features=fetch()), what, also=[exact])
+        feats = got if isinstance(got, list) else got["features"]
+        if isinstance(got, dict) and got["bbox"] != bb:
+            env = shapely.box(*bb)
+            feats = [f for f in feats if shapely.geometry.shape(f["geometry"]).intersects(env)]
+            if not shapely.box(*got["bbox"]).covers(env):
+                netfetch.note(f"{what}: its last good copy was fetched for a smaller box; what lies outside it is missing")
     return gpd.GeoDataFrame.from_features(feats, crs=4326) if feats else gpd.GeoDataFrame(geometry=[], crs=4326)
 
 

@@ -8,7 +8,8 @@ was on the survey date, to the metre: a newer and sharper shoreline than NHD's, 
 catalog(bounds, cache)          1 m DEM tiles over a lon/lat box (TNM Access API) and each survey's work units with
                                 flight dates and quality level (3DEP index); cached 30 days
 window(geom, crs, cat, pad, path)  the newest survey that fully covers a lake and a margin of `pad` m around it:
-                                (array, transform, work unit); cached as a GeoTIFF at `path`
+                                (array, transform, work unit); cached as a GeoTIFF at `path`, and a window every
+                                survey has a gap in as `path`.gaps.json (so neither is read from USGS again)
 water(a, T, lake, others)       the water level, the share of the lake's outline at it, the flattened shoreline and
                                 whether it runs off the window
 Checked on 2026-11-19: Bradley Lake reads one level (2,139.500 m) on 99% of its NHD outline, Holly Lake 97%. The
@@ -108,10 +109,21 @@ def window(geom, crs, cat, pad, path=None):
             return s.read(1), s.transform, (hit.iloc[0] if len(hit) else None)
     inside = geom.representative_point()
     pl = gpd.GeoSeries([inside], crs=crs).to_crs(4326).iloc[0]
-    for _, u in cat.units[cat.units.intersects(pl)].iterrows():        # newest first
+    cover = []          # the surveys whose tiles cover the window, newest first (from the catalogue: nothing read yet)
+    for _, u in cat.units[cat.units.intersects(pl)].iterrows():
         t = cat.tiles[(cat.tiles["project"] == u["tiles_as"]) & cat.tiles.intersects(gl)]
-        if not len(t) or not shapely.union_all(t.geometry.values).buffer(1e-6).contains(gl):
-            continue
+        if len(t) and shapely.union_all(t.geometry.values).buffer(1e-6).contains(gl):
+            cover.append((u, t))
+    # A window that every one of them has a gap in was read before, and is remembered beside `path` (the surveys and
+    # their tiles): a rerun doesn't read those tiles again, which offline it couldn't (the lake would lose its lidar)
+    tried = dict(window=[float(v) for v in (x0, y0, x1, y1)],
+                 surveys=[[str(u["workunit"]), sorted(t.url)] for u, t in cover])
+    gaps = f"{path}.gaps.json" if path and cover else None
+    if gaps and os.path.exists(gaps):
+        with open(gaps) as f:
+            if json.load(f) == tried:
+                return None
+    for u, t in cover:
         srcs = [rasterio.open("/vsicurl/" + url) for url in t.url]
         try:
             # Tiles come in their survey's UTM zone (zone 19 for the Massachusetts surveys along NE Connecticut's
@@ -152,6 +164,10 @@ def window(geom, crs, cat, pad, path=None):
                 d.update_tags(workunit=u.workunit)
             os.replace(path + ".tmp.tif", path)
         return a, T, u
+    if gaps:
+        with open(gaps + ".tmp", "w") as f:
+            json.dump(tried, f)
+        os.replace(gaps + ".tmp", gaps)
     return None
 
 

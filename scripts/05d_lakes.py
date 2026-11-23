@@ -865,7 +865,11 @@ def _gbif(p):
                            lat=x.get("decimalLatitude"), lon=x.get("decimalLongitude"),
                            uncert=x.get("coordinateUncertaintyInMeters"), status=x.get("occurrenceStatus"),
                            basis=x.get("basisOfRecord"), locality=x.get("locality") or x.get("waterBody"),
-                           withheld=x.get("informationWithheld")) for x in recs])
+                           withheld=x.get("informationWithheld")) for x in recs],
+                     # the columns named, so that an area with no record keeps a table (header only) that the next
+                     # run, or an offline one, can read: an empty answer is a last good copy too
+                     columns=["gbif", "dataset", "species", "common", "year", "date", "lat", "lon", "uncert", "status",
+                              "basis", "locality", "withheld"])
     t.to_csv(p + ".tmp", index=False)
     os.replace(p + ".tmp", p)
     return t
@@ -1045,10 +1049,11 @@ if len(ex):
 # ---- 7. land: the most specific PAD-US unit at the lake (a park, refuge, wilderness or forest; fishing rules and
 # access go with it), and its public access code; none = private or unlisted land ----
 from geomatch import esri
-# fetched over the lakes' full extent: a few reach past the study area (Jackson Lake, Palisades Reservoir)
+# fetched over the lakes' full extent: a few reach past the study area (Jackson Lake, Palisades Reservoir). That
+# box moves whenever a lake at the edge changes, so its last good copy is kept under a name of its own (geomatch.esri)
 _ext = gpd.GeoSeries([box(*boxes.total_bounds), box(*lk.total_bounds)], crs=CRS).to_crs(4326).total_bounds
 pad = esri("https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/PADUS_Public_Access/FeatureServer/0",
-           tuple(_ext), "Unit_Nm,MngNm_Desc,Pub_Access,GIS_Acres")
+           tuple(_ext), "Unit_Nm,MngNm_Desc,Pub_Access,GIS_Acres", file_as="the lakes' extent")
 lk["land"], lk["land_access"] = None, None
 if len(pad):
     pad = gpd.GeoDataFrame(pad, crs=4326).to_crs(CRS)

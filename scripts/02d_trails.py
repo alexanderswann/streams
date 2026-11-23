@@ -40,8 +40,8 @@ os.makedirs(CACHE, exist_ok=True)
 
 def cached(name, fetch, days=CACHE_DAYS):
     """fetch() result cached as JSON (OSM elements) or GeoJSON (GeoDataFrame) under data/raw/_shared/cache. Written
-    through a temporary file, and only from a whole answer; when a refresh fails, the earlier copy is used (with a
-    dated NOTE, netfetch.keep_old)."""
+    through a temporary file, and only from a whole answer (an empty one too); when a refresh fails, the earlier copy
+    is used (with a dated NOTE, netfetch.keep_old)."""
     import json
     import netfetch
     path = f"{CACHE}/{name}"
@@ -59,11 +59,10 @@ def cached(name, fetch, days=CACHE_DAYS):
         return json.load(open(path)) if out is None else out
     if fresh:
         return gpd.read_file(path)
-    def refresh_gj():
-        out = fetch()
-        if len(out):
-            out.to_file(path + ".tmp", driver="GeoJSON")
-            os.replace(path + ".tmp", path)
+    def refresh_gj():      # an empty answer is kept too (no closed USFS roads in NE Connecticut's box): it is the
+        out = fetch()      # box's last good copy, and without one the step can't run offline
+        out.to_file(path + ".tmp", driver="GeoJSON")
+        os.replace(path + ".tmp", path)
         return out
     out = netfetch.keep_old(path, refresh_gj, f"{name} (trails)") if os.path.exists(path) else refresh_gj()
     return gpd.read_file(path) if out is None else out

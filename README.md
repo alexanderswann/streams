@@ -184,8 +184,12 @@ hard limit on each attempt, and a breaker that stops asking a host (or the whole
 the source wording the map shows; only a source with no copy at all fails its step. A server that asks for a wait over
 two minutes (HTTP 429) isn't waited for when there is a copy. An answer cut short (an Overpass answer stopped by its
 time limit, an ArcGIS error sent as HTTP 200, a web page without its `</html>`) is no answer, and one with a part
-missing is never kept as a copy. `NET_FAIL=1` (or a regex of URLs) makes every download fail at once, for tests;
-`NET_LOG=1` logs each request. OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass
+missing is never kept as a copy. An empty answer (no closed USFS road in a box, no named OSM stream) is kept like
+any other: without a copy a step can't run offline. A lidar window that every survey has a gap in is remembered beside
+the cached windows (`.gaps.json`), so no lidar tile is read twice; 05d's PAD-US copy, whose box follows the lakes, is
+kept under a name of its own and cut to the box asked. `NET_FAIL=1` (or a regex of URLs) makes every download fail at
+once, for tests; it doesn't reach GDAL's own reads (the lidar tiles), which `GDAL_HTTP_PROXY=http://127.0.0.1:9` (a
+closed port) cuts too. `NET_LOG=1` logs each request. OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass
 server second. The USGS gauges come from the USGS Water Data API (`api.waterdata.usgs.gov`), which replaces
 WaterServices (shut down on 2027-02-22): 1,000 requests an hour without a key, shared with anything else on the same
 connection (a fresh `02b` gauge download takes about 115, `11_context.py` under 10). A free key from
