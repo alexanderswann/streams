@@ -32,7 +32,7 @@
           border-radius: 22px; padding: 9px 16px; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,.35); text-decoration: none; white-space: nowrap; }
   .leaflet-popup-content a { color: #1864ab; font-weight: 600; }
 /* Shared by the area maps (06_map.py), the map of all areas (13_overview.py) and the one-file phone map
-   (14_portable.py): the credits line and the "my location" button (map_phone.js). */
+   (14_portable.py): the credits line, the "my location" button (map_phone.js) and popups that fit a phone's screen. */
 
 /* phones: the credits fold to one line (a tap shows them all, another folds them again); the controls at the bottom
    left sit just above that line instead of under the credits */
@@ -42,6 +42,13 @@
     box-sizing: border-box; font-size: 10px; line-height: 16px; cursor: pointer; }
   .leaflet-container .leaflet-control-attribution.open { white-space: normal; overflow: visible; line-height: 1.35; }
   .leaflet-bottom.leaflet-left { bottom: 16px; }
+  /* a popup fits the screen, its close button too. Leaflet sizes a popup's content from its maxWidth (340 px for a
+     stream on the area maps) and puts its margins and the close button around that: on a 375 px phone a stream popup
+     was 387 px wide and its close button ran past the right edge. The content is held to the screen's width less
+     Leaflet's margins (46 px; 28 on the phone map) and its 5 px pan padding on each side. Leaflet measures the popup
+     after this, so it still centres and pans it, and keepPopupsClear (map_phone.js) still moves it clear of the
+     buttons. */
+  .leaflet-container .leaflet-popup-content { max-width: calc(100vw - 56px); }
 }
 
 /* "my location": a button under the zoom buttons; blue once the browser has a fix, pulsing while it looks */
@@ -71,8 +78,10 @@ map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD");
 // phoneControls(map):
 //  - on a phone the credits fold to one line: a tap opens them, another tap (not on a link) folds them again;
 //  - a "my location" button under the zoom buttons: a tap asks the browser where you are and puts the map there, with
-//    a blue dot and a ring for the fix's accuracy. The dot then keeps moving with you; another tap centres on it again.
+//    a blue dot and a ring for the fix's accuracy. The dot then keeps moving with you; another tap centres on it again;
+//  - popups keep clear of the buttons at the top (keepPopupsClear).
 function phoneControls(map) {
+  keepPopupsClear(map);
   const attr = map.attributionControl && map.attributionControl.getContainer();
   if (attr) {
     attr.title = "Map and data credits";
@@ -139,6 +148,66 @@ function phoneControls(map) {
     say(e.code === 1 ? "Location is blocked for this page: allow it in the browser's settings, then tap again."
                      : "Your location isn't available right now; tap to try again.");
   });
+}
+
+// Popups keep clear of the controls at the top of the map (zoom, full screen, my location, layers, the phone map's
+// panel). Leaflet pans a popup into view as it opens but doesn't count them, and doesn't pan again when the popup's
+// content changes: on a phone a stream popup's first lines, its name and fish score, sat under the buttons at the top
+// left. Once Leaflet's own pan is done, and when the fish score's breakdown opens or folds on a tap (map_score.js's
+// "fs-toggle"), the map pans the popup (or the open breakdown) to the right of the buttons where it fits there (a wide
+// screen), else below them; and brings the breakdown's foot up into view where there is room above. Not on hover: the
+// popup would move away from the pointer.
+function keepPopupsClear(map) {
+  let open = null;
+  const union = els => {
+    const r = els.map(e => e.getBoundingClientRect()).filter(b => b.width && b.height);
+    return r.length ? {left: Math.min(...r.map(b => b.left)), top: Math.min(...r.map(b => b.top)),
+                       right: Math.max(...r.map(b => b.right)), bottom: Math.max(...r.map(b => b.bottom))} : null;
+  };
+  const clear = () => {
+    const el = open && open.isOpen() && open.getElement();
+    if (!el) return;
+    // with the breakdown open it is what must be seen whole and clear of the buttons (the popup's head may go under
+    // them meanwhile: on a 568 px screen the two don't fit at once); folded, the popup
+    const shown = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
+    const p = union(shown.length ? shown : [el.querySelector(".leaflet-popup-content-wrapper") || el]);
+    if (!p) return;
+    const c = map.getContainer(), m = c.getBoundingClientRect();
+    const tl = union([...c.querySelectorAll(".leaflet-top.leaflet-left .leaflet-control")]);
+    const tr = union([...c.querySelectorAll(".leaflet-top.leaflet-right .leaflet-control")]);
+    const across = (b, dx) => b && p.left + dx < b.right && p.right + dx > b.left;
+    const hits = [tl, tr].filter(b => across(b, 0) && p.top < b.bottom && p.bottom > b.top);
+    let dx = 0, dy = 0;
+    if (hits.length) {
+      const right = hits.length === 1 && hits[0] === tl ? tl.right + 6 - p.left : 0;
+      const room = (tr && p.top < tr.bottom ? tr.left : m.right) - 5;
+      if (right && p.right + right <= room) dx = right;
+      else dy = Math.max(...hits.map(b => b.bottom)) + 6 - p.top;
+      if (dy > m.height / 2) dy = 0;          // a panel opened that tall is the user's: leave the popup where it is
+    }
+    // the open breakdown's foot (its score) comes up into view, above the controls at the bottom too (the area
+    // map's legend, the scale, the credits line) where there is room under the buttons at the top
+    const floor = Math.min(m.bottom, ...[...c.querySelectorAll(".leaflet-bottom .leaflet-control")]
+      .map(b => b.getBoundingClientRect()).filter(b => b.width && b.height && p.left + dx < b.right && p.right + dx > b.left)
+      .map(b => b.top)) - 5;
+    if (!dy && shown.length && p.bottom > floor) {
+      const ceil = Math.max(m.top, ...[tl, tr].filter(b => across(b, dx)).map(b => b.bottom)) + 6;
+      dy = -Math.max(0, Math.min(p.bottom - floor, p.top - ceil));
+    }
+    if (dx || dy) map.panBy([-dx, -dy]);
+  };
+  // After Leaflet's own pan, and again at 350 ms and 1 s: on a slow phone its pan ran past a single check, which then
+  // saw the popup mid-way and was spent (320 px). A check moves the popup only where it still overlaps the controls;
+  // the listener goes after 1 s, so a pan of the user's own later is left alone.
+  map.on("popupopen", e => {
+    open = e.popup;
+    const p = e.popup, now = () => { if (open === p) clear(); };
+    map.on("moveend", now);
+    setTimeout(now, 350);
+    setTimeout(() => { now(); map.off("moveend", now); }, 1000);
+  });
+  map.on("popupclose", e => { if (open === e.popup) open = null; });
+  document.addEventListener("fs-toggle", clear);
 }
 
 phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
