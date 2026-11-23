@@ -4366,3 +4366,8 @@ academic use so we have permission to use their data"; Overture "Yes, plus a rev
 - **Left for later:** two of NCWRC's six listed Smokies impoundments still don't show; Christine Falls shows on ADK
   Southeast but not on ADK Southwest, though it is inside both maps' boxes; DuckDB in `.venv`, so the Overture download
   can be a pipeline step.
+
+## 2026-11-23: the Palisades "Trout Creek" label was already fixed (open-items session)
+- Correction to 2026-11-20 ("Palisades labels"): on the live maps (c178411) no Jackson drainage outline is named Trout
+  Creek, and Palisades Reservoir lies 83% in the Snake River's, the rest in the Salt River's and the creeks whose arms
+  it floods. Most likely fixed by the 11-21 lake routing (`route_lake`). Nothing to install.
