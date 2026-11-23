@@ -637,8 +637,11 @@
   // ---- hover tooltips + popups ----
   function where(p) { return p.d === p.k ? esc(p.d) : `${esc(p.k)} <span class="dm">· ${esc(p.d)}</span>`; }
   function streamPop(p) {
-    const prof = p.n ? `<a href="profiles.html#q=${encodeURIComponent(p.n)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(p.n)} profile ↗</a>`
-                     : `<span class="dm">Unnamed reach (no profile)</span>`;
+    // as the 2D map's (map_drainages.js): a side channel opens its river's profile, and the link is given only where the
+    // creek's long profile passes this reach (p.np: a named reach no profile of its name passes, 06_map.py)
+    const pn = p.n ? p.n.replace(/ \(side channel\)$/, "") : null;
+    const prof = pn && !p.np ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
+                             : `<span class="dm">${pn ? "No creek profile here" : "Unnamed reach (no profile)"}</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
       `${fsRow(p)}<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +     // fsRow: map_score.js
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +

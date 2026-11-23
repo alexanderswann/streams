@@ -106,10 +106,11 @@ function initDrainageMap(map, ctrl) {
   const tip = p => `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
     `Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}`;
   function pop(p) {
-    // (a side channel's name carries " (side channel)", 06_map.py: its profile is the river's)
+    // (a side channel's name carries " (side channel)", 06_map.py: its profile is the river's). The link only where the
+    // creek's long profile passes this reach: p.np marks a named reach no profile of its name passes (06_map.py)
     const pn = p.n ? p.n.replace(/ \(side channel\)$/, "") : null;
-    const prof = pn ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
-                    : `<span class="dm">Unnamed reach (no profile)</span>`;
+    const prof = pn && !p.np ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
+                             : `<span class="dm">${pn ? "No creek profile here" : "Unnamed reach (no profile)"}</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
       `<table>${fsRow(p)}` +           // map_score.js: the score, and its breakdown on hover or tap
       `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +

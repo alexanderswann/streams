@@ -1158,6 +1158,42 @@ fx_, fx_bad = fs_parts(s_show)
 print(f"fish score breakdown (fx): {sum(v is not None for v in fx_)} of {len(fx_)} drawn reaches"
       + (f"; WARNING: {fx_bad} left without, as theirs didn't come to their score (map_score.js and scoring.score() "
          f"differ)" if fx_bad else ", each coming to its score"))
+
+# ---- the creeks' long profiles: where 12_profiles.py draws them (creekprofiles.py, its rule: each named NHD creek's main
+# stem, MIN_KM and more). A stream popup's "Open <creek> profile ↗" (map_drainages.js, map3d.html) opens profiles.html
+# #q=name&lat=&lon= at the reach's popup point, which shows the profile of that name passing closest to the point. The
+# link is given only where that profile passes within SNAP_FALL of the reach's own line (the drops and known falls, being
+# points, test their point: below), so a braided river or a stretch past a profile's end, whose middle lies farther from
+# NHD's line, keeps its link, and a link that would open another creek of the same name, or no profile, is not given:
+# the popup says there is no profile here. On the live maps (site c37aa6a, 2026-11-23) every one of the 78,268 named
+# reaches linked: 4,042 found no profile of that name (names NHD doesn't carry, creeks under MIN_KM) and 2,351 opened
+# one more than 200 m away (median 1.1 km: another creek of the same name, or another stretch; LA's Potrero Creek opened
+# San Jacinto's, 197 km off). The rule keeps 72,208 links; 570 of them on braided water and the like (Snake River, Flat
+# Creek, Gros Ventre River), which a test at the reach's middle would have dropped.
+from config import raw_dir
+import creekprofiles
+_nhd = [gpd.read_file(f"{raw_dir(r_)}/nhd_flowlines.gpkg", columns=["gnis_name", "ftype"]).to_crs(EPSG).assign(range=r_)
+        for r_ in done if os.path.exists(f"{raw_dir(r_)}/nhd_flowlines.gpkg")]
+PROFILES = creekprofiles.ProfileLines(pd.concat(_nhd, ignore_index=True) if _nhd else
+                                      gpd.GeoDataFrame(columns=["gnis_name", "ftype", "range"], geometry=[]))
+
+
+def opens_here(name, line, pt):
+    """True where the profile a reach's link opens (of the creek `name`, the one passing closest to the link's point
+    `pt`, as profiles.html picks it) passes within SNAP_FALL of the reach's own `line` (both in metres)."""
+    st = np.asarray(PROFILES.stems(name), dtype=object)
+    return len(st) > 0 and float(shapely.distance(line, st[np.argmin(shapely.distance(pt, st))])) <= creekprofiles.SNAP_FALL
+
+
+# "np" = 1: a named reach (a side channel by its river's name, as its link) without such a profile; written only where
+# set (below), a few bytes on a few thousand reaches instead of a key on every reach
+_mid_m = gpd.GeoSeries(gpd.points_from_xy(mid_ll.x.round(5), mid_ll.y.round(5)), crs=4326).to_crs(EPSG).values
+_line_m = gpd.GeoSeries(s_show.geometry.values, crs=4326).to_crs(EPSG).values
+no_prof = pd.Series([1 if isinstance(n_, str) and n_ and not opens_here(n_, l_, p_) else None
+                     for n_, l_, p_ in zip(s_show["name"].values, _line_m, _mid_m)], index=s_show.index, dtype=object)
+_named = sum(isinstance(n_, str) and n_ != "" for n_ in s_show["name"].values)
+print(f"stream popups' profile links: {_named - no_prof.notna().sum():,} of {_named:,} named reaches "
+      f"({no_prof.notna().sum():,} with no profile of their name within {creekprofiles.SNAP_FALL} m of their line)")
 props = pd.DataFrame({
     "n": [f"{n_} (side channel)" if (sd_ or lk_) and isinstance(n_, str) else n_ if isinstance(n_, str) else None
           for n_, sd_, lk_ in zip(s_show["name"].values, _side, _lk)],
@@ -1204,7 +1240,8 @@ props = pd.DataFrame({
     # where the reach stands among this area's reaches (scores aren't comparable between areas)
     "rk": s_show.area_rank_pct.astype(int),
     "fx": fx_,                                    # the score's terms, for its breakdown (fs_parts above)
-    "y": mid_ll.y.round(5), "x": mid_ll.x.round(5)})
+    "y": mid_ll.y.round(5), "x": mid_ll.x.round(5),
+    "np": no_prof})                               # no long profile here: the popup gives no profile link (above)
 props["_lk"] = s_show.lk_.values
 s_feat = gpd.GeoDataFrame(props, geometry=s_show.geometry.values, crs=4326).sort_values(["o", "fs"])
 s_feat_lake = s_feat[s_feat._lk.values].drop(columns="_lk")      # the whole reaches lying in a lake (above)
@@ -1451,6 +1488,9 @@ m.get_root().header.add_child(folium.Element(
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
        "streams_lake": json.loads(s_feat_lake.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
        "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
+for f_ in X3D["streams"]["features"] + X3D["streams_lake"]["features"]:
+    if f_["properties"].get("np") is None:        # "np" only where set (above)
+        f_["properties"].pop("np", None)
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))
 
 top = s_feat[s_feat.fs >= 55][["geometry"]]
@@ -1472,13 +1512,7 @@ X3D["roads"], X3D["parking"] = roads_json, park_json
 # its line lies within 30 m of the fall for 90% of them and within 100 m for 95%, and the nearest drawn creek is the
 # named one for 97%; beyond 100 m most falls lie on creeks too small to draw, and the nearest drawn one is another.
 import re
-from config import raw_dir
-import creekprofiles
 FALL_NEAR_M = 100
-_nhd = [gpd.read_file(f"{raw_dir(r_)}/nhd_flowlines.gpkg", columns=["gnis_name", "ftype"]).to_crs(EPSG).assign(range=r_)
-        for r_ in done if os.path.exists(f"{raw_dir(r_)}/nhd_flowlines.gpkg")]
-PROFILES = creekprofiles.ProfileLines(pd.concat(_nhd, ignore_index=True) if _nhd else
-                                      gpd.GeoDataFrame(columns=["gnis_name", "ftype", "range"], geometry=[]))
 
 
 def profile_link(creek, lat, lon):
