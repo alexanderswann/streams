@@ -326,6 +326,25 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    so `05d_lakes.py` runs before this step (`run_mid.sh`). Each piece is a reach, measured on its own cells: a creek
    above a lake reads its own drainage and slope, where the link had mixed them with the flat water (the brooks
    dropping into Lake George at 13-20% had read 7-12%).
+   **The first 200 m (650 ft) below a lake is a reach of its own** (since 2026-11-23). A lake's outlet runs at the
+   temperature of its surface, and a reach is scored on one water temperature, the mean along it: a reach that
+   started at a pond and ran on for half a mile read as a cool creek, its outlet's warmth averaged away (*Stream
+   temperature* below). Each creek is cut where it has run 200 m from the lake, along the channel the lake's water
+   takes (`flowlib.cut_below_lakes`, finding the distance as the water-temperature term does, `flowlib.below_lake`),
+   where the lake term there is 0.5 or more and neither piece would be under 50 m: 1,155 cuts over the 12 maps, on
+   every map (a rule computed from the data, so a new area needs no setting). The cut is for the water temperature
+   alone: both pieces keep the line's gradient and NHD class, `05b_flow.py` reads the cut creek whole, as before the
+   cut, and gives both pieces its flow evidence, late-summer greenness and gauge record (`cut_sid` names the rest of
+   the line), and `11_context.py` gives both the whole line's trout records and designated trout water, fires and
+   critical habitat (`cut_lines`), as the uncut line had them. Measured on its own, a piece read drier than its creek
+   (the model's natural flow leaves the lake's water out: a brook below a pond in north-east Connecticut "usually
+   flows" -> "mostly dry"; the NHD vote fell on the reservoir's line below Big Tujunga's dam; a bare channel just below
+   a dam read as a dry creek; a short rest below a small reservoir on the Arroyo Seco, where trout were found in 2024,
+   matched the model's line below the dam: "year-round" -> "usually flows"), steeper (a step just below the shore cost
+   64 pieces up to 15 points) and without its trout: a designated trout water or brook trout patch that starts lower
+   down missed it, and a trout record goes to the nearest reach, so 53 first pieces (6.3 mi) and 23 rest pieces
+   (7.6 mi) over the 12 maps lost trout's ×1.2 (9 of the first in north-east Connecticut). Drainage, elevation, August
+   air, canopy, approach time, shade and land status are each piece's own.
    NHD name and flow class come
    from the nearest NHD lines at three points along the link, each kept when two agree on the name (or the class;
    NHD splits a creek into many short segments). NHD has no name on many lines (e.g. San Antonio Creek below
@@ -895,22 +914,29 @@ its reaches carry an estimate; elsewhere scores moved by 2 points at most. Since
 fades fast below it. At the Adirondack maps' measured sites with mostly lake water, the 19 within 200 m (650 ft) of
 the lake read 23.8 °C (74.9 °F; 16 of them 73 °F or more, none 68 °F or less), the 8 from there to 1 km below
 20.2 °C, the 7 from 1 to 3 km below 18.6 °C; the 231 sites with under half lake water read 17.2 °C. So the term is the
-share of a reach's drainage that reaches it through a lake (the water `crossbox.py` carries past dams and ponds over
-the reach's full drainage), counted **only for the part of the reach within 200 m below the lake, along the channel**
-(`LAKE_NEAR_M`; `below_lake()` walks up the reaches that bring the lake water, to a reach lying in the lake or to
-where the lake's water is put in beside its outline; no per-area setting). A reach lying in a lake takes the term in
-full. A measured site takes the value at its own spot on the reach it sits on (within 150 m); a site where a creek
-comes into a lake takes the creek's.
-**A reach is scored and shown on its estimate as a whole, the mean along it** (`lake_parts()`): a reach that starts
-at a pond and runs on for half a mile is mostly past the warmth and reads cool. Its first stretch still runs at the
-outlet's temperature, so the map's popup adds that ("summer water about 64 °F (…); about 75 °F over its first
-650 ft, just below a lake"; `water_outlet` and `outlet_m` in the ranked table, from `scoring.py`, with no part in the
-score) where the stretch is estimated 1 °C or more warmer than the reach as a whole and is 50 m or longer: 1,193 of
-the three maps' 24,914 drawn creek lines. At the 19 measured outlet sites the reach is a median 764 m long: its own
-estimate reads 4.4 °C (7.9 °F) below the site, the popup's line for its first stretch 0.6 °C (1.0 °F) below. Of the
-26 sites measuring 73 °F or more, 6 sit on a reach that itself reads 73 °F or more and 17 on one that keeps full
-credit; with the popup's line counted, the map says 73 °F or more at 16 of them. Only a reach cut 200 m below each
-lake would carry that warmth in its score (a rebuild from `05_score.py`; not done, the user's call).
+share of a reach's drainage that reaches it through a lake, counted **only for the part of the reach within 200 m
+below the lake, along the channel** (`LAKE_NEAR_M`; `flowlib.below_lake()` walks up the reaches that bring the lake
+water, to a reach lying in the lake or to where the lake's water is put in beside its outline; no per-area setting).
+The lake water is what `crossbox.py` carries past dams and ponds over the reach's full drainage, and since 2026-11-23
+also what runs on out of a lake along the routing before `03b_stitch.py` ends the lake's paths at its outlet, which
+can lie past the shore the map draws (`flowlib.lake_water_km2`): the stretch between the two had read as a creek with
+no lake (the first 131 m below Limekiln Lake 63 °F, where the outlet measures 78.8 °F; 184 such reaches, 30 mi, on the
+three maps). A reach lying in a lake takes the term in full. A measured site takes the value at its own spot on the
+reach it sits on (within 150 m; the one nearest its NHDPlus drainage, a first stretch below a lake counting with its
+line's); a site where a creek comes into a lake takes the creek's.
+**Since 2026-11-23 the first 200 m below a lake is a reach of its own** (`05_score.py`, *Stream links* above), so the
+outlet's warmth is in that stretch's own score. Before, a reach was scored on the mean along it, and one that started
+at a pond and ran on for half a mile read cool: 4.4 °C (7.9 °F) below the 19 measured outlet sites (a popup line gave
+the first stretch's estimate, `water_outlet` in the ranked table; it still shows where a stretch isn't cut). Measured
+in scratch on the three maps with a lake term, against the live maps: at the 19 outlet sites the reach now reads
+2.4 °F below the measured 74.9 °F (7.5 °F before); of the 28 sites at 73 °F or more, 15 sit on a reach read at 73 °F
+or more (4 before) and 8 on one at full credit (17); error over all sites 3.05 °C (3.20); the audit's check at sites
+with 3+ readings, High Peaks 7.8 -> 6.2 °F, south-west 6.4 -> 4.1, north-west 7.7 -> 6.0, warm sites at full credit
+5/9/6 -> 1/2/3, no cool site read warm. Against a score with no lake term 760 stretches (79.6 mi) score 10+ lower,
+638 (66.8 mi) with a trout record (111 and 9.5 mi before); by the lake above them, under 25 acres 155 (16.7 mi; the
+one measured outlet there, Owen Pond, reads 70.3 °F), 25-100 acres 383 (41.1 mi; 9 of 10 measured outlets at 73 °F
+or more), over 100 acres 208 (21.2 mi; 7 of 8). The user chose the cut on these figures (2026-11-22; 758 stretches,
+79.3 mi, 64.2 with a trout record, before the first stretches kept their line's trout labels).
 As first installed (2026-11-21) the share counted however far upstream the lake was. That read creeks 1 to 3 km below
 a pond 2.8 °C (5 °F) too warm and took 10 or more points from 444 creek reaches (173 mi) of three maps, 401 of them
 with a trout record. With the distance in it (2026-11-22, the user's choice of three options; measured by

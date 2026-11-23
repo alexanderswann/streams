@@ -3794,3 +3794,101 @@ min", fish 100), 96 in the Smokies. Remoteness is a quarter of the fish score, s
   Parkway row cuts mileposts 61.4-66.3 where the park's notes close 63.5-63.9.
 - **Installed** 2026-11-22 13:34 ET on main (after the phone-fix publish c178411); not yet rebuilt or published: the
   overview session rebuilds all 12 maps from `07_road_closures`.
+
+## 2026-11-22, night: reaches cut 650 ft below lakes (side-effects session)
+
+**Asked:** the lake term counts only within 650 ft below a lake (52c2139), but a reach is scored on the mean along
+it, so a long reach that started at a pond read as a cool creek: at the 19 measured outlet sites the reach read
+7.9 F too cool. The user, asked whether to cut the reaches there: "Yes, cut them" (10:48 ET, this session). Measured,
+the cut marked down far more than the "about 29 mi" I had given (a figure the audit measured for something else);
+asked again on the measured figure, the user chose "Yes, install it (Recommended)" (about 17:20 ET, in the audit
+session, relayed by it and the overview session).
+
+**The rule (`05_score.py`, `flowlib.py`, `05b_flow.py`, `11_context.py`):**
+- Each creek is cut where it has run 200 m (650 ft) below a lake, along the channel the lake's water takes
+  (`flowlib.cut_below_lakes`; the distance is `flowlib.below_lake`'s, moved from watertemp.py unchanged, so the cut
+  and the lake term find it the same way), where the lake term at the mark is 0.5 or more and neither piece would
+  be under 50 m. On every map: a rule computed from the data, so a new area needs no setting (the overview session's
+  call, my recommendation). 1,155 cuts: la 32, jackson 23, n_georgia 62, central_vt 57, ne_ct 119, lexington_va 6,
+  se_pa 18, smokies 5, adk_high_peaks 147, adk_northwest 261, adk_southwest 198, adk_southeast 227.
+- The cut is for the water temperature alone. Both pieces keep the line's gradient and NHD class (the vote on the
+  uncut line); `05b_flow.py` reads the cut creek whole, as before the cut, and gives both pieces its row: model line
+  and flow, the dam above it, late-summer greenness, gauge record (`cut_sid`, a new column of streams_scored.gpkg,
+  names the rest of the line); `11_context.py` gives both pieces the whole line's trout records and designated trout
+  water, fires and critical habitat (`cut_lines`: the trout records matched to either piece, the 30 m buffer of the
+  whole line), as the uncut line had them. Drainage, elevation, August air, canopy, approach time, shade and land
+  status are each piece's own.
+- Found in scratch, measured on 200 m alone: the first piece read drier than the creek below it (the model's natural
+  flow leaves the lake's water out: a brook below a pond in north-east Connecticut "usually flows" -> "mostly dry";
+  the NHD vote fell on the reservoir's line below Big Tujunga's dam, "year-round" -> "seasonal"; two LA creeks
+  below dams read bare channels as dry) and steeper (64 pieces' gradient credit dropped, by up to 15 points).
+- Found by the session testing the night's changes together (its north-east Connecticut run), after the user's
+  approval: measured on its own, a piece lost trout labels its line had. A designated trout water or brook trout
+  patch that starts lower down misses the first 200 m below a pond, and a trout record goes to the nearest reach,
+  one piece: 53 first pieces (6.3 mi) and 23 rest pieces (7.6 mi) over the 12 maps lost trout's x1.2 (north-east
+  Connecticut 9 first, 1 rest; the Adirondack maps 39 first, 21 rest; Jackson, North Georgia and south-east
+  Pennsylvania the rest), and 3 pieces in LA a fire their line had. With `cut_lines` the uncut reaches' values are
+  unchanged on all 12 maps (checked on the project's context layers). My scratch build couldn't show it on the five
+  maps it scored without drawing (their late values came from the uncut reach at each piece's middle), and on the
+  seven it drew I put the loss down to newer data: below.
+- Found by the same test (its LA run): on the Arroyo Seco below a small reservoir, where trout were found in 2024, the
+  cut left a 111 m rest whose middle lay on the model's next line, the one below the dam, and the first piece copied
+  that rest's row: "year-round" -> "usually flows", fish 74 -> 60. 05b matches a reach to a model line by its middle,
+  so any piece can land on another line than its creek's. Now 05b reads the cut creek whole and both pieces take its
+  row (patch v3; v2 had copied the rest's flow evidence and gauge record to the first piece and computed the whole
+  line's greenness for both). Checked in scratch on LA and the High Peaks against v2, with the same scripts and
+  tables: only the two Arroyo Seco pieces move (62/60 -> 75/73); every flow row that changed now equals the live
+  map's (also an Elizabeth Lake rest piece, and 3 uncut High Peaks reaches whose way down to a model line passes
+  through a cut creek); the lake term's markdown on the High Peaks is unchanged (188 stretches, 19.2 mi).
+
+**Two faults the drawn maps showed, fixed at the root (`flowlib.lake_water_km2`, `watertemp.lake_at`):**
+- Lake water now counts what runs on out of a lake along the routing before 03b ends the lake's paths at its
+  outlet, which can lie past the shore the map draws. Counting only what crossbox carries, the stretch between the
+  two read as a creek with no lake: Limekiln Lake's first 131 m read 63 F where the outlet measures 78.8 F; 184
+  such reaches, 30 mi, on the three maps with a lake term, the published maps included.
+- A measured site picks its reach by drainage, then distance; a first stretch below a lake now counts with its
+  line's drainage. NHDPlus's figure is a flowline's at its lower end, and the Limekiln outlet's site (17.2 km2) went
+  to the reach 59 m off (15.5 km2) past the outlet's own 70 m (13.7 km2, 5 m off). A coarser match (drainage within
+  a factor of 2) was tried and not kept: it sent the Lake Colden dam site to the river coming in.
+
+**Measured in scratch against the live maps 6c72e2e** (scripts as on main 9cc42e3 plus the patch; the drawn
+layer, by place). The three maps with a lake term:
+- Drawn before the trout-label fix: lines 24,903 -> 25,475; no line new or gone; fish 60+ 8,488.5 -> 8,458.8 mi
+  (-29.7; High Peaks -6.4, south-west -10.2, north-west -13.1); 10+ lower 70.3 mi (52.8 with a trout record); 10+
+  higher 0.4 mi; 5-9 lower 10.2 mi. Map files 49.4 -> 49.9 MB. I had put about 9 mi of the 10+ lower (38 reaches)
+  down to newer fire and trout data the scratch's context step read: they are the 38 cut pieces (9.0 mi) that had
+  lost their line's trout label. Re-scored with the fix (the scratch's tables, its own context data), they rise
+  11 points on average and nothing else moves: 10+ lower against the live maps 73.2 -> 66.9 mi table-scored, fish
+  60+ +2.5 mi (north-west +1.8, south-west +0.7). The rest of the 10+ lower is the water temperature at outlets.
+- Against a score with no lake term, with the trout-label fix: 760 stretches (79.6 mi) 10+ lower, 638 (66.8 mi)
+  with a trout record (live 111, 9.5 mi; 96, 8.4 mi); fish 60+ lost to the term 29.2 mi (live 4.4). The user
+  approved the figures before the fix: 758 stretches (79.3 mi), 617 (64.2 mi) with a trout record, 30.0 mi; the
+  pieces given back their line's trout label count as trout water, and two more cross 10 points at x1.2. By the
+  lake above: under 25 acres 155 (16.7 mi), 25-100 acres 383 (41.1 mi), over 100 acres 208 (21.2 mi). Measured
+  outlets within 650 ft: under 25 acres 1 (Owen Pond, 70.3 F), 25-100 acres 10 (9 at 73 F+), over 100 acres 8 (7 at
+  73 F+). Before the fix, 700 of the 751 marked-down stretches with a layer lake lay below lakes the lidar shows
+  level.
+- At the measured sites: the 19 outlet sites' reach reads 2.4 F below the measured 74.9 F (live 7.5 F); of the 28
+  sites at 73 F+, 15 on a reach read 73 F+ (live 4), 8 at full credit (17); error over all sites 3.05 C (3.20). The
+  audit's watertemp_vs_sites.py (sites with 3+ readings): error High Peaks 7.8 -> 6.2 F, south-west 6.4 -> 4.1,
+  north-west 7.7 -> 6.0; warm sites read as full credit 5 -> 1, 9 -> 2, 6 -> 3; cool sites read warm 0 -> 0.
+- Rendered popups: Limekiln Lake outlet 76 F, fish 61 (live 64 F with "about 75 F over its first 650 ft", fish 83;
+  measured 78.8 F); Owen Pond outlet 74 F, 65 (64/75, 76; 70.3 F); Heart Lake outlet 72 F, 45 (63/71, 53; 78.6 F);
+  Woods Lake outlet 74 F, 62 (63/71, 71; 73.6 F). No console errors.
+- Fits: High Peaks 3.15 C against 3.85 (lake 7.58); south-west 2.44 against 3.40 on 120 sites (lake 7.14; Lost Pond
+  Outlet, 24.1 C on 5 readings, now left out as an outlier with the two single 25.0 C readings); north-west the
+  region's, 2.90 on its own 62 sites against 3.36 (region 2.94 against 3.58); south-east and the other eight areas'
+  fits identical.
+
+The nine maps without a lake term (drawn in scratch: adk_southeast, jackson, lexington_va, se_pa; la, n_georgia,
+central_vt, ne_ct, smokies only to the reach scores, the machine being out of memory): no line new or gone, no creek
+drier. The cut moves a first stretch 3+ points by its own drainage (sized 650 ft below the lake), approach time and
+shade: adk_southeast 42 reaches (5.2 mi) down, 7 up; the other drawn maps under 0.3 mi. These drawn figures still
+include the pieces that lost a trout label, which the fix gives back (adk_southeast 22 pieces, 3.2 mi, by its count
+on the project's layers). Their other moves in scratch were newer context data (Jackson 124 reaches, 70.7 mi, a newer
+fire's burn markdown of 0.9, which 945d3ac no longer applies).
+
+**Installed** as its own code commit (patch v3, ee00f41) on 2026-11-23 about 00:30, with the night's #2, #4 and #5,
+and one rebuild of all 12 maps; this entry went in as a docs commit while that rebuild ran. **Not done yet:** the
+installed build's figures, checked on its drawn maps against the ones above (all 12, the five measured above only
+to the reach scores included), follow in a later entry.
