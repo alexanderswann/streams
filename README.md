@@ -242,8 +242,9 @@ The rules that decide what the maps show are listed with their values, code loca
      hummock the fill left, are joined to it within 100 m. Cells within 100 m of a walked line take the shortest way
      to it; farther ones keep resolve_flats' order, so no new straight way appears away from NHD's lines. Every other
      cell keeps its value, and `dem_filled.tif` and `fill_depth.tif` don't change. A pond is a filled flat too, so its
-     water follows NHD's path through it; the lake outlets it stopped drawing are listed in
-     `data/stream_burning/README.md`.
+     water follows NHD's path through it, in one link to its outlet. The size floor reads that link's stretch in the
+     pond on its own (5.), which brought back four of the lake outlets this had stopped drawing (Howard Pond, a 4.7
+     acre pond, the Dime Creek pond, Dunham Pond Brook); the rest are listed in `data/stream_burning/README.md`.
    - **Lakes.** Flow paths end on purpose at every lake and reservoir of 8+ ha that holds water (2+ ha of its outline
      at one elevation in the DEM), at its outlet: drainages end at dams, and `crossbox.py` carries the area on. Every
      cell of such a lake drains to the outlet along NHD HR's lines through it (`route_lake`), and a stream line runs
@@ -302,12 +303,16 @@ The rules that decide what the maps show are listed with their values, code loca
    where NHD maps the link's own line perennial or names it (`nhd_says`): a name it shares with a stream 10 times its
    size within 250 m is that stream's, and so is the year-round class of a river of 50 km² or more it runs along.
    Canals, ditches, pipelines and lines named after one don't count (`floor_lines`: a name is a built channel's where
-   NHD gives it a built line of the box and its stream lines carry under a tenth of its length). A creek kept this way
-   runs on down through 0.25-1 km² links until it meets a kept line, across box edges and below a pond's outlet;
-   nothing under 0.25 km² is drawn. **Links are cut at lake shores**, so every reach is creek or lake water, never
-   both: the shores of the lakes `05b_flow.py` can flag a reach in (NHD's lakes of 8 ha or more, with the shore the
-   lakes layer draws, and the layer's own; `05d_lakes.py` runs first). A stretch under 50 m on one side of a shore
-   stays with its neighbour. Links mostly on sea-level cells, or past a state line the area is cut at, are dropped.
+   NHD gives it a built line of the box and its stream lines carry under a tenth of its length). A link that starts in
+   a lake of the lakes layer and isn't kept whole votes again on each part (`nhd_keeps`): its first stretch along NHD's
+   path through the lake (not a lake NHD maps as intermittent, and only where NHD maps a creek below it) and its creek
+   from where it leaves the lake, so a pond's outlet creek doesn't depend on where the routing splits the link in the
+   pond. A creek kept this way runs on down through 0.25-1 km² links until it meets a kept line, across box edges and
+   below a pond's outlet; nothing under 0.25 km² is drawn. **Links are cut at lake shores**, so every reach is creek
+   or lake water, never both: the shores of the lakes `05b_flow.py` can flag a reach in (NHD's lakes of 8 ha or more,
+   with the shore the lakes layer draws, and the layer's own; `05d_lakes.py` runs first). A stretch under 50 m on one
+   side of a shore stays with its neighbour. Links mostly on sea-level cells, or past a state line the area is cut
+   at, are dropped.
    **The first 200 m (650 ft) below a lake is a reach of its own** (`flowlib.cut_below_lakes`), so a lake outlet's
    warmth is in that stretch's own score (*Water temperature*): each creek is cut where it has run 200 m from the lake
    along the channel the lake's water takes, where the lake term there is 0.5 or more and neither piece would be under

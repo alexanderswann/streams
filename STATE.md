@@ -13,21 +13,22 @@ miles, square miles, acres and °F (`scripts/units.py`); this file gives both.
   (`/Users/mac/Fishing`, `main` tracking `origin/main`) and `publish/streams-site` (`gh-pages`; the live copy is its
   `docs/`). Until 2026-11-23 the maps lived in the `streams/` folder of the personal site repository
   (`publish/alexanderswann.github.io`), which no longer holds them (removed 2026-11-23 02:26).
-- **Site:** `gh-pages` at `9f6e867` (2026-11-23 06:02 ET), 12 maps. The four Adirondack maps are built and
+- **Site:** `gh-pages` at `9acd24d` (2026-11-23 09:04 ET), 12 maps. The four Adirondack maps are built and
   published but listed nowhere (`hidden=True` in `scripts/config.py`).
-- **Built from:** `dd31f7c`: main as of 2026-11-23 03:27, the night's two installs (#1 `ee00f41`, #2 `f71709a`, #4
-  `a37db23`, #5 `6e0898c`; then #6 `a9919eb`, `491aeba`, `f24e043`, `152b561`, `dd31f7c`) with `f18342c` (access
-  times) and `8321c1d` (network fallback). Main is ahead with six fixes installed at 06:09 and not yet built into the
-  site: `b283368` (the drivers let the hydrology lock go), `6affd7e` (rivers weaving along a map's edge), `b3411bf`
-  (the streams layer's label), `3b97251` (water carried across a box edge starts its line where it comes in),
-  `94ffe0a` (an aqueduct's name in the size floor) and `83e9b26` (ties below a lake in the map step).
-- **Site size:** 692 MB of GitHub Pages' 1 GB (`du -sh publish/streams-site/docs`, 2026-11-23 06:30).
+- **Built from:** `70a8d76`: main as of 2026-11-23 08:02. That is `dd31f7c` (the night's installs: #1 `ee00f41`, #2
+  `f71709a`, #4 `a37db23`, #5 `6e0898c`; then #6 `a9919eb`, `491aeba`, `f24e043`, `152b561`, `dd31f7c`; with `f18342c`
+  and `8321c1d`), the six fixes installed at 06:09 (`b283368`, `6affd7e`, `b3411bf`, `3b97251`, `94ffe0a`, `83e9b26`;
+  all 12 maps rebuilt from the drops, published 07:47 as `762269f`) and the pond-outlet floor `70a8d76` (the 10 maps it
+  changes rebuilt from the drops; LA and the Smokies are the 07:47 build's, which it doesn't change).
+- **Site size:** 693 MB of GitHub Pages' 1 GB (`du -sh publish/streams-site/docs`, 2026-11-23 09:20).
 
 ### Publish ledger (newest first; the builds before 2026-11-23 ran from the working tree, so their code commit is
 the one nearest in time)
 
 | Published (ET) | Site | Code | What changed on the maps |
 |---|---|---|---|
+| 2026-11-23 09:04 | `9acd24d` | `70a8d76` | a pond's outlet creek is drawn whichever way the routing splits its link in the pond: 17 mi more, 43 lake outlets more, none fewer (Howard Pond, a 4.7 ac pond in the High Peaks and the Dime Creek pond back; Dunham Pond Brook back unnamed) |
+| 2026-11-23 07:47 | `762269f` | `83e9b26` | a river weaving along a map's edge goes in again where the river stays inside (Minister Creek); water carried across a box edge starts its line where it comes in (Still Brook, a Smokies creek); the West Branch California Aqueduct's floor lines gone; the streams layer's label names the size floor; a break below a lake takes the biggest of the creeks ending equally near it |
 | 2026-11-23 06:02 | `9f6e867` | `dd31f7c` | water across swamps follows NHD's channel lines (#6); Blue Ridge Parkway closures by their Status, laid mile by mile; wild brook trout water sized for brook trout; a borrowed flow estimate outside LA never reads drier than no estimate; more swimming holes and falls (OSM creek pools, Overture, Google) and named ponds |
 | 2026-11-23 02:19 | `9f778f8` | `6e0898c` | approach times for mid-July (`f18342c`); downloads fall back to the last good copy (`8321c1d`); creeks cut 650 ft below lakes (#1); summer flow never drier than NHD's class, trout records read as flowing (#2); rivers from outside carry their whole drainage, and creeks are drawn down to 0.1 sq mi where NHD maps them year-round or names them (#4); lakes' second outlets drawn as side channels (#5) |
 | 2026-11-22 20:42-21:09 | `gh-pages` `d9d18d1`-`7782773` | `194bb83` | nothing: the same maps moved to their own repository, github.com/alexanderswann/streams |
@@ -63,19 +64,20 @@ means it was measured on every map before it went in.
 | Basins draining off an edge or into a lake are carried | from 0.1 km² | `scripts/crossbox.py:32` | |
 | A lake's second outlet is drawn as a side channel, with no water added: an outflow line NHD maps as a channel (StreamRiver, or a path through water into one, with no connector, canal or pipeline first) that the terrain takes the water on down within 300 m, whose path stays on NHD's line for 200 m, and that leads neither back into its lake nor up into a lake standing higher | 0.5 m (1.6 ft) higher | `scripts/03b_stitch.py:67`, `scripts/03b_stitch.py:68` | `6e0898c` |
 | Water across a filled flat (a swamp, wetland or valley flat the fill levelled) follows NHD HR's channel lines (StreamRiver, ArtificialPath, Connector; named ones first) to its outlet, and out over a low rim only where the water then stays on that line; the rest of the flat goes the shortest way to a walked line within 100 m, else as pysheds' resolve_flats sends it | a filled flat: 10 cells or more raised 5 cm or more, half the flat at least; a rim of 0.5 m (1.6 ft) at most, crossed within 200 m | `scripts/flatlines.py:38`, `scripts/flatlines.py:43`, `scripts/flatlines.py:630` | `a9919eb` |
-| A river from outside whose terrain path leaves over the map's edge within 300 m of the river, while NHD's lines of it stay inside, goes in again at the first point down the mapped river whose path stays in the map for 200 m, runs along NHD's lines and meets no water already taken in | 50 m steps | `scripts/crossbox.py:33` | `6affd7e` (not yet built) |
+| A river from outside whose terrain path leaves over the map's edge within 300 m of the river, while NHD's lines of it stay inside, goes in again at the first point down the mapped river whose path stays in the map for 200 m, runs along NHD's lines and meets no water already taken in | 50 m steps | `scripts/crossbox.py:33` | `6affd7e` |
 
 ### Reaches (`05_score.py`, `flowlib.py`)
 
 | Rule | Value | Where | Since |
 |---|---|---|---|
 | A reach is drawn when it drains this much, counting the water it carries from upstream boxes and lakes | 1 km² (0.39 sq mi) | `scripts/05_score.py:13` | `80b42e8` |
-| ... and down to this where NHD maps the link's own line perennial or names it (a name or year-round class it shares with a river 10 times its size alongside is the river's; canals, ditches, pipelines and lines named after one don't count, a name being a built channel's where NHD gives it a built line of the box and its stream lines carry under a tenth of its length); a creek kept this way runs on down to the next kept line (the user's choice, 2026-11-22) | 0.25 km² (0.1 sq mi) | `scripts/config.py:12`, `scripts/05_score.py:132`, `scripts/05_score.py:163`, `scripts/05_score.py:162` | `a37db23`; the canal share `94ffe0a` (not yet built) |
+| ... and down to this where NHD maps the link's own line perennial or names it (a name or year-round class it shares with a river 10 times its size alongside is the river's; canals, ditches, pipelines and lines named after one don't count, a name being a built channel's where NHD gives it a built line of the box and its stream lines carry under a tenth of its length); a creek kept this way runs on down to the next kept line (the user's choice, 2026-11-22) | 0.25 km² (0.1 sq mi) | `scripts/config.py:12`, `scripts/05_score.py:132`, `scripts/05_score.py:163`, `scripts/05_score.py:162` | `a37db23`; the canal share `94ffe0a` |
+| A link that starts in a lake of the lakes layer (any size) and isn't kept whole votes again on each part, so a pond's outlet creek doesn't depend on where the routing splits the link in the pond: its first stretch along NHD's path through the lake, where the lake isn't one NHD maps as intermittent and NHD maps a creek below it, and its creek from where it leaves the lake | the path within 20 m, half the stretch in the lake; half the rest of the link within 60 m of an NHD line | `scripts/05_score.py:187`, `scripts/05_score.py:233` | `70a8d76` |
 | A link is cut at a lake shore (creek or lake, never both) | where 50 m or more lies on each side | `scripts/flowlib.py:187` | `d06b50b` |
 | A side channel of a big river takes the river's values | river 50 km² or more, 10x the channel, within 250 m, 60 % alongside | `scripts/05_score.py:128` | `d06b50b` |
 | A creek is cut 200 m (650 ft) below a lake, along the channel the lake's water takes, so the outlet's warmth is in that stretch's own score. The cut is for water temperature only: both pieces keep the line's gradient, NHD class, flow evidence, gauge record, trout records and designations (the user's choice, 2026-11-22) | where the lake term there is 0.5 or more and neither piece is under 50 m | `scripts/flowlib.py:431` | `ee00f41` |
 | A lake's second outlet is kept from the lake down to the first link the map keeps on its own, as a side channel of the creek the lake's main outlet starts, and takes that creek's drainage | within 5 km (3.1 mi) | `scripts/05_score.py:246` | `6e0898c` |
-| Water carried across an edge two boxes share starts its line where it comes in, as a river from outside does, where the box it enters has no line at that cell | edge links of 0.25 km² or more | `scripts/crossbox.py:852` | `3b97251` (not yet built) |
+| Water carried across an edge two boxes share starts its line where it comes in, as a river from outside does, where the box it enters has no line at that cell | edge links of 0.25 km² or more | `scripts/crossbox.py:852` | `3b97251` |
 
 ### Summer flow (`02b_download_flow.py`, `05b_flow.py`, `flowlib.py`)
 
@@ -163,10 +165,12 @@ means it was measured on every map before it went in.
 
 | Item | Found | Owner | Needs | State |
 |---|---|---|---|---|
-| The map step draws what the pipeline computed (#7, phase 2) | audit finding 6 | map-step-repairs | the user's OK on its trial numbers | on hold while a fix for creeks clipping a lake corner goes in (06:15); then a 12-map trial from 03b and the user's OK |
+| The map step draws what the pipeline computed (#7, phase 2) | audit finding 6 | map-step-repairs | the user's OK on its trial numbers | a 12-map trial on `70a8d76` (patch `0bdc85fa`), numbers about 10:15; then the user's OK |
 | Small wrong labels: "order 7" on 520 lines, 3,601 dead lake links, 142 "-0 min" | audit finding 14 | map-step-repairs (in #7, or a phase 3) | | planned |
-| Creeks that weave along a box edge (#4's follow-up) | edges-and-floor | edges-and-floor | | installed `6affd7e` 06:09; in the morning rebuild from 04 (about 06:15-07:30) |
-| Small pond outlets drawn as NHD draws them: +36.5 mi in 90 pieces, none lost, 4 of 5 lost outlets back | edges-and-floor | edges-and-floor | accepted as within the approved floor (overview, 06:25) | installs as its own commit in #7's rebuild |
+| Named creeks the floor's vote misses where the terrain's path runs 40-85 m off NHD's line, read by their name along the link; with it a name whose generic term is a ditch's or canal's reads as a canal's (The Zanja, Magazine Ditch, Main Ditch: 2.0 mi intended) | edges-and-floor | edges-and-floor | | patch `7a0556c9` on `70a8d76`; scratch build from `pub_9acd24d`, then prehandoff |
+| Reach names and NHD classes read along the reach too, with the same big-river guards: Dunham Pond Brook's outlet reach was named and year-round until #6 (`9f6e867`, 06:02), not drawn 06:02-09:04, and is back unnamed and "usually flows" since `9acd24d` | `70a8d76` | edges-and-floor | | after the name test |
+| Two unnamed creeks in the Fivemile River's drainage (NE Connecticut, 0.43 and 0.79 km²) read "seasonal" in place of "usually flows" since `70a8d76`: the borrowed-estimate floor takes what like unmapped creeks mostly read, and the new pond outlets tip that majority | `70a8d76` | flow-class | | fixed by typical-own `3934936c`, with #7 |
+| Lake outlets not drawn since #6: the northern Star Mountain Pond's (High Peaks; its water forms no link in the new routing) and Bautista Creek below Hog Lake (LA; its link starts on an unmapped creek above the lake) | `a9919eb` | stream-burning, edges-and-floor | | listed exceptions |
 | 79 drawn LA pieces (46 mi) on creeks NHD doesn't map read "mostly dry" where the maps said "NHD unmapped" before 2026-11-22: `05b_flow.py` must record which borrowed estimates came through a lake, another box or an off-map lake | `152b561` | flow-class | | with the next `05b_flow.py` rerun (#7) |
 | Rice's Falls, four lake outlets and North Teton (#6's follow-ups) | stream-burning | stream-burning | | trial |
 | The 650 ft cut below lakes for the five second-outlet lines | second-outlets | second-outlets | | patch ready; tested on #7's build |
