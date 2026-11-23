@@ -19,6 +19,8 @@ agency_lakes(area, bounds_ll)  A state's own list of trout lakes as outlines, fo
     smokies       NCWRC's Public Mountain Trout Waters impoundments (Cheoah Reservoir: NHD draws it as river; Max Patch
                   Pond, 0.5 ha)
     se_pa         PFBC's stocked trout lakes (approved trout waters)
+    ne_ct         CT DEEP's stocked trout lakes (Connecticut_Stocked_Lakes; 2026-11-23: four stocked ponds under the 1 ha
+                  floor were missing, Lower Storrs Pumping Station, Paine, Pasture and Mansfield Training Ponds)
 Stocking and fish surveys at lakes come from 11_context.py's trout evidence (troutdata.py), read by maplakes.py.
 """
 import os, re, json, time, requests, numpy as np, pandas as pd, geopandas as gpd
@@ -274,6 +276,18 @@ def agency_lakes(area, bounds_ll):
             nm = k.WtrName.fillna(k.GNIS_NAME).fillna("").str.strip()
             k, nm = k[nm.ne("")], nm[nm.ne("")]
             rows.append(gpd.GeoDataFrame({"agency": "PFBC", "agency_id": "PFBC:" + nm, "agency_name": nm},
+                                         geometry=k.geometry, crs=k.crs).to_crs(4326))
+    elif area == "ne_ct":
+        import troutdata
+        try:
+            k = troutdata.fetch("ct_stocked_lakes", f"{troutdata.CT}/Connecticut_Stocked_Lakes/FeatureServer/0", fields="*")
+        except Exception as ex:
+            print(f"  lake source unavailable: CT DEEP stocked lakes ({str(ex)[:80]})")
+            k = None
+        if k is not None and len(k):
+            nm = k.LAKES_WATERBODY.fillna("").astype(str).str.strip()
+            k, nm = k[nm.ne("")], nm[nm.ne("")]
+            rows.append(gpd.GeoDataFrame({"agency": "CT DEEP", "agency_id": "CTDEEP:" + nm, "agency_name": nm},
                                          geometry=k.geometry, crs=k.crs).to_crs(4326))
     if not rows:
         return gpd.GeoDataFrame({"agency": [], "agency_id": [], "agency_name": []}, geometry=[], crs=4326)

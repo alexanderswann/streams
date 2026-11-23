@@ -8,7 +8,8 @@ Each attribute comes from the best source there is for it, and the sources are c
 - Outline: NHD High Resolution waterbodies (USGS, 1:24,000 or better: NHDWaterbody in the HU4 GeoPackages), lakes /
   ponds and reservoirs. Not treatment, sewage, settling, evaporation or tailings ponds, or covered or concrete
   storage. Pieces of one lake (NHD splits some along reach or HU4 boundaries) are joined. Kept: lakes of MIN_HA or
-  more, and any smaller one a fisheries agency lists (cutthroat live in 2-acre alpine lakes).
+  more, any smaller one a fisheries agency lists (cutthroat live in 2-acre alpine lakes), and any named one of
+  NAMED_MIN_HA or more (a quarter acre: a name says people go there; 2026-11-23).
 - Surface elevation: the 10 m 3DEP DEM inside the outline (median), and the share of the outline at that level.
   Lidar DEMs are hydro-flattened, so a lake that holds water reads as one level; a low share means the outline and
   the DEM disagree (a dry or drained basin, or an outline in the wrong place). NHD's own stage elevation is kept
@@ -51,6 +52,8 @@ if AREA not in BUILT and not (AREA in PLANNED and os.environ.get("LAKES_OUT")):
     raise SystemExit(0)
 
 MIN_HA = BUILT.get(AREA, PLANNED.get(AREA))   # lakes and ponds smaller than this are kept only when an agency lists them
+NAMED_MIN_HA = 0.1     # ... or when they have a name (GNIS, in NHD) and are this big: 359 named ponds were left out on the
+                       # 12 maps under their floors on 2026-11-22, 152 of them in North Georgia (2 ha floor)
 LEVEL_TOL_M = 0.3        # a DEM cell within this of the lake's median elevation is on its water surface
 EV_BUFFER_M = 50         # a fish record this close to the shore counts for the lake
 EV_MAX_UNCERT_M = 250    # ... unless its stated coordinate uncertainty is larger than this
@@ -235,7 +238,7 @@ if has("wy_trout"):
         print(f"  names that differ (NHD / GNIS vs Game & Fish), {len(bad)}: " + "; ".join(f"{a} / {b}" for a, b in bad))
 
 # ---- 2b. other states' own lists of trout lakes, as outlines (lakesources.agency_lakes: NCWRC's Public Mountain Trout
-# Waters impoundments, PFBC's stocked lakes), with Wyoming's rules: a listed lake is kept whatever its size (Max Patch
+# Waters impoundments, PFBC's stocked lakes, CT DEEP's stocked lakes), with Wyoming's rules: a listed lake is kept whatever its size (Max Patch
 # Pond, 0.5 ha), joined to the NHD lake it overlaps most (half of the smaller), and a listed lake NHD has no lake for
 # keeps the agency's outline (Cheoah Reservoir, 240 ha, which NHD draws as river). Their classes and rules come with
 # the state's other lake facts (step 6c) ----
@@ -370,10 +373,12 @@ for d in lakedata.DEPTHS.get(AREA, []) + lakedata.SURVEYS.get(AREA, []):
     p_ = _locate(d["at"])
     near_ = [i for i in lk.sindex.query(p_.buffer(1500), predicate="intersects") if key(d["lake"]) == key(lk.gnis_name.iat[i])]
     surveyed |= set(near_[:1])
-keep = (lk.ha >= MIN_HA) | lk.agency.notna() | lk.index.isin(list(surveyed))
+named_ = lk.gnis_name.notna() & (lk.ha >= NAMED_MIN_HA)
+keep = (lk.ha >= MIN_HA) | lk.agency.notna() | lk.index.isin(list(surveyed)) | named_
 print(f"kept {int(keep.sum())} lakes: {int((lk.ha >= MIN_HA).sum())} of {MIN_HA} ha or more, "
-      f"{int((keep & (lk.ha < MIN_HA)).sum())} smaller ones an agency lists; left out {int((~keep).sum())} unlisted "
-      f"ponds under {MIN_HA} ha")
+      f"{int((keep & (lk.ha < MIN_HA) & (lk.agency.notna() | lk.index.isin(list(surveyed)))).sum())} smaller ones an "
+      f"agency lists or a survey measured, {int((keep & (lk.ha < MIN_HA) & named_ & lk.agency.isna() & ~lk.index.isin(list(surveyed))).sum())} "
+      f"smaller named ones of {NAMED_MIN_HA} ha or more; left out {int((~keep).sum())} unlisted unnamed ponds")
 lk = lk[keep].reset_index(drop=True)
 lk["in_area"] = (lk.geometry.intersection(U).area / lk.area).round(3)
 lk["shore_km"] = (lk.geometry.boundary.length / 1000).round(2)

@@ -7,7 +7,8 @@ CDFW's barrier surveys in LA), each range's own, taken by 05_score.py. Many well
 in OSM only as a park, Triple Buckets not at all, and USGS names some falls that nobody has put on OSM. Sources now:
   OSM       nodes, ways and areas tagged waterway=waterfall or natural=waterfall; named rapids; named swimming holes on
             streams (leisure=swimming_area or bathing_place, sport=swimming, or a beach or pool whose name says swimming
-            hole or punch bowl); named parks, nature reserves, attractions and waters whose name says falls, cascade,
+            hole or punch bowl); pools in a creek (water=stream_pool) and swimming spots without a name too, as swimming
+            holes, where they are on a creek and not by a lake (2026-11-23); named parks, nature reserves, attractions and waters whose name says falls, cascade,
             cataract, pothole, flume or punch bowl. Features that aren't tagged as falls must sit on a stream (within
             60 m of an NHD stream line, not in a lake or reservoir) and be small (under 400 m across): the
             centre of a state park named for its falls is not the falls.
@@ -16,6 +17,12 @@ in OSM only as a park, Triple Buckets not at all, and USGS names some falls that
   NPS       (Smokies only, source grsm_falls) Great Smoky Mountains National Park's waterfalls layer
   GNIS      USGS Geographic Names, class Falls or Rapids: the current file, and the 2021 archive for names since dropped
   Wikidata  items that are a waterfall, cascade, rapids, swimming hole or plunge pool
+  Overture  Overture Maps Foundation places (overturemaps.org; CDLA-Permissive-2.0, Foursquare's places Apache-2.0;
+            credited on the map), from data/raw/<area>/_shared/overture_places.csv, which
+            audit/scripts/completeness_overture.py writes with each Overture release (2026-11-23). Its places are business
+            listings: a place in its waterfall category whose name ends in falls, cascade or waterfall, within 150 m of an
+            NHD creek, or a place named as a swimming hole within 250 m of one and not on a lake's shore; and only where
+            no other source has a fall of the same name within 25 km (Overture repeats well-known falls miles off).
   curated   data/known_falls_curated*.csv: falls from guidebooks, state inventories (Vermont's 1985-88 survey of its
             waterfalls, cascades and gorges) and swimming-hole guides, each with its source page; each row's note says
             how its point was placed. Rows can also rename, replace or drop a source's point (see below).
@@ -31,7 +38,7 @@ placements especially (Bingham Falls' is 340 m off the falls), still name a drop
 Downloads are cached in the area's _shared folder (OSM a week, Wikidata a month) and the old copy is used if a source
 can't be reached; GNIS files are kept in data/raw/_national/gnis.
 """
-import glob, io, json, os, re, time, zipfile, requests, shapely, numpy as np, pandas as pd, geopandas as gpd, pyogrio
+import glob, hashlib, io, itertools, json, os, re, time, zipfile, requests, shapely, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from config import *
 from geomatch import overpass, esri, UA
 import netfetch
@@ -49,7 +56,7 @@ STATES = {"la": ("CA",), "jackson": ("WY", "ID"), "n_georgia": ("GA", "NC", "SC"
           # the Adirondack maps' east edges cross Lake Champlain to the Vermont shore
           "adk_high_peaks": ("NY", "VT"), "adk_northwest": ("NY",), "adk_southwest": ("NY",), "adk_southeast": ("NY", "VT")}
 SRC_LABEL = {"OSM": "OpenStreetMap", "NHD": "USGS NHD", "GNIS": "USGS GNIS", "Wikidata": "Wikidata",
-             "CDFW": "CDFW barrier survey", "NPS": "Great Smoky Mountains NP"}
+             "CDFW": "CDFW barrier survey", "NPS": "Great Smoky Mountains NP", "Overture": "Overture Maps"}
 
 boxes = gpd.GeoSeries([shapely.box(*R["bbox"]) for R in REGIONS.values()], crs=CRS)
 area_u = boxes.union_all()
@@ -57,9 +64,10 @@ keep_zone = area_u.buffer(300)          # a little past the boxes, so 05_score.p
 W, S, E, N = gpd.GeoSeries([area_u.envelope.segmentize(1000)], crs=CRS).to_crs(4326).total_bounds
 
 
-def cached(path, days, fetch, what):
-    """fetch() -> JSON data, kept at path for `days` together with the lon/lat box it was fetched for: a copy made for
-    other boxes (an area whose boxes changed) is fetched again. If the fetch fails, the old copy is used (or None)."""
+def cached(path, days, fetch, what, tag=None):
+    """fetch() -> JSON data, kept at path for `days` together with the lon/lat box it was fetched for and `tag` (a hash
+    of the query, for OSM): a copy made for other boxes (an area whose boxes changed) or by another query (one that asked
+    for less) is fetched again. If the fetch fails, the old copy is used (or None)."""
     key = [round(v, 5) for v in (W, S, E, N)]
     old = None
     if os.path.exists(path):
@@ -67,20 +75,21 @@ def cached(path, days, fetch, what):
             old = json.load(f)
         if not (isinstance(old, dict) and "bbox" in old):     # a copy from before the box was kept with it
             old = {"bbox": None, "data": old}
-        if old["bbox"] == key and time.time() - os.path.getmtime(path) < days * 86400:
+        if old["bbox"] == key and old.get("query") == tag and time.time() - os.path.getmtime(path) < days * 86400:
             return old["data"]
     try:
         data = fetch()
     except Exception as e:  # noqa: BLE001 (any network or service failure)
         if old is not None:
             day = time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(path)))
-            part = "" if old["bbox"] == key else " (fetched for other boxes: falls in the new parts are missing)"
+            part = ("" if old["bbox"] == key else " (fetched for other boxes: falls in the new parts are missing)") + \
+                   ("" if old.get("query") == tag else " (made by an older query)")
             print(f"NOTE: {what} could not be refreshed ({str(e)[:120]}); using the copy from {day}{part}")
             return old["data"]
         print(f"NOTE: {what} could not be fetched ({str(e)[:120]}) and there is no earlier copy; going on without it")
         return None
     with open(path + ".tmp", "w") as f:
-        json.dump({"bbox": key, "data": data}, f)
+        json.dump({"bbox": key, **({"query": tag} if tag else {}), "data": data}, f)
     os.replace(path + ".tmp", path)
     return data
 
@@ -113,8 +122,22 @@ DISTINCT = {"little", "big", "upper", "lower", "middle", "north", "south", "east
             "fourth", "inner", "outer", "old", "new", "twin", "ii", "iii", "iv"}
 
 
+def _plain(t):
+    """A name's words with a final s dropped (Beldens Falls is Belden Falls, Augers Falls Auger Falls)."""
+    return frozenset(w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w for w in t)
+
+
+def _joined(t):
+    """A name of two or three words run together ("Juneywhank" for Juney Whank), in any order."""
+    return {"".join(q) for q in itertools.permutations(sorted(t))} if 1 < len(t) <= 3 else set()
+
+
 def same_name(ti, tj):
-    """One name's words are all in the other's, and what one has more says nothing like upper, little or a number."""
+    """One name's words are all in the other's, and what one has more says nothing like upper, little or a number. Words
+    are compared without a final s, and a one-word name matches two or three words run together."""
+    if ti and tj and ((len(ti) == 1 and next(iter(ti)) in _joined(tj)) or (len(tj) == 1 and next(iter(tj)) in _joined(ti))):
+        return True
+    ti, tj = (_plain(ti), _plain(tj)) if ti and tj else (ti, tj)
     if not ti or not tj or not (ti <= tj or tj <= ti):
         return False
     extra = ti ^ tj
@@ -175,8 +198,9 @@ FW = "[Ff]alls?\\b|[Cc]ascades?|[Cc]ataract|[Pp]otholes?|[Ff]lume|[Pp]unch ?[Bb]
 def osm_query(bb):
     return f"""[out:json][timeout:600];
 (nwr["waterway"="waterfall"]{bb}; nwr["natural"="waterfall"]{bb}; nwr["waterway"="rapids"]["name"]{bb};
- nwr["leisure"~"^(swimming_area|bathing_place)$"]["name"]{bb};
- nwr["sport"="swimming"]["name"]["leisure"!~"^(sports_centre|swimming_pool|fitness_centre|sports_hall|water_park|pitch|common)$"]{bb};
+ nwr["leisure"~"^(swimming_area|bathing_place)$"]{bb};
+ nwr["sport"="swimming"]["leisure"!~"^(sports_centre|swimming_pool|fitness_centre|sports_hall|water_park|pitch|common)$"]["amenity"!="swimming_pool"]{bb};
+ nwr["water"="stream_pool"]{bb};
  nwr["name"~"{FW}"]["leisure"~"^(park|nature_reserve)$"]{bb};
  nwr["name"~"{FW}"]["tourism"="attraction"]{bb};
  nwr["name"~"{FW}|[Ss]wim"]["natural"~"^(water|beach)$"]{bb};);
@@ -198,7 +222,10 @@ def osm_tiles(step=0.5):
     return list(els.values())
 
 
-osm = cached(f"{SHARED}/osm_falls.json", 7, osm_tiles, "OpenStreetMap falls")
+# the query's own hash keys the cache: a changed query is fetched again (until 2026-11-23 a week-old copy made by the
+# previous query was used, without the pools and unnamed swimming spots)
+OSM_QKEY = hashlib.sha1(osm_query("{bb}").encode()).hexdigest()[:12]
+osm = cached(f"{SHARED}/osm_falls.json", 7, osm_tiles, "OpenStreetMap falls", tag=OSM_QKEY)
 if osm is None:   # no Overpass and no earlier copy: the ranges' waterfall nodes from 02_download_vectors.py
     osm = []
     for r in REGIONS:
@@ -235,13 +262,19 @@ for el in osm:
             rank=0 if el["type"] == "node" else 3, nrank=1, note=None, url=url, lon=lon, lat=lat, ref=ref, onstream=True)
         n_osm["rapids"] += 1
         continue
-    # everything else: named, small, not a business or a road, and on a stream (tested after the projection below)
-    if not name or NOT_NATURE.search(name) or span > 400 or t.get("amenity") or t.get("attraction") or t.get("shop"):
+    # everything else: named, small, not a business or a road, and on a stream (tested after the projection below). A
+    # pool in a creek (water=stream_pool) or a swimming spot (leisure=swimming_area / bathing_place, sport=swimming) is
+    # kept without a name too, as a swimming hole, if it is on a creek and not by a lake (below; 2026-11-23)
+    pool = t.get("water") == "stream_pool"
+    spot = t.get("leisure") in ("swimming_area", "bathing_place") or t.get("sport") == "swimming"
+    if (not name and not (pool or spot)) or (name and NOT_NATURE.search(name)) or span > 400 or t.get("amenity") \
+            or t.get("attraction") or t.get("shop"):
         n_osm["dropped"] += 1
         continue
-    swim = t.get("leisure") in ("swimming_area", "bathing_place") or t.get("sport") == "swimming" or re.search(r"(?i)swim", name)
+    swim = pool or spot or bool(re.search(r"(?i)swim", name or ""))
     add(name=name, alt=[], kind="swimming hole" if swim else kind_from_name(name, "waterfall"), src="OSM", precise=False,
-        rank=6, nrank=1, note=None, url=url, lon=lon, lat=lat, ref=ref, onstream=False)
+        rank=6, nrank=1, note=None if name else ("A pool in the creek" if pool else "A swimming spot") + " (OpenStreetMap).",
+        url=url, lon=lon, lat=lat, ref=ref, onstream=False)
     n_osm["swim" if swim else "named"] += 1
 
 # ---- NHD waterfall points ----
@@ -359,6 +392,36 @@ for x in cached(f"{SHARED}/wikidata_falls.json", 30, wikidata, "Wikidata falls")
         url=x.get("article", {}).get("value") or f"https://www.wikidata.org/wiki/{qid}", lon=lon, lat=lat, ref=qid,
         onstream=True)
 
+# ---- Overture Maps places (Overture Maps Foundation; CDLA-Permissive-2.0, Foursquare's places Apache-2.0; credited on
+# the map). Business listings: only places in its waterfall category whose name ends in falls, cascade(s) or waterfall,
+# and places named as swimming holes (not a pool, a club, a school or a rental). They are tested against the creeks,
+# the lakes and the other sources after the projection below. The file is written by
+# audit/scripts/completeness_overture.py (DuckDB, one release at a time): without it, no Overture places (a NOTE).
+OVERTURE = f"{SHARED}/overture_places.csv"
+OV_SWIM = r"swimm?in'?g? hole|swim hole|blue hole|swim(?:ming)? area|swimming spot|bathing (?:area|place)"
+OV_NOT_SWIM = (r"pool|club|school|team|aquatic|lesson|instructor|ymca|diving|center|centre|gym|fitness|tech|supply|service|"
+               r"academy|spa\b|restaurant|cuisine|bar\b|hookah|pet|rental|cabin|association")
+OV_SWIM_DENY = {"gym", "swimming_pool", "swimming_instructor", "sports_school", "sport_league", "amateur_sport_team",
+                "youth_organization", "charity_organization", "business_consulting", "hookah_bar", "restaurant",
+                "aquatic_pet_store", "holiday_rental_home", "cabin", "hotel", "lodging", "sport_or_fitness_facility",
+                "pool_and_hot_tub_service", "hot_tub_and_pool_store", "shopping", "contractor"}
+OV_FALL_NAME = r"(?:\bfalls?|\bcascades?|waterfall)$"
+OV_NOT_FALL = (r"\b(?:church|school|apartments?|village|plaza|shopping|golf|club|estates?|condos?|subdivision|community|"
+               r"association|road|rd|street|lane|drive|avenue|inn|lodge|motel|hotel|resort|cabins?|campground|restaurant|"
+               r"store|shop|market|park|trail|trailhead|parking|llc|inc|farm|rentals?)\b")
+n_ov = 0
+if os.path.exists(OVERTURE):
+    ov = pd.read_csv(OVERTURE)
+    ov = ov[ov.name.notna() & ~ov.status.fillna("").eq("permanently_closed")]
+    nm_ = ov.name.str.lower().str.strip()
+    swim_ = nm_.str.contains(OV_SWIM) & ~nm_.str.contains(OV_NOT_SWIM) & ~ov.cat.isin(OV_SWIM_DENY)
+    fall_ = ov.cat.eq("waterfall") & nm_.str.contains(OV_FALL_NAME) & ~nm_.str.contains(OV_NOT_FALL) & ~swim_
+    for r_, k_ in [(r_, "swimming hole") for r_ in ov[swim_].itertuples()] + [(r_, "waterfall") for r_ in ov[fall_].itertuples()]:
+        add(name=r_.name.strip(), alt=[], kind=kind_from_name(r_.name, k_), src="Overture", precise=False, rank=7, nrank=5,
+            note=None, url=None, lon=float(r_.lon), lat=float(r_.lat), ref=f"overture/{r_.id}", onstream=True)
+        n_ov += 1
+else:
+    print(f"NOTE: no Overture places for {AREA} ({OVERTURE} is missing; audit/scripts/completeness_overture.py writes it)")
 # ---- curated: guidebooks, state inventories, swimming-hole guides ----
 # A row's `replaces` names source points it stands in for (node/<id>, way/<id>, gnis/<id>, Q<id>; ;-separated): those
 # are dropped. With lat/lon left blank the row takes the first one's position and placement instead: that names or
@@ -396,10 +459,45 @@ d = gpd.GeoDataFrame(d, geometry=gpd.points_from_xy(d.lon, d.lat), crs=4326).to_
 d = d[d.within(keep_zone)].reset_index(drop=True)
 # features that aren't tagged as falls must be on a stream
 offstream = ~d.onstream & ~np.array([on_stream(p) for p in d.geometry])
-print(f"OSM: {n_osm['falls']} falls, {n_osm['rapids']} named rapids, {n_osm['swim']} named swimming spots, "
+print(f"OSM: {n_osm['falls']} falls, {n_osm['rapids']} named rapids, {n_osm['swim']} swimming spots and creek pools, "
       f"{n_osm['named']} other named features, {n_osm['dropped']} named features left out (a business, a road, too big); "
       f"{int(offstream.sum())} more left out as not on a stream: {sorted(d[offstream].name.dropna())[:12]}")
 d = d[~offstream].reset_index(drop=True)
+# an unnamed OSM swimming spot within 60 m of a lake or reservoir is its beach, not a swimming hole (a beach's middle lies
+# by the water; on_stream above allows 20 m)
+if lake_tree is not None and len(d):
+    beach = (d.src.eq("OSM") & d.name.isna() & d.kind.eq("swimming hole")).values & \
+        np.array([len(lake_tree.query(p, predicate="dwithin", distance=60)) > 0 for p in d.geometry])
+    if beach.any():
+        print(f"OSM: {int(beach.sum())} unnamed swimming spots left out as a lake's beach")
+    d = d[~beach].reset_index(drop=True)
+# Overture's places: a fall within 150 m of an NHD creek and a swimming hole within 250 m of one (its points sit where a
+# business would be geocoded), a fall not within 20 m of a lake (as on_stream) and a swimming hole not within 150 m of
+# one (a lake's swim beach is not a swimming hole); and only what no other source has: a fall of the same name from
+# another source within 25 km means Overture's point is a copy, often misplaced (a second Laurel Falls 9 km off), and
+# any other source's fall within 1 km (a swimming hole: 300 m) is most likely the same place under a listing's name
+# ("Roswell Mill Waterfall" for Vickery Creek Falls, "Stowe Waterfall" 600 m from Bingham Falls)
+ovm = d.src.eq("Overture").values
+if ovm.any():
+    oth = d[~ovm].reset_index(drop=True)
+    otree = shapely.STRtree(oth.geometry.values)
+    otok = [[tokens(n_)] + [tokens(a_) for a_ in (al_ if isinstance(al_, list) else [])] for n_, al_ in zip(oth.name, oth.alt)]
+    keep_ov = np.ones(len(d), bool)
+    for i in np.flatnonzero(ovm):
+        p_, sw_ = d.geometry.iat[i], d.kind.iat[i] == "swimming hole"
+        ok = len(stream_tree.query(p_, predicate="dwithin", distance=250 if sw_ else 150)) > 0
+        if ok and lake_tree is not None and len(lake_tree.query(p_, predicate="dwithin", distance=150 if sw_ else 20)):
+            ok = False
+        if ok:
+            ok = not len(otree.query(p_, predicate="dwithin", distance=300 if sw_ else 1000))
+        if ok:
+            ti_ = tokens(d.name.iat[i])
+            ok = bool(ti_) and not any(same_name(ti_, t_) for j in otree.query(p_, predicate="dwithin", distance=25000)
+                                       for t_ in otok[j])
+        keep_ov[i] = ok
+    print(f"Overture: {int(ovm.sum())} places named as falls or swimming holes, {int((ovm & keep_ov).sum())} kept (on a "
+          f"creek, not by a lake, no other source's fall near, nor its name within 25 km): {sorted(d.name[ovm & keep_ov])[:20]}")
+    d = d[keep_ov].reset_index(drop=True)
 # within one source, a fall listed twice is kept once: the same name within 150 m (a node and a way of one fall in OSM;
 # NHD marks Broken Falls with seven points along it), or two unnamed points within 15 m. Curated rows stay as written.
 d["tok"] = [tokens(n) | frozenset().union(*[tokens(a) for a in al]) if al else tokens(n) for n, al in zip(d.name, d.alt)]

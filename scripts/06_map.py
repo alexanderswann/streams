@@ -56,6 +56,14 @@ _guides = [s_ for s_, n_ in known_falls.src.str.split(" · ").explode().value_co
 if _guides:
     LBL["credits"] = LBL["credits"].replace("known falls: OSM, USGS GNIS, Wikidata and",
                                             "known falls: OSM, USGS GNIS, Wikidata, " + ", ".join(_guides) + " and")
+# Overture Maps places among the known falls (02f_known_falls.py): its licences ask for the credit, and the licence
+# texts and Foursquare's notice go with the data (2026-11-23)
+if known_falls.src.str.contains("Overture Maps", regex=False).any():
+    LBL["credits"] += (" · places: <a href='https://overturemaps.org' target='_blank'>Overture Maps Foundation</a>, "
+                       "<a href='https://cdla.dev/permissive-2-0/' target='_blank'>CDLA-Permissive-2.0</a>; includes "
+                       "Foursquare data © 2024 Foursquare Labs, Inc., <a href='https://www.apache.org/licenses/LICENSE-2.0' "
+                       "target='_blank'>Apache-2.0</a> (<a href='https://docs.overturemaps.org/attribution/' target='_blank'>"
+                       "notice</a>)")
 # road closures from 07_road_closures.py (optional; re-run that script to refresh)
 closures = gpd.read_file(f"{MAP_OUT}/road_closures.gpkg") if os.path.exists(f"{MAP_OUT}/road_closures.gpkg") else None
 gated = gpd.read_file(f"{MAP_OUT}/gated_roads.gpkg") if os.path.exists(f"{MAP_OUT}/gated_roads.gpkg") else None
@@ -1417,10 +1425,16 @@ for c in ("note", "kind", "url"):     # ranges scored before 02f_known_falls.py 
 # CDFW's surveyors write "2.5 meters [8.2 ft] wide by 2.5 feet high" (units.py)
 known_falls["name"] = known_falls.name.map(imperial_text)
 known_falls["note"] = known_falls.note.map(imperial_text)
+def fall_label(r):
+    """A known fall's name, or for one without a name what it is: "waterfall", or "swimming hole" for the unnamed creek
+    pools and swimming spots 02f_known_falls.py keeps since 2026-11-23."""
+    return r.name if isinstance(r.name, str) and r.name else (r.kind if isinstance(r.kind, str) and r.kind else "waterfall")
+
+
 def fall_html(r):
     """The known fall's popup, shared by the 2D, 3D and one-file maps: name, kind, sources, note, the source's page."""
-    nm_ = r.name if isinstance(r.name, str) and r.name else "waterfall"
-    kind_ = r.kind if isinstance(r.kind, str) and r.kind not in ("", "waterfall") else ""
+    nm_ = fall_label(r)
+    kind_ = r.kind if isinstance(r.kind, str) and r.kind not in ("", "waterfall", nm_) else ""
     note = r.note if isinstance(r.note, str) and r.note else ""
     url = r.url if isinstance(r.url, str) and r.url.startswith("http") else ""
     return (f"<b>{hesc(nm_)}</b>" + (f" · {hesc(kind_)}" if kind_ else "") + f"<br><span style='color:#6b7280'>{hesc(r.src)}</span>"
@@ -1428,11 +1442,11 @@ def fall_html(r):
 known_falls["html"] = [fall_html(r) for r in known_falls.itertuples()]
 kf = folium.FeatureGroup(name=f"<span style='color:#0b3d91'>◆</span> {LBL['falls']}", show=False)
 for r in known_falls.itertuples():
-    nm_ = r.name if isinstance(r.name, str) and r.name else "waterfall"
+    nm_ = fall_label(r)
     folium.Marker([r.geometry.y, r.geometry.x], icon=svg_icon(FALL_SVG, 16, 16),
                   popup=folium.Popup(r.html, max_width=300), tooltip=f"{nm_} ({r.src})").add_to(kf)
 kf.add_to(m)
-X3D["falls"] = gj(known_falls[["name", "src", "note", "kind", "html", "geometry"]].assign(name=known_falls.name.fillna("waterfall")))
+X3D["falls"] = gj(known_falls[["name", "src", "note", "kind", "html", "geometry"]].assign(name=[fall_label(r) for r in known_falls.itertuples()]))
 
 def r6(gs):
     """Outlines from other sources (road closures, PAD-US, USFS land status, state trout waters, critical habitat,
