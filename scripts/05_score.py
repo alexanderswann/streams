@@ -168,7 +168,84 @@ def floor_lines(nl):
     share = length.where(nl.ftype.eq(460), 0.0).groupby(nl.gnis_name).sum() / length.groupby(nl.gnis_name).sum()
     built_name = {n for n in set(nl.gnis_name[built].dropna()) if share.get(n, 0.0) < BUILT_STREAM_SHARE}
     nl = nl[~built & ~nl.gnis_name.isin(built_name)]
-    return nl[["gnis_name", "flow", "geometry"]].reset_index(drop=True)
+    return nl[["gnis_name", "flow", "fcode", "geometry"]].reset_index(drop=True)
+# A link running out of a lake starts along NHD's artificial path through it (FCode 55800, which reads as the area's
+# class: perennial outside LA). Where the routing splits the link inside the lake, that stretch is a link of its own,
+# kept on that vote, and the creek below runs on from it (the continuation below), or the creek below is a link of its
+# own, kept on its own NHD line; where it doesn't, the outflow link starts in the lake, and its 25/50/75 % vertices
+# land part on the lake's path, part on the creek: neither vote holds. Since 03_hydrology.py routes a flat along NHD's
+# lines (2026-11-23) a pond's water runs to its outlet in one link, and small lake outlets live had drawn went (Dunham
+# Pond Brook in NE Connecticut, Howard Pond and a 4.7 acre pond in the High Peaks, a pond on Dime Creek in Jackson). So
+# a link that starts in a lake of the map's lakes layer (05d_lakes.py's, any size) and isn't kept whole votes again on
+# each part, whichever way the routing splits it: its first stretch along an artificial path through the lake (not one
+# NHD maps as intermittent), and the creek from where it leaves the lake. Through a swamp or along a river's own water
+# the first doesn't count: on the first try that kept 5 times as many links, 33 mi in NE Connecticut. Nor does it where
+# NHD maps no creek below the lake (POND_ON_NHD of the rest of the link within 60 m of an NHD line): where the terrain
+# leaves a pond away from NHD's outlet, the kept link and the creeks below it ran on where NHD has nothing (on the
+# second try 7.7 of the 25.7 mi added, chains of up to 1.3 mi 4-16 % on NHD). (The outlines the reaches are cut at
+# below, flowlib.lake_water, start at 8 ha: these ponds are 1.5-4 ha.)
+POND_NEAR_M, POND_IN_LAKE, POND_ON_NHD = 20.0, 0.5, 0.5
+def pond_stretches(geoms, ap, lakes, lines):
+    """For each line, its first stretch from its upstream end with every vertex within POND_NEAR_M of a line of `ap`
+    (3 vertices or more) and POND_IN_LAKE of its length in `lakes` (polygons), where POND_ON_NHD of the rest of the
+    line (if 50 m or more) lies within 60 m of a line of `lines`; or None."""
+    tree = shapely.STRtree(ap.geometry.values) if len(ap) else None
+    lt = shapely.STRtree(lakes) if len(lakes) else None
+    nt = shapely.STRtree(lines.geometry.values) if len(lines) else None
+    out = []
+    for g in geoms:
+        c = np.asarray(g.coords)[:, :2]
+        if tree is None or lt is None or len(c) < 3:
+            out.append(None)
+            continue
+        near = np.zeros(len(c), bool)
+        near[np.unique(tree.query(shapely.points(c), predicate="dwithin", distance=POND_NEAR_M)[0])] = True
+        k = len(c) if near.all() else int(np.argmin(near))
+        st = shapely.LineString(c[:k]) if k >= 3 else None
+        if st is not None:
+            lk = lt.query(st, predicate="intersects")
+            if not len(lk) or st.intersection(shapely.union_all(lakes[lk])).length < POND_IN_LAKE * st.length:
+                st = None
+        if st is not None and k < len(c):
+            rest = shapely.LineString(c[k - 1:])
+            if rest.length >= 50:
+                pts = shapely.line_interpolate_point(rest, np.arange(0.0, rest.length, 25.0))
+                on = len(np.unique(nt.query(pts, predicate="dwithin", distance=60)[0])) / len(pts) if nt is not None else 0.0
+                if on < POND_ON_NHD:
+                    st = None
+        out.append(st)
+    return out
+def creek_parts(geoms, lakes):
+    """For each line that starts inside one of `lakes` (polygons) and leaves it: the line from the vertex before the
+    first one outside (3 vertices or more), or None."""
+    lt = shapely.STRtree(lakes) if len(lakes) else None
+    out = []
+    for g in geoms:
+        c = np.asarray(g.coords)[:, :2]
+        lk = lt.query(g, predicate="intersects") if lt is not None and len(c) >= 4 else []
+        if not len(lk):
+            out.append(None)
+            continue
+        inside = shapely.contains_xy(shapely.union_all(lakes[lk]), c[:, 0], c[:, 1])
+        k = int(np.argmin(inside))
+        out.append(shapely.LineString(c[k - 1:]) if inside[0] and not inside.all() and len(c) - k >= 2 else None)
+    return out
+def nhd_keeps(geoms, km2, lines, big_geoms, big_km2, lakes):
+    """nhd_says, and for a link it doesn't keep that starts in a lake, the same vote on its first stretch along an
+    artificial path through the lake and on its creek below the lake. lakes: (the lakes layer's outlines, which of
+    them NHD maps as intermittent)."""
+    ok = nhd_says(geoms, km2, lines, big_geoms, big_km2)
+    outl, dry = lakes
+    for part in (pond_stretches(geoms, lines[lines.fcode.eq(55800)], outl[~dry], lines), creek_parts(geoms, outl)):
+        j = np.array([i for i in range(len(geoms)) if not ok[i] and part[i] is not None], dtype=int)
+        if len(j):
+            ok[j] = nhd_says(np.array([part[i] for i in j], dtype=object), np.asarray(km2)[j], lines, big_geoms,
+                             big_km2)
+    return ok
+from flowlib import lakes_layer
+_ll = lakes_layer()
+_floor_lakes = ((np.array([], dtype=object), np.array([], dtype=bool)) if _ll is None else
+                (np.array(_ll.geometry.values, dtype=object), _ll.intermittent.fillna(False).astype(bool).values))
 full0 = s.area_km2 + carried
 base = (sea < 0.5) & areaclip.inside(s.geometry.values)
 _f, _g = full0.to_numpy(float), s.geometry.values
@@ -176,7 +253,7 @@ small = ((full0 < MAP_MIN_KM2) & (full0 >= STREAM_KM2) & base).to_numpy()
 _big = np.flatnonzero((full0 >= MAP_MIN_KM2).to_numpy() & base)
 by_nhd = np.zeros(len(s), bool)
 if small.any():
-    by_nhd[small] = nhd_says(_g[small], _f[small], floor_lines(nhd), _g[_big], _f[_big])
+    by_nhd[small] = nhd_keeps(_g[small], _f[small], floor_lines(nhd), _g[_big], _f[_big], _floor_lakes)
 keep = ((full0 >= MAP_MIN_KM2) | by_nhd) & base
 # A creek kept goes on downstream until it meets a kept line: NHD's class changes along a creek, and the vote with it, so
 # a creek kept on its NHD evidence could end in the woods where NHD calls it intermittent (14 such ends in NE Connecticut
@@ -206,8 +283,8 @@ for nb in REGIONS:
     _ok = np.flatnonzero(_in & (_a >= MAP_MIN_KM2)).tolist()
     if len(_sm):
         _bg = np.flatnonzero(_a >= MAP_MIN_KM2)
-        _ok += _sm[nhd_says(_ns.geometry.values[_sm], _a[_sm], floor_lines(_nl), _ns.geometry.values[_bg],
-                            _a[_bg])].tolist()
+        _ok += _sm[nhd_keeps(_ns.geometry.values[_sm], _a[_sm], floor_lines(_nl), _ns.geometry.values[_bg],
+                            _a[_bg], _floor_lakes)].tolist()
     _seam += [j for k in _ok for j in _starts.get(_key(_ns.geometry.values[k].coords[-1]), []) if base[j] and not _kp[j]]
 _n0 = int(_kp.sum())
 _kp[_seam] = True
