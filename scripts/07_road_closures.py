@@ -21,7 +21,8 @@ Outside California (config.py `sources`; each feed was fetched and checked on 20
                   work closures on the Idaho side of the Jackson map (Teton Valley, Palisades)
   vdot_511        Virginia 511's map files (points; the wording says whether the road is closed). Undocumented
                   files behind 511.vdot.virginia.gov: they may move
-  blri_roads      Blue Ridge Parkway closures: the park's web table of milepost sections, drawn between the
+  blri_roads      Blue Ridge Parkway closures: the park's web table of milepost sections (a section whose Status
+                  says Closed; in one that is open, the milepost ranges its notes call closed), drawn between the
                   park's milepost points along OSM roads
 WYDOT's highway conditions and Connecticut's closures have no feed that works without an account: not included.
 
@@ -469,6 +470,11 @@ if has("vdot_511"):
                 sec(pr.get("start")), sec(pr.get("end")), line_of(g), frm=pr.get("location_description"))
     print("Virginia 511", len(rows) - n0)
 if has("blri_roads"):     # the Parkway's closures page: a table of milepost sections with Open / Closed / Ungated
+    # A section closes as a whole only when its Status says Closed. In one that is open (or partly closed), what closes
+    # is the milepost ranges its notes call closed ("CLOSED: MP 63.5 - 63.9 around the James River Bridge"; a range
+    # that follows "detour" or "open" is the way round, not the closure); a closure the notes give no milepost range
+    # (a campground, a picnic area, a trail) closes no road. Until 2026-11-23 any "closed" in a row closed its whole
+    # section: mileposts 61.4-66.3 for the James River Bridge's 63.5-63.9.
     n0 = len(rows)
     try:
         html = get_text("https://www.nps.gov/blri/planyourvisit/roadclosures.htm", "Blue Ridge Parkway (NPS)")
@@ -476,19 +482,92 @@ if has("blri_roads"):     # the Parkway's closures page: a table of milepost sec
             "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/SEAC_BLRI_Mileposts/FeatureServer/2",
             what="Blue Ridge Parkway mileposts (geometry)") if p.get("milepost") is not None}
         cell = lambda t: " ".join(re.sub(r"<[^>]+>", " ", t).replace("&nbsp;", " ").replace("&amp;", "&").split())
+        NUM, MPW = r"(\d+(?:\.\d+)?)", r"\b(?:mp|mile\s*posts?|mileposts?)\b\.?\s*"
+        MP_RANGE = re.compile(r"(?i)" + MPW + NUM + r"\s*(?:-|–|—|to|and|through|thru)\s*(?:" + MPW + r")?" + NUM)
+        SAYS = re.compile(r"(?i)\b(closed|open(?:s|ed)?|detour(?:s|ed)?)\b")
+
+        # The Parkway is placed mile by mile, between the park's milepost points (whole miles): along the OSM lines
+        # named as the road most of the points lie on, else along any road, and only where the way between two points
+        # is about as long as the mileposts say. Where OSM has no Parkway between them (the James River bridge is left
+        # out of OSM while it is repaired) that mile is left out: the way round is other roads. Routed in one go, the
+        # 61.4-66.3 closure went round the bridge and closed 4.2 km of US 501 and 3.4 km of Elon Road.
+        MILE = 1609.344
+        on = gpd.sjoin_nearest(gpd.GeoDataFrame(geometry=list(mp.values()), crs=CRS), roads[["name", "geometry"]],
+                               max_distance=150)["name"].dropna() if mp else pd.Series(dtype=object)
+        PG = nx.Graph()
+        for geom in (roads.geometry[roads["name"].eq(on.mode().iloc[0])] if len(on) else []):
+            cs = [(round(x, 1), round(y, 1)) for x, y in geom.coords]
+            for u, v in zip(cs[:-1], cs[1:]):
+                PG.add_edge(u, v, w=float(np.hypot(u[0] - v[0], u[1] - v[1])))
+        pnodes = np.array(list(PG.nodes))
+        ptree = cKDTree(pnodes) if len(pnodes) else None
+
+        def mile(u, v):
+            """The Parkway from milepost point u to the next one, v; None if no road between them is that long."""
+            p, q = mp[u].coords[0], mp[v].coords[0]
+            most = 1.5 * (v - u) * MILE + 300
+            if ptree is not None:
+                (dp, dq), (ip, iq) = ptree.query([p, q])
+                if dp <= 150 and dq <= 150:
+                    try:
+                        line = LineString(nx.shortest_path(PG, tuple(pnodes[ip]), tuple(pnodes[iq]), weight="w"))
+                        if line.length <= most:
+                            return line
+                    except (nx.NetworkXNoPath, ValueError, shapely.errors.GEOSException):
+                        pass
+            g, ok = route(p, q)
+            return g if ok and g.geom_type == "LineString" and g.length <= most else None
+
+        def stretch(a, b):
+            """The Parkway from milepost a to b, cut at a's and b's fractions of their miles: (line, True), or a
+            straight line and False if no mile of it could be placed; None if the area has no milepost point within
+            1.5 miles of an end (the section lies outside the area)."""
+            k0 = max((k for k in mp if k <= a + 1e-6), default=None)
+            k1 = min((k for k in mp if k >= b - 1e-6), default=None)
+            if k0 is None or k1 is None or a - k0 > 1.5 or k1 - b > 1.5 or k1 <= k0:
+                return None
+            ks, pieces = sorted(k for k in mp if k0 <= k <= k1), []
+            for u, v in zip(ks[:-1], ks[1:]):
+                lo, hi = max(a, u), min(b, v)
+                g = mile(u, v) if hi > lo else None
+                if g is not None:             # each mile's line runs from u to v
+                    pieces.append(substring(g, (lo - u) / (v - u) * g.length, (hi - u) / (v - u) * g.length))
+            if pieces:
+                return (linemerge(pieces) if len(pieces) > 1 else pieces[0]), True
+            s = LineString([mp[k0].coords[0], mp[k1].coords[0]])
+            return substring(s, (a - k0) / (k1 - k0) * s.length, (b - k0) / (k1 - k0) * s.length), False
+        si = None                             # the Status column, from the header row of each table
         for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", html):
             tds = [cell(t) for t in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)]
-            m = re.search(r"(\d+(?:\.\d+)?)\s*(?:-|–|to)\s*(\d+(?:\.\d+)?)", tds[0]) if tds else None
-            if not m or not any(re.search(r"(?i)\bclosed\b", t) for t in tds[1:]):
+            head = [i for i, t in enumerate(tds) if re.fullmatch(r"(?i)(?:road\s+)?status", t)]
+            if head:
+                si = head[0]
                 continue
-            a_, b_ = float(m.group(1)), float(m.group(2))
-            near = lambda v: min(mp, key=lambda k: abs(k - v)) if mp else None
-            ka, kb = near(a_), near(b_)
-            if ka is None or abs(ka - a_) > 1.5 or abs(kb - b_) > 1.5 or ka == kb:
-                continue                      # the section lies outside the area's mileposts
-            g, ok = route(mp[ka].coords[0], mp[kb].coords[0])
-            add("Blue Ridge Parkway (NPS)", f"Blue Ridge Parkway, milepost {a_:g}–{b_:g}", "full closure", " · ".join(tds[1:]), None, None,
-                g, always=True, placed=ok)
+            m = re.search(NUM + r"\s*(?:-|–|to)\s*" + NUM, tds[0]) if tds else None
+            if not m or si is None or len(tds) <= si:
+                continue
+            a_, b_ = sorted((float(m.group(1)), float(m.group(2))))
+            status, notes = tds[si], " · ".join(t for t in tds[si + 1:] if t)
+            if re.search(r"(?i)\bclosed\b", status) and not re.search(r"(?i)\bpart(?:ial(?:ly)?|ly)\b|\blanes?\b", status):
+                parts, reason = [(a_, b_)], " · ".join(tds[1:])
+            else:
+                parts, reason = [], notes
+                for clause in re.split(r";\s*|[.!?]\s+(?=[A-Z])", f"{status}. {notes}"):
+                    if not re.search(r"(?i)\bclosed\b", clause):
+                        continue
+                    for x in MP_RANGE.finditer(clause):
+                        said = [w.group(1).lower() for w in SAYS.finditer(clause[:x.start()])]
+                        lo, hi = sorted((float(x.group(1)), float(x.group(2))))
+                        lo, hi = max(lo, a_), min(hi, b_)          # the part of it in this row's section
+                        if (not said or said[-1] == "closed") and hi - lo > 0.05:
+                            parts.append((lo, hi))
+                if not parts and re.search(r"(?i)\bclosed\b", notes) and any(a_ - 1.5 <= k <= b_ + 1.5 for k in mp):
+                    print(f"  Blue Ridge Parkway {a_:g}–{b_:g} ({status}): no road closed by \"{notes[:100]}\"")
+            for lo, hi in parts:
+                s_ = stretch(lo, hi)
+                if s_ is not None:
+                    add("Blue Ridge Parkway (NPS)", f"Blue Ridge Parkway, milepost {lo:g}–{hi:g}", "full closure", reason,
+                        None, None, s_[0], always=True, placed=s_[1])
     except (requests.RequestException, RuntimeError) as e:
         if isinstance(e, NO_FEED):
             raise
