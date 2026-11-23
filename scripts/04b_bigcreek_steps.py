@@ -4,7 +4,8 @@ Pass 1 (04_knickpoints.py) needs >= 8 m of drop at >= 25% slope, which a 10 m DE
 On big, gentle creeks a 3-6 m fall shows up as a few metres of *extra* drop over 20-40 m compared with the
 creek's trend. This pass looks only at channels draining >= BIG_AREA km^2 and flags cells where:
   - drop over WIN m >= MIN_DROP
-  - local slope >= RATIO x the creek's trend (steeper of the REACH m above / below)
+  - local slope >= RATIO x the creek's trend (steeper of the REACH m above / below), or RATIO_BIG x it where the
+    excess drop is BIG_EXCESS or more
   - excess drop (drop minus what the trend predicts over that distance) >= MIN_EXCESS
 The pool signal is the depression depth just below the step (filled minus raw DEM).
 """
@@ -19,6 +20,13 @@ REACH = 200         # m
 MIN_DROP = 3.0      # m over WIN
 MIN_EXCESS = 2.5    # m above the creek trend (ordinary step-pool steps run ~2 m)
 RATIO = 2.5         # local slope / trend slope
+BIG_EXCESS = 4.0    # m above the trend: a step this far above it needs only RATIO_BIG x the trend's slope. The ratio
+RATIO_BIG = 2.25    # keeps ordinary steep reaches out, and 4 m above the trend isn't ordinary. Rice's Falls (30 ft, The
+                    # Branch): 7.4 m over 42 m, 4.4 m above the trend, at 2.49 x it once the swamp routing
+                    # (flatlines.py) took the pool above it along NHD's line. All 12 maps, 2026-11-23 (pub_9f6e867):
+                    # 5 more precisely placed known falls found (Rice's; Bear Creek and Bemis Camp falls, Smokies;
+                    # Stick and Lower Stick falls, north Georgia), none lost; 04b steps 2,046 -> 2,073. Tried on the
+                    # trial's rasters: 2.0 x and 3.5 m found no more falls, for 18 and 54 more steps
 MIN_TREND = 0.005   # floor for the trend slope on very flat reaches
 POOL_LOOK = 60      # m below the base searched for a depression
 
@@ -50,7 +58,8 @@ _, s_below, _ = slope_over(land, REACH, down, down_len, upstream=False)
 trend = np.fmax(np.fmax(np.nan_to_num(s_above, nan=0), np.nan_to_num(s_below, nan=0)), MIN_TREND)
 drop = s_loc * d_loc
 excess = drop - trend * d_loc
-flag_c = (drop >= MIN_DROP) & (excess >= MIN_EXCESS) & (s_loc >= RATIO * trend)
+flag_c = ((drop >= MIN_DROP) & (excess >= MIN_EXCESS)
+          & ((s_loc >= RATIO * trend) | ((excess >= BIG_EXCESS) & (s_loc >= RATIO_BIG * trend))))
 flag = np.zeros(H * W, bool)
 flag[cells[np.nan_to_num(flag_c, nan=0).astype(bool)]] = True
 print("flagged cells", int(flag.sum()))
