@@ -273,7 +273,7 @@
     map.addLayer({id: "streams", type: "line", source: "streams",
       layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
       paint: {"line-color": ["get", "cd"], "line-width": zw("wd", HOVER(3)), "line-opacity": ["get", "od"]}});
-    ov.unshift(["streams", "Streams (≥0.4 sq mi drainage)", "<span style='color:#1864ab'>━</span>", ["halo", "streams"], true],
+    ov.unshift(["streams", "Streams (≥0.4 sq mi; ≥0.1 if named or year-round)", "<span style='color:#1864ab'>━</span>", ["halo", "streams"], true],
                ["basins", "Drainage outlines &amp; names", "<span style='color:#3d4651'>▭</span>",
                 ["fork-fill", "fork-line", "divide", "dlab", "flab"], true]);
 

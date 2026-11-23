@@ -514,7 +514,7 @@ function initDrainageMap(map, ctrl) {
     "OpenStreetMap</a> contributors · " + ((window.LBL || {}).credits ||
     "USGS National Digital Trails · USFS · CDFW · iNaturalist · CAL FIRE · NIFC WFIGS · " +
     "USGS gauges &amp; debris-flow hazard · CDEC · TNC Natural Flows · PRISM Group, Oregon State University"))
-  ctrl.addOverlay(streams, "<span style='color:#1864ab'>━</span> Streams (≥0.4 sq mi drainage)");
+  ctrl.addOverlay(streams, "<span style='color:#1864ab'>━</span> Streams (≥0.4 sq mi; ≥0.1 if named or year-round)");
   ctrl.addOverlay(basinLayer, "<span style='color:#3d4651'>▭</span> Drainage outlines &amp; names");
   if (window.PCT) ctrl.addOverlay(pctGroup, "<span class='pctsym'>━</span> <b>" + LONGTRAIL + "</b>");
   if (window.TRAILS) ctrl.addOverlay(trailGroup, "<span class='trsym'>┅</span> Trails &amp; fire roads");
