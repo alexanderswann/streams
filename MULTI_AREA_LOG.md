@@ -1,7 +1,13 @@
-# Multi-area work log
+# Multi-area work log (frozen 2026-11-23)
 
-Decisions and actions for extending the map from LA to more study areas, newest last. The plan is in
-`MULTI_AREA_PLAN.md`; this file records what was decided, why, and what was done.
+> **An archive since 2026-11-23: nothing is added here any more.** How things are now (the live site, the rules in
+> force, sources and licences, open items, checks, building and publishing) is in `STATE.md`, and each change since
+> is recorded in its commit message. This file is the dated record of 2026-11-18 to 2026-11-23. Some entries were
+> written after the fact, and some figures were corrected in later entries with no mark where they first stood:
+> before relying on a figure here, check `STATE.md`, the commit, or the table it came from.
+
+Decisions and actions for extending the map from LA to more study areas, mostly newest last. The first plan
+(`MULTI_AREA_PLAN.md`, 2026-11-18) is in git history; this file records what was decided, why, and what was done.
 
 ## 2026-11-18
 
