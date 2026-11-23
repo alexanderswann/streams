@@ -3733,7 +3733,8 @@ site 4315299, on what the maps draw):
 - **15.7 mi of creek below 19 lakes read less**, because the published maps put the lake's water in 0.6 to 1.2 mi
   from its outlet, on these: Mad Tom Brook below Mill Creek Lake (3.5 mi, 1.3 sq mi less; fish 88 → 77 at worst),
   an unnamed creek below Butler Pond (2.3 mi), Potash Brook below Merino Pond (2.0 mi, 29.5 sq mi; fish 71 → 33),
-  Beaver Pond's north channel (1.3 mi), a side creek at King Lake (1.3 mi), Mono Pond's creek (1.0 mi), a Grass
+  Beaver Pond's north channel (1.3 mi; a second outlet, drawn again since 2026-11-23: below), a side creek at King
+  Lake (1.3 mi), Mono Pond's creek (1.0 mi), a Grass
   River tributary below Boyd Pond (0.9 mi), East Branch Stonehouse Brook below Halls Pond (0.9 mi). At all but
   Butler Pond and Beaver Pond NHD's detailed data has one outflow line, and the terrain takes the water on down
   it. NHDPlus's coarser line has the old course at Mill Creek Lake, Merino Pond, Mono Pond, Boyd Pond and Halls
@@ -3744,7 +3745,8 @@ site 4315299, on what the maps draw):
 - **The second outlet of 9 lakes is no longer drawn** (13 NHD outflow lines): Soft Maple Reservoir's canal arm,
   Round Lake, Butler Pond, Perch Pond, Castaic Lake, Number Four and Number Five Reservoirs, Baltic Reservoir, Glen
   Morgan Lake, Marsh Creek Reservoir. Proposed to the user by the overview session, not built: draw a second NHD
-  outlet as a side channel.
+  outlet as a side channel. Drawn again since 2026-11-23, all but Castaic Lake's and Glen Morgan Lake's (below,
+  "lakes' second outlets drawn again").
 - **12 lakes are left where they were**: Huckleberry Pond, Ferris Lake, Eagle Pond, Burntbridge Pond, Long Pond and
   two unnamed ponds (the DEM holds the water back along NHD's line), Tetreault Pond (the terrain refuses the outlet
   NHD names), Lens Lake and Livingston Lake (NHDPlus and the terrain have them on Paul Creek, NHD names outflows
@@ -3998,3 +4000,68 @@ fix edge creek next".
   night's combined install (after #1, ee00f41, and #2, f71709a; before #5, 6e0898c), with one rebuild of all 12 maps
   from 03b; this entry went in as a docs commit while that rebuild ran. **Not done yet:** this piece's check on the
   project build against the scratch figures above, in a later entry.
+
+## 2026-11-23: lakes' second outlets drawn again, as side channels (second-outlets session)
+
+Where NHD maps a lake leaving by two or three channels, the maps draw the one the routing sends the lake's water
+down. The lake-outlet change of 2026-11-22 (f337bfb, above) stopped drawing 13 such lines, which the maps had drawn
+only where `crossbox.py` happened to put the lake's water in, and Beaver Pond's north channel. The overview session
+proposed drawing a second NHD outlet as a side channel; the user approved it for the overnight install if the checks
+passed (2026-11-22).
+
+- **Rule** (`03b_stitch.py`; README, 3., "A lake's second outlets"): `lake_outlet` hands back the outflow lines it
+  doesn't pick. Each is a second outlet where the terrain takes the water on down it within 300 m and its own path
+  stays on NHD's line for 200 m (the outlet's own test), where it is a channel NHD maps (no Connector, canal or
+  pipeline before the first StreamRiver line), and where it leads neither back into its lake nor up into a lake
+  standing 0.5 m higher. Its way is laid as a stream line to the first stream it meets (`sides` in
+  `lake_outlets.json`). No per-area constant or named place is in the rule; the one new number, 0.5 m, comes from
+  two lakes' lidar levels.
+- **Drawn** (`05_score.py`): each second outlet's links, under the size floor, from the lake down to the first link
+  the map keeps on its own, marked side channels of the creek the lake's main outlet starts. No water is added to
+  any line, and no flow direction, drainage area or crossbox link changes. The size floor's `NHD_MIN_KM2` became
+  `config.py`'s `STREAM_KM2`, the same 0.25 km² (03b's channel start).
+- **Scored** (`scoring.py`, `watertemp.py`, `06_map.py`; README, *Fish score*, water): on its lake's water, never
+  wetter than the creek it runs into below unless that is its lake's own river, and on NHD's class where NHD codes
+  the channel intermittent or ephemeral; a trout record or designated trout water stands against both. The last two
+  are the overview
+  session's rule, from Lake Hemet's spillway: the one-sided trout rule keeps possible water but must not invent it.
+- **Measured in scratch** on all 12 maps from 03b, with the live site's scripts and this change alone, against the
+  live site c178411:
+  - 64 other outflow lines the terrain takes the water on down, at 59 lakes; 51 laid as second outlets at 47 lakes.
+    Refused: 8 with a connector, canal or pipeline first (Lake Mathews, Castaic Lake, Morris Reservoir, Palisades
+    Reservoir's two, Twin Ponds, Lake Rabun, Glen Morgan Lake), 1 whose path leaves NHD's line (Morse Pond), 1 that
+    climbs into a higher lake (Middle Flow); 3 run straight into the next lake.
+  - 10.5 mi of new line (6.1 at fish 60+), none gone; fish 60+ 25,249.0 → 25,254.8 mi.
+  - Drainage at the 516 gauges and 13,949 NHDPlus points as before (no gauge's ratio moved by 0.02, no point's by
+    10 %); 37 more NHD lake outlets drawn, none lost; no dead end or sudden flow drop; known falls matched 961 of
+    2,128 as before; map data +0.14 MB.
+  - Jackson, Lexington and the Smokies have no second outlet and come out identical.
+- **The 14 lines** (fish as measured in scratch, this change alone): 12 drawn again: Soft Maple Reservoir's Beaver
+  River arm (96), Round Lake's (100), Butler Pond's (52), Beaver Pond's north channel (76), Perch Pond's (43), Number
+  Four Reservoir's two lines as one (52), Number Five Reservoir's (20, NHD intermittent), Baltic Reservoir's (16, NHD
+  intermittent), Marsh Creek Reservoir's three lines as two arms (69). Castaic Lake's (a 1.37 km connector through the
+  dam) and Glen Morgan Lake's (a 128 m connector first) stay off by rule.
+- **The rule lowers 10 of the 59 drawn second-outlet lines** (1.9 mi): 9 by NHD's own intermittent or ephemeral
+  code (Lake Sherwood's two, two at an unnamed lake in north Georgia, Stone Hill, Fairview's two, Baltic and Number
+  Five reservoirs), and Lake Hemet's spillway, year-round fish 64 → mostly dry fish 3, as Spillway Canyon Creek below
+  it.
+- **Where a second outlet joins a creek,** the new junction splits the creek's link, and each piece is scored on its
+  own: 2.1 mi read lower (Round Pond 68 → 57 over 0.04 mi, Beaver Pond 73 → 64 over 0.24 mi); no line lost.
+- **Known, left as it is:**
+  - With the size floor installed just before (#4), 12 of the 51 second outlets are drawn as small creeks of their
+    own, not as side channels: the floor keeps their first link (0.25-1 km²) because NHD maps it, and a first link the
+    map keeps on its own is a creek. Scored on their own 0.1-0.3 sq mi, against this change alone (combined-test's
+    final build): Hewitt Pond 73 → 54, Woodhull Lake 100 → 81, Minnow Pond 71 → 58, Simon Pond 27 → 14 (a wild brook
+    trout patch; now "seasonal"), Crooked Lake 82 → 72, Butler Pond 52 → 43, Fifth Creek Pond 78 → 71, Moonshine Pond
+    53 → 46, Owl Pond 56 → 50, Knowlton Pond 48 → 42, Lizard Pond 81 → 80, Fairview Reservoir 40 → 46. All 12 are
+    drawn, and none reads lower than the live map, which draws none of them (the overview session's judgment: it
+    installs). The floor's NHD vote on that first link reads the outflow line itself, so it is no evidence of a creek
+    of its own. A follow-up counts only the link's own ground there; it rides with the map-step repairs (#7).
+  - Beaver Pond: NHDPlus sends the pond's 9.5 km² down the north channel, the routing down the other. The channel is
+    scored on the pond's outlet creek (1.1 sq mi), fish 76 where the maps before f337bfb had 86 on 4.32 sq mi.
+  - The reach cut 650 ft below each lake (installed the same night) doesn't reach second outlets yet: 7 lines at 6
+    lakes, measured with this change alone, show their warm first stretch in the popup only (Woodhull Lake's 811 m:
+    66 °F as one reach, 76 °F over its first 650 ft; Peck Lake's two, Round Lake, Rock Lake, Fifth Creek Pond,
+    Moonshine Pond). A follow-up gives them the cut; it rides with the map-step repairs (#7).
+- **Installed** 2026-11-23 00:24 ET on main as 6e0898c, after #1, #2 and #4, by the overview session, which
+  rebuilds all 12 maps from 03b with the four changes and publishes after its checks.

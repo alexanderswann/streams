@@ -229,7 +229,8 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    out; the terrain spills it north over a dike, NHDPlus and the gauges on Temescal Creek have it on Cajalco Creek).
    NHDPlus only chooses among NHD's detailed lines; its own geometry is never where the water goes in. Else the one
    nearest the terrain's cell. D8 sends a lake's water down one way out, so the other arm is drawn only where it
-   gathers a creek's ground of its own. Of the 1,417 lakes ended at NHD's outlet on the 12 maps, 1,355 have one
+   gathers a creek's ground of its own, or since 2026-11-23 as a second outlet (below). Of the 1,417 lakes ended at
+   NHD's outlet on the 12 maps, 1,355 have one
    outflow line the terrain takes on (5 of them a pipe or ditch); NHD's name decides 33, NHDPlus 17, the nearest
    line 11. Name and NHDPlus disagree at 3 of the 33 (Castaic Lake, Beaver Pond on the Cedar River, Rock Lake), and
    the name stands.
@@ -256,9 +257,23 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    the root"): lakes ending 300 m or more from NHD's outlet 77 → 8, put-ins 200 m or more off the way out 192 → 7,
    61 lake outlets NHD maps newly drawn, USGS gauges within 10 % of their drainage 417 → 419 of 516 (the Salt River
    at the Wyoming line 0.006 → 0.91 of its drainage, the Beaver below Stillwater 0.93 → 1.01), no dead end, no flow
-   drop. What it costs: the second outlet of 9 lakes is no longer drawn, and 15.7 mi of creek below 19 lakes read
+   drop. What it cost: the second outlet of 9 lakes was no longer drawn (drawn again since 2026-11-23, below), and
+   15.7 mi of creek below 19 lakes read
    less because the lake's water now leaves by NHD's outlet (Mad Tom Brook below Mill Creek Lake, Potash Brook
    below Merino Pond); NHDPlus's coarser line has the old course at some of them.
+   **A lake's second outlets** (since 2026-11-23). `lake_outlet` hands back the outflow lines it doesn't pick, and
+   each is a second outlet where it passes the outlet's own test (the terrain takes the water on down it within
+   300 m, and its own path stays on NHD's line for 200 m), is a channel NHD maps (a StreamRiver line, or lines
+   through water running into one, with no Connector, canal or pipeline before the first StreamRiver line: Castaic
+   Lake's line through its dam and Glen Morgan Lake's connector are refused), and leads neither back into its lake
+   nor up into a lake standing 0.5 m higher (Middle Flow's "outlet" climbs into Livingston Lake: an inflow NHD
+   draws the wrong way round). Its way is laid as a stream line to the first stream it meets, like the outlet's, and
+   listed under `sides` in `lake_outlets.json`. No flow direction or drainage area changes, and `crossbox.py` reads
+   only the outlets. That gives 51 second outlets at 47 lakes on the 12 maps, which `05_score.py` draws (5.). They
+   bring back 12 of the 14 lines the change above stopped drawing (13 at those lakes, and Beaver Pond's north
+   channel), which the maps had drawn only where `crossbox.py` happened to put the lake's water in: Soft Maple
+   Reservoir's Beaver River arm, Round Lake's, Marsh Creek Reservoir's arms among them. Castaic Lake's and Glen
+   Morgan Lake's stay off by the rule.
    The pit itself stays (the one-cell gap between a lake's last cell and its way out): closing it is a bigger change
    than this one, see `data/stream_burning/README.md`, "The gap at a lake's outlet".
 4. `04_knickpoints.py`: step detection. Contiguous runs of channel steeper than 25% (30 m window), compared
@@ -362,6 +377,16 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    down missed it, and a trout record goes to the nearest reach, so 53 first pieces (6.3 mi) and 23 rest pieces
    (7.6 mi) over the 12 maps lost trout's ×1.2 (9 of the first in north-east Connecticut). Drainage, elevation, August
    air, canopy, approach time, shade and land status are each piece's own.
+   **A lake's second outlet** (3.; since 2026-11-23) gathers little ground of its own, so its links drain under the
+   size floor. `05_score.py` keeps them from the lake down to the first link the map keeps on its own (within 5 km;
+   one that meets none isn't drawn) and marks them side channels of the creek the lake's main outlet starts
+   (`side_lake`, `side_sid`, `river_km2`): the maps say "(side channel)", and the popup names the lake and what the
+   channel is scored on. Where the map keeps a second outlet's first link on its own, it is that creek, drawn from the
+   lake on. With the floor down to 0.25 km² that includes 12 of the 51, whose first link NHD's vote keeps, though the
+   vote reads the outflow line itself (MULTI_AREA_LOG, 2026-11-23; a follow-up counts only the link's own ground
+   there). A junction only the new line makes leaves the creek above it as the floor had it. No water is added to any
+   line: NHD gives no split of a lake's water. The 200 m cut above doesn't reach a second outlet yet, since its line
+   carries none of the lake's water in the routing (a follow-up).
    NHD name and flow class come
    from the nearest NHD lines at three points along the link, each kept when two agree on the name (or the class;
    NHD splits a creek into many short segments). NHD has no name on many lines (e.g. San Antonio Creek below
@@ -900,9 +925,18 @@ for a week. Run `09_drive.py` after it: it rewrites `trailheads.gpkg`.
   Desert-side canyons with year-round water score high on water alone. The heat gate below takes down only the low
   desert ones (Whitewater, Palm Canyon Wash, Tahquitz). Murray and upper Andreas canyons stay up because it isn't
   certain they're too warm.
+  **A lake's second outlet** (5.; since 2026-11-23) is scored on its lake's water. It takes the water term and
+  evidence of the creek its lake's main outlet starts where they read it at least as wet as its own, but NHD's class
+  where NHD maps the channel intermittent or ephemeral, and it never reads wetter than the creek it runs into below,
+  unless that creek is on its lake's own river. A trout record or designated trout water on the channel stands
+  against both. The one-sided rule above keeps possible trout water but must not invent it: Lake Hemet's spillway
+  had read year-round, fish 64, above Spillway Canyon Creek, which is mostly dry, and now reads mostly dry, fish 3.
+  On the maps with the lake term (*thermal*) it takes that creek's lake share, with its warm first stretch counted
+  from its own start at the lake (`watertemp.py`).
 - **size:** drainage area, log scale from 1 to 50+ km². The full area (`area_full_km2`): with what flows in from
   neighbouring boxes and from above reservoirs, which each box's own routing misses. A side channel of a river
-  (`05_score.py`) takes the drainage of the river reach beside it.
+  (`05_score.py`) takes the drainage of the river reach beside it, and a lake's second outlet the drainage of the
+  creek its lake's main outlet starts.
 - **thermal:** 50% water temperature, 35% summer shade, 15% north-facing mountainside. Water temperature is the
   reach's estimated July–August daytime water temperature (`watertemp.py`; see *Stream temperature* below): full
   credit at 20 °C or cooler, none at 25 °C or warmer (`WATER_FULL`, `WATER_ZERO` in `scoring.py`). There's no
