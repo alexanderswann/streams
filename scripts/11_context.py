@@ -372,6 +372,16 @@ GENERIC = {"creek", "canyon", "wash", "river", "ck", "cyn"}
 def norm(n):
     return " ".join(sorted(re.sub(r"[^a-z ]", " ", str(n).lower()).replace("secco", "seco").split()))
 
+def cut_lines(s):
+    """The line each reach is part of. 05_score.py cuts a creek 200 m below a lake for its water temperature alone (a
+    first piece's cut_sid names the rest of its line), so the two pieces are one creek for what this step reads off
+    other layers along it: trout records, trout water, fires and critical habitat are the whole line's for each, as
+    the uncut line had them. Measured on its own, a first piece below a pond often missed a designated trout water or
+    brook trout patch that starts lower down, and a record goes to the nearest reach: one piece. A reach that isn't
+    cut is its own line. (Land and wilderness, read at a reach's middle, canopy and air stay each piece's own.)"""
+    line = pd.Series(s.sid.values, index=s.index)
+    return line.where(s.cut_sid.isna(), s.cut_sid) if "cut_sid" in s else line
+
 def trout_attrs(s):
     """Per reach: latest year trout were found (CDFW survey, stocking, iNaturalist), latest CDFW survey year that
     found none, and a summary. Surveys and stocking count for the creek of the same name within 5 km of the point
@@ -403,10 +413,13 @@ def trout_attrs(s):
             sel = close & named.map(lambda n: ok.get(n, False))
             if not sel.any() and d[j] <= 300:   # else the nearest reach and the same creek within 1.5 km
                 sel = (d <= 1500) & (named == named[j]) if named[j] else (d.index == j)
-        hits += [(sid, e.kind, e.year, e.trout, e.label) for sid in s.sid[sel]]
+        hits += [(sid, e.Index, e.kind, e.year, e.trout, e.label) for sid in s.sid[sel]]
     if not hits:
         return out
-    h = pd.DataFrame(hits, columns=["sid", "kind", "year", "trout", "label"])
+    h = pd.DataFrame(hits, columns=["sid", "e", "kind", "year", "trout", "label"])
+    line = pd.DataFrame({"sid": s.sid.values, "line": cut_lines(s).values})   # a cut line's pieces: the whole line's
+    h = (h.merge(line, on="sid").drop(columns="sid").drop_duplicates(["line", "e"]).merge(line, on="line")
+         .drop(columns=["line", "e"]))
     pos, neg = h[h.trout], h[~h.trout & h.kind.str.endswith("survey")]
     out["trout_found"] = out.sid.map(pos.groupby("sid").year.max())
     out["trout_absent"] = out.sid.map(neg.groupby("sid").year.max())
@@ -628,6 +641,12 @@ fire_s = fires.sort_values("year", ascending=False)
 def attrs(gdf, key, buf):
     g = gdf[[key, "geometry"]].copy()
     g["geometry"] = g.buffer(buf)
+    if key == "sid":    # the two pieces of a line cut below a lake: each the whole line's buffer (cut_lines)
+        line = cut_lines(gdf)
+        two = line.duplicated(keep=False).to_numpy()
+        if two.any():
+            whole = g[two].assign(_line=line[two].values).dissolve("_line").geometry
+            g.loc[two, "geometry"] = whole.reindex(line[two].values).values
     out = pd.DataFrame({key: gdf[key]})
     j = gpd.sjoin(g, fire_s[["fire", "year", "geometry"]], predicate="intersects").sort_values("year", ascending=False)
     first = j.groupby(key).first()

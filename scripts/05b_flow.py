@@ -57,7 +57,29 @@ div_gauge = gauge_summers([g for _, _, g in DIVERSIONS.values()]).reindex([g for
 div_gauge.index = list(DIVERSIONS)                                   # by diversion name
 
 s = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
-s = s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid",) if c_ in s]]
+s = s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid") if c_ in s]]
+# A creek cut 200 m below a lake (05_score.py cuts it for its water temperature alone; a first piece's cut_sid names
+# the rest of its line) is read here whole, as it was before the cut, and both pieces take its row: its model line and
+# flow, the dam above it, its greenness and its gauge record. Measured on its own, a piece matched another model line
+# or none: the first 200 m, where the creek's own drainage starts again from nothing, read drier than the creek below
+# it (a brook below a pond in north-east Connecticut "usually flows" -> "mostly dry"), and a short rest of a line
+# below a small reservoir on the Arroyo Seco matched the model's next line, the one below the dam: "usually flows"
+# where the creek reads "year-round" (2026-11-22). The rest keeps its own drainage: the line's, at its lower end.
+cut_of = {}                        # first piece's sid -> its line's (the rest's)
+if "cut_sid" in s and s.cut_sid.notna().any():
+    first_ = s.cut_sid.notna().to_numpy()
+    row_ = pd.Series(np.arange(len(s)), index=s.sid.values)
+    geo_ = list(s.geometry.values)
+    for i in np.flatnonzero(first_):
+        r_ = row_[s.cut_sid.iat[i]]
+        geo_[r_] = shapely.LineString(list(geo_[i].coords) + list(geo_[r_].coords)[1:])
+        cut_of[s.sid.iat[i]] = s.sid.iat[r_]
+    s = s.copy()
+    s["geometry"] = gpd.GeoSeries(geo_, index=s.index, crs=s.crs)
+    s = s[~first_].reset_index(drop=True)
+    if "side_sid" in s:
+        s["side_sid"] = s.side_sid.replace(cut_of)
+    print(f"creeks cut below a lake, read whole: {len(cut_of)}")
 # Drainage area with the water that flows in from neighbouring boxes (05c_drainages.py, crossbox.py): this box's DEM
 # starts a creek that crosses in from the next box with no area, which scaled its modelled flow down to almost
 # nothing (Lytle Creek in the San Bernardino box: 2 km2 of its 120). Water from above a dam is left out: the model
@@ -637,7 +659,11 @@ gr_.index = s.index
 extra = extra.join(gr_)
 print(f"late-summer channel greenness for {int(extra.green_p90.notna().sum())} of {len(s)} reaches; the record of a gauge "
       f"on their creek for {int(extra.gauge_share.notna().sum())} ({extra.gauge_name.dropna().nunique()} gauges)")
-pd.concat([s[["sid"]], ev, extra], axis=1).to_csv(f"{OUT}/flow_streams.csv", index=False)
+fs_ = pd.concat([s[["sid"]], ev, extra], axis=1)
+if cut_of:      # the first piece of a creek cut below a lake: its line's row (above)
+    fs_ = pd.concat([fs_, fs_.set_index("sid").loc[list(cut_of.values())].reset_index().assign(sid=list(cut_of))],
+                    ignore_index=True)
+fs_.to_csv(f"{OUT}/flow_streams.csv", index=False)
 
 # ---- drops take the evidence of the reach they sit on ----
 kp = gpd.read_file(f"{OUT}/waterfall_candidates.gpkg")[["did", "area_km2", "geometry"]].to_crs(CRS)

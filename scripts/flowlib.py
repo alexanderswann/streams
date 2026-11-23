@@ -304,6 +304,166 @@ def cut_at_shores(lines, water, min_m=LAKE_PIECE_M):
     return pieces, src, wet
 
 
+
+# The first stretch below a lake. A lake's outlet runs at the temperature of its surface and the warmth fades fast
+# below it: at the Adirondack maps' measured sites with mostly lake water, 74.9 F within 200 m of the lake, 68.4 F from
+# there to 1 km, 63.0 F at sites with under half lake water (watertemp.py's lake term counts only that far). 05_score.py
+# cuts each creek at LAKE_NEAR_M below a lake (cut_below_lakes), so that stretch is a reach of its own: a reach is scored
+# on one water temperature, the mean along it, and a reach that started at a pond and ran on for half a mile read as a
+# cool creek, its outlet's warmth averaged away (at the 19 measured outlet sites the reach read 7.9 F too cool,
+# 2026-11-22). The distance is found the same way for both (below_lake()).
+LAKE_NEAR_M = 200.0     # the lake's warmth counts this far below it, along the channel (650 ft)
+LAKE_JOIN_M = 25.0      # a reach end this near a reach start runs into it (a cell and a half; the edges between boxes)
+LAKE_AT_M = 100.0       # lake water put into a channel this near a lake reach enters at the lake's outlet
+
+
+def below_lake(geom, carried, in_lake, lakes=None, limit=LAKE_NEAR_M):
+    """Metres from the nearest lake to each reach's start, up the channel the lake water comes down; inf where there
+    is none within `limit`. geom: the reaches' lines (upstream end first, a projected CRS); carried: the km2 of each
+    reach's drainage that came through a lake (area_full_km2 - area_edge_km2); in_lake: the reach lies in a lake
+    (05b_flow.py's "in:"); lakes: the lakes' outlines (flowlib.lake_water). Lake water enters a channel where a reach
+    lying in a lake runs into it, or where crossbox puts a lake's water in by the lake: most of the reach's lake water
+    is new there, and its start lies within LAKE_AT_M of a lake's outline or of a reach lying in one (a pond at the
+    head of a creek has no reach in it). From there the distance is carried down the reaches that bring the lake
+    water."""
+    n = len(geom)
+    length = shapely.length(geom)
+    start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
+    carried = np.nan_to_num(np.asarray(carried, float), nan=0.0).clip(min=0)
+    in_lake = np.asarray(in_lake, bool)
+    donors = [[] for _ in range(n)]
+    for i, j in zip(*(a_.tolist() for a_ in shapely.STRtree(end).query(start, predicate="dwithin", distance=LAKE_JOIN_M))):
+        if i != j:
+            donors[i].append(j)
+    at_lake = np.zeros(n, bool)
+    for water in (geom[in_lake], lakes):
+        if water is not None and len(water):
+            at_lake[shapely.STRtree(water).query(start, predicate="dwithin", distance=LAKE_AT_M)[0]] = True
+    d0 = np.full(n, np.nan)
+    d0[in_lake] = 0.0
+    for i in np.flatnonzero(~in_lake):
+        if not np.isnan(d0[i]):
+            continue
+        chain, d, j = [], 0.0, i
+        while True:
+            if not np.isnan(d0[j]) and j != i and not in_lake[j]:
+                d += d0[j]
+                break
+            chain.append((j, d))
+            creek = [k for k in donors[j] if not in_lake[k] and carried[k] > 0]
+            new = carried[j] - sum(carried[k] for k in creek)
+            if any(in_lake[k] for k in donors[j]) or (carried[j] > 0 and new >= 0.5 * carried[j] and at_lake[j]):
+                break                                    # the lake water enters at this reach's start
+            if not creek:
+                d = np.inf
+                break
+            k = max(creek, key=lambda q: carried[q])
+            d += length[k]
+            if d > limit:
+                d = np.inf
+                break
+            j = k
+        for j, dj in chain:
+            d0[j] = d - dj if np.isfinite(d) and d - dj <= limit else np.inf
+    return d0
+
+
+def lake_water_km2(geom, carried, edge, in_lake):
+    """The km2 of each reach's drainage that came through a lake: what crossbox.py carries past dams and ponds (carried:
+    05c_drainages.py's area_full_km2 - area_edge_km2), and the water that runs on out of a lake along the routing before
+    03b_stitch.py ends the lake's paths at its outlet, which can lie past the shore the map draws: a reach that a reach
+    lying in a lake runs into takes that reach's own drainage (edge), as much of it as its own drainage holds, and passes
+    it on down until the routing starts again from nothing. Counting only the carried water, the stretch between the
+    drawn shore and the routed outlet read as a creek with no lake: the first 131 m below Limekiln Lake read 63 F where
+    the outlet measures 78.8 F, and 184 such reaches (30 mi, median 120 m) on the three Adirondack maps with a lake term
+    (2026-11-22). geom: upstream end first, a projected CRS."""
+    geom = np.asarray(geom, dtype=object)
+    n = len(geom)
+    carried = np.nan_to_num(np.asarray(carried, float), nan=0.0).clip(min=0)
+    edge = np.nan_to_num(np.asarray(edge, float), nan=0.0).clip(min=0)
+    in_lake = np.asarray(in_lake, bool)
+    if not n:
+        return carried
+    start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
+    donors = [[] for _ in range(n)]
+    below = [[] for _ in range(n)]
+    for i, j in zip(*(a_.tolist() for a_ in shapely.STRtree(end).query(start, predicate="dwithin", distance=LAKE_JOIN_M))):
+        if i != j:
+            donors[i].append(j)
+            below[j].append(i)
+    left = np.array([len(d) for d in donors])
+    todo = list(np.flatnonzero(left == 0))
+    seen = np.zeros(n, bool)
+    d8 = np.zeros(n)
+    while todo:                                       # upstream reaches first
+        i = todo.pop()
+        seen[i] = True
+        if not in_lake[i] and donors[i]:
+            d8[i] = min(edge[i], sum(edge[k] if in_lake[k] else d8[k] for k in donors[i]))
+        for j in below[i]:
+            left[j] -= 1
+            if left[j] == 0:
+                todo.append(j)
+    return carried + np.where(seen, d8, 0.0)
+
+
+def carried_lake_km2(region):
+    """Drainage area (km2) that crossbox.py carries to each cell of `region`'s grid past a lake or a dam, as a flat array:
+    carried_km2 less what comes in across a box edge without passing one, cell by cell; 05c_drainages.py's
+    area_full_km2 - area_edge_km2 on a reach (lake_water_km2's `carried`). Under 0.01 km2 counts as none."""
+    import rasterio, crossbox
+    with rasterio.open(crossbox.fdir_path(region)) as src:
+        fd = src.read(1)
+    W = fd.shape[1]
+    nxt, _ = crossbox.graph(fd)
+    ex = np.zeros(fd.size, np.float64)
+    for sign, entries in ((1.0, crossbox.inflows(region, through_dams=True)), (-1.0, crossbox.inflows(region))):
+        for row, col, km2, *_ in entries:
+            i = row * W + col
+            while True:
+                ex[i] += sign * km2
+                if nxt[i] == i:
+                    break
+                i = nxt[i]
+    return np.where(ex >= 0.01, ex, 0.0)
+
+
+def cut_below_lakes(lines, carried, wet, lakes, keep=None, at_m=LAKE_NEAR_M, min_m=LAKE_PIECE_M):
+    """Each creek line cut where it has run at_m below a lake, along the channel the lake's water takes: (pieces, the
+    number of the line each piece comes from, whether the piece lies in a lake), in order along each line. lines: upstream
+    end first, a projected CRS; carried: the km2 of each line's drainage that came through a lake (carried_lake_km2);
+    wet: the line lies in a lake; lakes: the outlines (lake_water); keep: a test of the cut points, where given (the
+    lines' numbers and the points -> bools). How far below a lake a line starts is below_lake()'s. The cut is at the
+    vertex nearest the mark, and only where both pieces are min_m long or more. Lines in a lake stay whole."""
+    lines = np.asarray(lines, dtype=object)
+    wet = np.asarray(wet, bool)
+    d0 = below_lake(lines, carried, wet, lakes, limit=at_m)
+    marks = {}
+    for i, g in enumerate(lines):
+        if not wet[i] and np.isfinite(d0[i]) and d0[i] < at_m and len(g.coords) >= 3:
+            xy = np.asarray(g.coords)[:, :2]
+            along = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(xy, axis=0).T))])
+            k = int(np.argmin(np.abs(along - (at_m - d0[i]))))
+            if along[k] >= min_m and along[-1] - along[k] >= min_m:
+                marks[i] = k
+    if keep is not None and marks:
+        ii = list(marks)
+        ok = np.asarray(keep(np.array(ii), shapely.points([lines[i].coords[marks[i]][:2] for i in ii])), bool)
+        marks = {i: marks[i] for i, o in zip(ii, ok) if o}
+    pieces, src, wet_out = [], [], []
+    for i, g in enumerate(lines):
+        k = marks.get(i, -1)
+        if k < 0:
+            pieces.append(g)
+            src.append(i)
+            wet_out.append(bool(wet[i]))
+        else:
+            c = list(g.coords)
+            pieces += [shapely.LineString(c[:k + 1]), shapely.LineString(c[k:])]
+            src += [i, i]
+            wet_out += [False, False]
+    return pieces, src, wet_out
+
 def level_paths():
     """NHDPlus V2's main paths for the area's flowlines: comid, hydroseq, dnhydroseq, uphydroseq (the main line above),
     levelpathi (the path the line's river follows), uplevelpat, dnlevelpat. From the USGS service 02b_download_flow.py

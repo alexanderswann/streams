@@ -101,10 +101,39 @@ s = s[keep].copy()
 # 05d_lakes.py, which run_mid.sh runs before this step), so every reach is creek or lake. A stretch under
 # LAKE_PIECE_M on one side of a shore stays with its neighbour (a line clipping a point or a cove). A piece keeps its
 # link's place on the map (the floor above is the link's), and is measured on its own cells like any link.
-from flowlib import lake_water, cut_at_shores
-_pieces, _src, _wet = cut_at_shores(s.geometry.values, lake_water(REGION))
+from flowlib import lake_water, cut_at_shores, cut_below_lakes, carried_lake_km2, lake_water_km2, LAKE_NEAR_M
+_lakes = lake_water(REGION)
+_pieces, _src, _wet = cut_at_shores(s.geometry.values, _lakes)
 print(f"links cut at lake shores: {len(_pieces) - len(s)} cuts on {int((pd.Series(_src).value_counts() > 1).sum())} "
       f"of {len(s)} links")
+# The first LAKE_NEAR_M (200 m, 650 ft) below a lake is a reach of its own (flowlib.cut_below_lakes). A lake's outlet
+# runs at the temperature of its surface and the warmth fades fast below it, and a reach is scored on one water
+# temperature, the mean along it: a reach that started at a pond and ran on for half a mile read as a cool creek, its
+# outlet's warmth averaged away (watertemp.py; at the 19 measured outlet sites on the Adirondack maps the reach read
+# 7.9 F too cool, 2026-11-22). Each creek is cut where it has run that far from the lake, along the channel the lake's
+# water takes (flowlib.below_lake, as the water-temperature term finds it), where the lake term there is 0.5 or more
+# (watertemp.lake_share: half the water or more through the lake, less on rivers of 50 to 500 km2, none beyond; the
+# measured warmth is at outlets of mostly lake water) and neither piece would be under LAKE_PIECE_M. The cut is for the
+# water temperature alone, so the pieces keep the line's gradient and NHD class (below), and 05b_flow.py gives the
+# first the flow evidence of the rest of its line (cut_sid): measured on 200 m alone, a step just below the shore (a
+# dam, a cascade) read as a steep creek, the vote's three points could fall on the lake's own line, and the model's
+# natural flow, which leaves the lake's water out, read the first stretch drier than the creek below it (all 12 maps,
+# 2026-11-22: a brook below a pond in north-east Connecticut "usually flows" -> "mostly dry", Big Tujunga Creek below
+# its dam "year-round" -> "seasonal"). Everything else is measured on each piece's own cells, like any link.
+from watertemp import lake_share
+_shore = np.array(_pieces, dtype=object)
+_own = [shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g.coords[0]) for g in _shore]
+_full = sample(area, _own) + sample(carried_grid, _own)
+_carried_lake = sample(carried_lake_km2(REGION).reshape(area.shape), _own)
+_lake_km2 = np.minimum(lake_water_km2(_shore, _carried_lake, _full - _carried_lake, _wet), _full)
+def _mostly_lake(ii, pts):     # the line's lake water (it takes none on along the line) against the drainage at the mark
+    full = sample(area, pts) + sample(carried_grid, pts)
+    return np.nan_to_num(lake_share(full - np.minimum(_lake_km2[ii], full), full), nan=0.0) >= 0.5
+_pieces, _from, _wet = cut_below_lakes(_shore, _lake_km2, _wet, _lakes, keep=_mostly_lake)
+_from = np.asarray(_from, int)
+_src = [_src[k] for k in _from]
+_cut = pd.Series(_from).duplicated(keep=False).to_numpy()          # both pieces of a line cut below a lake
+_first = pd.Series(_from).duplicated(keep="last").to_numpy()       # the upper one
 s = gpd.GeoDataFrame(s.drop(columns="geometry").iloc[_src].reset_index(drop=True), geometry=_pieces, crs=CRS)
 own_end = gpd.GeoSeries([shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g.coords[0]) for g in s.geometry],
                         index=s.index, crs=CRS)
@@ -118,18 +147,34 @@ s["order"] = sample(strahler, mid)
 s["elev_m"] = sample(dem, mid).round(0)
 s["len_m"] = s.length.round(0)
 s["gradient_pct"] = ((sample(dem, starts) - sample(dem, own_end)) / s.length * 100).clip(lower=0).round(1)
+if _cut.any():           # the two pieces of a line cut below a lake keep the line's gradient (above)
+    _g = _shore[_from[_cut]]
+    _own = s.gradient_pct.to_numpy(float)
+    s.loc[_cut, "gradient_pct"] = np.clip((sample(dem, [shapely.Point(g.coords[0]) for g in _g])
+                                           - sample(dem, [shapely.Point(g.coords[-2]) for g in _g]))
+                                          / shapely.length(_g) * 100, 0, None).round(1)
+    print(f"creek lines cut {LAKE_NEAR_M:g} m below a lake: {int(_first.sum())} ({s.length[_first].sum() / 1000:.1f} km in "
+          f"the first pieces); both keep the line's gradient, where the first piece's own would be over 8 % on "
+          f"{int((_own[_first] > 8).sum())} (the line's: {int((s.gradient_pct.to_numpy(float)[_first] > 8).sum())})")
+else:
+    print(f"creek lines cut {LAKE_NEAR_M:g} m below a lake: 0")
 s["road_m"] = mid.distance(road_u).round(0)
 s["trail_m"] = mid.distance(trail_u).round(0)
 pts3 = [gpd.GeoDataFrame(geometry=[vert(g, f) for g in s.geometry], index=s.index, crs=CRS) for f in (0.25, 0.5, 0.75)]
-def vote(lines, col, max_d=60):
+def vote(lines, col, max_d=60, pts=None):
     """`col` of the line nearest each of the link's 25 / 50 / 75 % vertices (within max_d m), kept when two agree."""
+    pts = pts3 if pts is None else pts
     v = pd.concat([gpd.sjoin_nearest(p, lines[[col, "geometry"]], max_distance=max_d, how="left").groupby(level=0)[col]
-                   .first().reindex(s.index) for p in pts3], axis=1, ignore_index=True)
+                   .first().reindex(pts[0].index) for p in pts], axis=1, ignore_index=True)
     out = v[0].where(v[0].notna() & ((v[0] == v[1]) | (v[0] == v[2])))
     return out.fillna(v[1].where(v[1].notna() & (v[1] == v[2])))
 nhd_k = nhd[["gnis_name", "flow", "geometry"]].reset_index(drop=True)
 s["name"] = vote(nhd_k, "gnis_name")
 s["flow"] = vote(nhd_k, "flow").fillna("unmapped")
+if _cut.any():           # the two pieces of a line cut below a lake keep the line's NHD class (above)
+    _lp = [gpd.GeoDataFrame(geometry=[vert(g, f) for g in _shore[_from[_cut]]], index=s.index[_cut], crs=CRS)
+           for f in (0.25, 0.5, 0.75)]
+    s.loc[_cut, "flow"] = vote(nhd_k, "flow", pts=_lp).fillna("unmapped").values
 osm_wp = f"{RAW}/osm_waterways.gpkg"    # OSM named rivers and streams, cached a week
 if not os.path.exists(osm_wp) or time.time() - os.path.getmtime(osm_wp) > 7 * 86400:
     from geomatch import overpass
@@ -276,6 +321,7 @@ s["name"] = [new_name.get(i, n) for i, n in enumerate(names0)]
 s["side_of"] = [names0[i] if i in side else None for i in range(len(s))]
 s["side_row"] = [side.get(i, -1) for i in range(len(s))]        # the river reach beside it (its row; a sid below)
 s["river_km2"] = [round(float(full_km2[side[i]]), 2) if i in side else np.nan for i in range(len(s))]
+s["cut_row"] = np.where(_first, np.arange(len(s)) + 1, -1)      # a first stretch below a lake: the rest of its line
 print(f"small reaches named after the river beside them: {sum(v is not None for v in new_name.values())} take the name of "
       f"the creek they end, {sum(v is None for v in new_name.values())} end an unnamed creek and lose the name, "
       f"{len(side)} are side channels of the river")
@@ -382,6 +428,7 @@ s_ll.insert(0, "region", LABEL)
 # stable keys so later scripts (08-11) can attach attributes
 s_ll.insert(0, "sid", [f"{REGION}:s{i}" for i in range(len(s_ll))])
 s_ll["side_sid"] = [f"{REGION}:s{j}" if j >= 0 else None for j in s_ll.pop("side_row")]
+s_ll["cut_sid"] = [f"{REGION}:s{j}" if j >= 0 else None for j in s_ll.pop("cut_row")]
 kp_ll.insert(0, "did", [f"{REGION}:d{i}" for i in range(len(kp_ll))])
 cols = ["did", "region"] + cols
 kp_ll[cols].to_csv(f"{os_}/waterfall_candidates.csv", index=False)
