@@ -1,5 +1,5 @@
 /* Shared by the area maps (06_map.py), the map of all areas (13_overview.py) and the one-file phone map
-   (14_portable.py): the credits line and the "my location" button (map_phone.js). */
+   (14_portable.py): the credits line, the "my location" button (map_phone.js) and popups that fit a phone's screen. */
 
 /* phones: the credits fold to one line (a tap shows them all, another folds them again); the controls at the bottom
    left sit just above that line instead of under the credits */
@@ -9,6 +9,13 @@
     box-sizing: border-box; font-size: 10px; line-height: 16px; cursor: pointer; }
   .leaflet-container .leaflet-control-attribution.open { white-space: normal; overflow: visible; line-height: 1.35; }
   .leaflet-bottom.leaflet-left { bottom: 16px; }
+  /* a popup fits the screen, its close button too. Leaflet sizes a popup's content from its maxWidth (340 px for a
+     stream on the area maps) and puts its margins and the close button around that: on a 375 px phone a stream popup
+     was 387 px wide and its close button ran past the right edge. The content is held to the screen's width less
+     Leaflet's margins (46 px; 28 on the phone map) and its 5 px pan padding on each side. Leaflet measures the popup
+     after this, so it still centres and pans it, and keepPopupsClear (map_phone.js) still moves it clear of the
+     buttons. */
+  .leaflet-container .leaflet-popup-content { max-width: calc(100vw - 56px); }
 }
 
 /* "my location": a button under the zoom buttons; blue once the browser has a fix, pulsing while it looks */

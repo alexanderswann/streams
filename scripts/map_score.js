@@ -65,22 +65,23 @@
     const hab = 100 * r.habitat;
     const pts = tenths([30 * r.S, 15 * r.c1, 10.5 * r.shade, 4.5 * r.north, 15 * r.G, 25 * r.R], hab);
     const full = [30, 15, 10.5, 4.5, 15, 25];
-    const size = (r.A != null ? `scored on ${sqmi(r.A)}` : sqmi(p.a)) +
-      (r.brook ? ", ×6 as brook trout water" : "") +
-      (r.S <= 0 ? ` (none under ${sqmi(1 / (r.brook ? BROOK : 1))})` : r.S < 1 ? ` (full from ${sqmi(50 / (r.brook ? BROOK : 1))})` : "");
-    const temp = r.tw ? "tailwater: the dam releases cold water" :
-      (r.wt == null ? "no estimate" : `about ${degf(r.wt)}`) +
-      (r.c1 >= 1 ? "" : r.c1 <= 0 ? " (none from 77\u00a0°F)" : " (full to 68\u00a0°F, none from 77\u00a0°F)");
-    const shade = `${Math.round(100 * r.shadeAll)}%: tree canopy\u00a0${r.cp == null ? "?" : r.cp + "%"}, terrain\u00a0` +
-      `${r.sp == null ? "?" : r.sp + "%"}` + (r.shade < 1 ? " (full from 45%)" : "");
-    const mins = (r.am == null ? 0 : r.am), ride = (r.bm == null ? 0 : r.bm);
-    const remote = `typical approach ${mins}\u00a0min` + (ride > 0 ? `, ${ride} of them ridden, counted twice` : "") +
-      (r.R < 1 ? " (full from 2\u00a0h)" : "");
-    const grad = `${(+r.gr).toFixed(1)}%` + (r.G < 1 ? " (best 1–8%)" : "");
-    const rows = [["Size", size], ["Water temp", temp], ["Shade", shade],
-                  ["Slope", face(r.nn) + (r.north < 1 ? " (full facing north)" : "")], ["Gradient", grad], ["Remoteness", remote]];
+    // each line: what the reach reads, and a hint where the term falls short of full (left out on the narrowest
+    // phones, 360 px and under, with the heading: the breakdown must fit whole between the map's controls there)
+    const mins = (r.am == null ? 0 : r.am), ride = (r.bm == null ? 0 : r.bm), sc = r.brook ? BROOK : 1;
+    const rows = [
+      ["Size", (r.A != null ? `scored on ${sqmi(r.A)}` : sqmi(p.a)) + (r.brook ? ", ×6 as brook trout water" : ""),
+       r.S <= 0 ? `none under ${sqmi(1 / sc)}` : r.S < 1 ? `full from ${sqmi(50 / sc)}` : ""],
+      ["Water temp", r.tw ? "tailwater: the dam releases cold water" : r.wt == null ? "no estimate" : `about ${degf(r.wt)}`,
+       r.c1 >= 1 ? "" : r.c1 <= 0 ? "none from 77\u00a0°F" : "full to 68\u00a0°F, none from 77\u00a0°F"],
+      ["Shade", `${Math.round(100 * r.shadeAll)}%: tree canopy\u00a0${r.cp == null ? "?" : r.cp + "%"}, terrain\u00a0` +
+       `${r.sp == null ? "?" : r.sp + "%"}`, r.shade < 1 ? "full from 45%" : ""],
+      ["Slope", face(r.nn), r.north < 1 ? "full facing north" : ""],
+      ["Gradient", `${(+r.gr).toFixed(1)}%`, r.G < 1 ? "best 1–8%" : ""],
+      ["Remoteness", `typical approach ${mins}\u00a0min` + (ride > 0 ? `, ${ride} of them ridden, counted twice` : ""),
+       r.R < 1 ? "full from 2\u00a0h" : ""]];
     const row = (a, b, c, cls) => `<tr${cls ? ` class="${cls}"` : ""}><td>${a}</td><td>${b}</td><td>${c}</td></tr>`;
-    let h = rows.map(([a, b], i) => row(a, esc(b), `${pts[i]}<span class="fsm"> of ${full[i]}</span>`)).join("") +
+    let h = rows.map(([a, b, x], i) => row(a, esc(b) + (x ? `<span class="fsx"> (${esc(x)})</span>` : ""),
+                                           `${pts[i]}<span class="fsm"> of ${full[i]}</span>`)).join("") +
       row("Habitat", "", `${hab.toFixed(1)}<span class="fsm"> of 100</span>`, "fss");
     const fl = String(p.fl || "").replace(/^summer: /, "");
     const mult = [["Summer flow", fl, r.W]];
@@ -142,7 +143,10 @@
       ".pp .fsb td:first-child{color:#6b7280;white-space:nowrap}" +
       ".pp .fsb td:last-child{text-align:right;white-space:nowrap;padding-right:0;font-variant-numeric:tabular-nums}" +
       ".fsb .fsm{color:#8a929c;font-size:11px}.fsb tr.fss td,.fsb tr.fsf td{border-top:1px solid #e3e7ec;padding-top:2px}" +
-      ".fsb tr.fsf td{padding-bottom:0}";
+      ".fsb tr.fsf td{padding-bottom:0}" +
+      // the narrowest phones (320 px): no hints or heading, a smaller face, so the whole breakdown fits on the screen
+      "@media (max-width:360px){.fsb .fsx,.fsb .fsh{display:none}.fsb{font-size:11px;padding:5px 6px 4px}" +
+      ".fsb .fsm{font-size:10px}.pp .fsb td{padding-right:4px}}";
     document.head.appendChild(st);
   }
 })();

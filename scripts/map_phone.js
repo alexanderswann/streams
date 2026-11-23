@@ -79,7 +79,7 @@ function phoneControls(map) {
 // panel). Leaflet pans a popup into view as it opens but doesn't count them, and doesn't pan again when the popup's
 // content changes: on a phone a stream popup's first lines, its name and fish score, sat under the buttons at the top
 // left. Once Leaflet's own pan is done, and when the fish score's breakdown opens or folds on a tap (map_score.js's
-// "fs-toggle"), the map pans the popup, with its breakdown, to the right of the buttons where it fits there (a wide
+// "fs-toggle"), the map pans the popup (or the open breakdown) to the right of the buttons where it fits there (a wide
 // screen), else below them; and brings the breakdown's foot up into view where there is room above. Not on hover: the
 // popup would move away from the pointer.
 function keepPopupsClear(map) {
@@ -92,8 +92,10 @@ function keepPopupsClear(map) {
   const clear = () => {
     const el = open && open.isOpen() && open.getElement();
     if (!el) return;
+    // with the breakdown open it is what must be seen whole and clear of the buttons (the popup's head may go under
+    // them meanwhile: on a 568 px screen the two don't fit at once); folded, the popup
     const shown = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
-    const p = union([el.querySelector(".leaflet-popup-content-wrapper") || el, ...shown]);
+    const p = union(shown.length ? shown : [el.querySelector(".leaflet-popup-content-wrapper") || el]);
     if (!p) return;
     const c = map.getContainer(), m = c.getBoundingClientRect();
     const tl = union([...c.querySelectorAll(".leaflet-top.leaflet-left .leaflet-control")]);
@@ -108,18 +110,26 @@ function keepPopupsClear(map) {
       else dy = Math.max(...hits.map(b => b.bottom)) + 6 - p.top;
       if (dy > m.height / 2) dy = 0;          // a panel opened that tall is the user's: leave the popup where it is
     }
-    if (!dy && shown.length && p.bottom > m.bottom - 5) {
+    // the open breakdown's foot (its score) comes up into view, above the controls at the bottom too (the area
+    // map's legend, the scale, the credits line) where there is room under the buttons at the top
+    const floor = Math.min(m.bottom, ...[...c.querySelectorAll(".leaflet-bottom .leaflet-control")]
+      .map(b => b.getBoundingClientRect()).filter(b => b.width && b.height && p.left + dx < b.right && p.right + dx > b.left)
+      .map(b => b.top)) - 5;
+    if (!dy && shown.length && p.bottom > floor) {
       const ceil = Math.max(m.top, ...[tl, tr].filter(b => across(b, dx)).map(b => b.bottom)) + 6;
-      dy = -Math.max(0, Math.min(p.bottom - (m.bottom - 5), p.top - ceil));
+      dy = -Math.max(0, Math.min(p.bottom - floor, p.top - ceil));
     }
     if (dx || dy) map.panBy([-dx, -dy]);
   };
+  // After Leaflet's own pan, and again at 350 ms and 1 s: on a slow phone its pan ran past a single check, which then
+  // saw the popup mid-way and was spent (320 px). A check moves the popup only where it still overlaps the controls;
+  // the listener goes after 1 s, so a pan of the user's own later is left alone.
   map.on("popupopen", e => {
     open = e.popup;
-    let done = false;
-    const go = () => { if (!done) { done = true; clear(); } };
-    map.once("moveend", go);                  // after Leaflet's own pan, or at once where it made none
-    setTimeout(go, 350);
+    const p = e.popup, now = () => { if (open === p) clear(); };
+    map.on("moveend", now);
+    setTimeout(now, 350);
+    setTimeout(() => { now(); map.off("moveend", now); }, 1000);
   });
   map.on("popupclose", e => { if (open === e.popup) open = null; });
   document.addEventListener("fs-toggle", clear);
