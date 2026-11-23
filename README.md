@@ -317,17 +317,26 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    `02f_known_falls.py` (per area, before step 5; `run_mid.sh` runs it first): the known waterfalls, every source merged
    into `data/raw/<area>/_shared/known_falls.gpkg`. Sources: OpenStreetMap (queried in tiles of at most 0.5 degrees: one
    query over a whole area's box hung on both public servers; waterfall nodes and ways, named rapids,
-   named swimming holes, and features named for falls, cascades or potholes that sit on a stream); NHD waterfall points;
+   named swimming holes, and features named for falls, cascades or potholes that sit on a stream; pools in a creek
+   (water=stream_pool) and swimming spots, named or not, an unnamed one kept only on a creek and not within 60 m of a
+   lake; the saved answer is keyed by the query's hash as well as the box, so a changed query is fetched again);
+   NHD waterfall points;
    USGS GNIS features of class Falls or Rapids (the current file and the 2021 archive, in `data/raw/_national/gnis`);
    Wikidata waterfalls, rapids and swimming holes; CDFW's barrier surveys (LA); the national park's waterfalls layer
-   (Smokies); and the hand-researched falls in
+   (Smokies); Overture Maps places, strictly (2026-11-23; its waterfall category or a swimming-hole name, on an NHD
+   creek and not by a lake, and only where no other source has a fall within 1 km or a fall of that name within 25 km:
+   Overture repeats well-known falls miles off), from `data/raw/<area>/_shared/overture_places.csv`, which
+   `audit/scripts/completeness_overture.py` writes with each Overture release (the maps credit Overture, its licences
+   and Foursquare's notice); and the hand-researched falls in
    `data/known_falls_curated.csv`: Vermont's 1985-88 state inventory of waterfalls, cascades and gorges, New England
    Waterfalls, the World Waterfall Database, the Vermont River Conservancy, the 1999 San Gabriel waterfall list
-   (Chester, Strong & Ayers) and others, each row with its source page and a note on how its point was placed. One fall
+   (Chester, Strong & Ayers), Google Maps listings looked up by hand (2026-11-22/23, the user's permission for academic
+   use; source "Google Maps") and others, each row with its source page and a note on how its point was placed. One fall
    from several sources becomes one point: the same name within 500 m (2 km for exactly the same name: GNIS puts
    Raven Cliff Falls 1.4 km off), an unnamed point within 100 m of a named one, or any two within 25 m; never two
    points of one source, and never two different names except on the same spot ("Little Moss Glen Falls" is not
-   Moss Glen Falls). `precise` marks points on the fall itself (OSM, NHD, CDFW, guidebook GPS at the fall): only those
+   Moss Glen Falls); a name with or without a final s, or with its words run together, is the same name (Beldens /
+   Belden Falls, Juneywhank / Juney Whank Falls). `precise` marks points on the fall itself (OSM, NHD, CDFW, guidebook GPS at the fall): only those
    can outrank the artifact tests in step 5; GNIS points and points placed from directions still name a drop within
    200 m. A curated row can also name, move or drop a source's point (`replaces`: the misplaced second GNIS "Bingham
    Falls" in Smugglers Notch is Hell Brook Cascades). `known_falls_points.gpkg` beside the output lists every source
@@ -1151,14 +1160,15 @@ Lakes and ponds as places to go: outline, water level, depth, fish, access and l
 its own smallest size (`BUILT` in `05d_lakes.py`): Jackson 0.5 ha, NE Connecticut 1 ha, central Vermont 1 ha,
 Lexington 0.5 ha, North Georgia 2 ha (below that it has 1,835 farm ponds), LA 1 ha, SE Pennsylvania 1 ha (450 suburban
 and farm ponds of 0.5-2 ha, few named), the Smokies 0.5 ha (mountains with few ponds) and the four Adirondack maps 1 ha
-(natural ponds; this keeps the 2.5-acre brook trout ponds). A lake a state lists is kept at any size.
+(natural ponds; this keeps the 2.5-acre brook trout ponds). A lake a state lists is kept at any size, and a named pond
+down to a quarter acre (0.1 ha, `NAMED_MIN_HA`; 2026-11-23: 359 more ponds, 153 of them in North Georgia).
 - `05d_lakes.py` (AREA only; `run_mid.sh` runs it before `05_score.py`, which cuts the stream links at the lakes'
   shores; each lake's drainage label is looked up when the map is drawn, `maplakes.py`, so the step needs nothing of
   the reaches') writes `data/derived/<area>/_shared/lakes.gpkg`, with
   `lakelidar.py` (1 m lidar), `lakedata.py` (measured depths and gill-net surveys typed in from their reports, and
   the trout family's names), `lakesources.py` (EPA National Lakes Assessment soundings, every area; each state's lake
-  access, rules and designations, and its own list of trout lakes: NCWRC's impoundments and PFBC's stocked lakes as
-  outlines, New York DEC's stocking list and lake fishing list from data.ny.gov). New York's stocking and lake-list
+  access, rules and designations, and its own list of trout lakes: NCWRC's impoundments and PFBC's and CT DEEP's
+  stocked lakes as outlines, New York DEC's stocking list and lake fishing list from data.ny.gov). New York's stocking and lake-list
   records are written beside the lakes (`lake_records.gpkg`) and read by `maplakes.py` with the trout evidence.
 - `lake_bathymetry.py` (after it) reads measured depth surveys: contours into `lake_depth.gpkg`, and each surveyed
   lake's maximum and mean depth into `lakes.gpkg`. Running it twice gives the same result.

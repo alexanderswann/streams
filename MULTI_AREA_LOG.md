@@ -4313,3 +4313,56 @@ perennial that read year-round, a 3-class jump. The overview asked for the fix t
   rerun), only the kind the old rules threw away would read as NHD labels it.
 - **Installed** 2026-11-23 as 152b561 (patch md5 ae92aa6b) by the overview session, in the rebuild of all 12 maps from
   03 that carried the swamp fix (a9919eb) and the brook sizing (f24e043).
+
+## 2026-11-23: more swimming holes and falls (OSM creek pools, Overture, Google), named and stocked ponds (completeness session)
+
+The user asked how to be sure the maps show all the streams, lakes, ponds, waterfalls and swimming holes. The
+completeness check (`audit/scripts/completeness.py`, part of `audit/scripts/run_all.sh`) measures each map against
+every independent list we may use. On the live site c178411 (2026-11-22) it found every named or year-round NHD creek
+above the size floor drawn, every NHD lake above each map's floor shown and every listed waterfall on the map. But
+swimming holes were the thinnest layer (17 on 12 maps), 359 named ponds and 6 state-listed ones were left out under
+the floors, and OpenStreetMap's creek pools and unnamed swimming spots, Overture's places and Google's listings had
+falls and swimming holes none of our sources had. The user approved closers c1-c4 and Google and Apple Maps as sources
+on 2026-11-22 (about 20:35 ET, relayed by the overview): "please use apple and google as sources, this map is for
+academic use so we have permission to use their data"; Overture "Yes, plus a reviewed list"; the ponds "Yes, both".
+
+- **OpenStreetMap** (`02f_known_falls.py`): pools in a creek (water=stream_pool) and swimming spots without a name
+  (leisure=swimming_area / bathing_place, sport=swimming) are fetched too and kept as swimming holes on a creek (02f's
+  own test: within 60 m of an NHD stream line); an unnamed one within 60 m of a lake is its beach. A named stream pool
+  is a swimming hole, not a waterfall. The saved answer is keyed by the query's hash as well as the box, so a changed
+  query is fetched again (before, a week-old copy made by the previous query was used).
+- **Overture Maps** places (Overture Maps Foundation; CDLA-Permissive-2.0, Foursquare's places Apache-2.0; the maps
+  that show its places credit it, with the licence texts and Foursquare's notice). They are business listings, so the
+  rule is strict: a place in Overture's waterfall category named "... Falls", "... Cascade(s)" or "... Waterfall",
+  within 150 m of an NHD creek and not by a lake, or a place named as a swimming hole within 250 m of a creek and not
+  within 150 m of a lake; and only where no other source has a fall within 1 km (a swimming hole: 300 m) or a fall of
+  the same name within 25 km. Overture repeats well-known falls miles off, and lists Vickery Creek Falls again as
+  "Roswell Mill Waterfall". Read from `data/raw/<area>/_shared/overture_places.csv`, which
+  `audit/scripts/completeness_overture.py` (DuckDB) writes with each Overture release; without the file an area gets no
+  Overture places (a NOTE).
+- **Names** written differently are one name: a final s (Beldens / Belden Falls) and two or three words run together
+  (Juneywhank / Juney Whank Falls).
+- **Google Maps** (`data/known_falls_curated.csv`, source "Google Maps"): 17 places looked up by hand on 2026-11-22/23
+  in the user's Chrome, about 55 searches at a person's pace, each checked against our terrain (a drawn creek within
+  340 ft of every one). 5 waterfalls: Mill Creek and Barrett-Stoddard Canyon Falls in LA, Twin Wind Falls, Gold Brook
+  Falls, White Oak Flats Falls. 12 swimming holes: the Townsend Wye and three more on the Little River, Devil's Elbow,
+  the Broad River and Stanley Rapids in Georgia, Foster's Hole and the Mad River at Kenneth Ward Park, Brandywine Creek,
+  Shadow Rock Pool, and Malibu Creek's rock pool. Each note says how its point was placed. Places a person couldn't
+  confirm stayed out, and so did the dams Google calls waterfalls (Sycamore Mills, Oakview, Otter Lake, Remsen).
+  Three Overture places reviewed by hand went in the same way: Bouquet, Vergennes and Talcottville Falls.
+- **Ponds** (`05d_lakes.py`, `lakesources.py`): a named NHD pond of 0.1 ha (a quarter acre) or more is kept under any
+  map's floor (`NAMED_MIN_HA`), and CT DEEP's stocked trout lakes join the state lists kept at any size.
+- **Measured in scratch** on all 12 maps from 02f and 05d on, against the same code without the change and the live
+  site 9f778f8: known falls 2,143 → 2,177, swimming holes 17 → 47; lakes 7,450 → 7,809 (359 named ponds, 153 in
+  North Georgia, 4 of them the CT stocked ponds; named NHD lakes shown 94.5-100 % a map, from 64.8-96.5 %); map data
+  +2.0 MB. No line added; 7 mi of creek inside the new ponds is drawn as the pond with Lakes on (0.0 mi lost
+  elsewhere); drainage at the gauges and NHDPlus points unchanged; no fish score moved. The name rule merged three
+  duplicates (Dukes Creek, Bull Sluice, Lampsons Falls), both names kept in the popup. 10 terrain drops now match a
+  mapped fall, at the new falls.
+- **Installed** 2026-11-23 as dd31f7c (patch md5 86439ccf) by the overview session, in the rebuild of all 12 maps from
+  03 with the swamp fix, the Parkway closures, the brook sizing and the borrowed-estimate floor; checked on the rebuilt
+  maps (falls, swimming holes, lakes and popups identical to the scratch build; 7.5 mi of creek inside the new ponds)
+  and published as site 9f6e867.
+- **Left for later:** two of NCWRC's six listed Smokies impoundments still don't show; Christine Falls shows on ADK
+  Southeast but not on ADK Southwest, though it is inside both maps' boxes; DuckDB in `.venv`, so the Overture download
+  can be a pipeline step.
