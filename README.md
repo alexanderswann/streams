@@ -157,7 +157,7 @@ each metric one (`units.imperial_text`: CDFW's surveyors write "2.5 meters [8.2 
 | `stream_map.html` | Combined interactive map. It loads `map3d_data.js`; keep it next to that file and the region folders, which hold the hillshade PNGs |
 | `map3d_data.js` | The layers both maps draw (streams, drainage fills and divides, the long trail, trails, roads, parking and their labels), loaded by both pages: one copy instead of two since 2026-11-20 (the website's 1 GB limit). The 2D page points its `window.STREAMS` etc. at its entries |
 | `stream_map_3d.html` | The same map in 3D (tilt, rotate, real terrain), with the layers only it draws inside the page (after `Object.assign(window.MAP3D, `); the rest comes from `map3d_data.js`. Keep it next to that file. Needs internet for MapLibre and the terrain tiles |
-| `stream_reaches_ranked.csv` | Every DEM stream link (≥1 km² drainage), all ranges, ranked by fish score |
+| `stream_reaches_ranked.csv` | Every DEM stream link kept (1 km² drainage or more with the water from elsewhere, or 0.25 km² where NHD maps the creek perennial or names it: step 5), all ranges, ranked by fish score |
 | `waterfall_candidates.csv` | All detected drops with height, run, slope above/below, plunge-pool coordinates |
 | `waterfall_candidates.gpx` | Waterfall-like steps, cascades and their pools. Import into Gaia, CalTopo or onX |
 | `road_closures.csv` / `.gpkg` | Current closures on mountain roads (Caltrans, LA County, SB County), routed along the roads; whether the approach times count them (`in_season`, `times`) and the access-line note of those they don't (`note`). `road_closures.json`: when the feeds were read, for the date under the access lines |
@@ -315,6 +315,23 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
    reaches went too (1.5 km of the Oswegatchie, the Raquette between Raquette Lake and Forked Lake, Salmon Lake
    Outlet), which is how the gap was found. `run_mid.sh`
    runs `02b_download_flow.py` before this step for it (`crossbox.py` needs the reservoir list and NHDPlus's lines).
+   **Down to 0.25 km² (0.1 sq mi) where NHD maps the creek year-round or names it** (since 2026-11-23; the user's
+   choice of 2026-11-22, of keeping 1 km², NHD's year-round lines only, its named ones only, or both). At 1 km² alone
+   12.5 % of NHD's named stream miles on the 12 maps were not drawn (26 % in the Smokies), named brook-trout headwaters
+   among them. A link of 0.25-1 km² (with the water from elsewhere) is kept where the vote below, on the uncut link,
+   finds an NHD line that is perennial (FCode 46006) or named, judged on the link's own line (`nhd_says`): a name it
+   shares with a stream 10 times its size within 250 m is that stream's, and with no name of its own, the year-round
+   class of a river of 50 km² or more (and 10 times its size) it runs along for 60 % of its length within 150 m is the
+   river's (on the first try about 1,600 bank links of the 12 maps came out as side channels of the river beside
+   them). The floor reads no canal, ditch, pipeline or conduit (NHD FType 336, 428, 420) and no line named after one,
+   a name NHD gives a built line of the box and no stream line: the California Aqueduct's paths through its reservoirs
+   (`floor_lines`; 9.7 mi of LA's new lines were aqueducts and canals on the first try). A creek kept this way runs on
+   downstream through 0.25-1 km² links until it meets a kept line: across an edge two boxes share (the link that ends
+   on it in the next box is judged here with the same rule) and on below a pond's or reservoir's outlet
+   (`crossbox.dam_links`; Munson Pond's outflow in the High Peaks had lost its line). From a reach of 1 km² or more
+   the stem climbs only reaches of 1 km² or more, so a side channel keeps its river's values. Nothing under 0.25 km²
+   is drawn (03b's channel start: about 1,100 named NHD mi, 430 in the Smokies). The new creeks NHD maps perennial
+   read year-round through `05b_flow.py`'s floor (step 7).
    **A link is cut where it crosses a lake's shore** (since 2026-11-21). pysheds draws one line per link between
    confluences, so a link running from a creek into a lake was part creek and part lake water, and `05b_flow.py`'s
    half-its-length rule gave the whole link one class: Taggart Creek's last 161 m above Taggart Lake scored as lake,
@@ -407,11 +424,27 @@ Steps 1–5 run once per range, with `REGION=<key>` set (default `san_gabriel`; 
      away from the edge. The inflow table is cached in `data/derived/<area>/_shared/inflows.json` until a `flowdir.tif`,
      the reservoir list or the NHDPlus network changes.
    - **From outside the boxes**: a river that enters from outside every box (the Santa Clara at Fillmore, the Maury
-     above Goshen Pass, Otter Creek, the Snake) started with nothing too. Where an NHDPlus V2 river of 10+ km² crosses
-     the outer boundary flowing in, its drainage there, less what the box's own routing and the edge links already
-     have at that spot, is carried down the creek the same way. One that comes in through a reservoir (the
-     Chattahoochee in Lake Lanier) is handed to the cell below the dam: since 2026-11-22 the cell where that
-     reservoir's own water goes in (a second line ran 115 m beside the Hiwassee below Chatuge Dam before).
+     above Goshen Pass, Otter Creek, the Snake) started with nothing too. Every NHDPlus V2 main-path line that crosses
+     the outer boundary flowing in, at any size, brings NHDPlus's total drainage at its lower end, less what the box's
+     own routing gathers there (where the river's path passes within 150 m of the line's end; else its drainage where
+     it crosses) and what the edge links already bring, carried down the creek the same way. Minor arms of split
+     rivers are left out (NHDPlus gives them the whole river's drainage). The same water twice is decided on NHDPlus's
+     network: a river taken before that NHDPlus has above this one counts once, where their paths meet. Water the
+     terrain sends straight back out over the edge goes in further down the mapped river, at the first point, 50 m at
+     a time, whose path stays in. Until 2026-11-23 only lines of 10 km² bringing 10 km² and a quarter of their total
+     counted, a river whose path met this one's within 1.5 km took its water (the Chattooga's East Fork, so the
+     Chattooga at Burrells Ford read 29 sq mi for its gauge's 47), and the French River at Webster found no cell to go
+     in at; USGS gauges within 10 % of their drainage went from 435 to 462 of 516 on the 12 maps. One that comes in
+     through a reservoir (the Chattahoochee in Lake Lanier) is handed to the cell below the dam: since 2026-11-22 the
+     cell where that reservoir's own water goes in (a second line ran 115 m beside the Hiwassee below Chatuge Dam
+     before). Such a river starts as a reach of its own where its water goes in (`crossbox.lead_ins`, laid by
+     `05_score.py`): the terrain path from that cell to the first stream line, stopping at a lake whose water leaves
+     the map, as 03b's lines do (lead-ins had run 4-10 km across Lake Champlain, and the shore creeks whose way down met
+     one took the lake's flow). Before, a river's first few hundred metres in the map had no reach, and `06_map.py`
+     drew them through with the values of the reach below; it now skips such a break where a reach starts on its cell
+     (it had drawn 318 pieces twice along them). Not yet drawn: a stretch where a river weaves along the edge, its
+     terrain path out of the map and the river (NHD) still inside, which no put-in reaches (Minister Creek on the
+     SE PA map, 0.33 mi at 40.297 N, 75.588-75.583 W; accepted on 2026-11-22, a fix in test).
    - **Past dams**: every lake and reservoir ends its D8 paths at its outlet (`03b_stitch.py`; not one whose outlet is
      on an edge between two boxes), so the creek below the dam starts again near nothing (since 2026-11-21 on a line of
      its own from the outlet down to the first stream it meets, so the lake's water lands on the river below that

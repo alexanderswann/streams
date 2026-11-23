@@ -3947,3 +3947,54 @@ look-up scored as a creek NHD doesn't map (0.15). The user's rule: never show a 
   rebuild of all 12 maps; this entry went in as a docs commit while that rebuild ran. **Not done yet:** this piece's
   check on the project build against the scratch figures above (identical reaches; fish 60+ also moves with
   945d3ac and the size floor's new creeks), in a later entry.
+
+## 2026-11-22: rivers from outside with their whole drainage; named or year-round creeks to 0.1 sq mi (edges-and-floor)
+
+The audit's findings 4 and 5. Rivers entering a map from outside were too small: only NHDPlus lines of 10 km² or more
+bringing 10 km² and a quarter of their total counted, a tributary joining a river taken within 1.5 km counted as
+that river's water (the Chattooga at Burrells Ford read 29.3 sq mi for its gauge's 46.7), and a river whose terrain
+path ran straight back out over the edge was dropped (the French River at Webster). And the 1 km² size floor hid
+NHD's named headwaters: 12.5 % of NHD's named stream miles on the 12 maps were not drawn, 26 % in the Smokies. The
+user's choice on 2026-11-22 for the floor, of keeping 1 km², NHD's year-round lines only, its named ones only, or
+both: both, down to 0.25 km² (0.1 sq mi). For the install: "Yes, if checks pass"; on Minister Creek (below): "Install,
+fix edge creek next".
+
+- **Rule** (README, steps 5 and 6):
+  - `crossbox.py` (VERSION 21): every NHDPlus main-path line crossing a map's outer edge inward brings NHDPlus's
+    total at its lower end, less what the box's routing gathers there, at any size; minor arms of split rivers are
+    left out; the same water twice is decided on NHDPlus's network; water the terrain sends straight back out goes in
+    further down the mapped river. `lead_ins()`: a river from outside starts as a reach where its water goes in
+    (about 930 over the 12 maps), stopping at a lake whose water leaves the map.
+  - `05_score.py`: links of 0.25-1 km² kept where NHD maps them perennial or names them, judged on the link's own
+    NHD line (`nhd_says`: no name or class borrowed from a river 10 times bigger beside it) and on natural lines only
+    (`floor_lines`: no canal, ditch, pipeline or conduit, FType 336/428/420, nor a line named after one); a kept creek
+    runs on downstream to a kept line, across box seams and below pond outlets (`crossbox.dam_links`); the stem from a
+    1 km²+ reach climbs only 1 km²+ reaches, so side channels keep their river's values.
+  - `06_map.py`: the draw-through skips a break from outside where a reach starts on its cell (the lead-in).
+- **Measured in scratch on all 12 maps against site c178411** (side-session notes, `edges-and-floor.md`):
+  - Edge rule: USGS gauges within 10 % of their drainage 435 → 462 of 516; NHDPlus points of 39+ sq mi within 10 %
+    4,218 → 4,518; the Chattooga at Burrells Ford 46.5 sq mi (gauge 46.7), the French River at North Grosvenordale
+    at its gauge's drainage.
+  - Floor (first build): named NHD stream miles not drawn 2,912 → 1,056; trout records off the map 97 → 67; about
+    +9,400 drawn mi; site estimated at about 680 MB.
+  - Final floor, at the scoring step: every reach of the edge-rule build kept as the same line, none with less
+    drainage.
+- **The combined test** (#1, #2, #4 and #5 together, combined-test session) found four faults, fixed before the
+  install (patch 84108395): lead-ins across Lake Champlain gave two Willsboro shore creeks the lake's flow (one
+  "usually flows" → "mostly dry"; back to 0.14 and 0.19 cfs); 9.7 mi of LA's new lines were aqueducts and canals;
+  126 m of McCoy Creek (Jackson) was drawn twice, one of 318 such pieces over the 12 maps; Munson Pond's outflow
+  (High Peaks) had lost its line and its lake outlet.
+- **Accepted exception** (the user's word, 2026-11-22 about 22:50 ET): about 0.33 mi of SE PA's Minister Creek is no
+  longer drawn where it weaves along the brandywine box's north edge (40.297 N, 75.588-75.583 W). NHD has the creek
+  just inside the map there, but the terrain routes its water outside, so no link of the box's own carries it; live
+  drew it as a draw-through piece.
+- **Follow-ups:**
+  1. A creek that weaves along a map's edge: its water goes in again where its path comes back in, along NHD's line
+     (designed 2026-11-23 in the edges-and-floor session; in test on the 5 maps it changes).
+  2. Floor links running side by side with a bigger line (166 m near Cold River in the High Peaks). On the 12 maps 747
+     short pieces at confluences lie as close, so a rule needs a length test.
+  - Not planned: NHD-named creeks under 0.1 sq mi (03b's channel start; about 1,100 named NHD mi, 430 in the Smokies).
+- **Installed** 2026-11-23 about 00:30 ET as `a37db23` on main (patch 84108395), by the overview session in the
+  night's combined install (after #1, ee00f41, and #2, f71709a; before #5, 6e0898c), with one rebuild of all 12 maps
+  from 03b; this entry went in as a docs commit while that rebuild ran. **Not done yet:** this piece's check on the
+  project build against the scratch figures above, in a later entry.
