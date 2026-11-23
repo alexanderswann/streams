@@ -39,7 +39,12 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              with what flows in from neighbouring boxes and from above reservoirs, which each box's DEM routing
              misses (a creek crossing in from the next box, or leaving a dam, started again near nothing). A side
              channel of a river (05_score.py) takes the drainage of the river reach beside it, and a lake's second
-             outlet that of the creek its lake's main outlet starts
+             outlet that of the creek its lake's main outlet starts.
+             Wild brook trout water (brook_water) is sized for brook trout: the same curve on BROOK_SCALE x the
+             drainage, so it starts at 1/BROOK_SCALE km^2 and is full from 50/BROOK_SCALE. Brook trout live in smaller
+             creeks than the other trout: on all 12 maps the records of brook trout sit on creeks draining a sixth of
+             what the records of other trout only do (median drainage at the nearest reach). Other water is unchanged,
+             and nothing scores lower: the user's choice, 2026-11-22 ("wild brook-trout water scored on its own terms")
   thermal    0.5 water temperature + 0.35 summer shade + 0.15 mountainside northness (south-facing -0.15 ->
              north-facing +0.15). Water temperature is the reach's estimated July-August daytime water temperature
              (watertemp.py: fitted per area to measured creeks; in LA on August air + elevation; in three of the
@@ -148,6 +153,11 @@ def num(s, c):
 
 
 RIDE_REMOTENESS = 2.0    # a minute ridden on the approach counts as this many minutes of remoteness (user's choice)
+# Size term on wild brook trout water: the drainage counts this many times over. The median drainage at the nearest
+# reach of records of other trout only (brown, rainbow, cutthroat; no brook trout), over the median at records of
+# brook trout, all 12 maps, stocking and lakes left out (2026-11-23, on the reaches of the 0.1 sq mi floor): agency
+# surveys 31 / 4.6 km^2 (80 and 287 records: 6.7), iNaturalist 59 / 9.8 km^2 (1,120 and 423: 6.0). The lower one
+BROOK_SCALE = 6.0
 HEAT_START, HEAT_FULL, HEAT_FLOOR = 29.0, 30.5, 0.2    # August mean air, C
 # Dry creeks the flow model rates flowing (water term, (1) and (2)): measured on the USGS gauges of all 12 areas,
 # 2026-11-20 (MULTI_AREA_LOG.md). None of the 221 gauged creeks that flow most summers is lowered
@@ -308,6 +318,16 @@ def trout_signs(s):
     found, absent = num(s, "trout_found"), num(s, "trout_absent")
     pos = (found >= THIS_YEAR - 10) & (absent.isna() | (found >= absent))
     return pos, (absent >= THIS_YEAR - 10) & ~pos
+
+
+def brook_water(s):
+    """Wild brook trout water, sized for brook trout (BROOK_SCALE): a designation of wild brook trout covers the reach
+    (11_context.py's brook_water: a brook trout patch, a state's wild brook trout stream or catchment), or a survey
+    found wild brook trout on the creek in the last 10 years with no later survey finding none (brook_found, matched as
+    trout_found is). Not a stocking list, and not an iNaturalist sighting: neither tells wild fish from stocked."""
+    found, absent = num(s, "brook_found"), num(s, "trout_absent")
+    rec = (found >= THIS_YEAR - 10) & (absent.isna() | (found >= absent))
+    return rec | (s["brook_water"].notna() if "brook_water" in s else False)
 
 
 def trout_factor(s):
@@ -496,7 +516,8 @@ def score(s):
     # a side channel of a river (05_score.py's side_of) is sized as the river beside it (river_km2): D8 sends a split
     # river's water down one arm, and the other arm's own few km2 say nothing of the water in it
     big = np.fmax(num(s, "area_full_km2").fillna(s.area_km2), num(s, "river_km2").fillna(0))
-    size = np.clip(np.log10(big) / np.log10(50), 0, 1)
+    brook = brook_water(s)                   # sized for brook trout: never lower, as BROOK_SCALE > 1
+    size = np.clip(np.log10(big * np.where(brook, BROOK_SCALE, 1.0)) / np.log10(50), 0, 1)
     terrain, canopy = s.shade_pct.fillna(20) / 100, np.clip(num(s, "canopy_pct").fillna(0) / 100, 0, 1)
     shade = np.clip((1 - (1 - terrain) * (1 - 0.8 * canopy)) / 0.45, 0, 1)
     north = np.clip((s.northness.fillna(0) + 0.15) / 0.30, 0, 1)
@@ -538,6 +559,7 @@ def score(s):
     s["water_term"] = water.round(2)
     s["burn_factor"] = np.round(burn, 2)
     s["trout_factor"] = trout
+    s["brook_size"] = np.asarray(brook, bool)      # sized as wild brook trout water (brook_water)
     s["heat_factor"] = np.round(heat, 2)
     s["tailwater"] = tw.where(tw.ne(""), None)
     s["channel_factor"] = chan

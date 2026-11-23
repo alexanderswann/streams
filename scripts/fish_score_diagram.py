@@ -90,9 +90,15 @@ def curve(ax, x, y, col, **kw):
 # The score works in km2 and °C (scoring.py); the panels show square miles and °F (units.py), like the maps
 SQMI, F = 0.386102, (lambda c: c * 9 / 5 + 32)
 ax = fig.add_subplot(gs[2, 0])
-a = np.logspace(-0.5, 2.5, 300)                      # km2
+a = np.logspace(-1.2, 2.5, 400)                      # km2
 curve(ax, a * SQMI, np.clip(np.log10(a) / np.log10(50), 0, 1), C["size"])
-ax.set_xscale("log"); ax.set_xticks([0.1, 0.39, 2, 19.3, 100]); ax.set_xticklabels(["0.1", "0.39", "2", "19", "100"])
+BROOK = 6.0             # scoring.py's BROOK_SCALE: wild brook trout water is sized on 6 x its drainage (dashed)
+curve(ax, a * SQMI, np.clip(np.log10(a * BROOK) / np.log10(50), 0, 1), C["size"], ls=(0, (3, 2)))
+b0, b1 = SQMI / BROOK, 50 * SQMI / BROOK               # sq mi where the dashed curve starts and tops out
+ax.text(3.6, 0.04, f"dashed: wild\nbrook trout water,\n{b0:.2g} → 0, {b1:.2g}+ → 1", fontsize=8.2, color=INK2, ha="left",
+        va="bottom")
+ax.set_xscale("log"); ax.set_xticks([b0, 0.39, b1, 19.3, 100])
+ax.set_xticklabels([f"{b0:.2g}", "0.39", f"{b1:.2g}", "19", "100"])
 ax.set_xlabel("drainage area (sq mi, log)"); ax.set_ylim(-0.03, 1.05)
 panel(ax, "S  size", "0.39 sq mi → 0,  19+ sq mi → 1", C["size"])
 

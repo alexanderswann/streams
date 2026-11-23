@@ -4,6 +4,10 @@
               label. A survey or stocking record counts for the creek of that name near the point (11_context.py)
   waters()    polygons: Name, Designation. Designated or documented trout water; a reach inside one gets the trout
               term's x1.2 like a CDFW Wild Trout Water. Lines are buffered 25 m so both maps draw them the same way
+Both also say wild_brook: a survey that found wild brook trout, or a water the source lists for wild brook trout (a
+brook trout patch, Vermont's brook trout waters, a Virginia or Pennsylvania wild stream with brook trout, the Smokies
+park's brook trout segments, a Wyoming stream with brook trout among its game fish). Stocking never is. scoring.py
+sizes that water for brook trout (BROOK_SCALE)
 
 Which sources an area has is in config.py (`sources`); all were checked against the live services on 2026-11-18:
   ct_trout   CT DEEP: fish community samples (species per sample, wild / stocked told apart), stocked streams and
@@ -107,22 +111,24 @@ def _mid(g):
                           for x in g.geometry], index=g.index, crs=CRS)
 
 
-def _ev(g, kind, water, year, trout, label, lake=None, url=None):
+def _ev(g, kind, water, year, trout, label, lake=None, url=None, brook=False):
     water = pd.Series(water, index=g.index).fillna("").astype(str)
     water = water.str.replace(r"\s*\(.*?\)", "", regex=True).str.strip()      # "South River (Rockbridge)"
     return gpd.GeoDataFrame(dict(kind=kind, water=water, year=pd.to_numeric(pd.Series(year, index=g.index), errors="coerce"),
                                  trout=pd.Series(trout, index=g.index).astype(bool),
                                  lake=(water.str.contains(LAKE) & ~water.str.contains(RUNNING)) if lake is None else lake, url=url,
-                                 label=pd.Series(label, index=g.index)),
+                                 label=pd.Series(label, index=g.index),
+                                 wild_brook=pd.Series(brook, index=g.index).astype(bool)),
                             geometry=_mid(g) if not (g.geom_type == "Point").all() else g.geometry, crs=CRS)
 
 
-def _waters(g, name, designation, buffer=25):
+def _waters(g, name, designation, buffer=25, brook=False):
     geom = g.geometry if g.geom_type.isin(["Polygon", "MultiPolygon"]).all() else g.buffer(buffer)
     # broad: an area the record covers as a whole (a catchment, a patch), not a mapped stream line
     return gpd.GeoDataFrame(dict(Name=pd.Series(name, index=g.index).fillna("").astype(str).str.strip(),
                                  Designation=pd.Series(designation, index=g.index), Designation_Boundary=None,
-                                 broad=bool(g.geom_type.isin(["Polygon", "MultiPolygon"]).all())),
+                                 broad=bool(g.geom_type.isin(["Polygon", "MultiPolygon"]).all()),
+                                 wild_brook=pd.Series(brook, index=g.index).astype(bool)),
                             geometry=shapely.make_valid(geom.values), crs=CRS)
 
 
@@ -151,16 +157,18 @@ def _ct():
                 q = t.groupby("sp").Quantity.sum()
                 what = ", ".join(f"{re.sub(r'^(.*?), (Wild|Stocked)$', lambda m: f'{m.group(2).lower()} {m.group(1).lower()}', s)}"
                                  + (f" ({int(n)})" if pd.notna(n) and n > 0 else "") for s, n in q.items())
-                rows.append((g.index[0], yr, True, f"CT DEEP sample {int(yr)}: {what}"))
+                rows.append((g.index[0], yr, True, f"CT DEEP sample {int(yr)}: {what}",
+                             t.sp.str.fullmatch(r"(?i)brook trout, wild").any()))
             elif g.efish.any() and g.sp.nunique() >= 2:      # an electrofishing sample of other fish, and no trout
                 rows.append((g.index[0], yr, False, f"CT DEEP electrofishing sample {int(yr)}: no trout "
-                                                    f"({g.sp.nunique()} other species)"))
-        r = pd.DataFrame(rows, columns=["i", "year", "trout", "label"]).set_index("i")
-        # per station: its latest sample, and its latest sample with trout
+                                                    f"({g.sp.nunique()} other species)", False))
+        r = pd.DataFrame(rows, columns=["i", "year", "trout", "label", "brook"]).set_index("i")
+        # per station: its latest sample, its latest sample with trout, and its latest with wild brook trout
         st = f.loc[r.index, "Station_ID"]
-        keep = r.assign(st=st.values).sort_values("year").groupby(["st", "trout"]).tail(1)
+        keep = r.assign(st=st.values).sort_values("year").groupby(["st", "trout", "brook"]).tail(1)
         g = f.loc[keep.index]
-        ev.append(_ev(g, "CT DEEP survey", g.Waterbody_Name, keep.year.values, keep.trout.values, keep.label.values))
+        ev.append(_ev(g, "CT DEEP survey", g.Waterbody_Name, keep.year.values, keep.trout.values, keep.label.values,
+                      brook=keep.brook.values))
     s = fetch("ct_stocked_streams", f"{CT}/Connecticut_Stocked_Streams/FeatureServer/0",
               fields="STREAMS_WATERBODY,STOCKING_TABLE_STOCKDATE,STOCKING_TABLE_MGT")
     k = fetch("ct_stocked_lakes", f"{CT}/Connecticut_Stocked_Lakes/FeatureServer/0", fields="*")
@@ -188,8 +196,11 @@ def _vt():
     if len(b):
         b = b[b.trout_stat.fillna("").str.contains("Trout")]
         yr = pd.to_numeric(b.samp_year, errors="coerce")
+        # "Wild Brook Trout Only" and "Mixed Wild Trout Only" (brook trout with other wild trout: the layer marks every
+        # catchment brk_trout = "brook trout", EBTJV codes 1.1-1.4)
         wa.append(_waters(b, ["Vermont Fish & Wildlife" + (f", sampled {int(y)}" if pd.notna(y) and y > 1900 else "") for y in yr],
-                          b.trout_stat.str.replace(" Only", "", regex=False).str.lower().str.capitalize() + " water"))
+                          b.trout_stat.str.replace(" Only", "", regex=False).str.lower().str.capitalize() + " water",
+                          brook=b.trout_stat.str.contains("Wild").values))
     s = fetch("vt_stock", f"{VT}/52", fields="Waterbody,Location,Town,Species")
     if len(s):
         s = s[s.Species.fillna("").str.contains("BKT|RBT|BNT|trout", case=False)]
@@ -211,7 +222,8 @@ def _va():
         spp = [", ".join(n for n, v in (("brook", r.BROOK), ("brown", r.BROWN), ("rainbow", r.RAINBOW)) if str(v).upper().startswith("Y"))
                for r in c.itertuples()]
         wa.append(_waters(c, c.NAME, ["Wild trout stream, class " + k.strip() + (f" ({s} trout)" if s else "") + " (VA DWR)"
-                                      for k, s in zip(c.CLASS_1, spp)]))
+                                      for k, s in zip(c.CLASS_1, spp)],
+                          brook=[str(v).upper().startswith("Y") for v in c.BROOK]))
     code = {"PNT": "put-and-take", "DH": "delayed harvest", "SR": "special regulation", "WT": "wild trout water also stocked"}
     for key, lyr, lake in (("va_stock_reaches", "DWR_Stocked_Trout_Reaches", None), ("va_stock_lakes", "DWR_Stocked_Trout_Lakes", True)):
         s = fetch(key, f"{VA}/{lyr}/FeatureServer/0", fields="Waterbody,Designation")
@@ -249,7 +261,8 @@ def _ga():
             g = m.dissolve(by="master_stream", aggfunc={"when": "max", "master_species": lambda v: ", ".join(
                 sorted({sp.get(str(x).strip().upper(), str(x).strip().lower()) for x in v}))}).reset_index()
             ev.append(_ev(g, "GA DNR survey", g.master_stream, g.when.dt.year.values, True,
-                          [f"GA DNR trout sample {d:%Y}: {s_}" for d, s_ in zip(g.when, g.master_species)]))
+                          [f"GA DNR trout sample {d:%Y}: {s_}" for d, s_ in zip(g.when, g.master_species)],
+                          brook=g.master_species.str.contains("brook trout").values))
     return ev, wa
 
 
@@ -263,8 +276,10 @@ def _wy():
         fish = g.GameFishPresent.fillna("")
         g = g[fish.str.contains("Trout|Cutthroat", case=False) & ~g.StreamClass.fillna("").str.startswith("Clear")]
         cls = g.StreamClass.fillna("").str.extract(r"^(\w+)")[0].str.lower()
+        # brook trout among the game fish: wild in Wyoming's streams, though not native
         wa.append(_waters(g, g.WaterName, ["Wyoming trout stream" + (f", {c} ribbon" if isinstance(c, str) and c else "")
-                                           + f": {f_.lower()} (WGFD)" for c, f_ in zip(cls, g.GameFishPresent)]))
+                                           + f": {f_.lower()} (WGFD)" for c, f_ in zip(cls, g.GameFishPresent)],
+                          brook=g.GameFishPresent.str.contains("brook trout", case=False).values))
     c = fetch("wy_cutt", f"{WY}/CuttslamRivers/FeatureServer/0", fields="Species,WaterName")
     if len(c):
         wa.append(_waters(c, c.WaterName, "Native " + c.Species.fillna("cutthroat").str.strip() + " water (WGFD)"))
@@ -307,7 +322,7 @@ def _pa():
         # Fishery: "Brown", "Brook", "Mixed Brook/Brown", "Wild Brown Trout Fishery"
         fish = a.Fishery.fillna("").str.replace(r"(?i)^wild\s+|\s*trout fishery$", "", regex=True).str.strip().str.lower()
         wa.append(_waters(a, a.WtrName, ["Class A wild trout stream" + (f" ({f_} trout)" if f_ else "") + " (PFBC)"
-                                         for f_ in fish]))
+                                         for f_ in fish], brook=fish.str.contains("brook").values))
     n = fetch("pa_natural_repro", f"{PFBC}/Trout_NaturalReproduction/MapServer/0", fields="WtrName,Limits")
     if len(n):
         wa.append(_waters(n, n.WtrName, "Wild trout stream: natural reproduction (PFBC)"))
@@ -437,15 +452,18 @@ def _tn():
             if len(t):
                 q = t.groupby(t.sp.str.lower()).NUM_FISH.sum()       # 0 = present, not counted
                 rows.append((g.index[0], yr, True, f"TWRA electrofishing sample {int(yr)}: "
-                             + ", ".join(sp_ + (f" ({int(n)})" if pd.notna(n) and n > 0 else "") for sp_, n in q.items())))
+                             + ", ".join(sp_ + (f" ({int(n)})" if pd.notna(n) and n > 0 else "") for sp_, n in q.items()),
+                             "brook trout" in q.index))
             elif g.sp.str.lower().nunique() >= 2:
-                rows.append((g.index[0], yr, False, f"TWRA electrofishing sample {int(yr)}: no trout ({g.sp.str.lower().nunique()} other species)"))
+                rows.append((g.index[0], yr, False, f"TWRA electrofishing sample {int(yr)}: no trout ({g.sp.str.lower().nunique()} other species)",
+                             False))
         if rows:
-            r = pd.DataFrame(rows, columns=["i", "year", "trout", "label"]).set_index("i")
-            keep = r.assign(st=f.loc[r.index, "SITECODE"].values).sort_values("year").groupby(["st", "trout"]).tail(1)
+            r = pd.DataFrame(rows, columns=["i", "year", "trout", "label", "brook"]).set_index("i")
+            # per site: its latest sample, its latest with trout, and its latest with brook trout
+            keep = r.assign(st=f.loc[r.index, "SITECODE"].values).sort_values("year").groupby(["st", "trout", "brook"]).tail(1)
             g = f.loc[keep.index]
             ev.append(_ev(g, "TWRA survey", g.WATERNAME.fillna("").str.title(), keep.year.values, keep.trout.values,
-                          keep.label.values, lake=False))
+                          keep.label.values, lake=False, brook=keep.brook.values))
     # brook trout collected for TWRA's genetics study
     b = _try("tn_brook_genetics", f"{TWRA}/Brook_Trout_Genetics_ArcFormat_2025/FeatureServer/0",
              fields="Waterbody,Date,Genotyped_Samples__trimmed_")
@@ -454,7 +472,8 @@ def _tn():
         n = pd.to_numeric(b.Genotyped_Samples__trimmed_, errors="coerce")
         ev.append(_ev(b, "TWRA survey", b.Waterbody, yr.values, True,
                       [f"TWRA brook trout genetics collection{f' {int(y)}' if pd.notna(y) else ''}"
-                       + (f": {int(k)} brook trout" if pd.notna(k) else ": brook trout") for y, k in zip(yr, n)], lake=False))
+                       + (f": {int(k)} brook trout" if pd.notna(k) else ": brook trout") for y, k in zip(yr, n)], lake=False,
+                      brook=True))
     return ev, wa
 
 
@@ -475,7 +494,8 @@ def _grsm():
             "5": "rainbow and brook trout", "6": "brook and brown trout", "7": "rainbow, brook and brown trout"}
     yr = _ms(t.SOURCEDATE).dt.year
     return [], [_waters(t, t.STREAMNAME, [f"Trout stream: {comp.get(str(c).strip(), 'trout')} (GRSM fish distribution"
-                                          + (f", {int(y)})" if pd.notna(y) else ")") for c, y in zip(t.SPECIESCOMP, yr)])]
+                                          + (f", {int(y)})" if pd.notna(y) else ")") for c, y in zip(t.SPECIESCOMP, yr)],
+                        brook=[("brook" in comp.get(str(c).strip(), "")) for c in t.SPECIESCOMP])]
 
 
 # ---- Eastern Band of Cherokee Indians (the Qualla Boundary) ----
@@ -560,10 +580,12 @@ def _tu():
                        "Sympatric EBT & RBT": "brook and rainbow trout", "Allopatric": "brook trout only",
                        "Allopatric brook trout": "brook trout only", "Sympatric": "brook trout with other trout",
                        "Sympatric brook trout": "brook trout with other trout",
-                       "Brown trout only": "brown trout, no brook trout", "Rainbow trout only": "rainbow trout, no brook trout"})
-    other = raw.isin(["Brown trout only", "Rainbow trout only"]).values
+                       "Brown trout only": "brown trout, no brook trout", "Rainbow trout only": "rainbow trout, no brook trout",
+                       "Brown & rainbow trout only": "brown and rainbow trout, no brook trout"})
+    # a community that names no brook trout (Pennsylvania's "Allopatric" / "Sympatric" are brook trout's): other trout
+    other = ~raw.str.contains(r"(?i)brook|EBT|allopatric|sympatric").values
     return [], [_waters(p, com, np.where(other, "Wild trout patch (EBTJV / Trout Unlimited)",
-                                         "Wild brook trout patch (EBTJV / Trout Unlimited)"))]
+                                         "Wild brook trout patch (EBTJV / Trout Unlimited)"), brook=~other)]
 
 
 _BY_SOURCE = (("ct_trout", _ct), ("vt_trout", _vt), ("va_trout", _va), ("ga_trout", _ga), ("wy_trout", _wy),
@@ -595,7 +617,8 @@ def waters():
     wa = [w for w in _load()[1] if len(w)]
     if not wa:
         return gpd.GeoDataFrame({"Name": pd.Series(dtype=str), "Designation": pd.Series(dtype=str),
-                                 "Designation_Boundary": pd.Series(dtype=str), "broad": pd.Series(dtype=bool)},
+                                 "Designation_Boundary": pd.Series(dtype=str), "broad": pd.Series(dtype=bool),
+                                 "wild_brook": pd.Series(dtype=bool)},
                                 geometry=[], crs=CRS)
     out = gpd.GeoDataFrame(pd.concat(wa, ignore_index=True), crs=CRS)
     return out[~out.geometry.is_empty & out.geometry.notna()].reset_index(drop=True)

@@ -514,8 +514,8 @@ LBL["acc_asof"] = ("Times for summer (mid-July)" if _rc is None else
 ACCESS = ["drive_min", "drive_km", "th_road", "th_lat", "th_lon", "bike_min", "bike_check", "bike_check_min", "walk_min",
           "approach_min", "th_closed"]
 CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn_fire", "burn_year", "burn_sev", "debris_flow",
-           "trout_water", "trout_found", "trout_absent", "trout_ev", "crit_habitat", "wilderness", "non_fs_land",
-           "cpad_access"]
+           "trout_water", "trout_found", "trout_absent", "trout_ev", "brook_water", "brook_found", "crit_habitat",
+           "wilderness", "non_fs_land", "cpad_access"]
 FLOWC = ["water_class", "dry_cfs", "dry_cfs_drought", "flow_years", "flow_src", "below_dam",   # 05b_flow.py
          "below_div", "div_share", "div_years", "gauge_name", "gauge_share", "gauge_years", "green_p90",
          "model_class", "water_floor", "water_by_gauge", "water_rule"]                       # (the last two: scoring.py)
@@ -527,7 +527,7 @@ for c_ in CONTEXT + FLOWC:   # older context files may lack a column
 kp_ll.drop(columns="geometry").to_csv(f"{MAP_OUT}/waterfall_candidates.csv", index=False)
 mid = s_ll.geometry.interpolate(0.5, normalized=True)
 s_ll.assign(lat=mid.y.round(6), lon=mid.x.round(6)).sort_values("fish_score", ascending=False)[
-    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
+    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "brook_size", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
      "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["lat", "lon"]
 ].to_csv(f"{MAP_OUT}/stream_reaches_ranked.csv", index=False)
 
@@ -1054,8 +1054,10 @@ props = pd.DataFrame({
                  f"{f} fire {y:.0f}" + (f" ({sev_label(sv)})" if pd.notna(sv) else "") if pd.notna(y) else "",
                  f"⚠ debris-flow hazard {dfl}" if isinstance(dfl, str) else "") if x)
              for f, y, sv, dfl in zip(s_show.burn_fire, s_show.burn_year, pd.to_numeric(s_show.burn_sev), s_show.debris_flow)],
-    "tr": [" · ".join(x for x in (t if isinstance(t, str) else "", e if isinstance(e, str) else "") if x)
-           for t, e in zip(s_show.trout_water, s_show.trout_ev)],
+    # the brook trout designation the size term reads (scoring.brook_water), where another designation is the label
+    "tr": [" · ".join(x for x in (t if isinstance(t, str) else "", b if isinstance(b, str) and b != t else "",
+                                  e if isinstance(e, str) else "") if x)
+           for t, b, e in zip(s_show.trout_water, s_show.brook_water, s_show.trout_ev)],
     "flags": [" · ".join(x for x in (f"⚠ critical habitat: {c}" if isinstance(c, str) else "",
                                      f"{w} (no bikes)" if isinstance(w, str) else "",
                                      f"⚠ {a}" if isinstance(a, str) else

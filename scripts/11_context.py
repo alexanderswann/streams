@@ -16,6 +16,9 @@
   - Critical habitat for stream species (USFWS) and southern steelhead (NMFS), clipped to the study areas.
     Designated habitat, not closure boundaries: Forest Service closures are usually smaller
   - CDFW Heritage and Wild Trout Waters (special regulations, strong sign of wild trout)
+  - Wild brook trout water (outside California, troutdata.py's wild_brook): brook_water, a designation of wild brook
+    trout covering the reach (any of them, where trout_water names only the first), and brook_found, the latest year a
+    survey found wild brook trout on the creek. scoring.py sizes that water for brook trout
 Writes output/context/*.gpkg and output/<region>/context_streams.csv, context_drops.csv.
 A download that fails (no network, a server that doesn't answer) is read from its last good copy (netfetch.py), with a
 dated NOTE in the log and "(as of <date>)" in the source wording the map shows: the fire perimeters' source, the trout
@@ -250,6 +253,8 @@ if not len(trout):   # outside California: each state's trout waters and the bro
     trout = troutdata.waters()
 if "broad" not in trout:
     trout["broad"] = False
+if "wild_brook" not in trout:   # CDFW's waters are for rainbow and golden trout: no brook trout in the LA ranges
+    trout["wild_brook"] = False
 trout.to_crs(4326).to_file(f"{CTX}/wild_trout_waters.gpkg")
 print("wild trout waters", list(trout.Name))
 
@@ -358,7 +363,11 @@ if trout_ev is not None:
     if len(lakes_):
         trout_ev.loc[(trout_ev.kind == "iNaturalist") & (trout_ev.distance(lakes_.union_all()) < 100), "lake"] = True
     trout_ev["air_aug"] = air_at(trout_ev.geometry).round(1)
-    trout_ev = trout_ev[["kind", "water", "year", "trout", "lake", "label", "url", "air_aug", "geometry"]]
+    # wild brook trout found (troutdata.py's surveys). Not CDFW's (no brook trout in the LA ranges), and not a sighting:
+    # iNaturalist can't tell a wild brook trout from a stocked one
+    trout_ev["wild_brook"] = (trout_ev["wild_brook"] if "wild_brook" in trout_ev else pd.Series(False, index=trout_ev.index)
+                              ).fillna(False).astype(bool)
+    trout_ev = trout_ev[["kind", "water", "year", "trout", "lake", "label", "url", "air_aug", "wild_brook", "geometry"]]
     trout_ev.to_crs(4326).to_file(f"{CTX}/trout_evidence.gpkg")
     print("trout evidence", trout_ev.groupby(["kind", "trout", "lake"]).size().to_dict())
     creek = trout_ev[trout_ev.trout & ~trout_ev.lake]
@@ -384,7 +393,8 @@ def cut_lines(s):
 
 def trout_attrs(s):
     """Per reach: latest year trout were found (CDFW survey, stocking, iNaturalist), latest CDFW survey year that
-    found none, and a summary. Surveys and stocking count for the creek of the same name within 5 km of the point
+    found none, latest year a survey found wild brook trout (brook_found), and a summary. Surveys and stocking count
+    for the creek of the same name within 5 km of the point
     (else the nearest reach within 300 m and the same creek within 1.5 km); a sighting for its reach (within 150 m)
     and the same creek within 1.5 km.
     Lakes are left out: their trout are stocked."""
@@ -413,18 +423,22 @@ def trout_attrs(s):
             sel = close & named.map(lambda n: ok.get(n, False))
             if not sel.any() and d[j] <= 300:   # else the nearest reach and the same creek within 1.5 km
                 sel = (d <= 1500) & (named == named[j]) if named[j] else (d.index == j)
-        hits += [(sid, e.Index, e.kind, e.year, e.trout, e.label) for sid in s.sid[sel]]
+        hits += [(sid, e.Index, e.kind, e.year, e.trout, e.label, e.wild_brook) for sid in s.sid[sel]]
     if not hits:
         return out
-    h = pd.DataFrame(hits, columns=["sid", "e", "kind", "year", "trout", "label"])
+    h = pd.DataFrame(hits, columns=["sid", "e", "kind", "year", "trout", "label", "brook"])
     line = pd.DataFrame({"sid": s.sid.values, "line": cut_lines(s).values})   # a cut line's pieces: the whole line's
     h = (h.merge(line, on="sid").drop(columns="sid").drop_duplicates(["line", "e"]).merge(line, on="line")
          .drop(columns=["line", "e"]))
     pos, neg = h[h.trout], h[~h.trout & h.kind.str.endswith("survey")]
     out["trout_found"] = out.sid.map(pos.groupby("sid").year.max())
     out["trout_absent"] = out.sid.map(neg.groupby("sid").year.max())
+    out["brook_found"] = out.sid.map(h[h.brook].groupby("sid").year.max())
     def summary(g):
-        parts = list(dict.fromkeys(g[g.kind != "iNaturalist"].sort_values("year", ascending=False).label))[:3]
+        recs = g[g.kind != "iNaturalist"].sort_values("year", ascending=False)
+        parts = list(dict.fromkeys(recs.label))[:3]
+        if recs.brook.any() and recs[recs.brook].label.iat[0] not in parts:   # the brook trout find scoring.py sizes on
+            parts.append(recs[recs.brook].label.iat[0])
         nat_ = g[g.kind == "iNaturalist"]
         if len(nat_):
             parts.append(f"iNaturalist: {len(nat_)} trout sighting{'s' if len(nat_) > 1 else ''} on this creek nearby, "
@@ -663,13 +677,16 @@ def attrs(gdf, key, buf):
         out["cpad_access"] = out[key].map(cj.ACCESS_TYP + ": " + cj.UNIT_NAME.fillna(""))
     h = gpd.sjoin(g, habitat[["species", "geometry"]], predicate="intersects")
     out["crit_habitat"] = out[key].map(h.groupby(key).species.agg(lambda s: ", ".join(sorted(set(s)))))
-    t = gpd.sjoin(g, trout[["Name", "Designation", "broad", "geometry"]], predicate="intersects")
+    t = gpd.sjoin(g, trout[["Name", "Designation", "broad", "wild_brook", "geometry"]], predicate="intersects")
     t["label"] = (t.Designation + ": " + t.Name).str.replace(r": $", "", regex=True)
     # one label per reach: a mapped stream's designation before a catchment-wide one, and of those the one that
     # covers most of the reach (at a confluence the neighbouring river's line clips the reach too)
     t["cover"] = shapely.area(shapely.intersection(t.geometry.values, trout.geometry.reindex(t.index_right).values))
     t = t.sort_values(["broad", "cover"], ascending=[True, False])
     out["trout_water"] = out[key].map(t.groupby(key).label.first())
+    # wild brook trout water, from any designation that covers the reach: a state's line (NY's class T, Georgia's
+    # designated streams) is the label above and would hide the brook trout patch under it
+    out["brook_water"] = out[key].map(t[t.wild_brook.astype(bool)].groupby(key).label.first())
     if len(baer):   # area-weighted soil burn severity of the reach's latest fire, where BAER mapped it (>= 30 % cover)
         x = gpd.overlay(g, baer, how="intersection", keep_geom_type=True)
         if len(x):
@@ -701,7 +718,8 @@ for r in REGIONS:
     cd.to_csv(f"{MAP_OUT}/{r}/context_drops.csv", index=False)
     print(f"{REGIONS[r]['label']}: reaches burned since {FIRE_SINCE}: {cs.burn_year.notna().mean():.0%} | wilderness "
           f"{cs.wilderness.notna().mean():.0%} | non-FS land {cs.non_fs_land.notna().mean():.0%} | crit. habitat "
-          f"{cs.crit_habitat.notna().mean():.0%} | wild trout {cs.trout_water.notna().sum()} | trout found "
+          f"{cs.crit_habitat.notna().mean():.0%} | wild trout {cs.trout_water.notna().sum()} (brook trout "
+          f"{cs.brook_water.notna().sum()}, found {cs.get('brook_found', pd.Series(dtype=float)).notna().sum()}) | trout found "
           f"{cs.get('trout_found', pd.Series(dtype=float)).notna().sum()}, none found "
           f"{cs.get('trout_absent', pd.Series(dtype=float)).notna().sum()} | burn severity "
           f"{cs.get('burn_sev', pd.Series(dtype=float)).notna().sum()} | debris-flow "
