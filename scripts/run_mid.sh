@@ -3,7 +3,7 @@
 #   ./run_mid.sh ne_ct lexington_va        (logs to data/mid_<area>.log)
 # Stops an area at its first failure (later steps need the earlier ones) and goes on to the next area; exits 1 if any
 # area stopped (run_rebuild_a.sh then skips that area's late steps).
-cd /Users/mac/Fishing/scripts
+cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a

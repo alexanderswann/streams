@@ -9,7 +9,7 @@
 # outage alone doesn't stop one: 02_download_vectors.py keeps a range's last OSM files then.
 # Re-running is cheap: DEM tiles and NHD downloads already on disk are reused.
 # Only one conditioning step runs at a time across chains (pysheds needs several GB on a big box): hydrolock.sh.
-cd /Users/mac/Fishing/scripts
+cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
 source ./hydrolock.sh      # locked(): the hydrology lock, let go however the driver ends (2026-11-23)
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server

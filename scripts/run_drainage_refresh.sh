@@ -7,7 +7,7 @@
 #   ./run_drainage_refresh.sh lexington_va ne_ct      (logs to data/drainage_<area>.log)
 # The reaches and their ids stay; scores change only where a reach's flow does. Stops an area at its first failure and goes on.
 # Afterwards: 13_overview.py, 14_portable.py, phone_sync.sh (and publish_site.sh for the website copy).
-cd /Users/mac/Fishing/scripts
+cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
 for a in "$@"; do
   LOG=../data/drainage_$a.log

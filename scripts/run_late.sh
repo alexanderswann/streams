@@ -4,7 +4,7 @@
 #   ./run_late.sh ne_ct        (logs to data/late_<area>.log)
 # Road closures (07): California's feeds in LA; a keyless feed in four of the other areas (none for NE Connecticut).
 # Stops an area at its first failure and goes on to the next area; exits 1 if any area stopped.
-cd /Users/mac/Fishing/scripts
+cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a

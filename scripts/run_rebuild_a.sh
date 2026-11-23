@@ -12,7 +12,7 @@
 # its mid and late steps included (audit finding 10, 2026-11-22), and the chain goes on to the next area. One
 # conditioning step at a time across chains (hydrolock.sh).
 # Afterwards: 13_overview.py, 14_portable.py, phone_sync.sh.
-cd /Users/mac/Fishing/scripts
+cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
 source ./hydrolock.sh      # locked(): the hydrology lock, let go however the driver ends (2026-11-23)
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
