@@ -29,3 +29,6 @@ __pycache__/
 
 # The local copy of the GitHub Pages site that scripts/publish_site.sh fills (its own git repository)
 /publish/
+
+# Shared built baselines (tools/baseline.sh in the overview notes): APFS clones of data/, output/, scripts/
+/baselines/
