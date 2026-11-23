@@ -4154,3 +4154,117 @@ where the channel runs.
   06:01 as site 9f6e867. On the live map Peters Creek reads "Drive 39 min (26 mi) from 24450 Lexington → park at
   Marcus Trail → hike 0 min" (fish 83 there, and Falling Rock Creek 76: wild brook trout water is sized for brook
   trout since f24e043, in the same rebuild; the scores above are from before it).
+
+## 2026-11-23: wild brook trout water sized for brook trout (score-evidence session)
+
+Outside LA the fish score mostly rewarded stream size and distance from roads. The size term gave nothing below 0.39
+sq mi (1 km²), so a small brook trout creek near a road couldn't score above about 54. The audit (2026-11-22,
+decision 5d) asked whether wild brook trout water should be scored on its own terms, and the user answered "Yes, own
+terms" (2026-11-22). On 2026-11-23, about 01:05 ET, after seeing how much fish 60+ grows, the user answered "Install as
+is".
+
+- **Rule** (`scoring.py`: `BROOK_SCALE`, `brook_water()`; README, *Fish score*, size): on wild brook trout water the
+  size term reads the drainage 6 times over. Credit starts at 0.06 sq mi instead of 0.39 and is full from 3.2 sq mi
+  instead of 19. On a creek under 3.2 sq mi that adds 0.47 of the size term: +17 points x the water term x the trout
+  term's 1.2. Nothing scores lower, and other water is unchanged.
+- **Wild brook trout water** is a reach that either:
+  - lies in a designation that names wild brook trout. Every designation covering the reach counts, not only the label
+    the map shows: Trout Unlimited / EBTJV patches with brook trout, both classes of Vermont's brook trout waters,
+    Virginia wild trout streams listing brook trout, PFBC Class A brook or mixed brook/brown streams, the Smokies
+    park's segments with brook trout, and Wyoming trout streams with brook trout among their game fish;
+  - or had a survey find wild brook trout on the creek in the last 10 years, with no later survey finding none (CT
+    DEEP "Brook Trout, Wild", TWRA electrofishing and genetics collections, GA DNR samples; matched as `trout_found`
+    is).
+
+  These don't count: stocking, iNaturalist (it can't tell wild fish from stocked; it would add about 435 reaches), New
+  York's Wild-Quality class and Connecticut's Wild Trout Management Areas (no species named).
+- **The scale is measured, not chosen.** On all 12 maps, take the median drainage at the nearest reach of records of
+  other trout only, divided by the median at records of brook trout (stocking and lakes left out). Measured on the
+  reaches of the 0.1 sq mi floor:
+  - surveys: 31 against 4.6 km² (80 and 287 records), a ratio of 6.7;
+  - iNaturalist: 59 against 9.8 km² (1,120 and 423), a ratio of 6.0.
+
+  6 is the lower of the two, and one constant serves every area. Within single maps the ratio runs from 2 (Lexington)
+  to 13 (Vermont).
+- **Why 11_context, not the score step alone:** `trout_water` keeps one label per reach, and a state's stream line
+  wins over a broad patch. From the score step's columns only part of the brook trout water could be seen (ADK High
+  Peaks: 1,410 of 5,956 reaches). So:
+  - `troutdata.py` marks `wild_brook` in each source;
+  - `11_context.py` writes `brook_water` (a brook trout designation covering the reach, from all of them) and
+    `brook_found` (the latest year a survey found wild brook trout);
+  - `06_map.py` puts both in the reach table with `brook_size`, and the popup's Trout row names the brook trout
+    designation where another label came first. Example: "Trout water, NY class C(T) (NYSDEC) · Wild brook trout
+    patch (EBTJV / Trout Unlimited): brook trout with other trout";
+  - `fish_score_diagram.py` draws the brook trout size curve dashed.
+
+  Found on the way: a Trout Unlimited patch of brown and rainbow trout only was called a "Wild brook trout patch" (2
+  patches in ADK Southwest). It is now a "Wild trout patch ...: brown and rainbow trout, no brook trout".
+- **Measured in scratch** on combined-test's build of the four patches (#1, #2, #4, #5), on all 12 maps:
+  - 11_context ran offline on the last good copies of 2026-11-22 18:17;
+  - 06_map ran with the rule off and on;
+  - against that build, drawn lines, flow class, water term, trout factor and thermal term are identical on every
+    reach;
+  - with the rule off, the scores equal the build's on 11 maps. In LA 27 reaches differ in the burn term: that build
+    borrowed burn severity from the nearest reach, and the real 11_context computes it per reach.
+
+  | map | reaches | brook trout water | raised | raised 10+ | fish 60+ (reaches) | drawn mi at 60+ |
+  |---|---:|---:|---:|---:|---|---|
+  | Jackson | 12,129 | 3,369 | 1,932 | 1,353 | 7,722 → 8,071 | 3,612 → 3,858 |
+  | N Georgia | 19,978 | 821 | 791 | 617 | 7,508 → 7,660 | 3,558 → 3,637 |
+  | central Vermont | 13,897 | 7,466 | 6,715 | 4,819 | 5,164 → 7,580 | 2,291 → 3,541 |
+  | NE Connecticut | 5,454 | 2,809 | 2,545 | 1,765 | 2,159 → 3,006 | 907 → 1,338 |
+  | Lexington | 4,804 | 1,270 | 1,123 | 890 | 1,992 → 2,232 | 889 → 1,025 |
+  | Smokies | 15,625 | 3,627 | 3,282 | 2,241 | 6,288 → 6,864 | 2,786 → 3,076 |
+  | SE Pennsylvania | 5,996 | 1,797 | 1,480 | 1,157 | 2,087 → 2,762 | 896 → 1,259 |
+  | ADK High Peaks | 11,695 | 6,848 | 5,493 | 3,872 | 7,127 → 8,184 | 3,355 → 3,939 |
+  | ADK Northwest | 11,664 | 7,302 | 5,906 | 3,717 | 6,939 → 7,984 | 3,313 → 3,797 |
+  | ADK Southeast | 11,860 | 4,432 | 3,773 | 2,476 | 6,190 → 7,001 | 2,843 → 3,268 |
+  | ADK Southwest | 9,426 | 6,045 | 4,867 | 3,298 | 6,205 → 7,134 | 3,135 → 3,668 |
+  | LA | 18,798 | 0 | 0 | 0 | 3,061 → 3,061 | 1,264 → 1,264 |
+  | all 12 | 141,326 | 45,786 | 37,907 | 26,205 | 62,442 → 71,539 | 28,849 → 33,670 |
+
+  None is lowered, and none is raised off brook trout water. The raises come from:
+
+  | source | raised reaches |
+  |---|---:|
+  | Trout Unlimited patches | 31,557 |
+  | Vermont brook trout waters | 2,490 |
+  | Wyoming streams | 1,932 |
+  | Smokies park segments | 909 |
+  | Virginia streams | 840 |
+  | PFBC Class A | 22 |
+  | a survey alone | 157 |
+
+  635 raised reaches carry a line designation of a creek with another name: name variants, or confluences where a
+  line's label reaches the next creek, as trout labels already do. 45 of them newly reach 60+.
+- **Where the new 60+ reaches sit** (the question the user answered with "Install as is"):
+  - 9,097 reaches newly reach 60+. They are small creeks near roads: median 0.4 sq mi, 9 min approach.
+  - They score 60-79 (median 69) and are "ahead of" a median 53% of the reaches on their map. None reaches its map's
+    top tenth.
+  - 60 means less where brook trout water is half the map or more. Central Vermont and NE Connecticut go from 37-40%
+    of reaches at 60+ to 55%, and their top tenth starts at 87 instead of about 80. The ADK maps go from 52-66% to
+    59-76%. N Georgia and LA don't change.
+  - 60+ reaches that aren't brook trout water slip a median 5 points in "ahead of" (at most 18).
+- **Examples** (fish before → after):
+  - small creeks near roads: Crooked Brook, NE Connecticut (0.7 sq mi, 6 min), 59 → 75; Phelps Brook, High Peaks
+    (0.7 sq mi, 2 min), 58 → 74; Spring Creek, Jackson (1.2 sq mi, 2 min), 54 → 70; Law Ground Creek, N Georgia (1.0
+    sq mi, 2 min), 59 → 76; Cow Brook, central Vermont (0.4 sq mi, 14 min), 54 → 69; Long Branch, Smokies (0.5 sq mi,
+    1 min), 52 → 66;
+  - big remote water, still above them: Cold River, High Peaks (40 sq mi, about 3 h in), 100, ahead of 98% → 94%;
+    Hazel Creek, Smokies (about 7 h in), 100, 98% → 95%; Snake River, Jackson, 87, 79% → 75%.
+- **Checked on the project build** (dd31f7c, rebuilt from 03 on 2026-11-23 05:19 with the swamp fix, the borrowed
+  floor and the completeness additions; read-only): each map was re-scored through `06_map.py`'s own path, with
+  `BROOK_SCALE` 6 and 1.
+  - The rule-on scores equal the built maps on every reach.
+  - Brook trout water 45,706 reaches; raised 37,799 (26,272 by 10+); lowered 0; raised off brook trout water 0.
+  - Fish 60+ 62,428 → 71,595 reaches; drawn miles at 60+ 29,025 → 33,899.
+  - The examples read as in scratch.
+  - A "Snake River" braid near Jackson Lake, sized on its own 15.6 km² because it isn't marked a side channel, goes 86
+    → 97, level with the main channel beside it (95-97).
+- **Installed** 2026-11-23 03:27 ET as f24e043 on main, with the README part. It was rebuilt with all 12 maps from
+  03 (05:19, with the swamp fix, the borrowed floor and the completeness additions) and published 06:01 as site
+  9f6e867. The live High Peaks map names the brook trout patch under NY's class line on 2,291 reaches.
+- **Seen in passing, not changed:**
+  - `troutdata._vt` keeps catchments whose `trout_stat` contains "Trout", so "No Trout" catchments would pass (none
+    in the area today);
+  - on a phone, a reach's popup can open past the screen's right edge. The overview session took this as a page fix.
