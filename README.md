@@ -125,6 +125,10 @@ profiles). After a change to the hydrology, `./run_rebuild_a.sh <area>` redoes 0
 `run_late.sh` (`SKIP_03=1` starts at 03b, after a change to `03b_stitch.py` only: 03's surface stays as it is). `./phone_sync.sh` copies every area's maps to `phone/` with an index page.
 `data/validate_flow_areas.py` checks an area's flow table against its gauges. Logs go to `data/base_<area>.log`,
 `mid_<area>.log` and `late_<area>.log`. Run long builds under `caffeinate -i` (a sleeping Mac froze two downloads).
+Only one conditioning step (03, 03b) runs at a time across chains: `run_base.sh` and `run_rebuild_a.sh` take
+`data/.hydro.lock` (`scripts/hydrolock.sh`). A driver that is stopped (Ctrl-C, `kill`, a closed terminal) stops its step
+and lets the lock go; one killed with `kill -9` can't, and the next chain takes the lock over once that driver and its
+step are gone.
 OpenStreetMap downloads try `overpass.openstreetmap.fr` first and the main Overpass server second.
 
 **Network drops** (2026-11-22, after two drops stalled a 12-map rebuild for 90 and 47 minutes). Every download goes

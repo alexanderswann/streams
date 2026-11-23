@@ -8,10 +8,10 @@
 # (the later steps need its output; audit finding 10, 2026-11-22) and the chain goes on to the next area. An Overpass
 # outage alone doesn't stop one: 02_download_vectors.py keeps a range's last OSM files then.
 # Re-running is cheap: DEM tiles and NHD downloads already on disk are reused.
-# Only one conditioning step runs at a time across chains (pysheds needs several GB on a big box).
+# Only one conditioning step runs at a time across chains (pysheds needs several GB on a big box): hydrolock.sh.
 cd /Users/mac/Fishing/scripts
 PY=../.venv/bin/python
-LOCK=../data/.hydro.lock
+source ./hydrolock.sh      # locked(): the hydrology lock, let go however the driver ends (2026-11-23)
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
@@ -31,14 +31,6 @@ step() {   # step <range or ""> <script>   (area $a, log $LOG)
       echo "FAILED $a/${1:-all} $2 $(date +%H:%M:%S)" >> $LOG; return 1
     fi
   done
-}
-
-locked() {   # locked <range or ""> <script>: the step with the hydrology lock held, released whatever happens
-  local ok
-  until mkdir $LOCK 2>/dev/null; do sleep 5; done
-  step "$1" "$2"; ok=$?
-  rmdir $LOCK
-  return $ok
 }
 
 base() {

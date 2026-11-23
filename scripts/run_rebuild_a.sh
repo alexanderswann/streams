@@ -10,11 +10,11 @@
 # The reaches get new ids (they are numbered along the stream network), so every later step runs again.
 # A step that downloads and fails is run once more after a pause (NET_STEPS); a step that still fails stops that area,
 # its mid and late steps included (audit finding 10, 2026-11-22), and the chain goes on to the next area. One
-# conditioning step at a time across chains.
+# conditioning step at a time across chains (hydrolock.sh).
 # Afterwards: 13_overview.py, 14_portable.py, phone_sync.sh.
 cd /Users/mac/Fishing/scripts
 PY=../.venv/bin/python
-LOCK=../data/.hydro.lock
+source ./hydrolock.sh      # locked(): the hydrology lock, let go however the driver ends (2026-11-23)
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
@@ -34,14 +34,6 @@ step() {   # step <range or ""> <script>   (area $a, log $LOG)
       echo "FAILED $a/${1:-all} $2 $(date +%H:%M:%S)" >> $LOG; return 1
     fi
   done
-}
-
-locked() {   # locked <range or ""> <script>: the step with the hydrology lock held, released whatever happens
-  local ok
-  until mkdir $LOCK 2>/dev/null; do sleep 5; done
-  step "$1" "$2"; ok=$?
-  rmdir $LOCK
-  return $ok
 }
 
 routing() {
