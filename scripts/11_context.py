@@ -391,6 +391,25 @@ def cut_lines(s):
     line = pd.Series(s.sid.values, index=s.index)
     return line.where(s.cut_sid.isna(), s.cut_sid) if "cut_sid" in s else line
 
+KIND_WORDS = {"creek", "ck", "cr", "river", "r", "brook", "bk", "branch", "br", "run", "stream", "kill", "canyon", "cyn",
+              "wash", "the", "of", "to"}
+SHORT = {"n": "north", "s": "south", "e": "east", "w": "west", "m": "middle", "nb": "north", "sb": "south", "eb": "east",
+         "wb": "west", "mb": "middle", "nf": "north fork", "sf": "south fork", "ef": "east fork", "wf": "west fork",
+         "mf": "middle fork", "trib": "tributary", "unt": "tributary", "mt": "mount", "mtn": "mountain"}
+def water_words(n):
+    """A stream name's own words: not the ones that say what kind of stream it is, a state's site codes ("Guys Run,
+    10GUY-01T") or notes in brackets ("(rm 13.86 - modena)"); short forms written out ("Simpson Creek, NB")."""
+    n = re.sub(r"\(.*?\)|\[.*?\]", " ", ("" if pd.isna(n) else str(n)).lower().replace("'", ""))
+    n = " ".join(w for w in n.split() if not re.search(r"\d", w))
+    return sorted(set(" ".join(SHORT.get(w, w) for w in re.sub(r"[^a-z ]", " ", n).split()).split()) - KIND_WORDS)
+
+def same_water(a, b):
+    """True when two names are one stream's: the same own words in any order ("Bitch Creek, South" is South Bitch
+    Creek), or nearly the same letters ("Suga Creek"). "Camp Creek Trib" is not Camp Creek, nor "Little Toccoa Creek"
+    Toccoa Creek. False when either has no name."""
+    x, y = water_words(a), water_words(b)
+    return bool(x) and bool(y) and (x == y or difflib.SequenceMatcher(None, " ".join(x), " ".join(y)).ratio() >= 0.85)
+
 def trout_attrs(s):
     """Per reach: latest year trout were found (CDFW survey, stocking, iNaturalist), latest CDFW survey year that
     found none, latest year a survey found wild brook trout (brook_found), and a summary. Surveys and stocking count
@@ -679,10 +698,16 @@ def attrs(gdf, key, buf):
     out["crit_habitat"] = out[key].map(h.groupby(key).species.agg(lambda s: ", ".join(sorted(set(s)))))
     t = gpd.sjoin(g, trout[["Name", "Designation", "broad", "wild_brook", "geometry"]], predicate="intersects")
     t["label"] = (t.Designation + ": " + t.Name).str.replace(r": $", "", regex=True)
-    # one label per reach: a mapped stream's designation before a catchment-wide one, and of those the one that
-    # covers most of the reach (at a confluence the neighbouring river's line clips the reach too)
+    # one label per reach: a mapped stream's designation before a catchment-wide one, then the reach's own stream's by
+    # name (same_water), then the one that covers most of the reach. Only which label shows, here and in brook_water
+    # below: a reach keeps every water its buffer touches, so the score is the same. At a confluence the neighbouring
+    # stream's line clips the reach too, and a river's own line can come in short segments that each cover less of it
+    # than a tributary's or a misnamed one's (the Little River in the Smokies showed Brier Branch): 881 popups on the
+    # 12 maps named another stream (2026-11-22)
     t["cover"] = shapely.area(shapely.intersection(t.geometry.values, trout.geometry.reindex(t.index_right).values))
-    t = t.sort_values(["broad", "cover"], ascending=[True, False])
+    names = gdf["name"] if key == "sid" and "name" in gdf else pd.Series(None, index=gdf.index, dtype=object)
+    t["own"] = [same_water(a, b) for a, b in zip(names.reindex(t.index), t.Name)]
+    t = t.sort_values(["broad", "own", "cover"], ascending=[True, False, False])
     out["trout_water"] = out[key].map(t.groupby(key).label.first())
     # wild brook trout water, from any designation that covers the reach: a state's line (NY's class T, Georgia's
     # designated streams) is the label above and would hide the brook trout patch under it
