@@ -28,7 +28,7 @@ from config import REGIONS, ROOT, RES, CRS, SHARED_DERIVED, NATIONAL, derived_di
 
 D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
 CACHE = f"{SHARED_DERIVED}/inflows.json"
-VERSION = 22
+VERSION = 23
 MIN_KM2 = 0.1    # smaller basins draining off an edge or into a lake add nothing worth carrying
 OUTSIDE_FOLLOW_M = 15000   # a river entering from outside whose water the routing takes straight back out over the
                            # edge is handed over this far down its mapped line at most
@@ -515,6 +515,12 @@ def _build(regions):
                             {int(o): float(a) for o, a in zip(uo[sink], km2[sink])})
         n_moved += sum(tuple(moved[o]) != tuple(below[o]) for o in moved)
         moved.update({o: below[o] for o in at_top})
+        # a lake that passes its water on at its outlet (03b_stitch.py, since 2026-11-22) has no dead end and no link,
+        # but a river from outside the map that comes in through it goes in where the lake's water goes on (below)
+        for o, (tr_, tc_) in tops.items():
+            if o not in sinks:
+                orr, occ = divmod(int(o), W)
+                put_in[r].append((*(T * (occ + 0.5, orr + 0.5)), int(tr_), int(tc_)))
         for o, (row, col) in moved.items():
             links.append(((r, o), r, row, col, "pond" if o in pond_dead else "dam"))
             put_in[r].append((*sinks[o], int(row), int(col)))

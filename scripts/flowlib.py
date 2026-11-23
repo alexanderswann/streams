@@ -1,7 +1,7 @@
 """Shared helpers for the flow evidence (05b_flow.py, data/validate_flow.py)."""
 import os, json, numpy as np, pandas as pd, geopandas as gpd, pyogrio
 from shapely.geometry import box
-import shapely
+import shapely, shapely.ops
 from config import REGIONS, CRS, SHARED, SHARED_DERIVED, NATIONAL, AREA, has, derived_dir
 
 FLOW = f"{SHARED}/flow"
@@ -230,13 +230,21 @@ def as_drawn(wb, ll):
 
 
 def wet_lakes(wb, region):
-    """The index labels of the lakes in wb that hold water in this box: 03b_stitch.py ends the paths at the outlet of
-    every lake with 2+ ha of its outline at one level in the DEM (a pit, 254 in flowdir.tif); one without (a marsh or
-    meadow NHD maps as a pond, a dry basin) has none."""
+    """The index labels of the lakes in wb that hold water in this box: 03b_stitch.py routes every lake with 2+ ha of
+    its outline at one level in the DEM to an outlet, and lists each outlet cell ("wet" in lake_outlets.json); one
+    without (a marsh or meadow NHD maps as a pond, a dry basin) has none. A pit left in flowdir.tif (254: a closed lake,
+    or a build from before 03b listed them) counts too."""
     import rasterio
     with rasterio.open(f"{derived_dir(region)}/flowdir.tif") as src:
         rr, cc = np.nonzero(src.read(1) == 254)
-        xs, ys = src.transform * (cc + 0.5, rr + 0.5)
+        T_ = src.transform
+    p_ = f"{SHARED_DERIVED}/lake_outlets.json"
+    if os.path.exists(p_):
+        w_ = json.load(open(p_)).get("wet", {}).get(region, [])
+        if w_:
+            rr = np.r_[rr, [int(q[0]) for q in w_]]
+            cc = np.r_[cc, [int(q[1]) for q in w_]]
+    xs, ys = T_ * (cc + 0.5, rr + 0.5)
     if not len(wb) or not len(rr):
         return set()
     pits = gpd.GeoDataFrame(geometry=gpd.points_from_xy(xs, ys), crs=CRS)
@@ -258,6 +266,140 @@ def lake_water(region):
     if ll is not None:
         out += list(layer_counted(ll).geometry.values)
     return np.array([g for g in out if g is not None and not g.is_empty], dtype=object)
+
+
+END_M = 1.0        # cut_exact: a stretch shorter than this at either end of a line goes with its neighbour
+STUB_M = 40.0      # cut_at_shores: a stretch out of the water that never gets this far from the lake it leaves and
+SLIVER_M = 20.0    # comes back to, on a line lying mostly in it, or one under SLIVER_M between two stretches in the
+                   # water, stays with the water
+
+
+def drawn_water():
+    """The lake outlines the map draws (05d_lakes.py's lakes.gpkg, merged where they touch), in this area's CRS: the
+    lakes 06_map.py draws (a reach lying in one is drawn with the lake) and 05_score.py cuts the stream links at,
+    those a reach can lie in (counted_water) with the outlines of lake_water() none of them covers. An array of
+    polygons; empty where there is no lakes layer."""
+    ll = lakes_layer()
+    if ll is None or not len(ll):
+        return np.array([], dtype=object)
+    u = shapely.union_all(shapely.make_valid(ll.geometry.values))
+    return np.array([p for p in shapely.get_parts(u) if p.geom_type == "Polygon" and not p.is_empty], dtype=object)
+
+
+def counted_water(drawn, region):
+    """Of the drawn lake outlines (drawn_water()), those of the lakes a reach can lie in (lake_water(): NHD's lakes of
+    8 ha or more and the lakes layer's that count), each as the map draws it: an outline half or more of whose area
+    lies in that water. A pond under 8 ha is drawn but holds no reach of its own: the creek runs through it."""
+    if not len(drawn):
+        return drawn
+    lw = lake_water(region)
+    if not len(lw):
+        return drawn[:0]
+    u = shapely.union_all(lw)
+    keep = shapely.area(shapely.intersection(drawn, u)) >= 0.5 * shapely.area(drawn)
+    return drawn[keep]
+
+
+def cut_exact(lines, water, stub_m=STUB_M, sliver_m=SLIVER_M):
+    """Each line cut exactly where it crosses the shore of the water (an array of polygons, as drawn_water()):
+    (pieces, the number of the line each piece comes from, whether the piece lies in the water, its own point), in
+    order along each line, each piece in the line's own direction. A line the water doesn't touch stays whole. The own
+    point is the line's last vertex before the piece's end: a cell corner, the cell whose drainage the piece's lower
+    end has (for a whole line its second-to-last vertex, as 05_score.py has always measured a link; a piece ending at
+    a shore takes the vertex the cut segment starts from, though it may lie just before the piece). Two kinds of stretch
+    out of the water stay with the water they lie between, as the routing's straight path over flat water clipping a
+    shore or a headland: one that never gets stub_m from the lake it leaves and comes back to, on a line lying mostly
+    in that lake, and one under sliver_m. A stretch in the water under sliver_m between two out of it stays with the
+    creek (a line clipping a lake's corner). A stretch at either end of a line stays a piece, where a creek meets the
+    shore, unless it is under END_M."""
+    lines = np.asarray(lines, dtype=object)
+    pieces, src, wet, own = [], [], [], []
+    hit = {}
+    if len(water):
+        li, wi = shapely.STRtree(water).query(lines, predicate="intersects")
+        for i, w in zip(li.tolist(), wi.tolist()):
+            hit.setdefault(i, []).append(w)
+
+    def own_point(g, b_):
+        xy = np.asarray(g.coords)[:, :2]
+        cum = np.r_[0.0, np.cumsum(np.hypot(*np.diff(xy, axis=0).T))]
+        k = max(int(np.searchsorted(cum, b_ - 1e-6, side="left")) - 1, 0)
+        return tuple(xy[k])
+
+    for i, g in enumerate(lines):
+        if i not in hit or g is None or g.is_empty or g.length == 0:
+            pieces.append(g); src.append(i); wet.append(False)
+            own.append(tuple(g.coords[-2][:2]) if g is not None and len(g.coords) >= 2 else
+                       (tuple(g.coords[0][:2]) if g is not None and not g.is_empty else None))
+            continue
+        # the water as connected bodies: a stretch leaves and comes back to one lake only within one of them. NHD keeps
+        # a lake's basins as one outline where the lidar finds two (lake_water's as_drawn), and read per outline the
+        # channel between them stayed with the lake: Mill Brook's 116 m between an unnamed lake's two basins
+        # (adk_southeast, fish 83) and 0.4 mi more on the 12 maps went undrawn while Lakes is on (2026-11-23)
+        u = shapely.union_all(water[hit[i]])
+        polys = shapely.get_parts(u)
+        # where the line crosses the shore, by its distance along the line
+        x = shapely.intersection(g, u.boundary)
+        d = sorted({round(float(g.project(q)), 6) for q in shapely.get_parts(shapely.points(shapely.get_coordinates(x)))
+                    if 0 < g.project(q) < g.length})
+        cuts = [0.0] + d + [g.length]
+        runs = []                                          # [start, end, in the water]
+        for a_, b_ in zip(cuts[:-1], cuts[1:]):
+            if b_ - a_ <= 1e-6:
+                continue
+            inside = bool(u.contains(g.interpolate((a_ + b_) / 2)))
+            if runs and runs[-1][2] == inside:
+                runs[-1][1] = b_
+            else:
+                runs.append([a_, b_, inside])
+        # A stretch in the water under sliver_m between two stretches out of it is the line clipping a lake's corner or
+        # a cove, and stays with the creek: Waterfalls Canyon clipped Jackson Lake's outline for 0.5 m 56 m above its
+        # mouth, and its last 56 m came out a reach of its own, without the creek's trout water (and 210 pieces of 1 m
+        # or less on the 12 maps). A stretch under END_M at either end of a line goes with its neighbour.
+        if len(runs) > 1:
+            for k in range(1, len(runs) - 1):
+                if runs[k][2] and not runs[k - 1][2] and not runs[k + 1][2] and runs[k][1] - runs[k][0] < sliver_m:
+                    runs[k][2] = False
+            if runs[0][1] - runs[0][0] < END_M:
+                runs[0][2] = runs[1][2]
+            if runs[-1][1] - runs[-1][0] < END_M:
+                runs[-1][2] = runs[-2][2]
+            merged = []
+            for r_ in runs:
+                if merged and merged[-1][2] == r_[2]:
+                    merged[-1][1] = r_[1]
+                else:
+                    merged.append(list(r_))
+            runs = merged
+        if len(runs) > 2:
+            tot_in = sum(b_ - a_ for a_, b_, w_ in runs if w_)
+            for k in range(1, len(runs) - 1):
+                a_, b_, w_ = runs[k]
+                if w_ or not (runs[k - 1][2] and runs[k + 1][2]):
+                    continue
+                piece = shapely.ops.substring(g, a_, b_)
+                if b_ - a_ < sliver_m:
+                    runs[k][2] = True
+                    continue
+                ends = [shapely.Point(piece.coords[0]), shapely.Point(piece.coords[-1])]
+                same_lake = [p_ for p_ in polys if p_.boundary.distance(ends[0]) < 1.0 and p_.boundary.distance(ends[1]) < 1.0]
+                if same_lake and tot_in >= 0.5 * g.length:
+                    pts = shapely.points(shapely.get_coordinates(shapely.segmentize(piece, 5.0)))
+                    if shapely.distance(pts, same_lake[0]).max() < stub_m:
+                        runs[k][2] = True
+            merged = []
+            for r_ in runs:
+                if merged and merged[-1][2] == r_[2]:
+                    merged[-1][1] = r_[1]
+                else:
+                    merged.append(list(r_))
+            runs = merged
+        if len(runs) == 1:
+            pieces.append(g); src.append(i); wet.append(runs[0][2]); own.append(tuple(g.coords[-2][:2]))
+            continue
+        for a_, b_, w_ in runs:
+            pieces.append(shapely.ops.substring(g, a_, b_)); src.append(i); wet.append(w_); own.append(own_point(g, b_))
+    return pieces, src, wet, own
 
 
 def shore_cuts(inside, seglen, min_m=LAKE_PIECE_M):
@@ -408,9 +550,11 @@ def lake_water_km2(geom, carried, edge, in_lake):
 
 
 def carried_lake_km2(region):
-    """Drainage area (km2) that crossbox.py carries to each cell of `region`'s grid past a lake or a dam, as a flat array:
-    carried_km2 less what comes in across a box edge without passing one, cell by cell; 05c_drainages.py's
-    area_full_km2 - area_edge_km2 on a reach (lake_water_km2's `carried`). Under 0.01 km2 counts as none."""
+    """Drainage area (km2) that comes to each cell of `region`'s grid through a lake or past a dam, as a flat array:
+    crossbox.py's carried_km2 less what comes in across a box edge without passing one, cell by cell, and the water
+    that came through the outlets of the lakes that pass it on there (03b_stitch.py's held_km2.tif, band 1, since
+    2026-11-23: crossbox.py carries those no more); 05c_drainages.py's area_full_km2 - area_edge_km2 on a reach
+    (lake_water_km2's `carried`). Under 0.01 km2 counts as none."""
     import rasterio, crossbox
     with rasterio.open(crossbox.fdir_path(region)) as src:
         fd = src.read(1)
@@ -425,6 +569,10 @@ def carried_lake_km2(region):
                 if nxt[i] == i:
                     break
                 i = nxt[i]
+    held = f"{derived_dir(region)}/held_km2.tif"
+    if os.path.exists(held):
+        with rasterio.open(held) as src:
+            ex += src.read(1).ravel().astype(np.float64)
     return np.where(ex >= 0.01, ex, 0.0)
 
 

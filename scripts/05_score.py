@@ -13,10 +13,17 @@ import areaclip
 MAP_MIN_KM2 = 1.0   # draw every channel draining >= 1 km^2 ...
                     # ... and down to STREAM_KM2 (config.py: 03b_stitch.py's channel start) where NHD maps the creek
                     # year-round or names it
+OUTFLOW_MIN_KM2 = 0.25   # ... and a lake's outflow down to the first creek it meets, from this much water through the lake
 
 dem_src = rasterio.open(f"{RAW}/dem_10m.tif")
 dem = dem_src.read(1)
 area = rasterio.open(f"{DERIVED}/area_km2.tif").read(1)
+# The water behind lakes' outlets (03b_stitch.py, since 2026-11-22 it runs on at the outlet: area_km2.tif counts it).
+# A reach's area_km2 stays its own ground below the lakes, as before; its full drainage counts the lakes' water too
+# (05c_drainages.py's area_full_km2), and the size floor below goes by that.
+held = (rasterio.open(f"{DERIVED}/held_km2.tif").read(1) if os.path.exists(f"{DERIVED}/held_km2.tif")
+        else np.zeros_like(area))
+area_own = area - held
 strahler = rasterio.open(f"{DERIVED}/strahler.tif").read(1)
 inv = ~dem_src.transform
 def sample(arr, geoms):
@@ -37,13 +44,41 @@ streams = gpd.read_file(f"{DERIVED}/dem_streams.gpkg")
 # 0.25 km2 of that box's own had gathered (2026-11-23: a lead-in from outside ran to its box's rim and stopped, Still
 # Brook in central Vermont and a creek into the Smokies' le_conte box; 5 such crossings on the 12 maps, 3 of them in
 # Lake Champlain, where a lead-in stops).
+# So is the way on from a lake that still ends its water in a pit at its outlet (03b_stitch.py: no outflow line in
+# NHD, one the terrain refuses, a way out leading back), where crossbox.py puts the lake's water in below it ("dam", and
+# "pond" for a pond NHDPlus has no line for): 06_map.py drew those through too.
 import crossbox
 _leads = crossbox.lead_ins(REGION, streams.geometry,
                            [e for e in crossbox.inflows(REGION, through_dams=True)
-                            if e[3] == "outside" or (e[4] == "edge" and e[2] >= STREAM_KM2)])
-print(f"lines from where a river from outside the map, or water carried across a box edge, goes in to its first "
-      f"link: {len(_leads)}, {sum(g.length for g in _leads) / 1000:.1f} km")
+                            if e[3] == "outside" or (e[4] == "edge" and e[2] >= STREAM_KM2) or e[4] in ("dam", "pond")])
+print(f"lines from where a river from outside the map, water carried across a box edge or a lake's pit goes in to its "
+      f"first link: {len(_leads)}, {sum(g.length for g in _leads) / 1000:.1f} km")
 streams = pd.concat([streams, gpd.GeoDataFrame(geometry=_leads, crs=CRS)], ignore_index=True)
+# A lake that passes its water on at its outlet (03b_stitch.py's "wet" outlets, since 2026-11-23) used to end its links
+# there in a pit; a link now runs on through it. Each link is cut at the outlet's corner, so every rule below judges the
+# links as the pits ended them: the size floor on the water at a link's end, the sea test on its own share of sea-level
+# cells (run on from the Tinicum impoundment's outlet into the Delaware's tidal flats, a link was 68 % sea and was dropped
+# whole, with the 515 m of creek above the outlet), the names, and the drainages, which 05c_drainages.py still ends at the
+# outlets (run on past Upper Ausable Lake's outlet, 600 m past its drawn shore, the link's last 612 m went with the
+# creek below, and the lake's basin took its name from Stillwater Inlet). The piece above an outlet takes the cell
+# before it as its own, as the link did.
+_lo_w = f"{SHARED_DERIVED}/lake_outlets.json"
+_wet_o = ({(int(q[0]), int(q[1])) for q in json.load(open(_lo_w)).get("wet", {}).get(REGION, [])}
+          if os.path.exists(_lo_w) else set())
+if _wet_o:
+    _lines, _n_out = [], 0
+    for g_ in streams.geometry.values:
+        v_ = np.asarray(g_.coords)[:, :2]
+        cc_, rr_ = inv * (v_[:, 0], v_[:, 1])
+        at_ = [i for i in range(1, len(v_) - 1) if (int(np.rint(rr_[i])), int(np.rint(cc_[i]))) in _wet_o]
+        last_ = 0
+        for i in at_:
+            _lines.append(shapely.LineString(v_[last_:i + 1]))
+            last_ = i
+            _n_out += 1
+        _lines.append(shapely.LineString(v_[last_:]) if at_ else g_)
+    streams = gpd.GeoDataFrame(geometry=_lines, crs=CRS)
+    print(f"links cut at the outlets of lakes that pass their water on: {_n_out}")
 nhd = gpd.read_file(f"{RAW}/nhd_flowlines.gpkg")
 nhd_pts = gpd.read_file(f"{RAW}/nhd_points.gpkg")
 roads = gpd.read_file(f"{RAW}/osm_roads.gpkg")
@@ -108,7 +143,7 @@ own_end = gpd.GeoSeries([shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g
                         index=s.index, crs=CRS)
 starts = gpd.GeoSeries([shapely.Point(g.coords[0]) for g in s.geometry], index=s.index, crs=CRS)
 mid = gpd.GeoSeries([vert(g, 0.5) for g in s.geometry], index=s.index, crs=CRS)
-s["area_km2"] = sample(area, own_end).round(2)
+s["area_km2"] = sample(area_own, own_end).round(2)
 # The floor counts the water that reaches a link from elsewhere, as the reaches' areas do (05c_drainages.py's
 # area_full_km2, from crossbox.py): over a dam, past a pond, in from outside the map. A lake ends its D8 paths at its
 # outlet (03b_stitch.py), so the creek below starts again near nothing, and on its own area alone its links stayed
@@ -246,7 +281,14 @@ from flowlib import lakes_layer
 _ll = lakes_layer()
 _floor_lakes = ((np.array([], dtype=object), np.array([], dtype=bool)) if _ll is None else
                 (np.array(_ll.geometry.values, dtype=object), _ll.intermittent.fillna(False).astype(bool).values))
-full0 = s.area_km2 + carried
+# A link's water is all that reaches it: its own ground, the water behind lakes' outlets (03b_stitch.py: since
+# 2026-11-23 a lake taken to NHD's outlet passes its water on there, area_km2.tif counts it and held_km2.tif marks it),
+# and what crossbox.py carries from elsewhere. A lake's outflow is drawn down to the first creek it meets once
+# OUTFLOW_MIN_KM2 or more comes through the lake (or from elsewhere), as 06_map.py's draw_through drew it from 2026-11-19
+# (below 77 ponds and dams on the 12 maps, 23 mi, a pond's 0.5 km2 outlet creek drawn with the values of the creek it
+# joins: Beaver Brook below Beaver Brook Pond as a 10.6 km2 creek, fish 76); now as reaches with their own values.
+full0 = pd.Series(sample(area, own_end).round(2), index=s.index) + carried
+through_ = sample(held, own_end) + carried
 base = (sea < 0.5) & areaclip.inside(s.geometry.values)
 _f, _g = full0.to_numpy(float), s.geometry.values
 small = ((full0 < MAP_MIN_KM2) & (full0 >= STREAM_KM2) & base).to_numpy()
@@ -254,7 +296,8 @@ _big = np.flatnonzero((full0 >= MAP_MIN_KM2).to_numpy() & base)
 by_nhd = np.zeros(len(s), bool)
 if small.any():
     by_nhd[small] = nhd_keeps(_g[small], _f[small], floor_lines(nhd), _g[_big], _f[_big], _floor_lakes)
-keep = ((full0 >= MAP_MIN_KM2) | by_nhd) & base
+keep = ((full0 >= MAP_MIN_KM2) | by_nhd | (through_ >= OUTFLOW_MIN_KM2)) & base
+by_outflow = (keep & (full0 < MAP_MIN_KM2)).to_numpy() & ~by_nhd
 # A creek kept goes on downstream until it meets a kept line: NHD's class changes along a creek, and the vote with it, so
 # a creek kept on its NHD evidence could end in the woods where NHD calls it intermittent (14 such ends in NE Connecticut
 # on the first try). Across an edge two boxes share, the link that ends on it in the next box is judged here with the
@@ -307,11 +350,51 @@ by_down = _kp & ~keep.to_numpy()
 keep = pd.Series(_kp, index=s.index)
 by_carried = keep & (s.area_km2 < MAP_MIN_KM2) & (full0 >= MAP_MIN_KM2)
 by_nhd &= keep.to_numpy()
+# A lake that passes its water on at its outlet (03b_stitch.py, since 2026-11-23) sends it on from the outlet cell, and
+# where the creek passes right below that cell the outlet drains straight into it: a junction the creek didn't have
+# while the outlet was a pit (the line laid below an outlet, outflow_streams, starts at that cell and so added none),
+# so the creek's link above it can end under the floor though the creek was drawn before (645 m of a 0.57 km2 creek
+# beside a pond in the Buffalo Fork box). A link that runs into such a junction (it and a lake's way whose last cell
+# before it is the outlet, nothing else) is kept with the link it continues there, as the floor had the two as one link.
+# Where the way out runs on for a cell or more first, the line below the outlet met the creek before too, and nothing
+# changes (counting those too kept 41 mi of creek no map drew, in the first try).
+_lo_ = f"{SHARED_DERIVED}/lake_outlets.json"
+_wet = ({(int(q[0]), int(q[1])) for q in json.load(open(_lo_)).get("wet", {}).get(REGION, [])}
+        if os.path.exists(_lo_) else set())
+by_joint = np.zeros(len(s), bool)
+if _wet:
+    _ends = defaultdict(list)
+    for i, ln in enumerate(_g):
+        _ends[_key(ln.coords[-1])].append(i)
+    def _through_outlet(i):
+        v = np.asarray(_g[i].coords)[:, :2]
+        if len(v) < 2:
+            return False
+        cc_, rr_ = inv * (v[-2, 0], v[-2, 1])
+        return (int(np.rint(rr_)), int(np.rint(cc_))) in _wet
+    _kp = keep.to_numpy().copy()
+    for _ in range(5):
+        more = 0
+        for J, ins in _ends.items():
+            nxt = _starts.get(J, [])
+            if len(ins) != 2 or len(nxt) != 1 or not _kp[nxt[0]]:
+                continue
+            for i, j in (ins, ins[::-1]):
+                if not _kp[i] and base[i] and _through_outlet(j):
+                    _kp[i] = by_joint[i] = True
+                    more += 1
+        if not more:
+            break
+    keep = pd.Series(_kp, index=s.index)
+print(f"links kept with the creek they continue, at a junction a lake's way out makes beside them: {int(by_joint.sum())}, "
+      f"{s.length[by_joint].sum() / 1000:.1f} km")
 print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reaches them from elsewhere (below a lake's "
       f"outlet, in from outside the map): {int(by_carried.sum())}, {s.length[by_carried].sum() / 1000:.1f} km; "
       f"{STREAM_KM2:g}-{MAP_MIN_KM2:g} km2 kept as NHD maps them year-round or names them: {int(by_nhd.sum())}, "
       f"{s.length[by_nhd].sum() / 1000:.1f} km; below a kept creek: {int(by_down.sum())}, "
-      f"{s.length[by_down].sum() / 1000:.1f} km ({len(set(_seam))} on from a creek kept in the next box)")
+      f"{s.length[by_down].sum() / 1000:.1f} km ({len(set(_seam))} on from a creek kept in the next box); "
+      f"lake outflows on {OUTFLOW_MIN_KM2:g} km2 or more through the lake: {int(by_outflow.sum())}, "
+      f"{s.length[by_outflow].sum() / 1000:.1f} km")
 # A lake's second outlets (03b_stitch.py's "sides" in lake_outlets.json: the lake's other NHD outflow lines the terrain
 # takes the water on down, by the outlet's own test). D8 sends the lake's water down its outlet, so the cells below a
 # second outlet gather only their own few: its links stayed under the floor and the maps had no line there, or drew
@@ -399,13 +482,35 @@ s = s[keep].copy()
 # in a lake when half its length does, and the whole link took the lake's class or the creek's: Taggart Creek's last
 # 161 m above Taggart Lake scored as lake (fish 29 against 99 above), 710 m of Indian Creek above Palisades Reservoir
 # too, and over the 12 maps 352 km of creek read as lake and 339 km of lake water as creek (2026-11-21). Each link is
-# now cut at the shores of the lakes a reach can lie in (flowlib.lake_water: the outlines 05b_flow.py reads, from
-# 05d_lakes.py, which run_mid.sh runs before this step), so every reach is creek or lake. A stretch under
-# LAKE_PIECE_M on one side of a shore stays with its neighbour (a line clipping a point or a cove). A piece keeps its
-# link's place on the map (the floor above is the link's), and is measured on its own cells like any link.
-from flowlib import lake_water, cut_at_shores, cut_below_lakes, carried_lake_km2, lake_water_km2, LAKE_NEAR_M
+# now cut at the shores of the lakes the map draws (flowlib.drawn_water: 05d_lakes.py's lakes layer, which run_mid.sh
+# runs before this step) where they are the lakes a reach can lie in (flowlib.lake_water: the outlines 05b_flow.py
+# reads), exactly where the line crosses the shore, so every reach is creek or lake and the map draws each reach as it
+# is: one lying in a lake (in_lake) with the lake, the others as streams. The outlines 05b reads that no drawn lake
+# covers cut the links too (an NHD lake of 8 ha or more the lakes layer leaves out or draws smaller, from a source
+# other than the lidar): cut only at the drawn shores, a link lying half in one read "reservoir" whole (a Mettawee
+# River tributary's 0.3 mi above an unnamed 30 ha NHD pond, fish 58 -> 20) and one under half in it read creek whole
+# (2026-11-23). A reach lying in such a lake is drawn as a stream, as the map draws no lake there (_in_drawn below).
+# Until 2026-11-23 the cut was at lake_water's
+# outlines, at the nearest vertex and with a 50 m tolerance, and 06_map.py clipped every line again at the lakes it
+# draws, from 1.2 acres: 470 mi of creek lay in drawn ponds the cut didn't see, 6,290 reaches were drawn shorter than
+# their table, 1,133 pieces took another reach's values. A stretch out of the water that hugs the shore of the lake it
+# leaves and comes back to (the routing's straight path over flat water clipping a shore or a headland), or one under
+# 20 m between two stretches in the water, stays with the lake (flowlib.cut_exact). A piece keeps its link's place on
+# the map (the floor above is the link's), and is measured on its own cells like any link.
+from flowlib import (drawn_water, counted_water, cut_exact, lake_water, cut_below_lakes, carried_lake_km2,
+                     lake_water_km2, LAKE_NEAR_M)
 _lakes = lake_water(REGION)
-_pieces, _src, _wet = cut_at_shores(s.geometry.values, _lakes)
+_drawn = drawn_water()
+_counted = counted_water(_drawn, REGION)
+_links_geom = s.geometry.values          # the links as kept, for the NHD vote of a piece whose own vote fails (below)
+_pieces, _src, _wet, _own_xy = cut_exact(s.geometry.values, np.concatenate([_counted, _lakes]))
+_in_drawn = np.zeros(len(_pieces), bool)  # a piece in the water lying half or more in a lake the map draws
+if len(_counted):
+    _ct = shapely.STRtree(_counted)
+    for i in np.flatnonzero(np.asarray(_wet, bool)):
+        c_ = _ct.query(_pieces[i], predicate="intersects")
+        _in_drawn[i] = bool(len(c_)) and (shapely.union_all(_counted[c_]).intersection(_pieces[i]).length
+                                          >= 0.5 * _pieces[i].length)
 print(f"links cut at lake shores: {len(_pieces) - len(s)} cuts on {int((pd.Series(_src).value_counts() > 1).sum())} "
       f"of {len(s)} links")
 # The first LAKE_NEAR_M (200 m, 650 ft) below a lake is a reach of its own (flowlib.cut_below_lakes). A lake's outlet
@@ -424,7 +529,7 @@ print(f"links cut at lake shores: {len(_pieces) - len(s)} cuts on {int((pd.Serie
 # its dam "year-round" -> "seasonal"). Everything else is measured on each piece's own cells, like any link.
 from watertemp import lake_share
 _shore = np.array(_pieces, dtype=object)
-_own = [shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g.coords[0]) for g in _shore]
+_own = [shapely.Point(q) for q in _own_xy]      # each piece's own cell (cut_exact: a piece cut at a shore can end off the grid)
 _full = sample(area, _own) + sample(carried_grid, _own)
 _carried_lake = sample(carried_lake_km2(REGION).reshape(area.shape), _own)
 _lake_km2 = np.minimum(lake_water_km2(_shore, _carried_lake, _full - _carried_lake, _wet), _full)
@@ -433,18 +538,35 @@ def _mostly_lake(ii, pts):     # the line's lake water (it takes none on along t
     return np.nan_to_num(lake_share(full - np.minimum(_lake_km2[ii], full), full), nan=0.0) >= 0.5
 _pieces, _from, _wet = cut_below_lakes(_shore, _lake_km2, _wet, _lakes, keep=_mostly_lake)
 _from = np.asarray(_from, int)
+_in_drawn = _in_drawn[_from]
 _src = [_src[k] for k in _from]
 _cut = pd.Series(_from).duplicated(keep=False).to_numpy()          # both pieces of a line cut below a lake
 _first = pd.Series(_from).duplicated(keep="last").to_numpy()       # the upper one
+# each piece's own cell, where its drainage is read: the lower piece of a line cut below a lake ends where the line did,
+# the upper one at a vertex of the line, its own cell the vertex before it
+_own_xy = [tuple(g.coords[-2][:2]) if f_ else tuple(_own_xy[k]) for k, f_, g in zip(_from, _first, _pieces)]
 s = gpd.GeoDataFrame(s.drop(columns="geometry").iloc[_src].reset_index(drop=True), geometry=_pieces, crs=CRS)
-own_end = gpd.GeoSeries([shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g.coords[0]) for g in s.geometry],
-                        index=s.index, crs=CRS)
+# the link each piece was cut from (at the shores of the lakes the map draws, at opened outlets, 200 m below a lake):
+# 11_context.py reads the designated trout waters on all of a creek's pieces at once (creek_lines), as on the link
+s["link_id"] = [f"{REGION}:k{int(k)}" for k in _src]
+own_end = gpd.GeoSeries([shapely.Point(q) for q in _own_xy], index=s.index, crs=CRS)
+s["own_x"], s["own_y"] = np.round([q[0] for q in _own_xy], 2), np.round([q[1] for q in _own_xy], 2)   # for 05c_drainages.py
 starts = gpd.GeoSeries([shapely.Point(g.coords[0]) for g in s.geometry], index=s.index, crs=CRS)
 mid = gpd.GeoSeries([vert(g, 0.5) for g in s.geometry], index=s.index, crs=CRS)
-s["area_km2"] = sample(area, own_end).round(2)
+s["area_km2"] = sample(area_own, own_end).round(2)
 # each piece's drainage with the water that reaches it from elsewhere (the floor's `carried`, on the piece's own cells)
-full_km2 = s["area_km2"].to_numpy(float) + sample(carried_grid, own_end)
+full_km2 = sample(area, own_end).astype(float) + sample(carried_grid, own_end)
 in_water = np.array(_wet, bool)
+s["in_lake"] = in_water
+# The pieces the map draws: each reach cut again at the shores of every lake the map draws, ponds under 8 ha too. A
+# creek runs through such a pond as one reach, with its own values; the stretch in the pond is drawn with the lake
+# (shown while the Lakes layer is off), as the stretches of a reach lying in a lake are; a reach lying in a lake the
+# map doesn't draw is drawn as a stream. 06_map.py draws these pieces and nothing else: len_drawn_m is how much of
+# the reach it draws while Lakes is on.
+_dpieces, _dsrc, _dwet, _ = cut_exact(s.geometry.values, _drawn)
+_dwet = np.array(_dwet, bool) | _in_drawn[np.asarray(_dsrc, int)]
+s["len_drawn_m"] = (pd.Series([0.0 if w_ else g_.length for g_, w_ in zip(_dpieces, _dwet)]).groupby(np.asarray(_dsrc)).sum()
+                    .reindex(range(len(s))).fillna(0.0).round(0).values)
 s["order"] = sample(strahler, mid)
 s["elev_m"] = sample(dem, mid).round(0)
 s["len_m"] = s.length.round(0)
@@ -470,6 +592,20 @@ if _cut.any():           # the two pieces of a line cut below a lake keep the li
     _lp = [gpd.GeoDataFrame(geometry=[vert(g, f) for g in _shore[_from[_cut]]], index=s.index[_cut], crs=CRS)
            for f in (0.25, 0.5, 0.75)]
     s.loc[_cut, "flow"] = vote(nhd_k, "flow", pts=_lp).fillna("unmapped").values
+# ... and a creek piece cut from a link at the shores of the lakes the map draws, or at an opened outlet, whose own vote
+# fails (no two of its 25/50/75 % vertices agree) takes its link's: in the Stowe box a 0.4 km2 brook's first 25 m were cut
+# off at a pond's drawn shore, the 679 m creek piece's vote failed where the link's held ("perennial"), and it read
+# "usually flows" for "year-round". Only a failed vote is filled, so no piece reads wetter, or takes another name, than
+# NHD's lines along its link give.
+_need = ~s["in_lake"].astype(bool).to_numpy() & (s["flow"].eq("unmapped").to_numpy() | s["name"].isna().to_numpy())
+if _need.any():
+    _lpts = vertices3([_links_geom[k] for k in np.asarray(_src)[_need]], s.index[_need])
+    _lf, _ln = vote(nhd_k, "flow", pts=_lpts), vote(nhd_k, "gnis_name", pts=_lpts)
+    _ff = s.loc[_need, "flow"].eq("unmapped") & _lf.notna()
+    _fn = s.loc[_need, "name"].isna() & _ln.notna()
+    s.loc[_ff[_ff].index, "flow"] = _lf[_ff]
+    s.loc[_fn[_fn].index, "name"] = _ln[_fn]
+    print(f"creek pieces whose own NHD vote failed, given their link's: class {int(_ff.sum())}, name {int(_fn.sum())}")
 osm_wp = f"{RAW}/osm_waterways.gpkg"    # OSM named rivers and streams, cached a week
 if not os.path.exists(osm_wp) or time.time() - os.path.getmtime(osm_wp) > 7 * 86400:
     from geomatch import overpass
@@ -782,6 +918,8 @@ s_out.sort_values("fish_score", ascending=False)[
     ["sid", "region", "name", "flow", "fish_score", "area_km2", "order", "elev_m", "gradient_pct", "len_m", "road_m", "trail_m", "lat", "lon"]
 ].to_csv(f"{os_}/stream_reaches_ranked.csv", index=False)
 s_ll.to_file(f"{os_}/streams_scored.gpkg")
+gpd.GeoDataFrame({"sid": s_ll.sid.values[np.asarray(_dsrc, int)], "wet": _dwet}, geometry=list(_dpieces), crs=CRS).to_crs(4326) \
+    .to_file(f"{os_}/drawn_pieces.gpkg")
 kp_ll.drop(columns=["top_idx", "base_idx"]).to_file(f"{os_}/waterfall_candidates.gpkg")
 
 # light copies of trails + mapped falls for the combined map

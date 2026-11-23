@@ -84,6 +84,32 @@ with rasterio.open(f"{DERIVED}/area_km2.tif") as src:
     a = src.read(1).ravel()
 H, W = fdir.shape
 N = H * W
+# Since 2026-11-22 a lake taken to NHD's outlet passes its water on there (03b_stitch.py, step d): area_km2.tif counts the
+# water behind it, and held_km2.tif says how much of each cell's area came through such an outlet (band 1) and through
+# one of a pond NHDPlus has no line for (band 2). The drainages still end at those outlets, as they did when each was
+# a pit: here the outlets are pits again (lake_outlets.json, "wet") and `a` is the area without the water behind them;
+# a lake basin with no name of its own joins the drainage below by the cell its water goes on from (below, `links`).
+held_all = held_pond = np.zeros(N, np.float32)
+if os.path.exists(f"{DERIVED}/held_km2.tif"):
+    with rasterio.open(f"{DERIVED}/held_km2.tif") as src:
+        held_all, held_pond = src.read(1).ravel(), src.read(2).ravel()
+a = a - held_all
+lake_tops = {}                                  # outlet cell -> the first cell of its way out (flat indices)
+lake_ponds = set()                              # ... of them the ponds NHDPlus has no line for
+_lo = f"{SHARED_DERIVED}/lake_outlets.json"
+if os.path.exists(_lo):
+    import json as _json
+    _j = _json.load(open(_lo))
+    _open = {(int(q[0]), int(q[1])) for q in _j.get("wet", {}).get(REGION, [])}
+    _pond = {(int(q[0]), int(q[1])) for q in _j.get("wet", {}).get(REGION, []) if len(q) > 2 and q[2]}
+    for pr_, pc_, tr_, tc_ in _j.get("tops", {}).get(REGION, []):
+        if (int(pr_), int(pc_)) in _open:
+            lake_tops[int(pr_) * W + int(pc_)] = int(tr_) * W + int(tc_)
+            if (int(pr_), int(pc_)) in _pond:
+                lake_ponds.add(int(pr_) * W + int(pc_))
+    if lake_tops:
+        fdir = fdir.copy()
+        fdir.flat[np.fromiter(lake_tops.keys(), np.int64, len(lake_tops))] = 254
 idx = np.arange(N, dtype=np.int32)
 nxt, outlet = graph(fdir)   # downstream neighbour and outlet of every cell (flat index)
 with rasterio.open(f"{RAW}/dem_10m.tif") as src:
@@ -114,14 +140,19 @@ if sea.any():                                             # SEA_M above: paths e
 basin_km2 = pd.Series(np.bincount(outlet, minlength=N)[np.unique(outlet)] * RES * RES / 1e6, index=np.unique(outlet))
 basin_km2 = np.maximum(basin_km2, a[basin_km2.index.values].astype(float))
 
-def along(entries):
-    """Drainage area that reaches each cell from elsewhere: every entry's area, added all the way down its D8 path."""
+def along(entries, through=None):
+    """Drainage area that reaches each cell from elsewhere: every entry's area, added all the way down its D8 path;
+    on past the outlets in `through` (lakes that pass their water on, which are pits here for the drainages)."""
     ex = np.zeros(N, np.float32)
+    through = through or {}
     for row, col, km2, *_ in entries:
         i = row * W + col
-        while True:
+        for _ in range(N):
             ex[i] += km2
             if nxt[i] == i:
+                if i in through:
+                    i = through[i]
+                    continue
                 break
             i = nxt[i]
     return ex
@@ -137,13 +168,13 @@ for row, col, km2, *_ in inflow:
 a += extra_edge
 # The same plus the area above any reservoir upstream, carried past its dam: the routing ends every path in a big
 # flat lake, so the creek below a dam started again near nothing. For the reaches' areas (area_streams.csv) only.
-extra_full = along(inflows(REGION, through_dams=True))
+extra_full = along(inflows(REGION, through_dams=True), lake_tops)
 # The forks, the promoted tributaries and the drainage names are picked on the area carried past dams but not past the
 # ponds NHDPlus has no flowline for (crossbox carries those since 2026-11-20, for the reaches' areas): with them, near-equal
 # arms tipped the other way and the trunk left the named river (the Soquee, 414 km2, over the upper Chattahoochee,
 # 402, which came out as a fork named "Chickamauga Creek"). Which arm a drainage's trunk follows is decided by names
 # another day; until then the drainages and forks stay as they were.
-extra_lab = along(inflows(REGION, through_dams=True, ponds=False))
+extra_lab = along(inflows(REGION, through_dams=True, ponds=False), {o_: t_ for o_, t_ in lake_tops.items() if o_ not in lake_ponds})
 if inflow:
     print(f"inflow from neighbouring boxes: {len(inflow)} creeks, {sum(e[2] for e in inflow):.0f} km2")
 basin_km2 = basin_km2[~sea[basin_km2.index.values]]       # a sea cell is no basin (the area raster runs on across it)
@@ -156,7 +187,7 @@ major = basin_km2[(basin_km2 >= MAJOR_KM2) | (mouth[basin_km2.index.values] & (b
 # The arms are compared on the full drainage, with the water from above dams: below a dam the river's own count
 # starts again (drainages end at dams), and on that count the Chattahoochee below Buford Dam was the smaller arm at
 # its first side creek.
-a_full = a - extra_edge + extra_lab
+a_full = a - extra_edge + extra_lab + (held_all - held_pond)    # (the water through lakes' outlets, not ponds')
 ends = (a_full[nxt] - a_full) > a_full
 big_basins = major.index[major >= SPLIT_KM2].values
 cand = np.flatnonzero(ends & (a_full >= FORK_KM2) & np.isin(outlet, big_basins))
@@ -375,9 +406,6 @@ def reach_cell(g):
     return (r0 + i) * W + c0 + j
 cells = np.array([reach_cell(g) for g in streams.geometry])
 streams["outlet"], streams["unit"], streams["root"] = outlet[cells], unit[cells], root[cells]
-# Strahler order on the channel cell itself (05_score samples the middle vertex, which can sit beside the channel)
-with rasterio.open(f"{DERIVED}/strahler.tif") as src:
-    streams["strahler"] = src.read(1).ravel()[cells]
 
 def candidates(sub, share=0.5):
     """Names for a drainage/fork, best first: natural named reaches near its bottom (>= share of the biggest named
@@ -441,6 +469,7 @@ uname = {u: FORK_FIX.get((REGION, dname[int(root[u])], n), n) for u, n in uname.
 # unnamed basin that leaves the box, it joins that one, for 06_map.py to carry into the next box. Lakes with no
 # outflow stay as they were. Done after the forks are named, so no fork's name changes.
 links = {o_: r_ * W + c_ for o_, (r_, c_) in dam_links(REGION).items()}
+links.update(lake_tops)
 named_root = {o_ for o_, n in dname.items() if n}
 
 def pond_links(have):
@@ -543,18 +572,61 @@ streams["out_x"], streams["out_y"] = exit_points(fdir, T, o_eff)
 inside = streams.root.values != o_eff
 streams.loc[inside, ["out_x", "out_y"]] = np.nan
 streams["basin_km2"] = basin_km2.reindex(o).values.round(2)
-streams[["sid", "drainage", "fork", "strahler", "out_x", "out_y", "basin_km2"]].to_csv(f"{OUT}/stream_drainage.csv",
-                                                                                     index=False)
 
 # Each reach's drainage area with the water that reaches it from neighbouring boxes (edge: 05b_flow.py scales the
 # modelled flow with it) and also over dams (full: the fish score's creek size), added where 05_score.py measured
 # area_km2: the link's second-to-last vertex, a cell corner (snapped back to the 10 m grid after the lat/lon trip).
-end = np.array([g.coords[-2] if len(g.coords) >= 2 else g.coords[0] for g in streams.geometry])
+if {"own_x", "own_y"} <= set(streams.columns):     # 05_score.py's own point (a piece cut at a shore may end off the grid)
+    end = streams[["own_x", "own_y"]].to_numpy(float)
+else:
+    end = np.array([g.coords[-2] if len(g.coords) >= 2 else g.coords[0] for g in streams.geometry])
 cc, rr = ~T * tuple(np.round(end / RES).T * RES)
 own = np.clip(np.rint(rr).astype(int), 0, H - 1) * W + np.clip(np.rint(cc).astype(int), 0, W - 1)
 same = np.isclose((a - extra_edge)[own], streams.area_km2, atol=0.02).mean()
 streams["area_edge_km2"] = (streams.area_km2 + extra_edge[own]).round(2)
-streams["area_full_km2"] = (streams.area_km2 + extra_full[own]).round(2)
+# (full: also the water behind lakes' outlets, which 05_score.py's area_km2 leaves out as it always did)
+streams["area_full_km2"] = (streams.area_km2 + extra_full[own] + held_all[own]).round(2)
+# Stream order where water comes in that the routing doesn't see (a river from outside the map, a lake whose water
+# crossbox.py still carries past its dam): the order counted on the routing starts again at 1 there, and the river drew
+# as a thread until its side creeks built it back up, and dropped off the map of all areas (order 4 and up): the Maury
+# from Rockbridge Baths to Lexington. Where that water is over half a reach's drainage (and over 5 km2), its order is
+# at least the usual one in this box for its full drainage: the orders' median areas come from the reaches that get no
+# such water, and the steps between orders sit halfway. Since 2026-11-22 lakes pass their water on at their outlets
+# (03b_stitch.py) and the order runs on through them; this was done in 06_map.py before, for dams too (5,970 reaches of
+# the 12 maps then, 3,214 for water from outside).
+# Each reach's own order is read on its own channel cell, where its area is (`own`): read on the cell with the most water
+# within 20 m of its middle, as until 2026-11-23, a creek's last piece at a river and a side channel took the river's
+# order (in the Adirondacks south-east 11 pieces of about 1.5 sq mi beside the Hudson were order 6, and then the medians
+# below made every river of 100 sq mi or more order 7: 520 lines; audit finding 14).
+with rasterio.open(f"{DERIVED}/strahler.tif") as src:
+    streams["strahler"] = src.read(1).ravel()[own]
+routed = streams.area_km2.to_numpy(float) + held_all[own]          # what the routing itself counts here
+full_ = streams.area_full_km2.to_numpy(float)
+carried = (full_ > 2 * routed) & (full_ - routed > 5)
+strahler0 = streams.strahler.to_numpy(int).clip(1, 7)
+med = pd.DataFrame({"o": strahler0[~carried], "f": full_[~carried]}).groupby("o").f.agg(["median", "size"])
+med = med[med["size"] >= 5]["median"]
+# an order whose median lies below an order beneath it (a few odd reaches) says nothing of its size: the fit fills it
+med = med[med.values >= np.maximum.accumulate(med.values)]
+if len(med) >= 3:
+    ks = np.arange(1, 8)
+    fit = np.polyfit(med.index.values, np.log(med.values.clip(0.01)), 1)       # about 4.5 times per order
+    logm = np.array([np.log(max(med[k_], 0.01)) if k_ in med.index else np.polyval(fit, k_) for k_ in ks])
+    logm = np.maximum.accumulate(logm)
+    steps = (logm[:-1] + logm[1:]) / 2
+    est = 1 + np.searchsorted(steps, np.log(full_.clip(0.01)))
+    # ... and where the count started again though the routing didn't: a path out of water that carries no stream line
+    # (a lake read like the sea), three orders or more under the usual one for what the routing has there (La Chute
+    # between Lake George and Lake Champlain, 677 km2, read order 1)
+    broken = strahler0 <= np.searchsorted(steps, np.log(np.maximum(routed, 0.01))) - 2
+    new_o = np.where(carried | broken, np.maximum(strahler0, est), strahler0).clip(1, 7)
+    print(f"stream order raised for {(new_o > strahler0).sum()} reaches that get water the routing doesn't see "
+          f"({int((broken & ~carried & (new_o > strahler0)).sum())} where the count started again below water read like the sea) "
+          f"(median km2 by order: {', '.join(f'{k_}: {np.exp(v_):.3g}' for k_, v_ in zip(ks, logm))})")
+    streams["strahler"] = new_o.astype(int)
+streams[["sid", "drainage", "fork", "strahler", "out_x", "out_y", "basin_km2"]].to_csv(f"{OUT}/stream_drainage.csv",
+                                                                                     index=False)
+
 streams[["sid", "area_edge_km2", "area_full_km2"]].to_csv(f"{OUT}/area_streams.csv", index=False)
 print(f"reach areas: {same:.1%} sampled on 05_score's cell; {(streams.area_edge_km2 > streams.area_km2).sum()} reaches get "
       f"water from other boxes, {(streams.area_full_km2 > streams.area_km2).sum()} counting dams too")

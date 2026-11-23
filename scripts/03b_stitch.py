@@ -845,6 +845,33 @@ def side_streams(fd, stream, tops, max_cells=3000):
     return round(added * RES / 1000, 1)
 
 
+def held_below(fd, acc, starts, stops, max_cells=10 ** 6):
+    """{flat cell: cells of drainage}: the water that reaches each cell through the lake outlets in `starts` (flat
+    cells), followed down the D8 path from each outlet, with what that outlet gathers (acc) added to every cell on the
+    way, up to and including the next outlet in `stops` (which hands on its own, everything above it included) or the
+    end of the path. With every lake outlet a pit this water would stop at the outlets: it is what the area raster
+    holds beyond that, cell by cell, where paths from several lakes meet the sum."""
+    H, W = fd.shape
+    out = {}
+    for o in starts:
+        amt = int(acc.flat[o])
+        if amt <= 0:
+            continue
+        r, c = divmod(int(o), W)
+        for _ in range(max_cells):
+            k = int(fd[r, c])
+            if k not in CODE_SET:
+                break
+            r, c = r + int(DR[k]), c + int(DC[k])
+            if not (0 <= r < H and 0 <= c < W):
+                break
+            i = r * W + c
+            out[i] = out.get(i, 0) + amt
+            if i in stops:
+                break
+    return out
+
+
 def groups():
     """Boxes that share an edge, as sets (connected through shared edges)."""
     done = [r for r in REGIONS if os.path.exists(f"{derived_dir(r)}/dem_cond.tif")]
@@ -941,6 +968,7 @@ def run(group):
     sides, side_ok, side_not, side_seen = [], [], {}, set()     # second outlets (step d): lake_outlets.json, the log
     outflow = []                                        # (row, col, direction) of each pitted lake's outlet
     off_map = []                                        # lakes whose water leaves the map through their own surface
+    opened = []                                         # (outlet cell, flat; a pond) of the lakes whose water goes on (e)
     if len(lakes):
         level, best = {}, {}
         for r in group:
@@ -1056,8 +1084,9 @@ def run(group):
             if d_ >= 300:
                 far.append((name, round(geom.area / 1e4, 1), round(d_), RES * (len(way) - 1), why))
         # each way out was judged before any lake was moved: none may lead back into its lake now that all are
-        back = [name for i, k, geom, name, cell, way, why, _ in moves
-                if leads_back(fd, way[0][0], way[0][1], lake_cells(fd, geom, T))]
+        back_i = {i for i, k, geom, name, cell, way, why, _ in moves
+                  if leads_back(fd, way[0][0], way[0][1], lake_cells(fd, geom, T))}
+        back = [name for i, k, geom, name, cell, way, why, _ in moves if i in back_i]
         if back:
             print("  WARNING: the way out leads back into the lake, which carries its water nowhere: " + ", ".join(back))
         # (d) a lake's second outlets: its other outflow lines the terrain takes the water on down, by the outlet's own
@@ -1112,11 +1141,41 @@ def run(group):
                                        main_box=mb_, lake=name, ha=ha, exit=[round(q["exit"].x), round(q["exit"].y)])))
                 side_ok.append(f"{name} ({ha:g} ha)")
         del wet
+        # (e) the water goes on at the outlet (2026-11-22, the audit's finding 6). Until then every lake ended its water in
+        # a pit at its outlet cell and its way out started in the next cell; crossbox.py carried the water across, and
+        # every later step found it again (the drops and the size floor added it, 05b_flow.py jumped the pit, 06_map.py
+        # drew straight joins across 935 dams, drew 59 mi of line below dams and ponds and raised the stream order of
+        # 5,970 reaches whose count had started again at 1 below a lake). Now a lake taken to NHD's outlet points its
+        # outlet at the first cell of its way out, so its water, its stream line and its order run on. The pit stays at
+        # a lake whose outlet stays at the cell with the most water (no outflow line in NHD, or one the terrain refuses:
+        # crossbox.py still carries those as before) and at one whose way out leads back into it.
+        opened = []                                     # (outlet cell, flat; a pond: NHDPlus has no line through it)
+        for i, k, geom, name, cell, way, why, _ in moves:
+            if i in back_i:
+                continue
+            fd[cell] = CODE_OF[(way[0][0] - cell[0] + 1) * 3 + (way[0][1] - cell[1] + 1)]
+            pond = False
+            if v2 is not None:
+                lk_ = shapely.make_valid(geom)
+                ins = v2[0].iloc[v2[0].sindex.query(lk_, predicate="intersects")]
+                pond = not len(ins) or not (ins.geometry.intersection(lk_).length >= 0.25 * ins.geometry.length).any()
+            opened.append((cell[0] * W + cell[1], pond))
         acc, more = accumulate(fd, DR, DC)
         if more:                                        # a flowing-on lake's outlet pointing back into the lake
             fd[acc < 0] = PIT
             acc, _ = accumulate(fd, DR, DC)
             loops += more
+    # The water that came through those outlets (held_km2.tif): all of it (band 1) and what came through a pond NHDPlus
+    # has no line for (band 2; 05c_drainages.py picks forks and names on the area without it, as before). The later steps
+    # that mean "what the creek's own ground below the lakes gives" (05b_flow.py's natural-flow model in LA, scoring.py's
+    # below-a-dam rule, watertemp.py's lake term) read area_edge_km2, which 05c takes as the area less band 1.
+    o_all = [o for o, _ in opened]
+    o_pond = [o for o, pd_ in opened if pd_]
+    held = held_below(fd, acc, o_all, set(o_all))
+    held_pond = held_below(fd, acc, o_pond, set(o_pond))
+    if opened:
+        print(f"  {len(opened)} lakes pass their water on at the outlet ({len(o_pond)} ponds NHDPlus has no line for); "
+              f"{len(held):,} cells below them hold it")
     # 4. streams and their orders, across the group
     stream = acc >= int(round(STREAM_KM2 * 1e6 / (RES * RES)))      # in cells: no float copy of a 250-million-cell grid
     n_out = outflow_streams(fd, stream, outflow)
@@ -1181,6 +1240,17 @@ def run(group):
         for name, arr, dt in (("flowdir", f, "uint8"), ("area_km2", area, "float32"), ("strahler", od, "uint8")):
             with rasterio.open(f"{derived_dir(r)}/{name}.tif", "w", **dict(prof, dtype=dt)) as dst:
                 dst.write(arr.astype(dt), 1)
+        hb = np.zeros((2, sl[0].stop - sl[0].start, sl[1].stop - sl[1].start), np.float32)
+        for band, d_ in enumerate((held, held_pond)):
+            if d_:
+                ix = np.fromiter(d_.keys(), np.int64, len(d_))
+                vv = np.fromiter(d_.values(), np.float64, len(d_))
+                rr_, cc_ = np.divmod(ix, W)
+                inb = (rr_ >= sl[0].start) & (rr_ < sl[0].stop) & (cc_ >= sl[1].start) & (cc_ < sl[1].stop)
+                hb[band, rr_[inb] - sl[0].start, cc_[inb] - sl[1].start] = vv[inb] * (RES * RES) / 1e6
+        with rasterio.open(f"{derived_dir(r)}/held_km2.tif", "w", **dict(prof, dtype="float32", count=2)) as dst:
+            dst.write(hb)
+        del hb
         # the lakes in this box whose water leaves the map (step 4), for 05c_drainages.py
         p_off = f"{derived_dir(r)}/lakes_off_map.gpkg"
         here = [i - 1 for i in off_map if lakes.geometry.iloc[i - 1].intersects(shapely.box(*boxes[r]))]
@@ -1214,9 +1284,15 @@ def run(group):
         n_on = int(ex.sum())
         g.to_file(f"{derived_dir(r)}/dem_streams.gpkg")
         print(f"  {r}: stream cells {int(st.sum())}, links {len(g)}, max order {int(od.max())}, {n_on} lines run on into the next box")
+    wet_ = {r: [] for r in group}
+    for o, pd_ in opened:
+        rr_, cc_ = divmod(o, W)
+        b_ = next((b for b in group if where[b][0].start <= rr_ < where[b][0].stop and where[b][1].start <= cc_ < where[b][1].stop), None)
+        if b_ is not None:
+            wet_[b_].append([rr_ - where[b_][0].start, cc_ - where[b_][1].start, int(pd_)])
     return (left, {r: [list(map(int, q[1:])) for q in tops if q[0] == r] for r in group},
             {r: [list(q[1:]) for q in kept if q[0] == r] for r in group},
-            {r: [e for b_, e in sides if b_ == r] for r in group})
+            {r: [e for b_, e in sides if b_ == r] for r in group}, wet_)
 
 
 if __name__ == "__main__":
@@ -1230,15 +1306,16 @@ if __name__ == "__main__":
                  f"of a lake's outflow lines it drains by. Run AREA={AREA} 02b_download_flow.py first (run_base.sh and "
                  "run_rebuild_a.sh do), or set NO_NHDPLUS=1 to go on without them: a lake with several outflow lines "
                  "that NHD doesn't name then takes the one nearest the cell with the most water.")
-    done, left, tops, kept, sides = [], [], {}, {}, {}
+    done, left, tops, kept, sides, wet = [], [], {}, {}, {}, {}
     for group in groups():
         if only and not only & set(group):
             continue
-        left_, tops_, kept_, sides_ = run(group)
+        left_, tops_, kept_, sides_, wet_ = run(group)
         left += left_
         tops.update(tops_)
         kept.update(kept_)
         sides.update(sides_)
+        wet.update(wet_)
         done += group
     # the lakes' outlets, for crossbox.py: "tops" {box: [[outlet row, col, row, col of the first cell of the way out]]}
     # in each box's own grid; and "kept" {box: [[name, ha, why, x, y]]}, the lakes left at the cell with the most water
@@ -1251,6 +1328,8 @@ if __name__ == "__main__":
     old["tops"] = {**{b: v for b, v in old.get("tops", {}).items() if b not in done}, **tops}
     old["kept"] = {**{b: v for b, v in old.get("kept", {}).items() if b not in done}, **kept}
     old["sides"] = {**{b: v for b, v in old.get("sides", {}).items() if b not in done}, **sides}
+    # "wet": {box: [[row, col, pond]]}, the outlets that pass their water on (step e): no pit marks them any more
+    old["wet"] = {**{b: v for b, v in old.get("wet", {}).items() if b not in done}, **wet}
     with open(path + ".tmp", "w") as fh:
         json.dump(old, fh)
     os.replace(path + ".tmp", path)

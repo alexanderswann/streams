@@ -89,28 +89,7 @@ s_ll = s_ll.drop(columns=[c for c in ("drainage", "fork", "strahler") if c in s_
 s_ll["drainage"] = s_ll.drainage.fillna(MINOR)
 s_ll["fork"] = s_ll.fork.fillna(s_ll.drainage)
 s_ll["strahler"] = s_ll.strahler.fillna(s_ll["order"]).clip(1, 7).astype(int)
-# A river that comes in from the next box, from outside the map or over a dam starts again at order 1 in this
-# box's own count, so it drew as a thread until its side creeks built it back up, and dropped off the map of all
-# areas (order 4 and up): the Maury from Rockbridge Baths to Lexington. Where a reach carries over twice its own
-# box's drainage, its order is at least the usual one in this area for its full drainage: the orders' median
-# areas come from the reaches that carry no outside water, and the steps between orders sit halfway (in logs).
-# For drawing only: nothing in the scores reads the order.
-if "area_full_km2" in s_ll:
-    full_ = s_ll.area_full_km2.fillna(s_ll.area_km2).astype(float).values
-    carried = (full_ > 2 * s_ll.area_km2.values) & (full_ - s_ll.area_km2.values > 5)
-    med = s_ll[~carried].assign(f=full_[~carried]).groupby("strahler").f.agg(["median", "size"])
-    med = med[med["size"] >= 5]["median"]
-    if carried.any() and len(med) >= 3:
-        ks = np.arange(1, 8)
-        fit = np.polyfit(med.index.values, np.log(med.values.clip(0.01)), 1)       # about 4.5 times per order
-        logm = np.array([np.log(max(med[k_], 0.01)) if k_ in med.index else np.polyval(fit, k_) for k_ in ks])
-        logm = np.maximum.accumulate(logm)
-        steps = (logm[:-1] + logm[1:]) / 2
-        est = 1 + np.searchsorted(steps, np.log(full_.clip(0.01)))
-        new_o = np.where(carried, np.maximum(s_ll.strahler.values, est), s_ll.strahler.values).clip(1, 7)
-        print(f"stream order raised for {(new_o > s_ll.strahler.values).sum()} reaches that carry water from elsewhere "
-              f"(median km2 by order: {', '.join(f'{k_}: {np.exp(v_):.3g}' for k_, v_ in zip(ks, logm))})")
-        s_ll["strahler"] = new_o.astype(int)
+# (stream order: 05c_drainages.py, which raises it where water comes in that the routing doesn't see)
 # ---- creeks drawn through below dams and at the outer boundary ----
 # Across the edges two boxes share, the streams run through by themselves since 2026-11-19 (03b_stitch.py routes
 # the boxes together). Two kinds of break are left, where the routing really does stop: below a dam (paths end
@@ -278,8 +257,10 @@ def draw_through(s_ll):
             continue                                        # loose: a later crossing may carry it on
         metres += shapely.LineString(new).length if len(new) > 1 else 0
     left = [r for k, r in enumerate(recs) if k not in used and len(r["pts"]) > 1]
+    redrawn_ = []
     if coords:
         idx_ = list(coords)
+        redrawn_ = list(s_ll.sid.values[idx_])
         new = gpd.GeoSeries([shapely.LineString(coords[i]) for i in idx_], crs=EPSG).to_crs(4326).values
         geom = s_ll.geometry.values.copy()
         geom[idx_] = new
@@ -295,6 +276,7 @@ def draw_through(s_ll):
             add["name"] = [None if n_ in noname else v_ for n_, v_ in enumerate(add["name"].values)]
         s_ll = pd.concat([s_ll, add], ignore_index=True)
     s_ll.attrs["drawn_extra"] = len(extra)
+    s_ll.attrs["redrawn"] = redrawn_                       # reaches drawn longer than 05_score.py made them
     print(f"creeks drawn through {n_head + n_own + n_up + n_creek} breaks below dams and at the outer boundary "
           f"({metres / 1000:.1f} km of line; {n_creek} as a lake's own creek joining a bigger stream; "
           f"{len(left)} met no drawn reach)")
@@ -540,7 +522,7 @@ for c_ in CONTEXT + FLOWC:   # older context files may lack a column
 kp_ll.drop(columns="geometry").to_csv(f"{MAP_OUT}/waterfall_candidates.csv", index=False)
 mid = s_ll.geometry.interpolate(0.5, normalized=True)
 s_ll.assign(lat=mid.y.round(6), lon=mid.x.round(6)).sort_values("fish_score", ascending=False)[
-    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "brook_size", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
+    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, *[c_ for c_ in ("in_lake", "len_drawn_m") if c_ in s_ll], "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "brook_size", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
      "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["lat", "lon"]
 ].to_csv(f"{MAP_OUT}/stream_reaches_ranked.csv", index=False)
 
@@ -779,15 +761,18 @@ def heat_line(air, f):
     rec = f" (at most {degf(HOT, 1)})" if pd.notna(HOT) else ""
     return (f"August air averages {degf(air, 1)} here (PRISM 1991–2020 normal), hotter than any creek in these ranges "
             f"where trout have been recorded{rec} · fish score × {f:.2f}")
-# Reaches lying in a lake are drawn as the lake while the Lakes layer is on (it starts on, since 2026-11-20), and as
-# streams again when it is switched off (the user: the rivers run on through the lakes then). The routing runs its paths
-# straight across flat water (65 of the 143 reaches in Palisades Reservoir), and their names and colours came out of
-# the lake's own drainage vote ("Trout Creek" across Palisades). A reach 05b_flow.py reads as lying in a lake
-# (below_dam "in:") that lies at least half inside a lake the Lakes layer draws (about 8,200 of the 12 maps' 105,700
-# reaches; some 170 at lake edges, where the two outlines differ, stay with the other streams) goes whole into a layer
-# of its own (STREAMS_LAKE, which map_drainages.js, map3d.html and 14_portable.py show only while Lakes is off). The map
-# of all areas keeps the whole reaches in its main rivers: it draws no lakes. Its data stays: ranks, profiles, the CSV.
-s_ll["in_lake_drawn"] = False
+# A reach lying in a lake the map draws is drawn with the lake while the Lakes layer is on (it starts on, since
+# 2026-11-20), and as a stream when it is off (the user: the rivers run on through the lakes then): the layer
+# STREAMS_LAKE, which map_drainages.js, map3d.html and 14_portable.py show only while Lakes is off. 05_score.py cuts the
+# stream links exactly at the shores of the lakes this map draws and marks the reaches lying in lake water (in_lake;
+# one in an NHD lake this map doesn't draw is drawn as a stream: its len_drawn_m is its length), so this step only
+# sorts the reaches into the two layers. Until 2026-11-22 it clipped every line at every drawn lake itself,
+# left shore stubs and slivers off, gave the pieces at a lake's ends another reach's values and moved reaches lying
+# mostly in a lake to that layer: 6,290 reaches were drawn shorter than the table had them and 1,133 pieces with
+# another reach's values, 574 mi of creek line in all, mostly in drawn ponds under 8 ha that the cut didn't see.
+# The map of all areas draws every reach: it draws no lakes.
+s_ll["in_lake_drawn"] = ((s_ll.in_lake.fillna(False).astype(bool) & s_ll.len_drawn_m.fillna(1.0).le(0)).values
+                         if {"in_lake", "len_drawn_m"} <= set(s_ll.columns) else False)
 from config import SHARED_DERIVED as SD_
 lw_ = None
 if os.path.exists(f"{SD_}/lakes.gpkg"):
@@ -795,138 +780,25 @@ if os.path.exists(f"{SD_}/lakes.gpkg"):
     lw_ = gpd.GeoDataFrame(geometry=list(shapely.get_parts(shapely.union_all(shapely.make_valid(lw_.geometry.values)))),
                            crs=EPSG)
     lw_ = lw_[lw_.geom_type.isin(["Polygon", "MultiPolygon"]).values].reset_index(drop=True)
-if lw_ is not None and len(lw_) and "below_dam" in s_ll:
-    cand_ = s_ll.below_dam.fillna("").astype(str).str.startswith("in:").values
-    if cand_.any():
-        sc_ = s_ll[cand_][["geometry"]].to_crs(EPSG)
-        j_ = gpd.sjoin(sc_, lw_, predicate="intersects")
-        if len(j_):
-            sh_ = (shapely.length(shapely.intersection(j_.geometry.values, lw_.geometry.reindex(j_.index_right).values))
-                   / j_.geometry.length.values)
-            sh_ = pd.Series(sh_, index=j_.index).groupby(level=0).sum()
-            s_ll.loc[sh_.index[sh_ >= 0.5], "in_lake_drawn"] = True
-    print(f"reaches lying in a lake, drawn whole only while Lakes is off: {int(s_ll.in_lake_drawn.sum())}")
-# ... but their stretch outside the lake is drawn, so a river runs on to the shore and into the lake. Left off whole, a
-# reach mostly in the lake took its approach with it and the line stopped short (around Jackson Lake 18.9 km of river,
-# a 2.5 km gap above one inlet). Since 2026-11-20 evening this goes for every reach that runs into a lake the Lakes
-# layer draws, not only those lying mostly in one: a reach under half in a lake was drawn whole, on into the water
-# (Taggart Creek's inlet reach ran 0.6 km into Taggart Lake). Of the pieces outside the lakes, two kinds are left off:
-# - a piece of a reach lying mostly in a lake, with both ends on the shore of one lake, that never gets 40 m from
-#   it: the routing's straight path over the flat water clipping the shore or a headland (the four stubs of the Snake
-#   by Donoho Point on Jackson Lake; about 980 over the 12 maps). A creek running along a shore keeps its pieces;
-# - a piece under 20 m that meets no line drawn whole and no longer piece (a sliver of land the line crosses inside
-#   the lake). One that does is a river's last few metres to the shore.
-# A reach lying in a lake (05b_flow.py's "in:") carries the lake's values: reservoir, the lake's fish score, and the
-# drainage of whatever path the routing ran across the water. Its piece past the lake's outline at the reach's own end
-# or start is the river it continues there, so since 2026-11-21 that piece takes the values of the reach below (an
-# outlet) or of the biggest reach above (an inlet), as the lines across dams take those of the line below the dam.
-# Jackson Lake's last reach runs on 147 m through the dam, and it had been drawn as "Pilgrim Creek", reservoir, fish 23,
-# before the Snake River: the routing threads only Pilgrim Creek across the lake, and the dam link puts the Snake's
-# 1,957 km2 back in below the dam, onto that reach. Only with Lakes off does the whole reach still read Pilgrim Creek.
-# The whole reaches go once more, marked lk_, into the layer shown while Lakes is off (STREAMS_LAKE below).
-s_show = s_ll.assign(lk_=False)
-if lw_ is not None and len(lw_):
-    sm_ = s_ll.geometry.to_crs(EPSG).values
-    lakes_ = lw_.geometry.values
-    lt_ = shapely.STRtree(lakes_)
-    ri_, li_ = lt_.query(sm_, predicate="intersects")
-    cut_ = np.zeros(len(s_ll), bool)
-    cut_[ri_] = True
-    cut_ |= s_ll.in_lake_drawn.values
-    by_ = pd.Series(li_).groupby(ri_).agg(list)
-    rows_, geo_, inside_ = [], [], {}
-    for i in np.flatnonzero(cut_):
-        g_ = sm_[i]
-        if g_ is None or g_.is_empty:
-            continue
-        ls_ = by_.get(i, [])
-        d_ = shapely.difference(g_, shapely.union_all(lakes_[ls_])) if len(ls_) else g_
-        inside_[i] = 1 - d_.length / g_.length if g_.length else 0.0
-        for p_ in shapely.get_parts(d_):
-            if p_.geom_type == "LineString" and p_.length > 0:
-                rows_.append(i)
-                geo_.append(p_)
-    n_stub = 0
-    if rows_:
-        out_ = gpd.GeoDataFrame(s_ll.iloc[rows_].drop(columns="geometry").reset_index(drop=True), geometry=geo_, crs=EPSG)
-        def lake_at(pt):
-            h_ = lt_.query(pt, predicate="dwithin", distance=1.0)
-            return int(h_[0]) if len(h_) else -1
-        a_ = np.array([lake_at(shapely.Point(g_.coords[0])) for g_ in out_.geometry])
-        b_ = np.array([lake_at(shapely.Point(g_.coords[-1])) for g_ in out_.geometry])
-        hug_ = np.zeros(len(out_), bool)
-        mostly_in_ = np.array([inside_.get(i, 0.0) >= 0.5 for i in rows_])   # a path over the water, not a lakeside creek
-        for k_ in np.flatnonzero((a_ >= 0) & (a_ == b_) & mostly_in_):
-            pts_ = shapely.points(shapely.get_coordinates(shapely.segmentize(out_.geometry.values[k_], 5.0)))
-            hug_[k_] = shapely.distance(pts_, lakes_[a_[k_]]).max() < 40
-        n_stub = int(hug_.sum())
-        out_ = out_[~hug_].reset_index(drop=True)
-        src_ = np.asarray(rows_)[~hug_]
-        lakev_ = s_ll.below_dam.fillna("").astype(str).str.startswith("in:").values if "below_dam" in s_ll \
-            else np.zeros(len(s_ll), bool)
-        kmv_ = s_ll.area_full_km2.fillna(s_ll.area_km2).fillna(0).to_numpy(float)
-        st_, en_ = shapely.get_point(sm_, 0), shapely.get_point(sm_, -1)
-        tst_, ten_ = shapely.STRtree(st_), shapely.STRtree(en_)
-        tln_ = shapely.STRtree(sm_)
-        take_, riv_ = src_.copy(), np.zeros(len(out_), int)        # riv_: 1 below an outlet, 2 above an inlet
-        own_ = {}                                                  # piece -> the drainage that leaves the lake
-        for k_, i in enumerate(src_):
-            if not lakev_[i]:
-                continue
-            g_ = out_.geometry.values[k_]
-            at_s = shapely.Point(g_.coords[0]).distance(st_[i]) <= 0.5
-            at_e = shapely.Point(g_.coords[-1]).distance(en_[i]) <= 0.5
-            if at_e and not at_s:
-                nb_ = [j for j in tst_.query(en_[i], predicate="dwithin", distance=1.0) if j != i]
-                if not nb_:
-                    # No reach starts where the line ends: draw_through's path below the dam ran into the middle of a
-                    # reach, or into the next lake. Since 05_score.py cuts the links at lake shores (2026-11-21) the
-                    # reach the path hangs on is always lake water, so the stretch from the dam to that spot read
-                    # reservoir (530 m between Big Pond and Spencer Pond in NE Connecticut, fish 15 where the uncut
-                    # link had read 57). It is the creek it runs into where that carries about what leaves the lake
-                    # (up to 1.5 times, as in draw_through). Else (a much bigger stream, or another lake's water) it
-                    # is the lake's own creek: the first reach above the lake not lying in it, with the drainage that
-                    # leaves the lake.
-                    hit_ = [j for j in tln_.query(en_[i], predicate="dwithin", distance=1.0) if j != i and not lakev_[j]]
-                    h_ = max(hit_, key=lambda j: kmv_[j]) if hit_ else None
-                    if h_ is not None and kmv_[h_] <= 1.5 * kmv_[i]:
-                        nb_ = [h_]
-                    else:
-                        u_ = i
-                        for _ in range(30):
-                            up_ = [j for j in ten_.query(st_[u_], predicate="dwithin", distance=1.0) if j != u_]
-                            if not lakev_[u_] or not up_:
-                                break
-                            u_ = max(up_, key=lambda j: kmv_[j])
-                        if not lakev_[u_]:
-                            nb_, own_[k_] = [u_], kmv_[i]
-            elif at_s and not at_e:
-                nb_ = [j for j in ten_.query(st_[i], predicate="dwithin", distance=1.0) if j != i]
-            else:
-                continue
-            j_ = max(nb_, key=lambda j: kmv_[j]) if nb_ else None
-            if j_ is not None and not lakev_[j_]:      # the river itself, not a creek joining it in the lake
-                take_[k_], riv_[k_] = j_, 1 if at_e else 2
-        if riv_.any():
-            out_ = gpd.GeoDataFrame(s_ll.iloc[take_].drop(columns="geometry").reset_index(drop=True),
-                                    geometry=out_.geometry.values, crs=EPSG)
-            if own_ and "area_full_km2" in out_:
-                out_.loc[list(own_), "area_full_km2"] = np.round(list(own_.values()), 2)
-        long_ = (out_.length >= 20).values
-        whole_ = [g_ for g_ in sm_[~cut_] if g_ is not None and not g_.is_empty]
-        on_ = np.zeros(len(out_), bool)
-        on_[shapely.STRtree(np.concatenate([np.array(whole_, dtype=object), out_.geometry.values[long_]])).query(
-            out_.geometry.values, predicate="dwithin", distance=0.5)[0]] = True
-        riv_ = riv_[long_ | on_]
-        out_ = out_[long_ | on_].to_crs(s_ll.crs)
-    else:
-        out_, riv_ = s_ll.iloc[0:0], np.zeros(0, int)
-    s_show = gpd.GeoDataFrame(pd.concat([s_ll[~cut_].assign(lk_=False), out_.assign(lk_=False),
-                                         s_ll[cut_].assign(lk_=True)]), crs=s_ll.crs).reset_index(drop=True)
-    print(f"reaches running into a lake, drawn up to its shore while Lakes is on: {int(cut_.sum())} "
-          f"({len(out_)} pieces, {out_.to_crs(EPSG).length.sum() / 1000:,.1f} km outside the lakes; "
-          f"{n_stub} stubs along a shore left off); drawn as the river they continue: {int((riv_ == 1).sum())} pieces "
-          f"below a lake's outlet, {int((riv_ == 2).sum())} above an inlet")
+cut_ = s_ll.in_lake_drawn.values.astype(bool)
+# each reach as the pieces 05_score.py cut it into at the shores of the lakes drawn (drawn_pieces.gpkg: a creek through a
+# pond drawn under 8 ha is one reach, its stretch in the pond a piece drawn with the lake), with the reach's own values;
+# a piece added or lengthened above (draw_through) whole
+_redrawn = set(s_ll.attrs.get("redrawn", []))
+if all(os.path.exists(f"{MAP_OUT}/{r}/drawn_pieces.gpkg") for r in done):
+    pieces_ = read("drawn_pieces.gpkg")
+    whole_ = s_ll.sid.astype(str).str.contains(r"\+").values | s_ll.sid.isin(_redrawn).values
+    pc_ = pieces_[pieces_.sid.isin(set(s_ll.sid[~whole_]))].reset_index(drop=True)
+    vals_ = s_ll.drop(columns="geometry").set_index("sid")
+    s_show = gpd.GeoDataFrame(pd.concat([
+        gpd.GeoDataFrame(vals_.loc[pc_.sid.values].reset_index(), geometry=pc_.geometry.values, crs=s_ll.crs)
+        .assign(lk_=pc_.wet.astype(bool).values),
+        s_ll[whole_].assign(lk_=False)], ignore_index=True), crs=s_ll.crs)
+else:
+    s_show = s_ll.assign(lk_=cut_)
+print(f"reaches lying in a lake the map draws, shown only while Lakes is off: {int(cut_.sum())} "
+      f"({s_ll[cut_].to_crs(EPSG).length.sum() / 1000:,.1f} km); pieces drawn: {int((~s_show.lk_).sum())} with Lakes on, "
+      f"{int(s_show.lk_.sum())} only while Lakes is off ({s_show[s_show.lk_].to_crs(EPSG).length.sum() / 1000:,.1f} km)")
 # Rivers leaving a lake over a dam. pysheds can't route water across a lake's flat surface, so the routing ends a river
 # in a pit in or beside the lake and starts it again in the cell below the dam (crossbox's "dam" and "pond" links, which
 # draw_through above draws on from). Nothing was drawn across the dam: the line below it started 20-150 m from the
