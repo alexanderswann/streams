@@ -111,6 +111,10 @@ if "area_full_km2" in s_ll:
 # D8 path is followed to its first drawn reach, and that piece goes on the front of the reach, or, where it runs
 # into the middle of one, is drawn as a piece of its own with that reach's values. Drawn lines only: the reaches
 # keep their ids, scores and areas.
+# Since 2026-11-22 a river from outside the map is a reach of its own from where its water goes in (05_score.py lays it:
+# crossbox.lead_ins), and a break whose cell a reach starts on is not drawn through: the path ran along that reach where
+# its corner-to-corner line left the cells' centres unmarked, and drew it twice (318 pieces, 11.5 km, over the 12 maps;
+# 126 m of McCoy Creek on the Jackson map). Where no reach starts there (no lead-in was kept), the path is drawn as before.
 def draw_through(s_ll):
     from rasterio import features as rfeatures
     cross = [c_ for c_ in crossbox.crossings() if c_[6] >= 0.25 and c_[3] in done and c_[7] != "edge"]
@@ -118,6 +122,7 @@ def draw_through(s_ll):
     line = np.array([g is not None and g.geom_type == "LineString" for g in sm])
     rk = s_ll.sid.str.split(":").str[0].values
     pos = np.flatnonzero(line)
+    heads = shapely.STRtree(shapely.points([sm[i].coords[0][:2] for i in pos]))
     ends = shapely.STRtree(shapely.points([sm[i].coords[-1][:2] for i in pos]))
     all_lines = shapely.STRtree(sm[pos])
     ras, recs = {}, []
@@ -132,6 +137,9 @@ def draw_through(s_ll):
                                                    transform=T_, all_touched=True, dtype="uint8"))
         fd_, T_, on_ = ras[b]
         H_, W_ = fd_.shape
+        if kind == "outside" and any(rk[pos[j]] == b for j in heads.query(shapely.Point(T_ * (int(col), int(row))),
+                                                                          predicate="dwithin", distance=1.0)):
+            continue                                       # a reach starts on its cell: the lead-in
         r_, c_, pts = int(row), int(col), []
         for _ in range(800):                               # 8 km at most
             pts.append(T_ * (c_ + 0.5, r_ + 0.5))

@@ -1,6 +1,7 @@
 """Attribute DEM streams + drop candidates (perennial, remoteness, trout-elevation) for one region,
 score them, and write layers for the combined map (06_map.py). Run with REGION=<name>."""
 import json, os, re, time, shapely, numpy as np, pandas as pd, geopandas as gpd, rasterio
+from collections import defaultdict
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 import matplotlib
 from matplotlib import cm, colors
@@ -9,7 +10,8 @@ from rasterio import features
 from config import *
 import areaclip
 
-MAP_MIN_KM2 = 1.0  # only draw channels draining >= 1 km^2
+MAP_MIN_KM2 = 1.0   # draw every channel draining >= 1 km^2 ...
+NHD_MIN_KM2 = 0.25  # ... and down to this (03b_stitch.py's channel start) where NHD maps the creek year-round or names it
 
 dem_src = rasterio.open(f"{RAW}/dem_10m.tif")
 dem = dem_src.read(1)
@@ -21,6 +23,19 @@ def sample(arr, geoms):
     return arr[np.clip(rows.astype(int), 0, arr.shape[0] - 1), np.clip(cols.astype(int), 0, arr.shape[1] - 1)]
 
 streams = gpd.read_file(f"{DERIVED}/dem_streams.gpkg")
+# A river that comes in from outside the map (crossbox.py's "outside" water: over the outer edge, or through a
+# reservoir the edge cuts and on below its dam) starts its line where its water goes in, not where 0.25 km2 has
+# gathered inside the map: 03b_stitch.py's streams count only the map's own cells, so a river's first few hundred
+# metres in the map had no link, and 06_map.py drew them through as lines with no reach of their own (65 mi at the
+# edges and 5.7 mi below dams, on the 12 maps of 2026-11-22: the Little Tennessee below Chilhowee Dam, the
+# Chattahoochee below Buford Dam). The D8 path from that cell to the first line is a link of its own, on cell corners
+# as 03b's lines are (crossbox.lead_ins).
+import crossbox
+_leads = crossbox.lead_ins(REGION, streams.geometry,
+                           [e for e in crossbox.inflows(REGION, through_dams=True) if e[3] == "outside"])
+print(f"lines from where a river from outside the map goes in to its first link: {len(_leads)}, "
+      f"{sum(g.length for g in _leads) / 1000:.1f} km")
+streams = pd.concat([streams, gpd.GeoDataFrame(geometry=_leads, crs=CRS)], ignore_index=True)
 nhd = gpd.read_file(f"{RAW}/nhd_flowlines.gpkg")
 nhd_pts = gpd.read_file(f"{RAW}/nhd_points.gpkg")
 roads = gpd.read_file(f"{RAW}/osm_roads.gpkg")
@@ -70,6 +85,17 @@ s = streams[streams.length > 0].copy()
 def vert(g, f):
     c = g.coords
     return shapely.Point(c[min(len(c) - 1, max(0, int(round(f * (len(c) - 1)))))])
+def vertices3(geoms, index=None):
+    """Each line's 25 / 50 / 75 % vertices, as three point layers."""
+    return [gpd.GeoDataFrame(geometry=[vert(g, f) for g in geoms], index=index, crs=CRS) for f in (0.25, 0.5, 0.75)]
+def vote(lines, col, max_d=60, pts=None):
+    """`col` of the line nearest each link's 25 / 50 / 75 % vertices (`pts`, vertices3(); the reaches' by default),
+    within max_d m, kept when two agree."""
+    pts = pts3 if pts is None else pts
+    v = pd.concat([gpd.sjoin_nearest(p, lines[[col, "geometry"]], max_distance=max_d, how="left").groupby(level=0)[col]
+                   .first().reindex(pts[0].index) for p in pts], axis=1, ignore_index=True)
+    out = v[0].where(v[0].notna() & ((v[0] == v[1]) | (v[0] == v[2])))
+    return out.fillna(v[1].where(v[1].notna() & (v[1] == v[2])))
 own_end = gpd.GeoSeries([shapely.Point(g.coords[-2] if len(g.coords) >= 2 else g.coords[0]) for g in s.geometry],
                         index=s.index, crs=CRS)
 starts = gpd.GeoSeries([shapely.Point(g.coords[0]) for g in s.geometry], index=s.index, crs=CRS)
@@ -83,14 +109,119 @@ s["area_km2"] = sample(area, own_end).round(2)
 # cell drains to the outlet (03b_stitch.route_lake), so those stretches went too (found the same day: 1.5 km of the
 # Oswegatchie, the Raquette between Raquette Lake and Forked Lake, Salmon Lake Outlet, Emma Matilda Lake's outlet).
 # area_km2 stays the link's own area; 05c adds the carried water where this samples it, so the two agree.
-import crossbox
 carried_grid = crossbox.carried_km2(REGION).reshape(area.shape)
 carried = sample(carried_grid, own_end)
 sea = np.array([np.mean(sample(dem, shapely.points(np.asarray(g.coords))) <= 0.5) for g in s.geometry])
-keep = (s.area_km2 + carried >= MAP_MIN_KM2) & (sea < 0.5) & areaclip.inside(s.geometry.values)
-by_carried = keep & (s.area_km2 < MAP_MIN_KM2)
+# Under MAP_MIN_KM2 a creek is drawn down to NHD_MIN_KM2 where NHD maps it year-round or names it (the vote below, on
+# the uncut link). Where streams run at smaller sizes NHD's year-round lines start smaller (the Smokies, Vermont, North
+# Georgia; hardly any in LA), and NHD's named brook-trout branches there drain 0.1-0.39 sq mi: at 1 km2 alone 12.5 % of
+# NHD's named stream miles on the 12 maps were not drawn, 26 % in the Smokies (the audit of 2026-11-22; the user's
+# choice the same day, of keeping 1 km2, NHD's year-round lines only, its named ones only, or both).
+SIDE_RATIO, SIDE_RIVER_KM2, SIDE_NEAR_M, SIDE_ALONG, SIDE_ON_RIVER = 10.0, 50.0, 250.0, 0.6, 0.6   # side channels: below
+# The vote reads the NHD line nearest the link, and a small link along a river's bank reads the river's line, its name
+# and its class: that is no evidence for the link (nhd_says; on the first try about 1,600 bank links of the 12 maps
+# were drawn as "side channels" of the river beside them, 156 mi, scored with the river's size).
+def nhd_says(geoms, km2, lines, big_geoms, big_km2):
+    """Links NHD names or maps year-round (the vote), less what a link reads off a stream SIDE_RATIO times bigger beside
+    it (`big_geoms`, their drainage `big_km2`): a name it shares with one within SIDE_NEAR_M, and, with no name of its
+    own, the year-round class of one of SIDE_RIVER_KM2 or more it runs along (SIDE_ON_RIVER of its length within 150 m,
+    as the side channels' test below)."""
+    p3 = vertices3(geoms)
+    nm = vote(lines, "gnis_name", pts=p3).to_numpy(object)
+    ok = pd.notna(nm) | vote(lines, "flow", pts=p3).eq("perennial").to_numpy()
+    if len(big_geoms):
+        bn, tree = vote(lines, "gnis_name", pts=vertices3(big_geoms)).to_numpy(object), shapely.STRtree(big_geoms)
+        for n_, g in enumerate(geoms):
+            if not ok[n_]:
+                continue
+            near = tree.query(g, predicate="dwithin", distance=SIDE_NEAR_M)
+            if isinstance(nm[n_], str):
+                ok[n_] = not any(bn[k] == nm[n_] and big_km2[k] >= SIDE_RATIO * km2[n_] for k in near)
+            else:
+                river = [k for k in near if big_km2[k] >= max(SIDE_RIVER_KM2, SIDE_RATIO * km2[n_])]
+                ok[n_] = not (river and g.intersection(shapely.union_all(shapely.buffer(big_geoms[river], 150))).length
+                              >= SIDE_ON_RIVER * g.length)
+    return ok
+# The floor reads NHD's natural channels only. Its canals and ditches (FType 336), pipelines (428) and underground
+# conduits (420) are built, and so is a line named after one, as the paths and connectors NHD lays along an aqueduct
+# through its reservoirs are (a name it gives a built channel of the box and no stream line, FType 460). On the first
+# try 9.7 mi of LA's new lines were named after the California and Los Angeles aqueducts, the Gage and Riverside canals
+# and flood-control channels (fish 0-9, 2026-11-22). A stream line NHD names after a channel (a canyon's creek above its
+# flood-control channel) is still read, and so are the paths of a river through its own water.
+BUILT_FTYPES = (336, 420, 428)
+def floor_lines(nl):
+    """The NHD lines `nl` (gnis_name, ftype, flow, geometry) the floor reads: no built channel, nor a line named after
+    one."""
+    built = nl.ftype.isin(BUILT_FTYPES)
+    built_name = set(nl.gnis_name[built].dropna()) - set(nl.gnis_name[nl.ftype.eq(460)].dropna())
+    nl = nl[~built & ~nl.gnis_name.isin(built_name)]
+    return nl[["gnis_name", "flow", "geometry"]].reset_index(drop=True)
+full0 = s.area_km2 + carried
+base = (sea < 0.5) & areaclip.inside(s.geometry.values)
+_f, _g = full0.to_numpy(float), s.geometry.values
+small = ((full0 < MAP_MIN_KM2) & (full0 >= NHD_MIN_KM2) & base).to_numpy()
+_big = np.flatnonzero((full0 >= MAP_MIN_KM2).to_numpy() & base)
+by_nhd = np.zeros(len(s), bool)
+if small.any():
+    by_nhd[small] = nhd_says(_g[small], _f[small], floor_lines(nhd), _g[_big], _f[_big])
+keep = ((full0 >= MAP_MIN_KM2) | by_nhd) & base
+# A creek kept goes on downstream until it meets a kept line: NHD's class changes along a creek, and the vote with it, so
+# a creek kept on its NHD evidence could end in the woods where NHD calls it intermittent (14 such ends in NE Connecticut
+# on the first try). Across an edge two boxes share, the link that ends on it in the next box is judged here with the
+# same rule, on that box's cells and NHD lines: a creek kept on one side goes on on the other.
+_key = lambda c: (round(c[0], 1), round(c[1], 1))
+_starts = defaultdict(list)
+for i, ln in enumerate(_g):
+    _starts[_key(ln.coords[0])].append(i)
+_kp, _seam = keep.to_numpy().copy(), []
+for nb in REGIONS:
+    if nb == REGION or not shapely.box(*REGIONS[nb]["bbox"]).intersection(range_box).length:
+        continue
+    _ns = gpd.read_file(f"{derived_dir(nb)}/dem_streams.gpkg")
+    _ns = _ns[_ns.length > 0]
+    _e = np.array([ln.coords[-1][:2] for ln in _ns.geometry])
+    _in = shapely.contains_xy(range_box.buffer(1), _e[:, 0], _e[:, 1])     # ends on this box's first cell
+    if not _in.any():
+        continue
+    with rasterio.open(f"{derived_dir(nb)}/area_km2.tif") as _src:
+        _a = np.array([v[0] for v in _src.sample([ln.coords[-2][:2] if len(ln.coords) >= 2 else ln.coords[0][:2]
+                                                  for ln in _ns.geometry])], float)
+    _nl = gpd.read_file(f"{raw_dir(nb)}/nhd_flowlines.gpkg")
+    _nl["flow"] = _nl.fcode.map({46006: "perennial", 46003: "intermittent", 46007: "ephemeral",
+                                 55800: ARTIFICIAL_PATH}).fillna("other")
+    _sm = np.flatnonzero(_in & (_a >= NHD_MIN_KM2) & (_a < MAP_MIN_KM2))
+    _ok = np.flatnonzero(_in & (_a >= MAP_MIN_KM2)).tolist()
+    if len(_sm):
+        _bg = np.flatnonzero(_a >= MAP_MIN_KM2)
+        _ok += _sm[nhd_says(_ns.geometry.values[_sm], _a[_sm], floor_lines(_nl), _ns.geometry.values[_bg],
+                            _a[_bg])].tolist()
+    _seam += [j for k in _ok for j in _starts.get(_key(_ns.geometry.values[k].coords[-1]), []) if base[j] and not _kp[j]]
+_n0 = int(_kp.sum())
+_kp[_seam] = True
+# ... and through a pond or reservoir: a creek kept into it goes on below its outlet, where crossbox.py carries the
+# lake's water on (dam_links: the lake's dead end -> the cell below the outlet). On the first try Munson Pond's outflow
+# in the High Peaks (drawn through on live) had no line: the creek into the pond was kept, the one out of it wasn't,
+# and 06_map.py's draw-through stopped at once on the kept creek's end beside it.
+with rasterio.open(crossbox.fdir_path(REGION)) as _src:
+    _T, _W = _src.transform, _src.width
+_past = {_key(_T * (o_ % _W, o_ // _W)): _key(_T * (c_, r_)) for o_, (r_, c_) in crossbox.dam_links(REGION).items()}
+_stack = list(np.flatnonzero(_kp))
+while _stack:
+    i = _stack.pop()
+    _e = _key(_g[i].coords[-1])
+    for j in _starts.get(_e, []) + _starts.get(_past.get(_e), []):
+        if not _kp[j] and base[j]:
+            _kp[j] = True
+            _stack.append(j)
+by_down = _kp & ~keep.to_numpy()
+keep = pd.Series(_kp, index=s.index)
+by_carried = keep & (s.area_km2 < MAP_MIN_KM2) & (full0 >= MAP_MIN_KM2)
+by_nhd &= keep.to_numpy()
 print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reaches them from elsewhere (below a lake's "
-      f"outlet, in from outside the map): {int(by_carried.sum())}, {s.length[by_carried].sum() / 1000:.1f} km")
+      f"outlet, in from outside the map): {int(by_carried.sum())}, {s.length[by_carried].sum() / 1000:.1f} km; "
+      f"{NHD_MIN_KM2:g}-{MAP_MIN_KM2:g} km2 kept as NHD maps them year-round or names them: {int(by_nhd.sum())}, "
+      f"{s.length[by_nhd].sum() / 1000:.1f} km; below a kept creek: {int(by_down.sum())}, "
+      f"{s.length[by_down].sum() / 1000:.1f} km ({len(set(_seam))} on from a creek kept in the next box)")
 s = s[keep].copy()
 # A link is cut where it crosses a lake's shore. pysheds draws one line per link between confluences, so a link that
 # runs from a creek into a lake, or out of one, is part creek and part lake water. 05b_flow.py reads a reach as lying
@@ -160,14 +291,7 @@ else:
     print(f"creek lines cut {LAKE_NEAR_M:g} m below a lake: 0")
 s["road_m"] = mid.distance(road_u).round(0)
 s["trail_m"] = mid.distance(trail_u).round(0)
-pts3 = [gpd.GeoDataFrame(geometry=[vert(g, f) for g in s.geometry], index=s.index, crs=CRS) for f in (0.25, 0.5, 0.75)]
-def vote(lines, col, max_d=60, pts=None):
-    """`col` of the line nearest each of the link's 25 / 50 / 75 % vertices (within max_d m), kept when two agree."""
-    pts = pts3 if pts is None else pts
-    v = pd.concat([gpd.sjoin_nearest(p, lines[[col, "geometry"]], max_distance=max_d, how="left").groupby(level=0)[col]
-                   .first().reindex(pts[0].index) for p in pts], axis=1, ignore_index=True)
-    out = v[0].where(v[0].notna() & ((v[0] == v[1]) | (v[0] == v[2])))
-    return out.fillna(v[1].where(v[1].notna() & (v[1] == v[2])))
+pts3 = vertices3(s.geometry, s.index)
 nhd_k = nhd[["gnis_name", "flow", "geometry"]].reset_index(drop=True)
 s["name"] = vote(nhd_k, "gnis_name")
 s["flow"] = vote(nhd_k, "flow").fillna("unmapped")
@@ -269,12 +393,14 @@ print(f"names along rivers: {len(renamed)} reaches take the river's name "
 #   the maps call it a side channel;
 # - else it is the lower end of a creek with no name, and has none.
 # Decided on the names as they stand here, so nothing is renamed back and forth.
-SIDE_RATIO, SIDE_RIVER_KM2, SIDE_NEAR_M, SIDE_ALONG, SIDE_ON_RIVER = 10.0, 50.0, 250.0, 0.6, 0.6
 names0 = s["name"].to_numpy(object)
 is_named = np.array([isinstance(n, str) for n in names0])
+# From a reach of MAP_MIN_KM2 or more the stem climbs reaches of that size only: a creek drawn under it because NHD names
+# it or maps it year-round can end at a side channel's head, and the stem then ran up that creek, away from the river (4
+# of NE Connecticut's 13 side channels lost the river's size, flow and trout records that way, 2026-11-22).
 stem_up = np.full(len(s), -1)                 # the biggest reach running in, by full drainage (main_up above)
 for i, g in enumerate(geoms):
-    donors = donors_of(i)
+    donors = [j for j in donors_of(i) if full_km2[j] >= MAP_MIN_KM2 or full_km2[i] < MAP_MIN_KM2]
     if donors:
         stem_up[i] = max(donors, key=lambda j: full_km2[j])
 big = np.flatnonzero(is_named & (full_km2 >= SIDE_RIVER_KM2) & ~in_water)
