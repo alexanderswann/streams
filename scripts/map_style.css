@@ -40,7 +40,20 @@
 .wk { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 7px; border-top: 1px solid #eee; padding-top: 5px; }
 .wk .dm { width: 100%; }
 .wo { display: inline-flex; align-items: center; color: #7a828c; font-size: 10px; }
-.leaflet-control-layers-expanded { max-height: 70vh; overflow-y: auto; font-size: 12px; }
+/* the layer list (map_drainages.js): its header stays put and only the list under it scrolls, so "–" can always fold
+   it; open, it draws above the legend (on a phone the two overlap) */
+.leaflet-control-layers-expanded { max-height: 70vh; display: flex; flex-direction: column; font-size: 12px; }
+.leaflet-control-layers-expanded .leaflet-control-layers-list { overflow-y: auto; min-height: 0; }
+.leaflet-control-layers .lyh { display: none; }
+.leaflet-control-layers-expanded .lyh { display: flex; flex: none; justify-content: space-between; align-items: center;
+  gap: 12px; font-size: 13px; margin: 0 -10px 4px -6px; padding: 0 10px 5px 8px; border-bottom: 1px solid #e9ecef; }
+.lyh .lx { position: relative; flex: none; }
+.lyh .lx::after { content: ""; position: absolute; inset: -6px -10px -6px -12px; }   /* a fingertip-sized target */
+.leaflet-top.leaflet-right { z-index: 1001; }
+/* a group of entries with one switch for them all: on, off, or mixed ("2 of 8") */
+.lgh { font-weight: 600; }
+.lgn { float: right; margin: 2px 0 0 8px; color: #7a828c; font-weight: 400; font-size: 11px; white-space: nowrap; }
+.lgm { margin-left: 6px; padding-left: 6px; border-left: 2px solid #e9ecef; }
 .fbar { background: #e7f0fb; border-radius: 4px; padding: 3px 6px; margin-bottom: 6px; }
 .to3d { font-size: 11px; color: #1864ab; text-decoration: none; margin-right: 6px; }
 .pctt { font: 600 10px system-ui, -apple-system, sans-serif; letter-spacing: .03em; fill: #2b2b2b;

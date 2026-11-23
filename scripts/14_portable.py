@@ -66,10 +66,13 @@ HTML = r"""<!doctype html>
 <style>
   html, body, #map { height: 100%; margin: 0; }
   body { font: 13px/1.4 system-ui, -apple-system, sans-serif; color: #1d1d1f; }
-  .panel { background: rgba(255,255,255,.96); border-radius: 10px; box-shadow: 0 1px 8px rgba(0,0,0,.25); padding: 9px 11px; max-width: 250px; }
-  .panel h1 { font-size: 14px; margin: 0; cursor: pointer; }
+  /* the panel fits in the map (fitPanel below): its header stays put and only the list under it scrolls, so the header
+     can always fold it and every switch can be reached on a phone */
+  .panel { background: rgba(255,255,255,.96); border-radius: 10px; box-shadow: 0 1px 8px rgba(0,0,0,.25); padding: 9px 11px; max-width: 250px;
+           display: flex; flex-direction: column; }
+  .panel h1 { font-size: 14px; margin: 0; cursor: pointer; flex: none; }
   .panel h1 span { float: right; color: #6b7280; padding-left: 14px; }
-  .panel .list { margin-top: 6px; }
+  .panel .list { margin-top: 6px; padding-top: 4px; border-top: 1px solid #e9ecef; overflow-y: auto; min-height: 0; }
   .panel .a { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit; padding: 6px 4px; border-radius: 6px; cursor: pointer; color: inherit; }
   .panel .a:active, .panel .a:hover { background: #eef2f7; }
   .panel .a small { color: #6b7280; display: block; }
@@ -324,6 +327,10 @@ panel.onAdd = () => {
   return d;
 };
 panel.addTo(map);
+// as tall as the map leaves room for under the buttons above it and over the scale bar (less its own padding)
+const fitPanel = () => { const d = panel.getContainer(); d.style.maxHeight = Math.max(120, map.getSize().y - d.offsetTop - 74) + "px"; };
+map.on("resize", fitPanel);
+fitPanel();
 function sync() { const c = map.getCenter(); history.replaceState(null, "", `#${c.lat.toFixed(4)},${c.lng.toFixed(4)},${map.getZoom()}`); place(); }
 map.on("moveend zoomend", sync);
 window.addEventListener("hashchange", go);

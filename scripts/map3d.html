@@ -16,7 +16,12 @@
   .panel { position: absolute; z-index: 2; background: rgba(255,255,255,.95); border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,.22); padding: 9px 11px; backdrop-filter: blur(6px); }
   #legend { left: 10px; bottom: 30px; width: 260px; }
-  #layers { right: 10px; top: 10px; width: 250px; max-height: calc(100% - 140px); overflow-y: auto; }
+  /* the layer panel's header stays put and only the list under it scrolls, so "–" can always fold the panel */
+  #layers { right: 10px; top: 10px; width: 250px; max-height: calc(100% - 140px); display: flex; flex-direction: column; }
+  #layers:not(.min) .ph { margin: 0 -11px; padding: 0 11px 6px; border-bottom: 1px solid #e9ecef; }
+  #layers .pb { overflow-y: auto; min-height: 0; margin-right: -11px; padding: 2px 11px 0 0; }
+  #layers .tg { position: relative; flex: none; }
+  #layers .tg::after { content: ""; position: absolute; inset: -9px -11px -8px -12px; }   /* a fingertip-sized target */
   .ph { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
   .ph a { font-size: 11px; color: #1864ab; text-decoration: none; }
   .tg { border: 0; background: #f1f3f5; border-radius: 4px; width: 22px; height: 20px; cursor: pointer; font-size: 14px; line-height: 1; }
@@ -47,7 +52,11 @@
   .sec { font-weight: 600; margin: 8px 0 3px; color: #495057; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
   .sec:first-child { margin-top: 2px; }
   label.li { display: flex; align-items: center; gap: 6px; padding: 1px 0; cursor: pointer; }
-  label.li .sym { width: 14px; text-align: center; }
+  label.li .sym { flex: none; width: 20px; text-align: center; }
+  /* a group of entries with one switch for them all: on, off, or mixed ("2 of 8") */
+  .grp > label.li { font-weight: 600; }
+  .grp .gn { margin-left: auto; padding-left: 6px; color: #7a828c; font-weight: 400; font-size: 11px; white-space: nowrap; }
+  .grp .gm { margin-left: 6px; padding-left: 7px; border-left: 2px solid #e9ecef; }
   .row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
   .row input[type=range] { flex: 1; }
   .btns { display: flex; gap: 6px; margin-top: 6px; }
@@ -554,8 +563,25 @@
       map.setPaintProperty("hillshade", "hillshade-exaggeration", r.value === "gray" ? 0.45 : 0.15);
     });
     document.getElementById("lbl").onchange = e => map.setLayoutProperty("labels-ref", "visibility", e.target.checked ? "visible" : "none");
-    document.getElementById("overlays").innerHTML = ov.map(([id, label, sym, , on]) =>
-      `<label class="li"><input type="checkbox" data-o="${id}"${on ? " checked" : ""}><span class="sym">${sym}</span>${label}</label>`).join("");
+    // Groups of entries with one switch for them all (the user, 2026-11-23): the drops with the known falls, the trails
+    // with their bike colouring (a group of their own: the way on from the road on foot or by bike, where "All roads"
+    // shows what a car can drive), and the roads. Each entry keeps its own switch. A group's switch shows all on, all
+    // off or mixed; it turns them all on, or all off when they all are. (map_drainages.js does the same on the 2D map.)
+    const GROUPS = [["drops", "All drops &amp; waterfalls", id => /^drop\d+$/.test(id) || id === "falls"],
+                    ["trails", "All trails &amp; bike access", id => id === "trails" || id === "bike"],
+                    ["roads", "All roads", id => id.startsWith("road-")]];
+    const groupOf = id => GROUPS.find(([, , t]) => t(id) && ov.filter(x => t(x[0])).length > 1);
+    const item = ([id, label, sym, , on]) =>
+      `<label class="li"><input type="checkbox" data-o="${id}"${on ? " checked" : ""}><span class="sym">${sym}</span>${label}</label>`;
+    const placed = new Set();
+    document.getElementById("overlays").innerHTML = ov.map(o => {
+      const g = groupOf(o[0]);
+      if (!g) return item(o);
+      if (placed.has(g[0])) return "";
+      placed.add(g[0]);
+      return `<div class="grp"><label class="li"><input type="checkbox" data-g="${g[0]}"><span class="sym"></span>${g[1]}` +
+             `<span class="gn"></span></label><div class="gm">${ov.filter(x => g[2](x[0])).map(item).join("")}</div></div>`;
+    }).join("");
     // on by default: streams, drainage outlines and names, the PCT (each overlay's last entry); the rest start hidden
     ov.forEach(([, , , ids, on]) => ids.forEach(l => { if (map.getLayer(l)) map.setLayoutProperty(l, "visibility", on ? "visible" : "none"); }));
     // the reaches lying in a lake (lk) show only while the Lakes layer is off: the lake draws that water
@@ -568,12 +594,26 @@
     };
     const lakeOv = ov.find(x => x[0] === "lakes");
     lakeFilter(!!(lakeOv && lakeOv[4]));
-    document.querySelectorAll("input[data-o]").forEach(cb => cb.onchange = () => {
+    const show = cb => {
       const o = ov.find(x => x[0] === cb.dataset.o);
       o[3].forEach(l => map.setLayoutProperty(l, "visibility", cb.checked ? "visible" : "none"));
       if (o[0] === "streams") map.setLayoutProperty("creek-names", "visibility", cb.checked ? "visible" : "none");
       if (o[0] === "lakes") lakeFilter(cb.checked);
+    };
+    const members = gb => [...gb.closest(".grp").querySelectorAll("input[data-o]")];
+    const syncGroups = () => document.querySelectorAll("input[data-g]").forEach(gb => {
+      const ms = members(gb), n = ms.filter(cb => cb.checked).length;
+      gb.checked = n === ms.length;
+      gb.indeterminate = n > 0 && n < ms.length;
+      gb.parentNode.querySelector(".gn").textContent = gb.indeterminate ? `${n} of ${ms.length}` : "";
     });
+    document.querySelectorAll("input[data-o]").forEach(cb => cb.onchange = () => { show(cb); syncGroups(); });
+    document.querySelectorAll("input[data-g]").forEach(gb => gb.onchange = () => {
+      const ms = members(gb), on = !ms.every(cb => cb.checked);
+      ms.forEach(cb => { if (cb.checked !== on) { cb.checked = on; show(cb); } });
+      syncGroups();
+    });
+    syncGroups();
     const ex = document.getElementById("exag");
     ex.oninput = () => { document.getElementById("exv").textContent = (+ex.value).toFixed(1);
                          map.setTerrain(+ex.value > 0 ? {source: "dem", exaggeration: +ex.value} : null); };

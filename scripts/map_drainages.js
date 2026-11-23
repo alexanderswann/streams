@@ -535,6 +535,61 @@ function initDrainageMap(map, ctrl) {
   }
   roadOverlays.forEach(([g, label]) => ctrl.addOverlay(g, "Roads: " + label));
 
+  // ---- the layer list, as the 3D map's "View & layers" panel (the user, 2026-11-23): a header whose "–" folds the
+  // list and stays put while the list under it scrolls (map_style.css), and groups of entries with one switch for them
+  // all: the drops with the known falls, the trails with their bike colouring (a group of their own: the way on from
+  // the road on foot or by bike, where "All roads" shows what a car can drive), and the roads. Each entry keeps its own
+  // switch. A group's switch shows all on, all off or mixed; it turns them all on, or all off when they all are.
+  // Leaflet rebuilds the list when a layer is added or removed other than by its own switch, so the groups are laid
+  // out again after each rebuild, at the same scroll position.
+  const lyc = ctrl.getContainer(), FALLS = (window.LBL || {}).falls;
+  const lyh = L.DomUtil.create("div", "lyh");
+  lyh.innerHTML = `<b>View &amp; layers</b><button type="button" class="lx" title="Hide the layer list">–</button>`;
+  lyc.insertBefore(lyh, ctrl._section);
+  L.DomEvent.on(lyh.querySelector(".lx"), "click", e => { L.DomEvent.stop(e); ctrl.collapse(); });
+  const LGROUPS = [["All drops &amp; waterfalls", o => /Drops: /.test(o.name) || (!!FALLS && o.name.includes(FALLS))],
+                   ["All trails &amp; bike access", o => o.layer === trailGroup || o.layer === bikeView],
+                   ["All roads", o => roadOverlays.some(([g]) => g === o.layer)]];
+  const lgroups = [];      // [the group's checkbox, its layers] as laid out by the last rebuild
+  const syncGroups = () => lgroups.forEach(([cb, ls]) => {
+    const n = ls.filter(l => map.hasLayer(l)).length;
+    cb.checked = n === ls.length;
+    cb.indeterminate = n > 0 && n < ls.length;
+    cb.closest("label").querySelector(".lgn").textContent = cb.indeterminate ? `${n} of ${ls.length}` : "";
+  });
+  const rebuild = ctrl._update;
+  ctrl._update = function () {
+    const top = this._section ? this._section.scrollTop : 0;
+    rebuild.call(this);
+    lgroups.length = 0;
+    const items = this._layerControlInputs.map(inp => [inp, this._getLayer(inp.layerId)]).filter(([, o]) => o && o.overlay);
+    LGROUPS.forEach(([title, test]) => {
+      const mine = items.filter(([, o]) => test(o));
+      if (mine.length < 2) return;
+      const first = mine[0][0].closest("label"), grp = L.DomUtil.create("div", "lgrp");
+      first.parentNode.insertBefore(grp, first);
+      L.DomUtil.create("label", "lgh", grp).innerHTML = `<span class="lgn"></span><span><input type="checkbox" ` +
+        `class="leaflet-control-layers-selector"><span> ${title}</span></span>`;
+      const members = L.DomUtil.create("div", "lgm", grp);
+      mine.forEach(([inp]) => members.appendChild(inp.closest("label")));
+      const cb = grp.querySelector("input"), ls = mine.map(([, o]) => o.layer);
+      L.DomEvent.on(cb, "change", () => {
+        const on = !ls.every(l => map.hasLayer(l));
+        this._handlingClick = true;            // as for a click on an entry: no rebuild of the list per layer
+        ls.forEach(l => { if (on !== map.hasLayer(l)) { if (on) map.addLayer(l); else map.removeLayer(l); } });
+        this._handlingClick = false;
+        this._layerControlInputs.forEach(inp => { inp.checked = map.hasLayer(this._getLayer(inp.layerId).layer); });
+        syncGroups();
+      });
+      lgroups.push([cb, ls]);
+    });
+    syncGroups();
+    if (this._section) this._section.scrollTop = top;
+    return this;
+  };
+  map.on("overlayadd overlayremove", syncGroups);   // an entry's own switch (Leaflet doesn't rebuild the list then)
+  ctrl._update();
+
   // ---- legend panel ----
   const panel = L.control({position: "bottomleft"});
   panel.onAdd = () => {
