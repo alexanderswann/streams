@@ -783,6 +783,14 @@ timed from the Teton Park Road, North Park Road or Grassy Lake Road gates with a
 Creek: "park at Teton Park Road → bike 57 min on closed roads → hike 48 min", fish 100; now "park at Lupine Meadows
 Park Access → hike 41 min", fish 87).
 
+The Blue Ridge Parkway's closures (Lexington, the Smokies; 2026-11-23) come from the park's table of milepost
+sections: a section is closed when its Status says Closed, and in an open one only the milepost ranges its notes call
+closed ("CLOSED: MP 63.5 - 63.9 around the James River Bridge"); a closed campground or picnic area closes no road.
+Each closure is laid on the Parkway mile by mile between the park's milepost points, and a mile is kept only where a
+road between them is about as long as the mileposts say. OSM tags the James River bridge as under construction (02
+downloads no such ways): routed round it, the 61.4-66.3 section had also closed 4.2 km of US 501 and 3.4 km of Elon
+Road (Peters Creek: a 106 min drive, now 39).
+
 **Access, conditions and context** (run after 05 and 07):
 - `08_hike.py` (per REGION): cost-distance approach time from the nearest road a car can reach, on the 10 m DEM.
   Freeways and their ramps don't count as places to start from.

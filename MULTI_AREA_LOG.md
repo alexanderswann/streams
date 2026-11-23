@@ -4122,3 +4122,35 @@ where the channel runs.
   - Rice's Falls, no longer detected (04b's slope ratio 2.60 → 2.49 under 2.5; a 04b follow-up).
   - Frank Pond's 29 m creek head now reads "reservoir": 05_score joins runs under 50 m to their neighbour.
   - Grass Pond's second outlet runs into Lows Lake at once.
+
+## 2026-11-23: Blue Ridge Parkway closures: the Status column decides, laid on the Parkway mile by mile (access-times session)
+
+- **What was wrong:** 07 read any "closed" in a row of the park's closures table as the whole section closed. The
+  James River Bridge row ("61.4 - 66.3 · Open · CLOSED: MP 63.5 - 63.9 around the James River Bridge for
+  rehabilitation. Detour signs in place from Mp 61.4 - 64.") closed 61.4-66.3, and "Crabtree Falls Campground closed"
+  closed 333.9-342.1 (outside both maps). Worse, the section was routed in one go between the nearest whole mileposts:
+  OSM tags the Parkway's James River bridge highway=construction while it is rebuilt (way 38284544, checked
+  2026-11-23) and 02's download takes no construction ways, so the route went round by US 501, and the closure cut
+  4.2 km of Lee Jackson Highway (US 501), 3.4 km of Elon Road (VA 130), 5.6 km of the Parkway and bits of Peters Creek
+  Road: drives to Peters Creek ran 106 min instead of 39.
+- **Now:** a section closes whole only when its Status says Closed. In an open one (or one partly closed) the milepost
+  ranges its notes call closed close: "MP 63.5 - 63.9", "between MP 11.2 and MP 11.8", "Milepost 52.0 to 55.5",
+  "MP 31.5-32.0 closed"; not a range after "detour" or "open"; a closure with no milepost range (a campground, a
+  picnic area, a trail) closes no road and is printed in the log. Each mile between the park's milepost points (whole
+  miles) is routed along the OSM lines named as the road most of the points lie on (else along any road: Bluff
+  Mountain Tunnel is named on its own in OSM), kept only if no longer than 1.5 x the mileposts say + 300 m, and the
+  range is cut at its fractions of its first and last mile. A mile OSM has no Parkway for is left out (the way round
+  is other roads); a range with no mile placed is drawn straight and cuts nothing, as before for unplaced closures.
+- **Measured** in scratch on main 46ca355 (both 07 runs back to back on the same feeds): Lexington's bridge closure is
+  now 63.5-63.9, drawn straight across the river and not counted (OSM has no road there, so nothing changes for it);
+  175 reaches (98.2 mi) change approach time, drives shorter for 163 (median -12 min; 30 by an hour or more), 37 lose
+  fish score (mean -2.5, at most -6), fish 60+ 1,925 -> 1,922 reaches (872.9 -> 871.6 mi: Falling Rock Creek 64 -> 59,
+  Otter Creek 62 -> 58, Peters Creek 60 -> 57); 3 drops, 1 lake and 107 trailheads change. Smokies: the same 20
+  closures (3 counted); none of its Parkway sections was closed that night. No access-line notes change.
+- **Left:** rows for spur roads at one milepost ("120.3 Roanoke Mountain Loop · Closed", "458.2 Heintooga Spur Road ·
+  Closed · Weather Closure") are still skipped, as before: their road isn't the Parkway's mileposts. Sections that run
+  past a map's edge are still skipped whole (no milepost point within 1.5 miles of an end).
+- **Installed** 2026-11-23 03:27 ET as 491aeba on main, after the swamp fix; rebuilt with all 12 maps and published
+  06:01 as site 9f6e867. On the live map Peters Creek reads "Drive 39 min (26 mi) from 24450 Lexington → park at
+  Marcus Trail → hike 0 min" (fish 83 there, and Falling Rock Creek 76: wild brook trout water is sized for brook
+  trout since f24e043, in the same rebuild; the scores above are from before it).
