@@ -63,6 +63,8 @@
   .btns button { flex: 1; border: 1px solid #ced4da; background: #fff; border-radius: 6px; padding: 4px; font: inherit; cursor: pointer; }
   .btns button:hover { background: #f1f3f5; }
   .maplibregl-popup-content { border-radius: 8px; padding: 8px 10px; font: 12px/1.4 system-ui, sans-serif; max-width: 330px; }
+  /* a phone: a popup is held to the screen's width (onScreen below pans it clear of the controls and panels) */
+  @media (max-width: 640px) { .maplibregl-popup-content { max-width: calc(100vw - 36px); } }
   .tip .maplibregl-popup-content { padding: 5px 8px; pointer-events: none; }
   .tip .maplibregl-popup-tip { display: none; }
   .dw { color: #444; margin: 1px 0 3px; }
@@ -710,6 +712,35 @@
     };
     map.on("mousemove", e => { if (!pending) requestAnimationFrame(onMove); pending = e; });
     map.getCanvas().addEventListener("mouseleave", () => { tip.remove(); setHover(null); });
+    // On a phone a popup is about as wide as the screen, and MapLibre sets one beside the tapped point wherever that
+    // isn't near the middle (anchor left or right) and doesn't pan it into view: a tap near an edge put it partly off the
+    // screen with its close button (375 px: 75..415; 320 px: -160..160). There a popup opens under or over the point,
+    // whichever has more room, is held to the screen's width (the CSS above), and the map pans it clear of the controls
+    // and panels, its head (name, fish score, close button) first where it is taller than the room; when its fish-score
+    // breakdown opens or folds (map_score.js's "fs-toggle") the map pans the breakdown whole into view. Desktop as before.
+    const narrow = () => window.innerWidth <= 640;
+    let popped = null;
+    const onScreen = (again = 1) => {
+      const el = popped && popped.isOpen() && popped.getElement();
+      if (!el) return;
+      const shown = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
+      const t = (shown[0] || el.querySelector(".maplibregl-popup-content")).getBoundingClientRect();
+      const m = map.getContainer().getBoundingClientRect();
+      const dx = t.left < m.left + 6 ? m.left + 6 - t.left : t.right > m.right - 6 ? m.right - 6 - t.right : 0;
+      // the controls and panels across its width; a panel opened over half the map is the user's, and left alone
+      const obs = [...document.querySelectorAll(".maplibregl-ctrl-top-left .maplibregl-ctrl, .maplibregl-ctrl-top-right " +
+        ".maplibregl-ctrl, .maplibregl-ctrl-bottom-left .maplibregl-ctrl, .maplibregl-ctrl-bottom-right .maplibregl-ctrl, .panel")]
+        .map(o => o.getBoundingClientRect())
+        .filter(o => o.width && o.height && o.height < m.height / 2 && t.left + dx < o.right && t.right + dx > o.left);
+      const mid = m.top + m.height / 2;
+      const ceil = Math.max(m.top, ...obs.filter(o => o.top + o.bottom < 2 * mid).map(o => o.bottom)) + 6;
+      const floor = Math.min(m.bottom, ...obs.filter(o => o.top + o.bottom >= 2 * mid).map(o => o.top)) - 6;
+      const dy = t.top < ceil || t.height > floor - ceil ? ceil - t.top : t.bottom > floor ? floor - t.bottom : 0;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      map.panBy([-dx, -dy], {duration: 300});
+      if (again) map.once("moveend", () => onScreen(again - 1));     // a tilted map moves the point a little off
+    };
+    document.addEventListener("fs-toggle", () => { if (narrow()) onScreen(); });
     map.on("click", e => {
       let f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
       if (!f) return;
@@ -720,7 +751,11 @@
       const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
-      new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map);
+      if (!narrow()) { new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map); return; }
+      popped = new maplibregl.Popup({maxWidth: (window.innerWidth - 16) + "px",
+                                     anchor: e.point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
+        .setLngLat(e.lngLat).setHTML(html).addTo(map);
+      onScreen();
     });
     // keep the 2D link pointed at the current view
     const sync = () => { const c = map.getCenter();
