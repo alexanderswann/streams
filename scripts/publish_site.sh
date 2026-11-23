@@ -1,23 +1,25 @@
 #!/bin/zsh
-# Put the maps into a local copy of the GitHub Pages site (alexanderswann.github.io), in its streams/ folder, and
-# commit them there.
+# Put the maps into a local copy of the site branch of github.com/alexanderswann/streams (branch gh-pages, folder
+# docs/, which GitHub Pages serves at https://alexanderswann.github.io/streams/), and commit them there. Until
+# 2026-11-22 the maps lived in the streams/ folder of the user's own site repo (alexanderswann.github.io); the user
+# moved them to their own repo that night, code on main and the site on gh-pages, at the same address.
 #   ./publish_site.sh          commit only; the last lines say how to publish
 #   ./publish_site.sh push [now]   commit and push, which puts it live (owner's standing OK, 2026-11-19; the login is a
-#                              token for this one repository in the Mac's keychain, and it expires: when the push is
-#                              refused, the owner makes a new token and pushes once from a terminal)
-#   streams/index.html                  the map of all areas (13_overview.py)
-#   streams/preview.jpg                 the card shown when the link is sent in iMessage etc. (15_preview.py, run by hand)
-#   streams/<area>/                     that area's 2D map, 3D map and data, creek profiles, hillshades
-# The copy lives in publish/alexanderswann.github.io (ignored by this project's git). Nothing outside streams/ is
-# added, changed or removed: the site that is already there stays exactly as it is (owner's rule, 2026-11-19), and
-# the script stops if its commit would touch anything else. No .nojekyll either: GitHub's Jekyll step copies these
+#                              fine-grained token in the Mac's keychain for alexanderswann.github.io and streams, and
+#                              it expires: when the push is refused, the owner renews it and pushes once from a
+#                              terminal)
+#   docs/index.html                     the map of all areas (13_overview.py)
+#   docs/preview.jpg                    the card shown when the link is sent in iMessage etc. (15_preview.py, run by hand)
+#   docs/<area>/                        that area's 2D map, 3D map and data, creek profiles, hillshades
+# The copy lives in publish/streams-site (ignored by this project's git). Nothing outside docs/ is added, changed or
+# removed (the site branch holds only the site), and the script stops if its commit would touch anything else. No .nojekyll either: GitHub's Jekyll step copies these
 # files as they are (none starts with front matter, none has a name starting with _ or .).
 # A push goes up area by area (see the push section below), and after it the phone copies are rebuilt from the same
 # maps: the one-file map (14_portable.py) and phone/ (phone_sync.sh), so the phone and the website match (2026-11-20).
 cd /Users/mac/Fishing
 PY=.venv/bin/python
-SITE=publish/alexanderswann.github.io
-DEST=$SITE/streams
+SITE=publish/streams-site
+DEST=$SITE/docs
 # Never while maps are being built, in this session or another: on 2026-11-19 a push picked up maps another
 # session was still rebuilding and had not checked. Two tests, since a build pauses between its steps: no pipeline
 # step or run_*.sh driver running, and nothing in output/ written in the last 15 minutes.
@@ -51,7 +53,7 @@ fresh=$(find output -type f -mmin -15 ! -name index.html ! -name stream_maps_all
 [[ -n $fresh && $2 != now ]] && { echo "STOP: $fresh was written in the last 15 minutes; a build may be under way. Check the maps, then publish (or: push now)."; exit 1; }
 if [[ ! -d $SITE/.git ]]; then
   mkdir -p publish
-  git clone -q https://github.com/alexanderswann/alexanderswann.github.io.git $SITE || exit 1
+  git clone -q -b gh-pages https://github.com/alexanderswann/streams.git $SITE || exit 1
 fi
 git -C $SITE pull -q --ff-only 2>/dev/null
 $PY scripts/13_overview.py || exit 1
@@ -71,30 +73,30 @@ big=$(find $DEST -type f -size +95M | head -1)
 [[ -n $big ]] && { echo "STOP: $big is over 95 MB; GitHub refuses files over 100 MB"; exit 1; }
 hid=$(find $DEST \( -name '_*' -o -name '.*' \) | head -1)
 [[ -n $hid ]] && { echo "STOP: $hid starts with _ or . ; GitHub Pages would not serve it"; exit 1; }
-git -C $SITE add -A streams
-out=$(git -C $SITE diff --cached --name-only | grep -v '^streams/' | head -1)
-[[ -n $out ]] && { echo "STOP: the commit would touch $out, outside streams/"; exit 1; }
+git -C $SITE add -A docs
+out=$(git -C $SITE diff --cached --name-only | grep -v '^docs/' | head -1)
+[[ -n $out ]] && { echo "STOP: the commit would touch $out, outside docs/"; exit 1; }
 if git -C $SITE diff --cached --quiet; then
   echo "nothing new to commit in $SITE"
 else
-  git -C $SITE commit -q -m "Stream maps: all areas under /streams/ ($(date '+%Y-%m-%d'))
+  git -C $SITE commit -q -m "Stream maps: all areas ($(date '+%Y-%m-%d'))
 
-Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>" || exit 1
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" || exit 1
 fi
-du -sh $DEST | awk '{print "streams/ is", $1}'
+du -sh $DEST | awk '{print "docs/ is", $1}'
 git -C $SITE log --oneline | head -2
 if [[ $1 == push ]]; then
-  out=$(git -C $SITE diff --name-only origin/master HEAD | grep -v '^streams/' | head -1)
-  [[ -n $out ]] && { echo "STOP: not pushed, $out is outside streams/"; exit 1; }
+  out=$(git -C $SITE diff --name-only origin/gh-pages HEAD | grep -v '^docs/' | head -1)
+  [[ -n $out ]] && { echo "STOP: not pushed, $out is outside docs/"; exit 1; }
   # -- push, area by area --
   # Packing a push, git sends a changed file as a difference from its last version only when it finds that version,
   # and it looks for just one file of each name: every area's files have the same names, so a full republish went up
   # nearly whole (134 MB at 10:35 and 85 MB at 12:43 on 2026-11-20, for about 5 MB of real change). So the areas go up
   # one per push, to a temporary branch (publish-upload) that GitHub Pages doesn't build: each step is the site as it
-  # stands plus one more area from the new commit. The last area goes in the same push as master, whose commit then
+  # stands plus one more area from the new commit. The last area goes in the same push as gh-pages, whose commit then
   # costs nothing more (git counts as already sent only what the steps of that same push lead from); the site builds
-  # once, the temporary branch is deleted, and master's history is the same as with one push.
-  base=$(git -C $SITE rev-parse origin/master)
+  # once, the temporary branch is deleted, and gh-pages' history is the same as with one push.
+  base=$(git -C $SITE rev-parse origin/gh-pages)
   if [[ $base == $(git -C $SITE rev-parse HEAD) ]]; then
     echo "Nothing to push: the live site already has these maps"
     exit 0
@@ -109,12 +111,12 @@ if [[ $1 == push ]]; then
     step=$(git -C $SITE commit-tree $(GIT_INDEX_FILE=$idx git -C $SITE write-tree) -p $step -m "Upload step: $p") || exit 1
     if [[ $p != $parts[-1] ]]; then
       GIT_TERMINAL_PROMPT=0 git -C $SITE push -q origin "+${step}:refs/heads/publish-upload" ||
-        { echo "NOT PUSHED: the upload of $p was refused (see above; the saved GitHub login?); master is unchanged"; exit 1; }
+        { echo "NOT PUSHED: the upload of $p was refused (see above; the saved GitHub login?); gh-pages is unchanged"; exit 1; }
     fi
   done
   [[ $(git -C $SITE rev-parse "${step}^{tree}") == $(git -C $SITE rev-parse "HEAD^{tree}") ]] ||
-    { echo "STOP: the upload steps don't add up to the commit; master not pushed"; exit 1; }
-  GIT_TERMINAL_PROMPT=0 git -C $SITE push origin "+${step}:refs/heads/publish-upload" master ||
+    { echo "STOP: the upload steps don't add up to the commit; gh-pages not pushed"; exit 1; }
+  GIT_TERMINAL_PROMPT=0 git -C $SITE push origin "+${step}:refs/heads/publish-upload" gh-pages ||
     { echo "NOT PUSHED: the saved GitHub login was refused"; exit 1; }
   GIT_TERMINAL_PROMPT=0 git -C $SITE push -q origin --delete publish-upload ||
     echo "NOTE: the temporary branch is still on GitHub: git -C /Users/mac/Fishing/$SITE push origin --delete publish-upload"
