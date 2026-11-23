@@ -1444,7 +1444,8 @@ m.get_root().header.add_child(folium.Element(
 _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
-    + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("map_drainages.js") + "</script>"))
+    + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_drainages.js")
+    + "</script>"))
 
 # every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
@@ -1460,6 +1461,70 @@ folium.GeoJson(top.to_json(), name="<span style='color:#e8590c'>━</span> Best 
 X3D["trails"] = json.loads(t_feat.to_json(na="drop", drop_id=True))
 X3D["trail_labels"] = trail_labels
 X3D["roads"], X3D["parking"] = roads_json, park_json
+
+# ---- the creek profile a drop or a known fall is on (the user, 2026-11-23: "when i clicked a known waterfall like this
+# make a link to the creek profile"). Their popups link to it as the streams' do (profiles.html#q=name&lat=&lon= opens
+# that creek's profile at the spot), and only where 12_profiles.py draws that creek's profile within SNAP_FALL of the
+# point (creekprofiles.py, its rule): no link that would find no profile (a creek under MIN_KM), nor one that would
+# open a creek of the same name elsewhere on the map. A known fall's creek: the drawn creek its source's note names
+# ("on Long Creek"), within SNAP_FALL of the fall; else the nearest drawn creek, if it is within FALL_NEAR_M and named.
+# Measured on the 12 maps (2,158 known falls, 2026-11-23): where a note names the creek and that creek is drawn nearby,
+# its line lies within 30 m of the fall for 90% of them and within 100 m for 95%, and the nearest drawn creek is the
+# named one for 97%; beyond 100 m most falls lie on creeks too small to draw, and the nearest drawn one is another.
+import re
+from config import raw_dir
+import creekprofiles
+FALL_NEAR_M = 100
+_nhd = [gpd.read_file(f"{raw_dir(r_)}/nhd_flowlines.gpkg", columns=["gnis_name", "ftype"]).to_crs(EPSG).assign(range=r_)
+        for r_ in done if os.path.exists(f"{raw_dir(r_)}/nhd_flowlines.gpkg")]
+PROFILES = creekprofiles.ProfileLines(pd.concat(_nhd, ignore_index=True) if _nhd else
+                                      gpd.GeoDataFrame(columns=["gnis_name", "ftype", "range"], geometry=[]))
+
+
+def profile_link(creek, lat, lon):
+    """The streams' "Open <creek> profile ↗" link (map_drainages.js), for a spot on that creek."""
+    return (f"<a href='profiles.html#q={quote(creek)}&lat={lat:.5f}&lon={lon:.5f}' target='_blank'>"
+            f"Open {hesc(creek)} profile ↗</a>")
+
+
+_creek_key = lambda s: re.sub(r"\s+", " ", re.sub(r"^the\s+", "", s.lower().replace("’", "'"))).strip()
+_NOTE_CREEK = re.compile(r"((?:[A-Z][\w'’.-]*\s+){0,4}(?:Creek|Brook|River|Run|Branch|Fork|Kill|Prong|Stream|Bayou|Canyon))"
+                         r"(?![\w-])(\s+(?:Trail|Trailhead|Rd|Road|Campground|[Tt]ributary|Falls|Gorge|Bridge|Dam|Ranger|"
+                         r"Picnic|Wilderness|Valley|Lake|Reservoir|Overlook|Park))?")
+
+
+def note_creeks(note):
+    """The creeks a known fall's note names ("on Long Creek", "of Putnam Creek"): not a trail, road or campground named
+    after one, nor one the fall is on a tributary of."""
+    return [] if not isinstance(note, str) else [
+        _creek_key(m.group(1)) for m in _NOTE_CREEK.finditer(note)
+        if not m.group(2) and "tributary of" not in note[max(0, m.start() - 15):m.start()].lower()]
+
+
+_rg = gpd.GeoSeries(s_show.geometry.values, crs=4326).to_crs(EPSG).values      # the drawn reaches, in metres
+_rn = s_show["name"].values
+_rk = np.array([_creek_key(n_) if isinstance(n_, str) else "" for n_ in _rn])
+_rtree = shapely.STRtree(_rg)
+
+
+def fall_creek(note, pt):
+    """The creek whose profile a known fall's popup links to (above), or None. pt: the fall, in metres (EPSG)."""
+    near = _rtree.query(pt, predicate="dwithin", distance=creekprofiles.SNAP_FALL)
+    if not len(near):
+        return None
+    d = shapely.distance(pt, _rg[near])
+    for c_ in note_creeks(note):
+        named = _rk[near] == c_
+        if named.any():
+            j = near[named][np.argmin(d[named])]
+            return _rn[j] if PROFILES.passes(_rn[j], pt) else None
+    j = near[np.argmin(d)]
+    return _rn[j] if d.min() <= FALL_NEAR_M and _rk[j] and PROFILES.passes(_rn[j], pt) else None
+
+
+# a drop sits on its reach (its stream's name): the link where that creek's profile passes it
+_drop_creek = {i_: s_ if PROFILES.passes(s_, p_) else None
+               for i_, s_, p_ in zip(kp_ll.index, kp_ll.stream, kp_ll.geometry.to_crs(EPSG).values)}
 drops3d = []
 
 # magenta / yellow / violet: validated all-pairs for color-blind separation and kept clear of the blue-green streams;
@@ -1496,8 +1561,7 @@ for r in kp_ll.rename(columns={"pass": "pass_n"}).itertuples():   # "pass" is a 
                if isinstance(r._asdict().get("closure_road"), str) else "") +
             f"Top {r.lat}, {r.lon}<br>Pool/base {r.pool_lat}, {r.pool_lon}<br>"
             f"<a href='{gm}' target='_blank'>Satellite view</a>"
-            + (f" · <a href='profiles.html#q={quote(r.stream)}&lat={r.lat}&lon={r.lon}' target='_blank'>Creek profile ↗</a>"
-               if isinstance(r.stream, str) else ""))
+            + (" · " + profile_link(_drop_creek[r.Index], r.lat, r.lon) if _drop_creek[r.Index] else ""))
     folium.CircleMarker([r.lat, r.lon], radius=3 + min(r.drop_m, 80) / 8, color=color[r.status], weight=1.5,
                         fill=True, fill_opacity=0.7, popup=folium.Popup(html, max_width=300),
                         tooltip=f"{ft(r.drop_m)} drop").add_to(groups[r.status])
@@ -1532,13 +1596,17 @@ def fall_label(r):
 
 
 def fall_html(r):
-    """The known fall's popup, shared by the 2D, 3D and one-file maps: name, kind, sources, note, the source's page."""
+    """The known fall's popup, shared by the 2D, 3D and one-file maps: name, kind, sources, note, its creek's profile
+    (above), the source's page."""
     nm_ = fall_label(r)
     kind_ = r.kind if isinstance(r.kind, str) and r.kind not in ("", "waterfall", nm_) else ""
     note = r.note if isinstance(r.note, str) and r.note else ""
     url = r.url if isinstance(r.url, str) and r.url.startswith("http") else ""
     return (f"<b>{hesc(nm_)}</b>" + (f" · {hesc(kind_)}" if kind_ else "") + f"<br><span style='color:#6b7280'>{hesc(r.src)}</span>"
-            + (f"<br>{hesc(note)}" if note else "") + (f"<br><a href='{hesc(url)}' target='_blank'>Source page ↗</a>" if url else ""))
+            + (f"<br>{hesc(note)}" if note else "")
+            + (f"<br>{profile_link(r.creek, r.geometry.y, r.geometry.x)}" if isinstance(r.creek, str) else "")
+            + (f"<br><a href='{hesc(url)}' target='_blank'>Source page ↗</a>" if url else ""))
+known_falls["creek"] = [fall_creek(n_, p_) for n_, p_ in zip(known_falls.note, known_falls.geometry.to_crs(EPSG).values)]
 known_falls["html"] = [fall_html(r) for r in known_falls.itertuples()]
 kf = folium.FeatureGroup(name=f"<span style='color:#0b3d91'>◆</span> {LBL['falls']}", show=False)
 for r in known_falls.itertuples():
@@ -1761,7 +1829,8 @@ tag3d = '<script src="map3d_data.js"></script>'
 assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
     f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
-                           + ");</script>\n<script>" + _page_file("map_score.js") + "</script>"))
+                           + ");</script>\n<script>" + _page_file("map_score.js") + "</script>\n<script>"
+                           + _page_file("layer_order.js") + "</script>"))
 
 print("streams", len(s_ll), "| drops", len(kp_ll))
 print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string())

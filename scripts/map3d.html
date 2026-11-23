@@ -305,7 +305,9 @@
       const rw3 = (add, hov = 0) => ["interpolate", ["linear"], ["zoom"], ...[[10, 1.2], [13, 2.8], [16, 5]].flatMap(([z, w]) =>
         [z, ["+", w + add, hov ? ["case", ["boolean", ["feature-state", "hover"], false], hov, 0] : 0]])];
       const roadOff = besideOffset(z => (at([[10, 1.2], [13, 2.8], [16, 5]], z) + 2.2) / 2);
+      const roadClasses = new Set(D.roads.features.map(f => f.properties.c));
       Object.entries(ROAD).forEach(([c, [label, core, edge, dash, minz, on]]) => {
+        if (!roadClasses.has(c)) return;          // a class the area has no road of isn't listed (as on the 2D map)
         const vis = on ? "visible" : "none";
         map.addLayer({id: "road-edge-" + c, type: "line", source: "roads", minzoom: minz, filter: ["==", ["get", "c"], c],
           layout: {visibility: vis, "line-cap": "round", "line-join": "round"},
@@ -565,6 +567,11 @@
       map.setPaintProperty("hillshade", "hillshade-exaggeration", r.value === "gray" ? 0.45 : 0.15);
     });
     document.getElementById("lbl").onchange = e => map.setLayoutProperty("labels-ref", "visibility", e.target.checked ? "visible" : "none");
+    // the entries in the order of layer_order.js (06_map.py inlines it), the same on every map: each by its id, a drop
+    // class by its name
+    const DROP_CLASSES = Object.keys(D.drop_colors || {});
+    const keyOf = id => /^drop\d+$/.test(id) ? "drop:" + DROP_CLASSES[+id.slice(4)] : id;
+    if (typeof layerRank === "function") ov.sort((a, b) => layerRank(keyOf(a[0])) - layerRank(keyOf(b[0])));
     // Groups of entries with one switch for them all (the user, 2026-11-23): the drops with the known falls, the trails
     // with their bike colouring (a group of their own: the way on from the road on foot or by bike, where "All roads"
     // shows what a car can drive), and the roads. Each entry keeps its own switch. A group's switch shows all on, all

@@ -8,15 +8,14 @@ habitat, flow) come from the creek's own DEM channel only (see OWN_CAP). Drops, 
 onto the profile. Run after 06_map.py (it reads the merged CSV exports).
 Writes output/profiles_data.js (window.PROFILE_DATA, loads from file:// without a server).
 """
-import json, re, numpy as np, pandas as pd, geopandas as gpd, rasterio, networkx as nx
+import json, re, numpy as np, pandas as pd, geopandas as gpd, rasterio
 from scipy.ndimage import minimum_filter
 from scipy.spatial import cKDTree
-from shapely.geometry import LineString
-from shapely.ops import linemerge, unary_union
 from config import REGIONS, CRS, ROOT, MAP_OUT, RES, raw_dir, derived_dir
 from units import ft, sqmi, imperial_text   # the labels and notes profiles.html shows are imperial; the profile data stay metric
+# which creeks get a profile (MIN_KM, FLOWLINE_FTYPES, main_stems) and SNAP_FALL: shared with 06_map.py's popup links
+from creekprofiles import MIN_KM, SNAP_FALL, FLOWLINE_FTYPES, main_stems
 
-MIN_KM = 2.0          # skip shorter creeks
 STEP_M = 40           # spacing along the profile
 BOTTOM_M = 20         # channel-bottom search radius around the NHD line
 AREA_M = 60           # drainage-area search radius (NHD lines sit up to ~60 m off the D8 channel: 58 m on lower Cabin Creek)
@@ -25,8 +24,7 @@ AREA_M = 60           # drainage-area search radius (NHD lines sit up to ~60 m o
 OWN_CAP = (2.0, 1.0)
 KNN = 64              # nearest reach points searched for each profile point's own reach
 GRAD_HALF_M = 60      # gradient over +/- this distance
-SNAP_DROP, SNAP_FALL, SNAP_GAUGE = 80, 150, 250
-FLOWLINE_FTYPES = {460, 558}   # StreamRiver, ArtificialPath (through ponds / reservoirs)
+SNAP_DROP, SNAP_GAUGE = 80, 250
 
 reaches = pd.read_csv(f"{MAP_OUT}/stream_reaches_ranked.csv")
 drops_all = pd.read_csv(f"{MAP_OUT}/waterfall_candidates.csv")
@@ -37,37 +35,6 @@ SHOW = {"unmapped waterfall-like step", "unmapped cascade", "unmapped short fall
 drops_all = drops_all[drops_all.status.isin(SHOW)]
 gauges = gpd.read_file(f"{MAP_OUT}/context/gauges.gpkg").to_crs(CRS)
 to_ll = lambda x, y: gpd.GeoSeries(gpd.points_from_xy(x, y), crs=CRS).to_crs(4326)
-
-
-def main_stems(lines):
-    """Longest path through each connected piece of a creek's merged NHD lines."""
-    u = unary_union(list(lines))
-    merged = u if u.geom_type == "LineString" else linemerge(u)
-    parts = list(merged.geoms) if merged.geom_type == "MultiLineString" else [merged]
-    G = nx.Graph()
-    key = lambda c: (round(c[0], 1), round(c[1], 1))
-    for i, ln in enumerate(parts):
-        a, b = key(ln.coords[0]), key(ln.coords[-1])
-        G.add_edge(a, b, w=ln.length, i=i) if a != b else None
-    out = []
-    for comp in nx.connected_components(G):
-        sub = G.subgraph(comp)
-        # tree diameter by two weighted sweeps (good enough for creek networks)
-        start = next(iter(comp))
-        d1 = nx.single_source_dijkstra_path_length(sub, start, weight="w")
-        far = max(d1, key=d1.get)
-        d2, paths = nx.single_source_dijkstra(sub, far, weight="w")
-        end = max(d2, key=d2.get)
-        nodes = paths[end]
-        coords = []
-        for u, v in zip(nodes[:-1], nodes[1:]):
-            seg = list(parts[sub[u][v]["i"]].coords)
-            if key(seg[0]) != u:
-                seg = seg[::-1]
-            coords += seg if not coords else seg[1:]
-        if len(coords) >= 2:
-            out.append(LineString(coords))
-    return out
 
 
 profiles = []

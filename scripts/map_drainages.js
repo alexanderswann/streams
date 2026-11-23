@@ -541,15 +541,21 @@ function initDrainageMap(map, ctrl) {
   // the road on foot or by bike, where "All roads" shows what a car can drive), and the roads. Each entry keeps its own
   // switch. A group's switch shows all on, all off or mixed; it turns them all on, or all off when they all are.
   // Leaflet rebuilds the list when a layer is added or removed other than by its own switch, so the groups are laid
-  // out again after each rebuild, at the same scroll position.
-  const lyc = ctrl.getContainer(), FALLS = (window.LBL || {}).falls;
+  // out again after each rebuild, at the same scroll position. The entries come in the order of layer_order.js, the
+  // one the 3D map and the one-file map use too: each gets its key there (layers made here by their object, folium's
+  // by their names), and every rebuild sorts the list by it (a stable sort: the basemaps keep theirs).
+  const lyc = ctrl.getContainer();
   const lyh = L.DomUtil.create("div", "lyh");
   lyh.innerHTML = `<b>View &amp; layers</b><button type="button" class="lx" title="Hide the layer list">–</button>`;
   lyc.insertBefore(lyh, ctrl._section);
   L.DomEvent.on(lyh.querySelector(".lx"), "click", e => { L.DomEvent.stop(e); ctrl.collapse(); });
-  const LGROUPS = [["All drops &amp; waterfalls", o => /Drops: /.test(o.name) || (!!FALLS && o.name.includes(FALLS))],
-                   ["All trails &amp; bike access", o => o.layer === trailGroup || o.layer === bikeView],
-                   ["All roads", o => roadOverlays.some(([g]) => g === o.layer)]];
+  const KEYED = new Map([[streams, "streams"], [basinLayer, "basins"], [pctGroup, "pct"], [trailGroup, "trails"],
+                         [bikeView, "bike"], [thGroup, "poi-th"], [pkGroup, "poi-pk"],
+                         ...Object.entries(roadGroups).map(([c, g]) => [g, "road-" + c])]);
+  const keyOf = o => o._key !== undefined ? o._key : (o._key = KEYED.get(o.layer) || layerKey2d(o.name, window.LBL));
+  const LGROUPS = [["All drops &amp; waterfalls", k => k === "falls" || /^drop:/.test(k)],
+                   ["All trails &amp; bike access", k => k === "trails" || k === "bike"],
+                   ["All roads", k => /^road-/.test(k)]];
   const lgroups = [];      // [the group's checkbox, its layers] as laid out by the last rebuild
   const syncGroups = () => lgroups.forEach(([cb, ls]) => {
     const n = ls.filter(l => map.hasLayer(l)).length;
@@ -560,11 +566,12 @@ function initDrainageMap(map, ctrl) {
   const rebuild = ctrl._update;
   ctrl._update = function () {
     const top = this._section ? this._section.scrollTop : 0;
+    this._layers.sort((a, b) => (a.overlay ? layerRank(keyOf(a)) : -1) - (b.overlay ? layerRank(keyOf(b)) : -1));
     rebuild.call(this);
     lgroups.length = 0;
     const items = this._layerControlInputs.map(inp => [inp, this._getLayer(inp.layerId)]).filter(([, o]) => o && o.overlay);
     LGROUPS.forEach(([title, test]) => {
-      const mine = items.filter(([, o]) => test(o));
+      const mine = items.filter(([, o]) => test(keyOf(o) || ""));
       if (mine.length < 2) return;
       const first = mine[0][0].closest("label"), grp = L.DomUtil.create("div", "lgrp");
       first.parentNode.insertBefore(grp, first);

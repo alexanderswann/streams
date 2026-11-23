@@ -19,6 +19,7 @@ import base64, gzip, json, os, datetime as dt
 from config import AREAS, ROOT
 
 OUT = f"{ROOT}/output"
+SITE = "https://alexanderswann.github.io/streams/"    # the website (publish_site.sh; 15_preview.py's SITE)
 CORE = ["streams", "streams_lake", "drops", "falls", "parking", "gauges", "closures", "trout", "lakes", "lake_depth"]
 EXTRA = ["trails", "roads"]
 
@@ -117,6 +118,10 @@ L.control.layers({"Light gray": gray, "USGS topo": topo, "Satellite": photo}, {"
 L.control.scale({metric: false}).addTo(map);
 __PHONE_JS__
 __SCORE_JS__
+__LAYER_ORDER_JS__
+// Links to a creek's profile (in the drop, known-fall and lake popups, from 06_map.py) open it on the website: this one
+// file carries no profiles (each area's sits beside its maps there, as profiles.html)
+const onSite = (html, a) => html == null ? html : String(html).replace(/href='profiles\.html#/g, `href='__SITE__${a.key}/profiles.html#`);
 phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
 map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD · Trails © OpenStreetMap contributors · USFS · iNaturalist · PRISM Group, Oregon State University");
 
@@ -223,11 +228,11 @@ async function load(a) {
     if (d.gauges) lines.push(L.geoJSON(d.gauges, {pointToLayer: pt(f => f.properties.c || "#1c7ed6", {radius: 6}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${f.properties.html}</div>`)}));
     g.live = [L.layerGroup(lines), 10.5, "live"];
     g.falls = [L.layerGroup(d.falls ? [L.geoJSON(d.falls, {pointToLayer: pt(() => "#0b3d91", {radius: 5.5}),
-      onEachFeature: (f, l) => l.bindPopup(f.properties.html ? `<div class="pp">${f.properties.html}</div>` :
+      onEachFeature: (f, l) => l.bindPopup(f.properties.html ? `<div class="pp">${onSite(f.properties.html, a)}</div>` :
         `<div class="pp"><b>${esc(f.properties.name || "Waterfall")}</b> (mapped, ${esc(f.properties.src || "")})` +
         (f.properties.note ? `<br>${esc(f.properties.note)}` : "") + "</div>")})] : []), 11, "drops"];
     const pts = [], acc = [];
-    if (d.drops) pts.push(L.geoJSON(d.drops, {pointToLayer: pt(f => f.properties.c || "#e87ba4", {radius: 4.5}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${f.properties.html}</div>`)}));
+    if (d.drops) pts.push(L.geoJSON(d.drops, {pointToLayer: pt(f => f.properties.c || "#e87ba4", {radius: 4.5}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${onSite(f.properties.html, a)}</div>`)}));
     if (d.parking) acc.push(L.geoJSON(d.parking, {pointToLayer: pt(f => f.properties.k === "trailhead" ? "#2b8a3e" : "#1c7ed6", {radius: 4.5}),
       onEachFeature: (f, l) => { const p = f.properties; l.bindPopup(`<div class="pp"><b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b> · ${esc(p.k)}` +
         (p.no ? `<br>${esc(p.no)}` : "") + (p.u ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "") + "</div>"); }}));
@@ -237,7 +242,7 @@ async function load(a) {
     const lk = [];
     if (d.lakes) lk.push(L.geoJSON(d.lakes, {renderer: canvas, style: f => ({color: f.properties.e, weight: 1.2, fillColor: f.properties.c,
         fillOpacity: .55, dashArray: f.properties.dry ? "4 3" : null}),
-      onEachFeature: (f, l) => { l.bindPopup(f.properties.html, {maxWidth: 340}); l.bindTooltip(esc(f.properties.tip), {sticky: true}); }}));
+      onEachFeature: (f, l) => { l.bindPopup(onSite(f.properties.html, a), {maxWidth: 340}); l.bindTooltip(esc(f.properties.tip), {sticky: true}); }}));
     if (d.lake_depth) lk.push(L.geoJSON(d.lake_depth, {renderer: canvas, style: f => ({color: "#1864ab", weight: f.properties.depth_m % 10 ? .8 : 1.6, opacity: .85}),
       onEachFeature: (f, l) => l.bindTooltip(esc(f.properties.tip), {sticky: true})}));
     if (lk.length) g.lakes = [L.layerGroup(lk).on("add", () => lk[0].bringToBack()), 10, "lakes"];
@@ -302,11 +307,14 @@ panel.onAdd = () => {
     `<button class="a" data-i="-1"><b>All areas</b></button>` +
     `<div class="seg"><button data-m="drainage" class="on">Drainage</button><button data-m="fish">Fish score</button></div>` +
     `<div class="key"></div>` +
-    `<label><input type="checkbox" data-o="drops"> Drops and waterfalls</label><label><input type="checkbox" data-o="access"> Trailheads and parking</label>` +
-    `<label><input type="checkbox" id="xt"> Trails and dirt roads</label><label><input type="checkbox" data-o="live"> Gauges and road closures</label>` +
-    `<label><input type="checkbox" data-o="trout"> Trout records</label><label><input type="checkbox" data-o="lakes" checked> Lakes: fish, access, depth</label>` +
+    `<div class="sw"><label data-k="falls"><input type="checkbox" data-o="drops"> Drops and waterfalls</label><label data-k="poi-pk"><input type="checkbox" data-o="access"> Trailheads and parking</label>` +
+    `<label data-k="road-graded"><input type="checkbox" id="xt"> Trails and dirt roads</label><label data-k="gauges"><input type="checkbox" data-o="live"> Gauges and road closures</label>` +
+    `<label data-k="trout"><input type="checkbox" data-o="trout"> Trout records</label><label data-k="lakes"><input type="checkbox" data-o="lakes" checked> Lakes: fish, access, depth</label></div>` +
     `<p>Zoom into an area for every creek, and tap one for its details. The switches above add the rest once you are zoomed in. Scores rank creeks within an area; they aren't comparable between areas.</p></div>`;
   L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+  // the switches in the order of layer_order.js, as on the area maps: each by the key of its first layer there
+  const sw = d.querySelector(".sw");
+  [...sw.children].sort((x, y) => layerRank(x.dataset.k) - layerRank(y.dataset.k)).forEach(el => sw.appendChild(el));
   const list = d.querySelector(".list"), mark = d.querySelector("h1 span"), key = d.querySelector(".key");
   const fold = hide => { list.style.display = hide ? "none" : ""; mark.textContent = hide ? "+" : "–"; };
   d.querySelector("h1").onclick = () => fold(list.style.display !== "none");
@@ -340,6 +348,7 @@ sync();
 _page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f_)).read()
 html = HTML.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
 html = html.replace("__SCORE_JS__", _page_file("map_score.js"))      # the fish score's breakdown in the popups
+html = html.replace("__LAYER_ORDER_JS__", _page_file("layer_order.js")).replace("__SITE__", SITE)   # the switches' order
 html = html.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace("__BLOBS__", "\n".join(blobs))
 path = f"{OUT}/stream_maps_all.html"
 with open(path, "w", encoding="utf-8") as f:
