@@ -95,7 +95,10 @@ def state_outline(area):
     st = AREAS[area].get("clip_state")
     if not st:
         return None
-    g = gpd.read_file(f"zip://{ROOT}/data/raw/_national/tl_2024_us_state.zip", where=f"STUSPS = '{st}'")
+    # one state ("VT") or several (se_pa's ("PA", "DE", "MD") since 9b9855b), as areaclip.states() reads it
+    sts = (st,) if isinstance(st, str) else tuple(st)
+    q = ", ".join(f"'{s}'" for s in sts)
+    g = gpd.read_file(f"zip://{ROOT}/data/raw/_national/tl_2024_us_state.zip", where=f"STUSPS IN ({q})")
     return shapely.make_valid(g.to_crs(epsg(area)).geometry.union_all())
 
 
