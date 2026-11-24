@@ -39,6 +39,8 @@
 .rl { display: flex; justify-content: space-between; color: #7a828c; font-size: 11px; }
 .wk { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 7px; border-top: 1px solid #eee; padding-top: 5px; }
 .wk .dm { width: 100%; }
+/* layers that came from a saved copy when their download failed, with its day (06_map.py: LBL.stale_line) */
+.asof { margin-top: 6px; border-top: 1px solid #eee; padding-top: 4px; color: #a61e4d; font-size: 11px; }
 .wo { display: inline-flex; align-items: center; color: #7a828c; font-size: 10px; }
 /* the layer list (map_drainages.js): its header stays put and only the list under it scrolls, so "–" can always fold
    it; open, it draws above the legend (on a phone the two overlap) */

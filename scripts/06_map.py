@@ -1538,8 +1538,26 @@ def r6(gs):
     return gpd.GeoSeries(shapely.transform(np.asarray(gs.values), lambda c: np.round(c, 6)), index=gs.index, crs=gs.crs)
 
 
+# What came from a saved copy: when a download fails, 11_context.py and 07_road_closures.py use the source's last good
+# copy (netfetch.py) and add "(as of Nov 23)" to its source wording. The layers read below are checked for it, and the
+# legends name them in one line with the copy's day (LBL["stale_line"], 2026-11-24); the gauges' label then says
+# "as of" for "live". The steps whose data carry no such wording (lakes, trails, roads, falls) keep the NOTE in the log.
+import datetime as _dt
+_ASOF = re.compile(r"\(as of ([A-Z][a-z]{2} \d{1,2}(?:, \d{4})?)\)")
+STALE = {}          # the layer's name in that line -> (day, "Nov 23"): the oldest copy read for it
+
+
+def note_stale(name, texts):
+    for t_ in texts:
+        for d_ in (_ASOF.findall(t_) if isinstance(t_, str) else ()):
+            day_ = _dt.datetime.strptime(d_ if "," in d_ else f"{d_}, {_dt.date.today().year}", "%b %d, %Y").date()
+            if name not in STALE or day_ < STALE[name][0]:
+                STALE[name] = (day_, d_)
+
+
 if closures is not None and len(closures):
     fetched = closures.fetched.iloc[0]
+    note_stale("road closures", closures.source)
     if "times" not in closures:     # 07_road_closures.py before 2026-11-22: whether the approach times count it
         closures["times"] = ""
     c_show = closures.assign(**{c: closures[c].fillna("") for c in ("road", "from", "to", "reason", "start", "end", "when", "times")},
@@ -1581,6 +1599,7 @@ fires = ctx("fires")
 if fires is not None:
     if "src" not in fires:
         fires["src"] = LBL["fire_src"]
+    note_stale("fires", fires.src)
     fcm = matplotlib.colormaps["YlOrRd"]
     yr0, yr1 = fires.year.min(), fires.year.max()
     fires = fires.assign(geometry=r6(fires.geometry.simplify(0.0003)))
@@ -1606,6 +1625,8 @@ for name, label, style, fields in [
          (["ACCESS_TYP", "UNIT_NAME", "MNG_AGNCY"], ["Access", "Unit", "Manager"]))]:
     g = ctx(name)
     if g is not None and len(g):
+        note_stale({"wild_trout_waters": "trout waters", "critical_habitat": "critical habitat", "wilderness": "wilderness",
+                    "non_fs_land": "land", "cpad_restricted": "land"}[name], (v for c in fields[0] for v in g[c]))
         g = g.assign(geometry=r6(g.geometry.simplify(0.0002)))
         folium.GeoJson(g[fields[0] + ["geometry"]].to_json(), name=label, show=False,
                        style_function=lambda f, st=style: st,
@@ -1618,8 +1639,12 @@ if gauges is not None and len(gauges):
             "much above normal": "#1864ab", "dry": "#c92a2a", "dry (normal for date)": "#adb5bd",
             "flowing (usually dry on this date)": "#1c7ed6", "no history": "#868e96"}
     g3 = []
-    gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> {LBL['gauges']} (live, {gauges.time.max()[:10]})",
-                             show=False)
+    if "asof" in gauges:        # 11_context.py since 2026-11-24: " (as of Nov 23)" when the snapshot is a saved copy
+        note_stale("gauges", gauges["asof"])         # (gauges.asof would be the DataFrame's asof method)
+    if "gauges" in STALE:
+        LBL["gauges_when"] = f"as of {STALE['gauges'][1]}"
+    gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> {LBL['gauges']} "
+                                  f"({LBL.get('gauges_when') or 'live, ' + gauges.time.max()[:10]})", show=False)
     for r in gauges.itertuples():
         html = (f"<b>{r.name}</b><br>{r.cfs:g} cfs at {r.time}<br>{r.status}"
                 + (f" · {r.pct_of_median:.0f}% of median for today" if pd.notna(r.pct_of_median) else "")
@@ -1637,6 +1662,8 @@ if gauges is not None and len(gauges):
 tev = ctx("trout_evidence")
 if tev is not None and len(tev):
     TCOL = {"CDFW survey": "#2b8a3e", "CDFW stocking": "#1c7ed6", "iNaturalist": "#82c91e"}
+    note_stale("iNaturalist", tev.label[tev.kind == "iNaturalist"])
+    note_stale("trout records", tev.label[tev.kind != "iNaturalist"])
     tgrp, t3 = folium.FeatureGroup(name=f"<span style='color:#2b8a3e'>●</span> {LBL['trout_ev']}", show=False), []
     for r in tev.sort_values("kind", ascending=False).itertuples():
         col = (TCOL.get(r.kind) or ("#1c7ed6" if r.kind.endswith("stocking") else "#2b8a3e")) if r.trout else "#e03131"
@@ -1660,6 +1687,19 @@ if spr is not None and len(spr):
                             fill_opacity=1, tooltip=t_).add_to(sgrp)
     sgrp.add_to(m)
     X3D["springs"] = gj(spr.assign(tip=tips, geometry=shapely.set_precision(spr.geometry.values, 1e-5))[["tip", "geometry"]])
+
+# the legends' line for what came from saved copies, oldest copy first, short enough for one line on a phone (the
+# legend is 230 px inside): "⚠ As of Nov 23: fires, land and iNaturalist", or "⚠ As of Nov 22: gauges; Nov 23:
+# fires". Set only when there is one, so a build on fresh downloads writes the same data as before; LBL["stale"]
+# holds the same as [name, day] pairs, oldest first (14_portable.py)
+if STALE:
+    _order = ["fires", "land", "wilderness", "critical habitat", "trout waters", "trout records", "iNaturalist", "gauges",
+              "road closures"]
+    LBL["stale"] = [[n_, STALE[n_][1]] for n_ in sorted(STALE, key=lambda n_: (STALE[n_][0], (_order + [n_]).index(n_)))]
+    _and = lambda xs: xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+    _days = list(dict.fromkeys(d_ for _, d_ in LBL["stale"]))
+    LBL["stale_line"] = "⚠ As of " + "; ".join(f"{d_}: {_and([n_ for n_, dd_ in LBL['stale'] if dd_ == d_])}" for d_ in _days)
+    print("from saved copies:", LBL["stale_line"])
 
 # trailheads used by good water or shown drops, with drive time from HOME
 used = pd.concat([s_ll.loc[s_ll.fish_score >= 50, ["th_id", "th_road", "th_lat", "th_lon", "drive_min", "drive_km"]],

@@ -686,6 +686,9 @@ for st_id, sens, name, lat, lon in CDEC:
                          geometry=shapely.Point(lon, lat)))
 if crow:
     gauges = gpd.GeoDataFrame(pd.concat([gauges, gpd.GeoDataFrame(crow, crs=4326)], ignore_index=True), crs=4326)
+# " (as of Nov 23)" where the snapshot is a saved copy (netfetch.py), "" where it is live: the map's gauge layer says
+# so instead of "live" (06_map.py, 2026-11-24)
+gauges["asof"] = [netfetch.asof("CDEC gauges" if str(s_).startswith("CDEC") else "USGS gauges") for s_ in gauges.site]
 gauges.to_file(f"{CTX}/gauges.gpkg")
 print("gauges", len(gauges), gauges.status.value_counts().to_dict())
 

@@ -146,6 +146,7 @@ means it was measured on every map before it went in.
 | The maps open with streams, drainages, the long trail, terrain shading, place and road labels and lakes; everything else off | | | 2026-11-20 |
 | A download times out, is retried, and falls back to the last good copy with a dated note; a failed download step is retried once, then stops its area | 15 s to connect; a host out after 3 failures in a row | `scripts/netfetch.py:45`, `scripts/netfetch.py:47` | `8321c1d` |
 | Every download falls back offline: an empty answer is kept as a last good copy too (02d's USFS closed roads and trails, missing in some box on 9 of the 12 maps; 05_score's OSM names; 05d's GBIF table); 05d's PAD-US copy, whose box follows the lakes, is kept under a name of its own and cut to the box asked; a lidar window every survey has a gap in is remembered, so no lidar tile is read twice | | `scripts/02d_trails.py:62`, `scripts/geomatch.py:17`, `scripts/lakelidar.py:121`, `scripts/netfetch.py:337` | 2026-11-23 (no rebuild needed) |
+| A layer read from a saved copy is named in the legends' one line with the copy's day ("⚠ As of Nov 23: fires, land and iNaturalist", one line on a phone; the 2D and 3D legends, and on the phone map under each area for its gauges, closures and trout records); the gauges' label says "as of" for "live". Found from the "(as of ...)" the steps write into the source wording; lakes, trails, roads and falls carry none and keep their NOTE in the log | | `scripts/06_map.py:1545` | 2026-11-24 |
 | A break below a lake is drawn with the values of the creek that carries the most water among those that end equally near its start | within 1 m | `scripts/06_map.py` (`lake_creek`) | `83e9b26` (not yet built) |
 | The map step still redraws the streams after the steps that compute them (clips at lake shores, draws through breaks, raises orders) | tables and map differ by about 5,500 mi | `scripts/06_map.py` | audit finding 6; map-step-repairs |
 
@@ -184,7 +185,6 @@ means it was measured on every map before it went in.
 | The 650 ft cut below lakes for the five second-outlet lines | second-outlets | second-outlets | | patch ready; tested on #7's build |
 | Popups at confluences list the creek's own trout label first (label order only; no score change) | tributaries-labeled-with | tributaries-labeled-with | user chose this (2026-11-22) | patch rebased on `83e9b26`; rides with #7 |
 | Rules written for one place replaced by rules from the data, so a new area just works; with them a publish gate that refuses failed or mixed builds, and smaller pages | audit findings 9, 10, 12 | general-rules | user said yes (2026-11-22) | planned, one install at a time after #7 |
-| "As of" dates in the legend | network fallback | network-steps | | planned (06_map) |
 | Sentinel-2 credit line | audit finding 11 | | user, 2026-11-22 | with the next `06_map.py` change |
 | "CA State Parks" on 178 New York trail pieces | audit finding 14 | general-rules | | planned (06_map) |
 | Burn severity for the 2017-2022 fires the Forest Service layer no longer holds | score-evidence | none | the user's call | open |

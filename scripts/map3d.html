@@ -37,6 +37,8 @@
   .seg button + button { border-left: 1px solid #ced4da; }
   .seg button.on { background: #1864ab; color: #fff; }
   .dm { color: #7a828c; }
+  /* layers that came from a saved copy when their download failed, with its day (06_map.py: lbl.stale_line) */
+  .asof { margin-top: 6px; border-top: 1px solid #eee; padding-top: 4px; color: #a61e4d; font-size: 11px; }
   .fbar { background: #e7f0fb; border-radius: 4px; padding: 3px 6px; margin-bottom: 6px; }
   .fbar a, .hint a { color: #1864ab; }
   .dl { max-height: 32vh; overflow-y: auto; margin-right: -6px; padding-right: 6px; }
@@ -83,6 +85,7 @@
   <div class="pb">
     <div class="seg" id="modes"><button data-m="d">Drainage</button><button data-m="o">Stream order</button><button data-m="f">Fish score</button></div>
     <div id="key"></div>
+    <div id="asof" class="asof" hidden></div>
   </div>
 </div>
 <div id="layers" class="panel min">
@@ -108,6 +111,8 @@
   }
   const D = window.MAP3D;
   if (D.lbl && D.lbl.title) { document.title = D.lbl.title + " · 3D"; document.getElementById("ttl").textContent = D.lbl.title + " · 3D"; }
+  if (D.lbl && D.lbl.stale_line) { const e = document.getElementById("asof"); e.textContent = D.lbl.stale_line; e.hidden = false;
+    e.title = "These layers' downloads failed when the map was built: they show the last good copy, of that day"; }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
   // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation and drops in m)
   const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
@@ -420,7 +425,7 @@
       src("gauges", D.gauges);
       map.addLayer({id: "gauges", type: "circle", source: "gauges", layout: {visibility: "none"},
         paint: {"circle-radius": 7, "circle-color": ["get", "c"], "circle-stroke-color": "#212529", "circle-stroke-width": 1.2}});
-      ov.push(["gauges", ((D.lbl || {}).gauges || "Stream gauges, USGS + CDEC") + " (live)", "<span style='color:#1c7ed6'>▲</span>", ["gauges"]]);
+      ov.push(["gauges", ((D.lbl || {}).gauges || "Stream gauges, USGS + CDEC") + ` (${(D.lbl || {}).gauges_when || "live"})`, "<span style='color:#1c7ed6'>▲</span>", ["gauges"]]);
     }
     if (D.trout) {   // 11_context.py: CDFW surveys and stocking, iNaturalist sightings
       map.addSource("trout", {type: "geojson", data: D.trout, attribution: (D.lbl || {}).trout_ev ? "iNaturalist" + (/CDFW/.test(D.lbl.trout_ev) ? " · CDFW" : "") : "CDFW · iNaturalist"});

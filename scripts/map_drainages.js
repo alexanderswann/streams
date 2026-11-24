@@ -616,6 +616,7 @@ function initDrainageMap(map, ctrl) {
           <svg width="34" height="10"><line x1="2" y1="5" x2="32" y2="5" stroke="#fff" stroke-width="4.9"/><line x1="2" y1="5" x2="32" y2="5" stroke="#7a5a3a" stroke-width="2.5" stroke-dasharray="12.5 4.5"/></svg>Fire road</div>
           <div class="bk"><span class="dm">Trail edge = mountain bikes:</span> ${["yes", "likely", "unlikely", "no"].map(k =>
             `<span class="bkc"><i style="background:${BIKE[k][0]}"></i>${BIKE[k][1].replace(" for bikes", "").replace("Open to bikes", "Open")}</span>`).join("")}</div>` : ""}
+        ${LBLX.stale_line ? `<div class="asof" title="These layers' downloads failed when the map was built: they show the last good copy, of that day">${esc(LBLX.stale_line)}</div>` : ""}
       </div>`;
     L.DomEvent.disableClickPropagation(div);
     L.DomEvent.disableScrollPropagation(div);

@@ -50,7 +50,8 @@ for key in AREAS:
             d.update(json.JSONDecoder().raw_decode(h, h.index(mark) + len(mark))[0])
     lbl = d.get("lbl") or {}
     a.update(built=dt.datetime.fromtimestamp(os.path.getmtime(q)).strftime("%Y-%m-%d"), long_trail=lbl.get("long_trail"),
-             closures_fetched=d.get("closures_fetched"), credits=lbl.get("credits"), acc_asof=lbl.get("acc_asof"))
+             closures_fetched=d.get("closures_fetched"), credits=lbl.get("credits"), acc_asof=lbl.get("acc_asof"),
+             **({"stale": lbl["stale"]} if lbl.get("stale") else {}))    # layers read from a saved copy (06_map.py)
     core, extra = pack({k: d.get(k) for k in CORE}), pack({k: d.get(k) for k in EXTRA})
     blobs.append(f'<script type="text/plain" id="core-{key}">{core}</script>\n<script type="text/plain" id="extra-{key}">{extra}</script>')
     sizes.append((key, len(core) / 1e6, len(extra) / 1e6))
@@ -102,6 +103,11 @@ __BLOBS__
 <script>
 const AREAS = __AREAS__;
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+// an area's layers that came from a saved copy when their download failed (06_map.py: lbl.stale), of those shown here
+const PSTALE = new Set(["gauges", "road closures", "iNaturalist", "trout records"]);
+const staleNote = a => { const s = (a.stale || []).filter(([n]) => PSTALE.has(n));
+  const days = [...new Set(s.map(([, d]) => d))];        // (oldest first, as 06_map.py lists them)
+  return s.length ? `<br><span style="color:#a61e4d">⚠ As of ${days.map(d => `${esc(d)}: ${s.filter(x => x[1] === d).map(x => esc(x[0])).join(", ")}`).join("; ")}</span>` : ""; };
 // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation in m)
 const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
   return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
@@ -303,7 +309,7 @@ const panel = L.control({position: "topleft"});
 panel.onAdd = () => {
   const d = L.DomUtil.create("div", "panel");
   d.innerHTML = "<h1>Stream maps <span>–</span></h1><div class='list'>" + AREAS.map((a, i) => `<button class="a" data-i="${i}"><b>${esc(a.label)}</b>` +
-    `<small>${a.reaches.toLocaleString()} reaches · ${a.drains.length} drainages · built ${a.built}</small></button>`).join("") +
+    `<small>${a.reaches.toLocaleString()} reaches · ${a.drains.length} drainages · built ${a.built}${staleNote(a)}</small></button>`).join("") +
     `<button class="a" data-i="-1"><b>All areas</b></button>` +
     `<div class="seg"><button data-m="drainage" class="on">Drainage</button><button data-m="fish">Fish score</button></div>` +
     `<div class="key"></div>` +

@@ -181,7 +181,8 @@ the live data (closures, gauges) before a trip: `07_road_closures.py`, `08_hike.
 hard limit on each attempt, and a breaker that stops asking a host (or the whole network) that didn't answer three
 (five) requests in a row, for two minutes. A download that still fails is read from its last good copy
 (`data/raw/<area>/_shared/netcache`, or the step's own cache), with a dated `NOTE` in the log and "(as of <date>)" in
-the source wording the map shows; only a source with no copy at all fails its step. A server that asks for a wait over
+the source wording the map shows, and the legends name those layers in one line with the copy's day; only a
+source with no copy at all fails its step. A server that asks for a wait over
 two minutes (HTTP 429) isn't waited for when there is a copy. An answer cut short (an Overpass answer stopped by its
 time limit, an ArcGIS error sent as HTTP 200, a web page without its `</html>`) is no answer, and one with a part
 missing is never kept as a copy. An empty answer (no closed USFS road in a box, no named OSM stream) is kept like
