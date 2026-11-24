@@ -195,6 +195,20 @@ def nhd_says(geoms, km2, lines, big_geoms, big_km2):
 # with a channelized stretch 20 % and more). A stream line NHD names after a channel (a canyon's creek above its
 # flood-control channel) is still read, and so are the paths of a river through its own water.
 BUILT_FTYPES, BUILT_STREAM_SHARE = (336, 420, 428), 0.1
+# A name whose generic term is an artificial channel's reads as a canal's too, whatever NHD's code for the line: NHD
+# files old ditches as stream lines (The Zanja, Redlands' irrigation ditch; Magazine Ditch by Wilmington; Main Ditch at
+# Tinicum: 2.0 mi drawn as floor creeks, fish 3-11, on 2026-11-23's maps). The generic term is the name's last word, or its first
+# after "The" in Spanish names (Zanja Madre); Ditch Creek is a creek.
+CHANNEL_WORDS = {"ditch", "canal", "zanja", "acequia", "flume", "aqueduct", "lateral"}
+def channel_word(names):
+    """Names whose generic term is an artificial channel's: the last word (Main Ditch, Kimball Canal), or the first
+    after "The" (The Zanja, Acequia Madre)."""
+    def is_ch(n):
+        if not isinstance(n, str):
+            return False
+        w = [x for x in n.replace("-", " ").split() if x.lower() != "the"]
+        return bool(w) and (w[-1].lower() in CHANNEL_WORDS or w[0].lower() in {"zanja", "acequia"})
+    return names.map(is_ch).astype(bool)
 def floor_lines(nl):
     """The NHD lines `nl` (gnis_name, ftype, flow, geometry, in metres) the floor reads: no built channel, nor a line
     named after one."""
@@ -202,7 +216,7 @@ def floor_lines(nl):
     length = nl.geometry.length
     share = length.where(nl.ftype.eq(460), 0.0).groupby(nl.gnis_name).sum() / length.groupby(nl.gnis_name).sum()
     built_name = {n for n in set(nl.gnis_name[built].dropna()) if share.get(n, 0.0) < BUILT_STREAM_SHARE}
-    nl = nl[~built & ~nl.gnis_name.isin(built_name)]
+    nl = nl[~built & ~nl.gnis_name.isin(built_name) & ~channel_word(nl.gnis_name)]
     return nl[["gnis_name", "flow", "fcode", "geometry"]].reset_index(drop=True)
 # A link running out of a lake starts along NHD's artificial path through it (FCode 55800, which reads as the area's
 # class: perennial outside LA). Where the routing splits the link inside the lake, that stretch is a link of its own,
@@ -265,10 +279,72 @@ def creek_parts(geoms, lakes):
         k = int(np.argmin(inside))
         out.append(shapely.LineString(c[k - 1:]) if inside[0] and not inside.all() and len(c) - k >= 2 else None)
     return out
+# The vote reads a name at 3 vertices, and a creek whose terrain path wanders from NHD's line misses it: below Dunham
+# Pond in NE Connecticut the path runs up to 85 m off Dunham Pond Brook, and the link's 25/50/75 % vertices read
+# nothing, Dunham Pond Brook and an unnamed line (since 2026-11-23's routing; live's link, split higher, read the name
+# at 2). So a link the vote doesn't keep reads its name along its length too: the NHD name within NAME_NEAR_M of
+# NAME_SHARE of its points (every 25 m), less a name it shares with a stream
+# SIDE_RATIO times bigger beside it (as nhd_says), and not where half the link runs within BESIDE_M of a line already
+# kept: there the name is that line's, and the link a side-by-side piece of it (on the first try 59 of 292 links). The
+# last NAME_END_M, where a link nears the stream it joins, doesn't count, and what's left must be NAME_MIN_M or more: on
+# the second try short tributaries took the name of the creek they join. Read on a link's creek below a lake alone,
+# names went to whole links from a short tail (Carson Brook, 6 % of its length), to braids of the Snake and the
+# Independence River, to an irrigation ditch: Bautista Creek below Hog Lake in LA, whose link starts on an unmapped
+# creek above the lake, isn't read so.
+NAME_SHARE, NAME_NEAR_M, BESIDE_M, NAME_END_M, NAME_MIN_M = 0.5, 60.0, 30.0, 100.0, 200.0
+def beside(geoms, drawn):
+    """For each line, whether half its points (every 25 m) or more lie within BESIDE_M of a line of `drawn`."""
+    tree = shapely.STRtree(drawn) if len(drawn) else None
+    out = np.zeros(len(geoms), bool)
+    for n_, g in enumerate(geoms):
+        if tree is None:
+            break
+        pts = shapely.line_interpolate_point(g, np.arange(0.0, g.length + 1e-6, 25.0))
+        hit = tree.query(pts, predicate="dwithin", distance=BESIDE_M)
+        out[n_] = len(np.unique(hit[0])) >= 0.5 * len(pts)
+    return out
+def name_by_share(geoms, lines, end_m=NAME_END_M, min_m=NAME_MIN_M, near_m=NAME_NEAR_M):
+    """For each line (or None), the NHD name whose lines lie within `near_m` of NAME_SHARE or more of its points
+    (every 25 m) short of its last `end_m` (where it nears the stream it joins), on `min_m` or more; or None."""
+    named = lines[lines.gnis_name.notna()]
+    tree = shapely.STRtree(named.geometry.values) if len(named) else None
+    nm = named.gnis_name.to_numpy(object)
+    out = []
+    for g in geoms:
+        if g is None or tree is None or g.length - end_m < min_m or g.length == 0:
+            out.append(None)
+            continue
+        pts = shapely.line_interpolate_point(g, np.arange(0.0, g.length - end_m + 1e-6, 25.0))
+        pi, li = tree.query(pts, predicate="dwithin", distance=near_m)
+        if not len(pi):
+            out.append(None)
+            continue
+        share = pd.DataFrame({"p": pi, "n": nm[li]}).drop_duplicates().groupby("n").p.size() / len(pts)
+        out.append(share.idxmax() if share.max() >= NAME_SHARE else None)
+    return out
+def name_keeps(geoms, km2, lines, big_geoms, big_km2):
+    """Links whose name read along their length (name_by_share) isn't one they share with a stream SIDE_RATIO times
+    bigger within SIDE_NEAR_M (`big_geoms`, their drainage `big_km2`), its name read at its 3 vertices or along it
+    within SIDE_NEAR_M: a big river's own vote can miss its name too (East Creek's 74 km2 beside a 0.5 km2 link on the
+    first try; a braid of the Snake River, whose main channel runs over 60 m from NHD's line)."""
+    nm = name_by_share(geoms, lines)
+    ok = np.array([n is not None for n in nm])
+    if ok.any() and len(big_geoms):
+        bn, tree = vote(lines, "gnis_name", pts=vertices3(big_geoms)).to_numpy(object), shapely.STRtree(big_geoms)
+        bs = {}
+        for n_ in np.flatnonzero(ok):
+            big = [k for k in tree.query(geoms[n_], predicate="dwithin", distance=SIDE_NEAR_M)
+                   if big_km2[k] >= SIDE_RATIO * km2[n_]]
+            for k in big:
+                if k not in bs:
+                    bs[k] = name_by_share(np.array([big_geoms[k]], dtype=object), lines, 0.0, 0.0, SIDE_NEAR_M)[0]
+            ok[n_] = not any(bn[k] == nm[n_] or bs[k] == nm[n_] for k in big)
+    return ok
 def nhd_keeps(geoms, km2, lines, big_geoms, big_km2, lakes):
     """nhd_says, and for a link it doesn't keep that starts in a lake, the same vote on its first stretch along an
-    artificial path through the lake and on its creek below the lake. lakes: (the lakes layer's outlines, which of
-    them NHD maps as intermittent)."""
+    artificial path through the lake and on its creek below the lake; then, for one still not kept, a name read along
+    its length (name_keeps) where no kept line runs beside it. lakes: (the lakes layer's outlines, which of them NHD
+    maps as intermittent)."""
     ok = nhd_says(geoms, km2, lines, big_geoms, big_km2)
     outl, dry = lakes
     for part in (pond_stretches(geoms, lines[lines.fcode.eq(55800)], outl[~dry], lines), creek_parts(geoms, outl)):
@@ -276,6 +352,12 @@ def nhd_keeps(geoms, km2, lines, big_geoms, big_km2, lakes):
         if len(j):
             ok[j] = nhd_says(np.array([part[i] for i in j], dtype=object), np.asarray(km2)[j], lines, big_geoms,
                              big_km2)
+    j = np.flatnonzero(~ok)          # a name read along the link
+    if len(j):
+        j = j[name_keeps(np.asarray(geoms, dtype=object)[j], np.asarray(km2)[j], lines, big_geoms, big_km2)]
+        if len(j):                   # not where a kept line already runs beside it: the name is that line's
+            drawn = np.array(list(big_geoms) + [geoms[i] for i in np.flatnonzero(ok)], dtype=object)
+            ok[j] = ~beside(np.asarray(geoms, dtype=object)[j], drawn)
     return ok
 from flowlib import lakes_layer
 _ll = lakes_layer()
