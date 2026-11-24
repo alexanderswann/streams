@@ -38,7 +38,7 @@ LBL = dict(
             + ("CAL FIRE · " if has("cal_fire") else "NIFC fire history · ") + "NIFC WFIGS · USGS gauges &amp; debris-flow hazard · "
             + ("CDEC · " if has("cdec") else "") + ("TNC Natural Flows" if has("tnc_flows") else "NHDPlus V2 (EROM)")
             + " · PRISM Group, Oregon State University · known falls: OSM, USGS GNIS, Wikidata and the guides named in each")
-from scoring import attach, score, SIDE_NHD, SIDE_BELOW
+from scoring import attach, score, SIDE_NHD, SIDE_BELOW, THIS_YEAR
 import crossbox
 import areaclip      # an area that stops at a state line (config clip_state) shows nothing past it
 
@@ -659,12 +659,34 @@ def peers_of(r):
     return peers(p if isinstance(p, str) else r.flow)
 
 
+def trout_why(r):
+    """Why scoring.py takes a reach for trout water (its water (5)): trout found here in the last 10 years with no later
+    survey finding none (scoring.trout_signs), or its designation."""
+    found = pd.to_numeric(getattr(r, "trout_found", None), errors="coerce")
+    absent = pd.to_numeric(getattr(r, "trout_absent", None), errors="coerce")
+    if pd.notna(found) and found >= THIS_YEAR - 10 and (pd.isna(absent) or found >= absent):
+        return f"trout were found here ({int(found)})"
+    tw = r.trout_water if isinstance(getattr(r, "trout_water", None), str) else ""
+    return f"it is trout water ({tw.split(' · ')[0]})" if tw else "it is trout water"
+
+
 def summer_flow(r):
     """Popup line from the flow model (05b_flow.py) and the rules scoring.py applies to it: the class, why a rule set
     it where one did, the model's typical / drought-year low flow and share of summers flowing, and NHD's class.
     Below a gauged diversion, the record of the USGS gauge below it too; where the score uses it, it comes first."""
     c = r.water_class
     rule = r.water_rule if isinstance(r.water_rule, str) else ""
+    if rule == "no estimate, typical":
+        doubt = ""
+        if c in ("year-round", "usually flows") and r.flow in ("intermittent", "ephemeral", "unmapped"):
+            doubt = (" (" + ("no NHD stream line along it" if r.flow == "unmapped" else f"NHD maps it {r.flow}")
+                     + ": NHDPlus's mean flow can't see a creek drying, so it may stop flowing in a dry summer)")
+        return (f"{c}{doubt} · no flow estimate: the {LBL['flow']} has no line on this creek or below it on the map, "
+                f"so the map takes what its creeks of its size{peers_of(r)} read on the model's own estimates, or "
+                f"NHD's class where that says more · NHD: {r.flow}")
+    if rule == "no estimate, trout water":
+        return (f"{c} · no flow estimate: the {LBL['flow']} has no line on this creek or below it on the map; "
+                f"{trout_why(r)}, so it holds water every summer · NHD: {r.flow}")
     if rule == "no estimate":
         return (f"no flow estimate: the {LBL['flow']} has no line on this creek or below it on the map, so the score "
                 f"takes what the map's creeks of its size{peers_of(r)} read on the model's own estimates, or NHD's "
@@ -719,6 +741,8 @@ def summer_flow(r):
                     f"drought year")
     if pd.notna(r.flow_years):
         bits.append(f"kept flowing {r.flow_years:.0%} of summers since 2011")
+    if not bits:      # a rule below gave a class to a reach the model has no estimate for (LA: piru:s2443, a trout record)
+        bits.append("no estimate (no line on this creek or below it on the map)")
     src = LBL["flow"] + (", scaled from the creek below" if r.flow_src == "scaled" else "")
     div = r.below_div if isinstance(r.below_div, str) else ""
     gauge = (f"below {div}: the USGS gauge there kept flowing {r.div_share:.0%} of summers in {r.div_years}"
@@ -744,6 +768,10 @@ def summer_flow(r):
     if rule == "trout record":
         return (f"{c} · trout were found here, so it holds water most summers, whatever the model says · the {src}: "
                 + ", ".join(bits) + f" · NHD: {r.flow}")
+    # scoring.py's water (5) where the model can't see creeks dry up: trout water reads year-round
+    if rule == "trout water":
+        return (f"{c} · {trout_why(r)}, so it holds water every summer, whatever the model or NHD's label says · the "
+                f"{src}: " + ", ".join(bits) + f" · NHD: {r.flow}")
     # 05b_flow.py's floor: NHD's class where the estimate isn't about this creek's own water, or NHD maps it perennial
     # (said where it changed the class; within a class it only moved the score)
     if rule == "NHD class" and isinstance(r.model_class, str) and r.model_class != c:

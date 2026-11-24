@@ -34,8 +34,11 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              below kept flowing in under half of 5+ summers since 2011, and no trout are known on the reach, the gauge's
              share replaces the model's (today only the San Jacinto River near San Jacinto). (5) A trout record (trout
              found in the last 10 years, no later survey finding none): at least "usually flows" (TROUT_WATER), since
-             trout there mean water most summers. A lake's second outlet (05_score.py's side_lake) takes the
-             water term of the creek its lake's main outlet starts, and the evidence behind it, where that
+             trout there mean water most summers; where the model can't see creeks dry up (NHDPlus's mean flow),
+             a reach with trout evidence of its own (a record, or a designated trout water along it) reads
+             year-round. A lake's second
+             outlet (05_score.py's side_lake) takes the water term of the creek its lake's main outlet starts, and
+             the evidence behind it, where that
              reads it at least as wet as its own (second_outlets); NHD's class where NHD maps the channel
              intermittent or ephemeral; and it never reads wetter than the creek it runs into below,
              unless that is its lake's own river (side_lines_below)
@@ -496,6 +499,15 @@ def score(s):
     if no_est.any():
         water = water.where(~no_est, np.fmax(typ, nhd_water))
         rule[no_est] = "no estimate"
+    # ... and where the flow model can't see creeks dry up, the map shows the class that value gives, as it does for a
+    # borrowed estimate lifted to it, unless the value reads mostly dry (no evidence shows a creek dry): a reach the pond
+    # routing left with no creek below to scale from kept its score and showed only NHD's label (SE Pennsylvania,
+    # 39.83231, -75.18171, 2026-11-24); outside LA 998 of 1,001 such reaches read year-round, 3 usually flows
+    if not has("tnc_flows"):
+        show_ = no_est & (water > WATER_CUTS[1] + 1e-9)
+        cls2[show_] = pd.cut(water[show_], WATER_CUTS, labels=WATER_CLASSES).astype(str)
+        rule[show_] = "no estimate, typical"
+        cls = cls.where(~show_, cls2)
     # a borrowed estimate (borrowed()) is no more evidence about the creek than none: it never reads drier than what a
     # reach with no estimate takes, and on a creek NHD has no line along it never shows it mostly dry: the reach then
     # reads as NHD labels it, as one with no estimate does, scored on the larger of the two. Floored at NHD's class
@@ -591,6 +603,26 @@ def score(s):
     tr = trout_signs(s)[0] & cls.ne("reservoir") & (water < TROUT_WATER - 1e-9)
     water = water.where(~tr, TROUT_WATER)
     cls2[tr], rule[tr] = "usually flows", "trout record"
+    # (5) and, where the flow model can't see creeks dry up (NHDPlus's mean flow), trout water is water: a reach with
+    # trout evidence of its own (a record as above, or a designated trout water, wild brook trout patches included,
+    # along most of it or naming its own creek: 11_context.py's trout_water_own) reads year-round. There a read below it
+    # comes from a small modelled flow on a small brook, or from NHD's label, and the label is a vote at three points
+    # that can flip where NHD's perennial line meets its intermittent one: re-cut by the pond routing (2026-11-24), wild
+    # brook trout reaches in north-east Connecticut went from year-round to seasonal or usually flows with their own
+    # data unchanged (41.57632, -71.96099: fish 73 -> 38; Mount Hope River 64 -> 43; Ruby Brook 66 -> 46). A tributary
+    # that only touches a designated river's line at its mouth reads the river's designation (pos) but not as its own
+    # water. Nothing above lowers trout water: (1) and (4) skip it, (2) lowers no creek with trout on it; and a gauge's
+    # record on the reach still stands, as it is measured. A reach the model has no estimate for shows it too, whichever
+    # rule above read it ("no estimate, trout water": the popup says there is no estimate)
+    # Where the flows are natural flows (TNC: LA), which see creeks dry up, a trout record keeps "usually flows".
+    if not has("tnc_flows"):
+        own_tw = (s["trout_water_own"].astype(str).eq("True") if "trout_water_own" in s
+                  else pd.Series(False, index=s.index))
+        tw5 = ((trout_signs(s)[0] | (s.trout_water.notna() & own_tw)) & cls.ne("reservoir") & (water < 1.0 - 1e-9)
+               & gsh.isna())
+        water = water.where(~tw5, 1.0)
+        none_ = tw5 & no_est
+        cls2[tw5], rule[tw5 & ~none_], rule[none_] = "year-round", "trout water", "no estimate, trout water"
     # a lake's second outlet (second_outlets): the water term of the creek its lake's main outlet starts, where that
     # reads it at least as wet as its own evidence does and NHD doesn't map the channel itself intermittent or
     # ephemeral (by the 3-point class: one read along the channel doesn't lower it); where NHD does, NHD's class; and

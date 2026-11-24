@@ -393,6 +393,7 @@ def cut_lines(s):
 
 CREEK_SHARE = 0.25      # of a link's creek a designation must cover to be read on every creek piece of the link
 NAME_NEAR_M = 90.0      # a designation naming the reach's own creek is read this far: 05_score.py's name vote (60 m) + 30 m
+OWN_SHARE = 0.5         # of a reach's own line designated waters must lie along to be its own (attrs: trout_water_own)
 def creek_lines(s):
     """The creek each reach is part of for the designated trout waters it reads (attrs). 05_score.py cuts a link where
     it crosses the shore of a lake the map draws, at the outlet of a lake that passes its water on, and 200 m below a
@@ -767,6 +768,21 @@ def attrs(gdf, key, buf):
     # wild brook trout water, from any designation that covers the reach: a state's line (NY's class T, Georgia's
     # designated streams) is the label above and would hide the brook trout patch under it
     out["brook_water"] = out[key].map(t[t.wild_brook.astype(bool)].groupby(key).label.first())
+    # the reach's own trout water, which scoring.py's water (5) takes for water every summer: designated waters along
+    # OWN_SHARE of the reach's own line (within buf of them, together: a river's line can come in short segments, a
+    # patch is an area), or one naming its own creek. A tributary's 30 m touches the river's line at its mouth and
+    # reads the river's designation, which says nothing of the tributary's water: unnamed creeks in Teton Valley read
+    # Bitch Creek's or the Teton River's along a third of their length or less, and as trout water would have gone
+    # from mostly dry to year-round (teton_valley:s244, 1 %: fish 6 -> 54; 2026-11-24)
+    if key == "sid":
+        own_ = pd.Series(False, index=out.index)
+        if len(t):
+            zone_, line_ = trout.geometry.buffer(buf), gdf.set_index(key).geometry
+            along_ = {k_: (line_[k_].intersection(shapely.union_all(zone_.loc[j_.unique()].values)).length
+                           / max(line_[k_].length, 1e-9)) for k_, j_ in t.groupby(key).index_right}
+            own_ = (out[key].map(pd.Series(along_, dtype=float)).ge(OWN_SHARE - 1e-9)
+                    | out[key].map(t.groupby(key).own.any()).eq(True))
+        out["trout_water_own"] = own_.to_numpy(bool)
     if len(baer):   # area-weighted soil burn severity of the reach's latest fire, where BAER mapped it (>= 30 % cover)
         x = gpd.overlay(g, baer, how="intersection", keep_geom_type=True)
         if len(x):
