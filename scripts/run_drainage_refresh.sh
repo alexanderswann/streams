@@ -9,6 +9,8 @@
 # Afterwards: 13_overview.py, 14_portable.py, phone_sync.sh (and publish_site.sh for the website copy).
 cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
+source ./buildslot.sh      # at most 2 heavy builds at once on this Mac, project builds first; the slot goes when the driver ends
+buildslot_acquire "${0:t} $*"
 for a in "$@"; do
   LOG=../data/drainage_$a.log
   echo "== START $a $(date '+%m-%d %H:%M:%S')" >> $LOG

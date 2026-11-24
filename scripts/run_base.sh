@@ -12,6 +12,8 @@
 cd ${0:a:h}          # the scripts folder this driver is in (a scratch copy's own, when it is run from one)
 PY=../.venv/bin/python
 source ./hydrolock.sh      # locked(): the hydrology lock, let go however the driver ends (2026-11-23)
+source ./buildslot.sh      # at most 2 heavy builds at once on this Mac, project builds first; the slot goes when the driver ends
+buildslot_acquire "${0:t} $*"
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
