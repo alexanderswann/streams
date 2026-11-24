@@ -4,8 +4,9 @@ Creeks come from the NHD named flowlines: each name's segments are merged, split
 longest path through each piece is the creek's main stem. Elevation along it is the channel bottom: the lowest
 hydro-conditioned DEM cell within BOTTOM_M (absorbs the small offsets between NHD lines and the 10 m DEM),
 forced non-increasing downstream. Drainage area and the per-reach attributes (fish score, burn, trout water, critical
-habitat, flow) come from the creek's own DEM channel only (see OWN_CAP). Drops, mapped falls and gauges are snapped
-onto the profile. Run after 06_map.py (it reads the merged CSV exports).
+habitat, flow) come from the creek's own DEM channel only (see OWN_CAP). The drainage is the one the map's reaches
+carry (area_full_km2), with the water from outside the map, over dams and past ponds. Drops, mapped falls and gauges
+are snapped onto the profile. Run after 06_map.py (it reads the merged CSV exports).
 Writes output/profiles_data.js (window.PROFILE_DATA, loads from file:// without a server).
 """
 import json, re, numpy as np, pandas as pd, geopandas as gpd, rasterio
@@ -53,7 +54,8 @@ for region, meta in REGIONS.items():
 
     nhd = gpd.read_file(f"{raw}/nhd_flowlines.gpkg").to_crs(CRS)
     nhd = nhd[nhd.gnis_name.notna() & nhd.ftype.isin(FLOWLINE_FTYPES)]
-    s = gpd.read_file(f"{MAP_OUT}/{region}/streams_scored.gpkg").to_crs(CRS)[["sid", "flow", "geometry"]]
+    s = gpd.read_file(f"{MAP_OUT}/{region}/streams_scored.gpkg").to_crs(CRS)
+    s = s[[c_ for c_ in ("sid", "flow", "own_x", "own_y", "geometry") if c_ in s.columns]]   # own_x/y: 05_score.py's own cell
     s = s.merge(reaches.drop(columns=["region", "flow", "lat", "lon"], errors="ignore"), on="sid", how="left")
     pts, sids = [], []
     for sid, g in zip(s.sid, s.geometry):
@@ -62,6 +64,7 @@ for region, meta in REGIONS.items():
     rtree, sids = cKDTree(np.array(pts)), np.array(sids)
     s_attr = s.set_index("sid")
     p_name = s_attr.loc[sids, "name"].to_numpy(object); p_km2 = s_attr.loc[sids, "area_km2"].to_numpy(float)   # per reach point
+    p_full = s_attr.loc[sids, "area_full_km2"].fillna(s_attr.loc[sids, "area_km2"]).to_numpy(float)
     # Each reach's cells, less its last vertex (the cell where it joins the next stream, which carries both arms; as in
     # 05_score.py), keyed by the reach's name; an unnamed reach's cells carry its drainage instead. A junction cell that
     # no reach starts from (the next stream leaves the box, or isn't mapped) stays -1: nobody's own. Vertices sit on
@@ -79,6 +82,25 @@ for region, meta in REGIONS.items():
         name_at[vr[:-1], vc[:-1]] = names[nm] if isinstance(nm, str) else 0
         if not isinstance(nm, str):
             unnamed_km2[vr[:-1], vc[:-1]] = km2
+    # The water each reach gets from elsewhere: in from outside the map, over a dam, past a pond (crossbox.py), as the
+    # map counts it (area_full_km2, which 05c_drainages.py adds at the reach's own cell): its full drainage less
+    # area_km2.tif's there. area_km2.tif has only the boxes' own ground and the water behind lakes' outlets, so a river
+    # from outside the map had only what gathered in its range (the Schuylkill 367 km2 where it leaves the Brandywine box
+    # at Royersford, 3,087 with the river above the map; the Snake in Jackson Hole 6,368 for 13,137), and below a dam a
+    # creek started again (2026-11-24). It counts on each reach's own cells, so a profile reads what its reaches' popups
+    # do; nothing is added off the reaches (the tidal Delaware's flats, where creeks' NHD lines run on to its centre line).
+    if {"own_x", "own_y"} <= set(s.columns):
+        ox, oy = s.own_x.to_numpy(float), s.own_y.to_numpy(float)
+    else:                                              # 05_score.py's own cell: the second-to-last vertex
+        ox, oy = np.array([g.coords[max(len(g.coords) - 2, 0)][:2] for g in s.geometry]).T
+    oc, orow = inv * (np.round(ox / RES) * RES, np.round(oy / RES) * RES)
+    full = s["area_full_km2"].fillna(s["area_km2"]).to_numpy(float)
+    carry = full - area[np.clip(np.rint(orow).astype(int), 0, H - 1), np.clip(np.rint(oc).astype(int), 0, W - 1)]
+    # (area_full_km2 is rounded to 0.01 km2; crossbox carries nothing under 0.1.) Index -1: no reach, nothing carried
+    carry, full = np.r_[np.where(carry >= 0.05, carry, 0), 0], np.r_[full, 0]
+    reach_at = np.full((H, W), -1, np.int32)           # which reach's cell, as name_at has it
+    for k_, (vr, vc) in enumerate(cells):
+        reach_at[vr[:-1], vc[:-1]] = k_
     d_reg = drops_all[drops_all.region == meta["label"]]
     d_xy = gpd.GeoSeries(gpd.points_from_xy(d_reg.lon, d_reg.lat), crs=4326).to_crs(CRS)
     kf = gpd.read_file(f"{MAP_OUT}/{region}/known_falls.gpkg").to_crs(CRS)
@@ -118,10 +140,18 @@ for region, meta in REGIONS.items():
             o = np.arange(-ka, ka + 1)
             wr, wcl = np.clip(r[:, None, None] + o[:, None], 0, H - 1), np.clip(c[:, None, None] + o[None, :], 0, W - 1)
             win = name_at[wr, wcl]
-            own_cell = (win == names.get(name, -1)) | ((win == 0) & (unnamed_km2[wr, wcl] <= cap))
+            own_named = win == names.get(name, -1)
+            own_cell = own_named | ((win == 0) & (unnamed_km2[wr, wcl] <= cap))
+            # the water carried from elsewhere, on the creek's own cells; on an unnamed reach's only when its full
+            # drainage is within the same cap on the named reaches' full drainage: an unnamed reach beside a creek's
+            # mouth that carries a river from outside is the river (Pole Creek, 23 km2 at the Santa Clara, would have
+            # read the river's 2,941; Sandrock Creek in the Hoback box 55 for its reaches' 9.7)
+            ri = reach_at[wr, wcl]
+            cap_full = OWN_CAP[0] * (p_full[ik][mine].max() if mine.any() else np.inf) + OWN_CAP[1]
+            add = np.where(own_named | (full[ri] <= cap_full), carry[ri], 0)
             # drainage only grows downstream (fixes off-DEM / off-channel cells); float64 first, as float32 rounded to
             # 2 places still writes 12.449999809265137
-            ar = np.maximum.accumulate(np.where(own_cell, area[wr, wcl], 0).max(axis=(1, 2)).astype("float64"))
+            ar = np.maximum.accumulate(np.where(own_cell, area[wr, wcl] + add, 0).max(axis=(1, 2)).astype("float64"))
             ll = to_ll(x, y)
             ptree = cKDTree(np.c_[x, y])
 

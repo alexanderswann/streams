@@ -580,8 +580,10 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
   connected path through its NHD named flowlines, at the channel bottom (the lowest conditioned DEM cell within 20 m,
   only going down downstream), with drops, falls and gauges snapped on and fish score, burn, trout-water and habitat
   strips from the creek's own channel only (reaches named after it, or unnamed ones up to twice its largest named
-  reach + 1 km²). The drainage is the routing's own (`area_km2.tif`), without the water carried past dams or in from
-  outside, so below a dam it can read less than the popup. Drop colours match on the map and the profiles (magenta
+  reach + 1 km²). The drainage is what the map's reaches carry (`area_full_km2`): the routing's own and the water from
+  outside the map, over dams and past ponds, added on the creek's own reaches (an unnamed one only within the same cap
+  on full drainage), so a river from outside reads its whole basin (the Schuylkill 1,192 sq mi where it leaves the
+  Brandywine box, was 142). Drop colours match on the map and the profiles (magenta
   waterfall-like step, yellow cascade, violet short fall, ink at mapped waterfalls), colour-blind safe.
 
 ## Fish score (0–100, heuristic; `scripts/scoring.py`)
