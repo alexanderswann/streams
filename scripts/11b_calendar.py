@@ -78,23 +78,24 @@ sites = gpd.read_file(f"{flow}/gauge_sites.gpkg").to_crs(4326)
 gauges = tc.flow_shapes(daily, sites)
 print(f"flow's year from {len(gauges)} of {len(sites)} gauges")
 
-# ice: the gauges' daily flags (02b keeps the values only), several gauges to a request, as 02b fetches the values
+# ice: the gauges' daily flags (02b keeps the values only), several gauges to a request, as 02b fetches the values,
+# with the USGS key when there is one (USGS_API_KEY, or the private file ~/.config/usgs/api_key; netfetch.usgs_key)
 WD = "https://api.waterdata.usgs.gov/ogcapi/v1/collections/daily/items"
-WD_KEY = {"X-Api-Key": os.environ["USGS_API_KEY"]} if os.environ.get("USGS_API_KEY") else {}
 
 
 def flag_pages(ids):
     params = dict(f="json", monitoring_location_id=",".join(f"USGS-{s}" for s in ids), parameter_code="00060",
                   statistic_id="00003", time=f"{tc.ICE_FROM}/{pd.Timestamp.now():%Y-%m-%d}", properties="monitoring_location_id,time,qualifier,time_series_id",
                   skipGeometry="true", limit=50000)
-    js, feats = netfetch.fetch("GET", WD, headers={**UA, **WD_KEY}, timeout=300, params=params).json(), []
+    js, feats = netfetch.fetch("GET", WD, headers={**UA, **netfetch.usgs_key(WD)}, timeout=300,
+                               params=params).json(), []
     while True:
         feats += js["features"]
         nxt = next((l["href"] for l in js.get("links", []) if l.get("rel") == "next"), None)
         if nxt is None or not js["features"]:
             return pd.DataFrame([f["properties"] for f in feats],
                                 columns=["monitoring_location_id", "time", "qualifier", "time_series_id"])
-        js = netfetch.fetch("GET", nxt, headers={**UA, **WD_KEY}, timeout=300).json()
+        js = netfetch.fetch("GET", nxt, headers={**UA, **netfetch.usgs_key(nxt)}, timeout=300).json()
 
 
 need = [g[4] for g in gauges if not fresh(f"{CAL}/flags_{g[4]}.csv")]

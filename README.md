@@ -194,7 +194,10 @@ closed port) cuts too. `NET_LOG=1` logs each request. OpenStreetMap downloads tr
 server second. The USGS gauges come from the USGS Water Data API (`api.waterdata.usgs.gov`), which replaces
 WaterServices (shut down on 2027-02-22): 1,000 requests an hour without a key, shared with anything else on the same
 connection (a fresh `02b` gauge download takes about 115, `11_context.py` under 10). A free key from
-https://api.waterdata.usgs.gov/signup/ in `USGS_API_KEY` raises that; the scripts send it only to that API.
+https://api.waterdata.usgs.gov/signup/ gets 1,000 an hour of its own, not shared with the connection (its
+`X-RateLimit-Limit` on 2026-11-24): `USGS_API_KEY`, or when that's unset the private file `~/.config/usgs/api_key`
+(the key alone, `chmod 600`); `netfetch.usgs_key` sends it only to that API, in the `X-Api-Key` header, and never
+prints it.
 
 ## Outputs (`output/<area>/`)
 Everything the maps, popups, creek profiles and GPX files show is in imperial units: feet, miles, square miles,

@@ -123,20 +123,20 @@ if has("tnc_flows"):
 # ---- USGS gauges: every stream gauge in the area with 5+ years of daily discharge ----
 # From the USGS Water Data OGC API (api.waterdata.usgs.gov), which replaces WaterServices (shut down on 2027-02-22).
 # It allows a set number of requests an hour (1,000 without a key). A free key from
-# https://api.waterdata.usgs.gov/signup/ in USGS_API_KEY raises that; it is sent only to this API.
+# https://api.waterdata.usgs.gov/signup/ (USGS_API_KEY, or the private file ~/.config/usgs/api_key) gets 1,000 an hour
+# of its own, not shared with the connection; netfetch.usgs_key sends it only to this API.
 WD = "https://api.waterdata.usgs.gov/ogcapi/v1/collections"
-WD_KEY = {"X-Api-Key": os.environ["USGS_API_KEY"]} if os.environ.get("USGS_API_KEY") else {}
 
 
 def items(coll, **params):
     """Every feature a query matches, following the "next" links (daily values come at most 50,000 to a page)."""
-    js, feats = get(f"{WD}/{coll}/items", headers=WD_KEY, params=dict(f="json", **params)).json(), []
+    js, feats = get(f"{WD}/{coll}/items", headers=netfetch.usgs_key(WD), params=dict(f="json", **params)).json(), []
     while True:
         feats += js["features"]
         nxt = next((l["href"] for l in js.get("links", []) if l.get("rel") == "next"), None)
         if nxt is None or not js["features"]:
             return feats
-        js = get(nxt, headers=WD_KEY).json()
+        js = get(nxt, headers=netfetch.usgs_key(nxt)).json()
 
 
 # daily-mean discharge series (statistic 00003) in each box. A series spanning under 5 years can't have 5 years of

@@ -31,6 +31,8 @@ An empty answer (a box with no closed roads, no named stream) is an answer: it i
 a copy the step can't run offline. A partial answer, or an error page, is not.
   asof(*what)                     ' (as of Nov 21)' when any of those sources came from a last good copy in this step,
       else '': for the source wording the map shows (closures' source, fire perimeters' source, trout records' label).
+  usgs_key(url)                   {"X-Api-Key": key} for a request to the USGS Water Data APIs, else {}: the key from
+      USGS_API_KEY or, when that's unset, the private file ~/.config/usgs/api_key (2026-11-24)
 
 A copy is used whatever its age: a rebuild on day-old closures with a dated note is better than no map. With the
 network up nothing here changes what a step makes (the same requests, the same answers); only the copies are written.
@@ -277,6 +279,39 @@ def urlretrieve(url, path, read=120, limit=3600):
         _failed(host)
         raise box.get("e") or OSError(f"{host}: download not complete within {limit} s")
     _answered(host)
+
+
+# ---- the USGS Water Data API key ----
+USGS_HOST = "api.waterdata.usgs.gov"
+_usgs = {}
+
+
+def usgs_key(url):
+    """{"X-Api-Key": key} for a request to the USGS Water Data APIs (https, that host only: a "next" link that led
+    anywhere else gets {}), else {}. Without a key those APIs count requests by connection, shared with anything else
+    on it (a rebuild waited an hour on that limit on 2026-11-24); a free key from https://api.waterdata.usgs.gov/signup/
+    gets 1,000 an hour of its own (its X-RateLimit-Limit on 2026-11-24). The key is USGS_API_KEY, or when that's unset
+    or empty the private file ~/.config/usgs/api_key (USGS_API_KEY_FILE names another), read once per process: a shell
+    started before the key was stored sends it as well. No key, no header (the requests go as before). The key is never
+    printed: one that isn't a single word of letters, digits, - and _ (two lines, a stray quote) is left out, with a
+    NOTE that doesn't show it."""
+    u = urlsplit(url)
+    if u.scheme != "https" or u.hostname != USGS_HOST:
+        return {}
+    if "key" not in _usgs:
+        k, src = os.environ.get("USGS_API_KEY", "").strip(), "USGS_API_KEY"
+        if not k:
+            src = os.path.expanduser(os.environ.get("USGS_API_KEY_FILE") or "~/.config/usgs/api_key")
+            try:
+                with open(src, encoding="utf-8", errors="replace") as f:
+                    k = f.read().strip()
+            except OSError:                    # no file: no key
+                k = ""
+        if k and not re.fullmatch(r"[A-Za-z0-9_-]+", k):
+            note(f"the USGS API key in {src} isn't a single word of letters and digits: requests go without a key")
+            k = ""
+        _usgs["key"] = k
+    return {"X-Api-Key": _usgs["key"]} if _usgs["key"] else {}
 
 
 # ---- the last good copies ----

@@ -549,15 +549,15 @@ def canopy_pct(gdf, r):
 # ---- USGS gauges: latest discharge vs daily percentiles for today ----
 # From the USGS Water Data APIs (api.waterdata.usgs.gov), which replace WaterServices (shut down on 2027-02-22): the
 # latest discharge from the OGC API, the percentiles for today's date from the Statistics API (beta). It allows a set
-# number of requests an hour (1,000 without a key); a free key from https://api.waterdata.usgs.gov/signup/ in
-# USGS_API_KEY raises that, and is sent only to this API.
+# number of requests an hour (1,000 without a key, shared with the connection); a free key from
+# https://api.waterdata.usgs.gov/signup/ (USGS_API_KEY, or the private file ~/.config/usgs/api_key) gets 1,000 an hour
+# of its own, and netfetch.usgs_key sends it only to this API.
 WDAPI = "https://api.waterdata.usgs.gov"
 def get(url, tries=4, **params):
     """GET with retries: the USGS and CDEC servers drop connections now and then. A server over its request limit
     (HTTP 429) is waited out as long as it asks, twice at most. None when the server answers with errors only;
     netfetch.NetworkDown when it doesn't answer at all (then the gauges are their last good snapshot)."""
-    key = os.environ.get("USGS_API_KEY") if url.startswith(WDAPI) else None
-    hdr, waits = {**UA, **({"X-Api-Key": key} if key else {})}, 0
+    hdr, waits = {**UA, **netfetch.usgs_key(url)}, 0
     for attempt in range(tries):
         try:
             r = netfetch.get(url, headers=hdr, timeout=300, params=params)
