@@ -1,0 +1,52 @@
+name: Map report
+description: Something on a stream map is wrong or doesn't work, or an idea for the maps
+title: "[map] "
+labels: ["report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping fix the maps. The easiest way to report is the **Report a problem or suggest a change** link at the foot of any popup on the map: it fills in the map, the spot and what the popup showed, and needs no GitHub account. Reports are public, so please leave out names, emails and phone numbers. Claude reads new reports every morning and posts what happens next here.
+  - type: input
+    id: kind
+    attributes:
+      label: What kind of report?
+      description: "Something on the map is wrong · Something doesn't work · Idea or request"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What did you see, and what should it be?
+      placeholder: e.g. This creek was dry from mid-July through August; the map says it flows all year.
+    validations:
+      required: true
+  - type: input
+    id: seen
+    attributes:
+      label: When did you see it?
+      placeholder: YYYY-MM-DD
+  - type: input
+    id: evidence
+    attributes:
+      label: How do you know?
+      description: "I was there · A sign or official notice · Another map or website · Local knowledge · Other"
+  - type: input
+    id: map
+    attributes:
+      label: Map
+      description: Filled in by the map's report link
+  - type: input
+    id: place
+    attributes:
+      label: Place
+      description: Latitude, longitude and zoom, filled in by the map's report link
+  - type: textarea
+    id: popup
+    attributes:
+      label: What the map showed
+      description: The popup's text, filled in by the map's report link
+  - type: input
+    id: device
+    attributes:
+      label: Browser and screen

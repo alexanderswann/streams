@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report from the map (no GitHub account needed)
+    url: https://alexanderswann.github.io/streams/report.html
+    about: Fills in the map and the spot for you. Or tap "Report a problem or suggest a change" in any popup on the map.
