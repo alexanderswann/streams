@@ -392,6 +392,7 @@ def cut_lines(s):
     return line.where(s.cut_sid.isna(), s.cut_sid) if "cut_sid" in s else line
 
 CREEK_SHARE = 0.25      # of a link's creek a designation must cover to be read on every creek piece of the link
+NAME_NEAR_M = 90.0      # a designation naming the reach's own creek is read this far: 05_score.py's name vote (60 m) + 30 m
 def creek_lines(s):
     """The creek each reach is part of for the designated trout waters it reads (attrs). 05_score.py cuts a link where
     it crosses the shore of a lake the map draws, at the outlet of a lake that passes its water on, and 200 m below a
@@ -742,6 +743,24 @@ def attrs(gdf, key, buf):
         t = t[(t.cover >= CREEK_SHARE * shapely.area(t.geometry.values))
               | np.array([(k_, j_) in own_ for k_, j_ in zip(t[key], t.index_right)], dtype=bool)]
     names = gdf["name"] if key == "sid" and "name" in gdf else pd.Series(None, index=gdf.index, dtype=object)
+    # ... and a creek reach reads a designation that names its own creek (same_water) within NAME_NEAR_M, where its line
+    # strays from the designated one: a braided river's routed channel lies up to 60 m off NHD's line and still carries
+    # its name (05_score.py's name vote), and the designation is read 30 m from it. A reach got its creek's designation
+    # only where its 30 m reached the designated line, so where the routing cut a creek again, the piece lying off the
+    # line lost it: Buffalo Fork's 348 m and Pacific Creek's 549 m in Jackson, 86 m from their Wyoming trout-stream lines,
+    # with pond routing v2 (2026-11-24). A tributary (another name, or none) reads only what its own 30 m touches.
+    if key == "sid" and names.notna().any():
+        cr_ = names.notna().to_numpy() & ~(gdf["in_lake"].fillna(False).astype(bool).to_numpy() if "in_lake" in gdf
+                                           else np.zeros(len(gdf), bool))
+        nb_ = gpd.sjoin(gdf.loc[cr_, [key, "geometry"]].assign(geometry=gdf.geometry[cr_].buffer(NAME_NEAR_M)),
+                        trout[["Name", "Designation", "broad", "wild_brook", "geometry"]], predicate="intersects")
+        nb_ = nb_[np.array([same_water(a, b) for a, b in zip(names.reindex(nb_.index), nb_.Name)], dtype=bool)]
+        have_ = set(zip(t[key], t.index_right))
+        nb_ = nb_[np.array([(k_, j_) not in have_ for k_, j_ in zip(nb_[key], nb_.index_right)], dtype=bool)]
+        if len(nb_):
+            nb_ = nb_.assign(geometry=g.geometry.reindex(nb_.index).values, cover=0.0,
+                             label=(nb_.Designation + ": " + nb_.Name).str.replace(r": $", "", regex=True))
+            t = pd.concat([t, nb_])
     t["own"] = [same_water(a, b) for a, b in zip(names.reindex(t.index), t.Name)]
     t = t.sort_values(["broad", "own", "cover"], ascending=[True, False, False])
     out["trout_water"] = out[key].map(t.groupby(key).label.first())
