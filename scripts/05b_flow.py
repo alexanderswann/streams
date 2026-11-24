@@ -204,7 +204,7 @@ class Walk:
         cells, ids = np.concatenate(cells)[::-1], np.concatenate(ids)[::-1]
         self.cells, first = np.unique(cells, return_index=True)      # a cell two reaches share is the later one's
         self.ids = ids[first]
-        self.next_, self.own = {}, {}
+        self.next_, self.own, self.jumps, self._jumped = {}, {}, {}, False
 
     def walk(self, cell, skip=-1):
         """Down from `cell` to the first line cell of a reach other than `skip`, over up to 4 km of unmapped channel
@@ -221,6 +221,7 @@ class Walk:
             if st is None and cell in self.dams and cell not in seen:     # through the lake, on below its outlet
                 seen.add(cell)
                 cell = self.dams[cell]
+                self._jumped = True
                 continue
             if st is None or not (0 <= r + st[0] < H and 0 <= c + st[1] < W):
                 return -1, cell
@@ -229,7 +230,9 @@ class Walk:
 
     def next(self, i):
         if i not in self.next_:
+            self._jumped = False
             self.next_[i] = self.walk(int(self.end[i]), skip=i)
+            self.jumps[i] = self._jumped          # the way to the next reach went through a lake
         return self.next_[i]
 
     def onward(self, i=None, cell=None):
@@ -363,6 +366,7 @@ with rasterio.open(f"{DERIVED}/flowdir.tif") as src:
 here.mid, here.area = mid, {False: area_box, True: area_edge}
 _WALK[REGION] = here
 nxt = np.array([here.next(i)[0] for i in range(len(s))], dtype=np.int64)
+jump = np.array([here.jumps.get(i, False) for i in range(len(s))])     # the way to the next reach goes through a lake
 
 # ---- a way that ends in a lake draining off the map ----
 # 03b_stitch.py leaves no stream lines on a lake whose water leaves the map (its lakes_off_map.gpkg, 2026-11-20), so the
@@ -418,28 +422,38 @@ def lake_line(k):
     return LAKE_LINE[k]
 
 
+VIA = {}      # per area kind: the reaches whose segment was found down a way through a lake, or is the line of a lake
+              # draining off the map ("off-map lake"): the kinds of borrowed estimate the rules before 2026-11-22 threw
+              # away where it read below NHD's class (with one found in another box: segments())
+
+
 def in_box(area, edge):
     """Each reach's model segment in this box, given the reaches' drainage areas (edge: with the water from other
     boxes): the nearest segment of similar drainage ("model"), or off the model network that of the first modelled
-    reach downstream ("scaled"); and for a reach with neither, the last reach on its way down in this box, else -1."""
+    reach downstream ("scaled"); and for a reach with neither, the last reach on its way down in this box, else -1.
+    Also, in VIA[edge], how a borrowed segment was found: "lake" down a way through a lake (here or on the reach it
+    was inherited from), "off-map lake" a lake's line (lake_line()), else None."""
     comid = match_points(mid, area, v2).values.astype(float)
     comid[~np.isin(comid, low.index)] = np.nan
     here.own[edge] = comid.copy()
     src_ = np.where(~np.isnan(comid), "model", None).astype(object)
     last = np.full(len(s), -1)
+    via = np.full(len(s), None, dtype=object)
     for i in np.flatnonzero(np.isnan(comid)):
-        k, j, hops = i, nxt[i], 0
+        k, j, hops, lk_ = i, nxt[i], 0, bool(jump[i])
         while j >= 0 and np.isnan(comid[j]) and hops < 60:
-            k, j, hops = j, nxt[j], hops + 1
+            k, j, hops, lk_ = j, nxt[j], hops + 1, lk_ or bool(jump[j])
         if j >= 0 and not np.isnan(comid[j]):
             comid[i], src_[i] = comid[j], "scaled"
+            via[i] = via[j] if via[j] is not None else ("lake" if lk_ else None)     # j: own, or inherited before i
         elif j < 0:
             c_ = lake_line(k)              # the way ends in a lake draining off the map (above)
             if np.isnan(c_):
                 last[i] = k
             else:
-                comid[i], src_[i] = c_, "scaled"
+                comid[i], src_[i], via[i] = c_, "scaled", "off-map lake"
                 LAKE_USED.add(int(i))
+    VIA[edge] = via
     return comid, src_, last
 
 
@@ -466,8 +480,11 @@ def segments(area, edge=False):
         if from_[i] is not None:
             src_[i] = "scaled"
     ACROSS[edge] = from_
+    via = np.where(pd.notna(from_), "box", VIA.get(edge, VIA[False]))
+    via = np.where(pd.Series(src_).eq("scaled").values, via, None)
+    via = np.where(pd.Series(src_).eq("scaled").values & pd.isna(via), "below", via)
     df = pd.DataFrame({"comid": comid, "flow_src": pd.Series(src_, index=s.index).fillna("none").values,
-                       "area_km2": area.values, "inside": in_lake, "pt": mid.values}, index=s.index)
+                       "area_km2": area.values, "inside": in_lake, "pt": mid.values, "via": via}, index=s.index)
     div_area = {}
     for c_, name in div[div.div_first].below_div.items():
         on = df[(df.comid == c_) & (df.flow_src == "model")]
@@ -485,6 +502,11 @@ def evidence(df, div_area):
     out = pd.DataFrame(index=df.index)
     out["comid"] = df.comid.astype("Int64")
     out["flow_src"] = df.flow_src
+    # how a borrowed estimate was found (segments()): "below" the first modelled reach downstream in this box, "lake"
+    # down a way through a lake, "box" in the box the creek runs on into, "off-map lake" a lake's line. scoring.py
+    # reads it where the flows are natural flows: the rules before 2026-11-22 threw the last three kinds away where they
+    # read below NHD's class, and the maps showed NHD's label
+    out["borrowed_via"] = df["via"] if "via" in df else None
     out["dry_cfs"] = np.round(np.nanmedian(q, axis=1), 2)
     out["dry_cfs_drought"] = np.round(np.sort(q, axis=1)[:, 1], 2)        # second-driest year
     out["flow_years"] = np.round((q >= FLOWING_CFS).mean(axis=1), 2).astype(float)
@@ -648,6 +670,8 @@ ev.loc[lift_, "water_class"] = pd.cut(w_[lift_], [-1, 0.24, 0.525, 0.8575, 1.0],
                                       labels=["mostly dry", "seasonal", "usually flows", "year-round"]).astype(str)
 print("reaches NHD's class lifts: " + ", ".join(f"{k} {n}" for k, n in pd.Series(why_[lift_]).value_counts().items())
       + f" (of them to a wetter class than the model's: {int((lift_ & (ev.model_class != ev.water_class)).sum())})")
+bv_ = ev.borrowed_via.where(lift_ & (why_ == "inherited")).dropna()
+print("borrowed estimates it lifts, by how they were found: " + (", ".join(f"{k} {n}" for k, n in bv_.value_counts().items()) or "none"))
 # ---- evidence for creeks the model rates flowing that are dry most summers (scoring.py's water (1) and (2)) ----
 # The channel's late-summer greenness (02g_greenness.py's rasters, where the area has the late_summer_green source)
 # and the record of a USGS gauge on the reach's own creek (flowlib.gauge_record). scoring.py decides, one-sided: it

@@ -518,7 +518,7 @@ CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn
            "wilderness", "non_fs_land", "cpad_access"]
 FLOWC = ["water_class", "dry_cfs", "dry_cfs_drought", "flow_years", "flow_src", "below_dam",   # 05b_flow.py
          "below_div", "div_share", "div_years", "gauge_name", "gauge_share", "gauge_years", "green_p90",
-         "model_class", "water_floor", "water_by_gauge", "water_rule"]                       # (the last two: scoring.py)
+         "model_class", "water_floor", "borrowed_via", "water_by_gauge", "water_rule"]       # (the last two: scoring.py)
 for c_ in CONTEXT + FLOWC:   # older context files may lack a column
     if c_ not in s_ll:
         s_ll[c_] = None
@@ -665,6 +665,18 @@ def summer_flow(r):
     # scoring.py: a borrowed estimate (scaled from another creek, or leaving out the water above a dam) never reads
     # drier than a creek with no estimate, nor shows a creek NHD has no line for mostly dry (said where it changed the
     # class; within a class it only moved the score)
+    # scoring.py, natural flows: an estimate the rules before 2026-11-22 threw away (05b_flow.py's borrowed_via) where it
+    # read below NHD's class reads, as it read then, as a reach with no estimate does
+    if rule == "borrowed, set aside":
+        how = {"lake": "found down a way through a lake", "box": "found in the next box of the map",
+               "off-map lake": "taken from the line of a lake draining off the map"}.get(r.borrowed_via, "borrowed")
+        own = [f"kept flowing {r.flow_years:.0%} of summers since 2011"] if pd.notna(r.flow_years) else []
+        mc = r.model_class if isinstance(r.model_class, str) else "drier"
+        return (f"no flow class: its estimate, scaled from another creek {how}, reads drier than NHD's label for it, "
+                f"which is no evidence that this creek dries, so the map gives it none; the score takes what the map's "
+                f"creeks of its size{peers(r.flow)} read on the model's own estimates, or NHD's class where that says "
+                f"more ({water_word(r.water_term)}) · the {LBL['flow']} had it {mc}" + (f" ({own[0]})" if own else "")
+                + f" · NHD: {r.flow}")
     if rule == "borrowed, no class" or (rule == "typical" and isinstance(r.model_class, str) and r.model_class != c):
         own = []
         if pd.notna(r.dry_cfs):

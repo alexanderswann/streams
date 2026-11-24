@@ -180,6 +180,8 @@ CREEK_RATIO = 0.8              # reaches carrying within this ratio of each othe
 TROUT_WATER = 0.69             # (5) a trout record's floor: "usually flows", the middle of its range (50-85 % of summers)
 WATER_CUTS = [-1, 0.24, 0.525, 0.8575, 1.0]   # the water term's class limits: 0.05 + 0.95 x 20 / 50 / 85 % of summers
 WATER_CLASSES = ["mostly dry", "seasonal", "usually flows", "year-round"]
+SET_ASIDE = ("lake", "box", "off-map lake")   # 05b_flow.py's borrowed_via: the kinds the rules before 2026-11-22 threw
+                                              # away where they read below NHD's class (score(), natural flows)
 # Thermal term: estimated July-August daytime water temperature (watertemp.py), C. Trout feed and grow well up to
 # about 20 C and can't hold out in water that stays at 25 C. On LA's trout records (1,566 reaches) this gives the same
 # mean credit as the 700-2300 m elevation band it replaced (0.91), and none of them zero
@@ -500,6 +502,19 @@ def score(s):
         model_class[no_cls & model_class.isna()] = cls[no_cls & model_class.isna()]
         cls2[no_cls], rule[no_cls] = "no data", "borrowed, no class"
         cls = cls.where(~(up | no_cls), cls2)      # the rules below read the class these give
+    else:
+        # ... and there an estimate the rules before 2026-11-22 threw away where it read below NHD's class (found down a
+        # way through a lake, in the box the creek runs on into, or on the line of a lake draining off the map:
+        # 05b_flow.py's borrowed_via, SET_ASIDE) and that NHD's floor lifts reads, as it read then, as a reach with no
+        # estimate does: NHD's label, scored on what like creeks read, never below NHD's class. Kept on NHD's class, 79
+        # drawn LA pieces (46 mi) on creeks NHD doesn't map read "mostly dry" where the maps had said "NHD unmapped".
+        # A plain borrowed estimate (the first modelled reach below, in the reach's own box) keeps the map's read
+        via = s["borrowed_via"] if "borrowed_via" in s else pd.Series(None, index=s.index, dtype=object)
+        no_cls = bor & fl.eq("inherited") & via.isin(SET_ASIDE)
+        model_class[no_cls & model_class.isna()] = cls[no_cls & model_class.isna()]
+        water = water.where(~no_cls, np.fmax(typ, nhd_water))
+        cls2[no_cls], rule[no_cls] = "no data", "borrowed, set aside"
+        cls = cls.where(~no_cls, cls2)
     # creeks the model rates flowing that are dry most summers (module docstring, water (1) and (2)); 05b_flow.py
     # writes the evidence: green_* (the channel's late-summer greenness) and gauge_* (a gauge on the creek)
     pos = trout_signs(s)[0] | s.trout_water.notna()
