@@ -52,7 +52,7 @@ if not hasattr(np, "in1d"):  # pysheds still calls np.in1d, removed in NumPy 2.4
     np.in1d = np.isin
 from config import *
 from crossbox import shared_edges
-from flowlib import still_water, FLOW
+from flowlib import still_water, FLOW, MIN_RESERVOIR_KM2
 
 LEVEL_HA = 2
 LINE_PULL = 5.0      # route_lake: a step through a lake off NHD's lines costs this many steps along them
@@ -468,6 +468,32 @@ def lake_cells(fd, geom, T):
     mask = rasterio.features.geometry_mask([geom], (r1 - r0, c1 - c0), T * rasterio.Affine.translation(c0, r0),
                                            invert=True) & (fd[r0:r1, c0:c1] > 0)
     return r0, c0, mask
+
+
+def small_water(hu4, bounds, big):
+    """NHD's lakes and ponds under MIN_RESERVOIR_KM2 in `bounds` (this area's CRS), from the given HU4 downloads, less
+    those lying in one of `big` (still_water's): the ponds step (f) of run() drains at NHD's outlet, as one, without
+    ending their creek there."""
+    import pandas as pd, pyogrio
+    W_, S_, E_, N_ = gpd.GeoSeries([shapely.box(*bounds)], crs=CRS).to_crs(4269).total_bounds
+    parts = []
+    for hu in hu4:
+        g = f"{NATIONAL}/NHD_H_{hu}_HU4_GPKG.gpkg"
+        lyr = next(l for l in pyogrio.list_layers(g)[:, 0] if l.lower() == "nhdwaterbody")
+        d = gpd.read_file(g, layer=lyr, bbox=(W_, S_, E_, N_))
+        d.columns = [c.lower() if c != "geometry" else c for c in d.columns]
+        parts.append(d.to_crs(CRS))
+    if not parts:
+        return gpd.GeoDataFrame(geometry=[], crs=CRS)
+    wb = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS)
+    wb = wb[wb.ftype.isin([390, 436]) & (wb.area < MIN_RESERVOIR_KM2 * 1e6)
+            & ~wb.gnis_name.fillna("").str.contains("Lagoon")].drop_duplicates("permanent_identifier")
+    wb = wb.assign(geometry=shapely.make_valid(wb.geometry.force_2d().values))
+    if len(big) and len(wb):
+        hit = np.unique(gpd.GeoSeries(big.geometry.values, crs=CRS).sindex.query(wb.geometry.values,
+                                                                                  predicate="intersects")[0])
+        wb = wb.drop(wb.index[hit])
+    return wb[["gnis_name", "geometry"]].reset_index(drop=True)
 
 
 def leads_back(fd, r, c, win, avoid=(), limit=500000):
@@ -969,9 +995,11 @@ def run(group):
     outflow = []                                        # (row, col, direction) of each pitted lake's outlet
     off_map = []                                        # lakes whose water leaves the map through their own surface
     opened = []                                         # (outlet cell, flat; a pond) of the lakes whose water goes on (e)
-    if len(lakes):
+    # the ponds step (f) drains at NHD's outlet: read before the lake step, which runs for them too
+    ponds = small_water(tuple(sorted({h for r in group for h in REGIONS[r]["hu4"]})), (x0, y0, x1, y1), lakes)
+    if len(lakes) or len(ponds):
         level, best = {}, {}
-        for r in group:
+        for r in (group if len(lakes) else []):
             sl = where[r]
             shape = (sl[0].stop - sl[0].start, sl[1].stop - sl[1].start)
             Tb = T * rasterio.Affine.translation(sl[1].start, sl[0].start)
@@ -1140,7 +1168,6 @@ def run(group):
                                        main=[way[0][0] - where[mb_][0].start, way[0][1] - where[mb_][1].start],
                                        main_box=mb_, lake=name, ha=ha, exit=[round(q["exit"].x), round(q["exit"].y)])))
                 side_ok.append(f"{name} ({ha:g} ha)")
-        del wet
         # (e) the water goes on at the outlet (2026-11-22, the audit's finding 6). Until then every lake ended its water in
         # a pit at its outlet cell and its way out started in the next cell; crossbox.py carried the water across, and
         # every later step found it again (the drops and the size floor added it, 05b_flow.py jumped the pit, 06_map.py
@@ -1160,6 +1187,88 @@ def run(group):
                 ins = v2[0].iloc[v2[0].sindex.query(lk_, predicate="intersects")]
                 pond = not len(ins) or not (ins.geometry.intersection(lk_).length >= 0.25 * ins.geometry.length).any()
             opened.append((cell[0] * W + cell[1], pond))
+        # (f) ponds drain at NHD's outlet as one, without ending their creek (2026-11-23). still_water() takes NHD's
+        # lakes of MIN_RESERVOIR_KM2 or more; a smaller pond kept the D8 directions the terrain step gave its flat water.
+        # Where that flat has two ways out, part of the pond went each way: flatlines.py sends the part near NHD's line
+        # out along it, and the rest still spills where the filled surface does. At North Teton Creek Lake (Jackson,
+        # 1.5 ha) the halves, 0.17 and 0.09 km2, stayed apart for 230 m, each under the channel start, and the map had
+        # no outlet creek. A pond NHD maps an outflow from is now routed as the lakes above are, by the same test
+        # (lake_outlet): every cell to NHD's outlet along NHD's lines through it (route_lake), the way out pointed along
+        # NHD's line to the cell the terrain takes the water on from. Its outlet is no pit and no outlet of (e): the
+        # water goes on down the creek, and no line, crossbox link or held water is added. A pond's other outflow lines
+        # the terrain takes the water on down are its second outlets, judged as the lakes' in (d): where the pond's
+        # water now goes down NHD's outlet, NHD's other channel keeps its line, as a side channel (Ampersand Brook's
+        # east channel below Stony Creek Ponds, the LA washes: lost on the first build without them).
+        n_pond = n_back = n_pside = 0
+        far_p = []
+        for n_seen, g_ in enumerate(ponds.geometry.values):
+            win_ = lake_cells(fd, g_, T)
+            if win_ is None or win_[2].sum() < 2:
+                continue
+            r0_, c0_, m_ = win_
+            rr_, cc_ = np.nonzero(m_)
+            j_ = int(np.argmax(acc[r0_ + rr_, c0_ + cc_]))
+            best_ = (r0_ + int(rr_[j_]), c0_ + int(cc_[j_]))
+            sides_p = []
+            cell, way, why = lake_outlet(fd, g_, T, best_, index, wet, nhdplus_exit(g_, v2), sides_p)
+            if cell is None:
+                continue
+            if (not (0 < cell[0] < H - 1 and 0 < cell[1] < W - 1) or near_shared_edge(cell[0], cell[1], group, where)
+                    or box_of(*cell) is None or box_of(*way[0]) != box_of(*cell)):
+                continue
+            h_, w_ = m_.shape
+            saved, saved_way = fd[r0_:r0_ + h_, c0_:c0_ + w_].copy(), [(rc, int(fd[rc])) for rc in [cell] + list(way)]
+            route_lake(fd, g_, cell, T, lines)
+            for k_, rc in enumerate(way[:-1]):
+                fd[rc] = CODE_OF[(way[k_ + 1][0] - rc[0] + 1) * 3 + (way[k_ + 1][1] - rc[1] + 1)]
+            fd[cell] = CODE_OF[(way[0][0] - cell[0] + 1) * 3 + (way[0][1] - cell[1] + 1)]
+            if leads_back(fd, way[-1][0], way[-1][1], lake_cells(fd, g_, T)):     # its water must go on: undone
+                fd[r0_:r0_ + h_, c0_:c0_ + w_] = saved
+                for rc, v_ in saved_way:
+                    fd[rc] = v_
+                n_back += 1
+                continue
+            n_pond += 1
+            win_p = lake_cells(fd, g_, T)
+            name_p = ponds.gnis_name.iloc[n_seen] if isinstance(ponds.gnis_name.iloc[n_seen], str) else "unnamed"
+            for q, status in sides_p:                   # its second outlets, by (d)'s tests
+                top = tuple(int(x_) for x_ in q["cells"][-1])
+                if status == "ok" and leads_back(fd, top[0], top[1], win_p):
+                    status = "the way leads back into the lake"
+                if status == "ok":
+                    r__, c__ = top
+                    for _ in range(4):                  # a way that runs into a lake that holds water within three
+                        if wet[r__, c__]:               # cells has nothing to draw
+                            status = "it runs into a lake at once"
+                            break
+                        k_ = int(fd[r__, c__])
+                        if k_ not in CODE_SET:
+                            break
+                        r__, c__ = r__ + int(DR[k_]), c__ + int(DC[k_])
+                        if not (0 <= r__ < H and 0 <= c__ < W):
+                            break
+                if status == "ok" and top in side_seen:
+                    status = "the same cell as another outflow line of the lake"
+                b_, mb_ = box_of(*top), box_of(*way[0])
+                if status != "ok" or b_ is None or mb_ is None:
+                    continue
+                side_seen.add(top)
+                sides.append((b_, dict(top=[top[0] - where[b_][0].start, top[1] - where[b_][1].start],
+                                       main=[way[0][0] - where[mb_][0].start, way[0][1] - where[mb_][1].start],
+                                       main_box=mb_, lake=name_p, ha=round(g_.area / 1e4, 1),
+                                       exit=[round(q["exit"].x), round(q["exit"].y)])))
+                n_pside += 1
+            d_ = RES * float(np.hypot(cell[0] - best_[0], cell[1] - best_[1]))
+            if d_ >= 100:
+                x_, y_ = T * (cell[1] + 0.5, cell[0] + 0.5)
+                far_p.append(f"{ponds.gnis_name.iloc[n_seen] if isinstance(ponds.gnis_name.iloc[n_seen], str) else 'unnamed'}"
+                             f" ({g_.area / 1e4:.1f} ha, {d_:.0f} m, at {x_:.0f},{y_:.0f})")
+        print(f"ponds under {MIN_RESERVOIR_KM2 * 100:g} ha drained at NHD's outlet: {n_pond} of {len(ponds)}, {len(far_p)} of "
+              f"them 100 m or more from the cell with the most water; {n_back} left as they were (the way led back); "
+              f"{n_pside} second outlets of ponds laid as side channels")
+        if far_p:
+            print("  moved 100 m or more: " + "; ".join(far_p))
+        del wet
         acc, more = accumulate(fd, DR, DC)
         if more:                                        # a flowing-on lake's outlet pointing back into the lake
             fd[acc < 0] = PIT
