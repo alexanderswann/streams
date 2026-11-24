@@ -21,5 +21,5 @@ run "" 02d_trails
 run "" 02e_access
 unset REFRESH
 for r in $ALL; do run $r 08_hike; run $r 10_sun; done
-run "" 09_drive; run "" 11_context; run "" watertemp; run "" 06_map; run "" 12_profiles
+run "" 09_drive; run "" 11_context; run "" watertemp; run "" 11b_calendar; run "" 06_map; run "" 12_profiles
 echo "== DONE $(date '+%m-%d %H:%M:%S')" >> $LOG

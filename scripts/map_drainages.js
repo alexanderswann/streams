@@ -59,6 +59,7 @@ function initDrainageMap(map, ctrl) {
   const LOW = 15, LOWCOL = "#8d9aa8";
   const RAMP = ["#3fb0a8", "#2a93c4", "#2a6fc0", "#3a4fb0", "#4b2f9c", "#3a1670"];
   let mode = "drainage", focus = null;
+  let calH = null;     // the half-month the fish colours are for (the trout calendar's "When"; null: any time)
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
   // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation in m)
@@ -73,6 +74,9 @@ function initDrainageMap(map, ctrl) {
     : RAMP[Math.min(RAMP.length - 1, Math.floor((fs - LOW) / (100 - LOW) * RAMP.length))];
   const zf = () => Math.max(1, Math.min(2.2, 1 + (map.getZoom() - 9) * 0.3));
   const dim = p => focus && p.d !== focus;
+  // the fish score the colours show: the score itself, or, with a half-month chosen under "When", the score scaled by
+  // how that half-month rates on the creek (map_calendar.js); a reach it can't rate shows as under LOW
+  const fsShown = p => calH === null || !window.troutCal ? p.fs : (troutCal.fishIn(p, calH) ?? 0);
 
   ["basins", "halo", "streams", "dlabels"].forEach((n, i) => {
     const p = map.createPane(n);
@@ -81,7 +85,7 @@ function initDrainageMap(map, ctrl) {
   });
 
   function col(p) {
-    if (mode === "fish") return ramp(p.fs);
+    if (mode === "fish") return ramp(fsShown(p));
     if (mode === "order") return BLUE[p.o];
     return p.o === 1 ? mix(p.c, 0.22) : p.o === 2 ? mix(p.c, 0.1) : p.c;
   }
@@ -89,8 +93,9 @@ function initDrainageMap(map, ctrl) {
     const p = f.properties;
     let op = OP[p.o], w = W[p.o];
     if (mode === "fish") {
-      if (p.fs < LOW) op *= 0.6;
-      else w = Math.max(w, 1.6 + 2.4 * (p.fs - LOW) / (100 - LOW));   // good water is wide whatever its order
+      const v = fsShown(p);
+      if (v < LOW) op *= 0.6;
+      else w = Math.max(w, 1.6 + 2.4 * (v - LOW) / (100 - LOW));       // good water is wide whatever its order
     }
     if (dim(p)) op *= 0.12;
     return {color: col(p), weight: w * zf(), opacity: op, lineCap: "round", lineJoin: "round"};
@@ -104,7 +109,8 @@ function initDrainageMap(map, ctrl) {
     return `${esc(p.k)} <span class="dm">· ${esc(p.d)}</span>`;
   }
   const tip = p => `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
-    `Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}`;
+    `Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}` +
+    (calH !== null && window.troutCal ? ` · ${troutCal.name(calH)}: ${fsShown(p)}` : "");
   function pop(p) {
     // (a side channel's name carries " (side channel)", 06_map.py: its profile is the river's). The link only where the
     // creek's long profile passes this reach: p.np marks a named reach no profile of its name passes (06_map.py)
@@ -645,9 +651,16 @@ function initDrainageMap(map, ctrl) {
     box.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
     const key = box.querySelector(".key");
     if (mode === "fish") {
+      const tc = window.troutCal && troutCal.ready() ? troutCal : null;
       key.innerHTML = focusBar() + `<div class="ramp"><i style="background:${LOWCOL};flex:.9"></i>${RAMP.map(c => `<i style="background:${c}"></i>`).join("")}</div>
-        <div class="rl"><span>0</span><span>${LOW}</span><span>fish score</span><span>100</span></div>
-        <div class="dm">Gray = under ${LOW} (dry, tiny or burned). Wider = better.</div>`;
+        <div class="rl"><span>0</span><span>${LOW}</span><span>fish score</span><span>100</span></div>` +
+        (tc ? `<label class="calwhen">When <select>${[`<option value="">any time (the fish score)</option>`].concat(
+          Array.from({length: 24}, (_, h) => `<option value="${h}"${h === calH ? " selected" : ""}>${tc.name(h)}` +
+            `${h === tc.now() ? " (now)" : ""}</option>`)).join("")}</select></label>` : "") +
+        `<div class="dm">${calH === null || !tc ? `Gray = under ${LOW} (dry, tiny or burned). Wider = better.`
+          : `The fish score × how ${tc.name(calH)} rates on each creek (trout calendar, in its popup). Gray = under ${LOW}.`}</div>`;
+      const sel = key.querySelector(".calwhen select");
+      if (sel) sel.onchange = () => { calH = sel.value === "" ? null : +sel.value; restyle(); };
       bindClear(key);
       return;
     }

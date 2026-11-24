@@ -199,7 +199,8 @@
   map.addControl(new maplibregl.ScaleControl({unit: "imperial"}), "bottom-right");
 
   let mode = "d", focus = null;
-  const focusMul = () => focus ? ["case", ["==", ["get", "d"], focus], 1, 0.1] : 1;
+  let calH = null;     // the half-month the fish colours are for (the trout calendar's "When"; null: any time)
+  const focusMul =() => focus ? ["case", ["==", ["get", "d"], focus], 1, 0.1] : 1;
   // line width by zoom; `add` widens every stop (casings), since zoom curves can't be nested inside "+"
   const HOVER = (px) => ["case", ["boolean", ["feature-state", "hover"], false], px, 0];   // widen the hovered line
   const ZW = [[8, 0.9], [11, 1.5], [13, 2.4], [16, 4.5]];
@@ -511,8 +512,24 @@
   });
 
   // ---- colour modes + focus ----
+  // the fish colours for the half-month chosen under "When" (map_calendar.js): the fish score scaled by how that
+  // half-month rates on each creek, as on the 2D map (cm, wm, om beside cf, wf, of); a reach it can't rate is under LOW
+  let calSet = null;
+  function calProps() {
+    if (calSet === calH) return;
+    D.streams.features.forEach(f => {
+      const p = f.properties, v = troutCal.fishIn(p, calH) ?? 0;
+      p.cm = ramp(v);
+      p.wm = v < LOW ? W[p.o] : Math.max(W[p.o], 1.6 + 2.4 * (v - LOW) / (100 - LOW));
+      p.om = v < LOW ? OP[p.o] * 0.6 : OP[p.o];
+    });
+    map.getSource("streams").setData(D.streams);
+    calSet = calH;
+  }
   function restyle() {
-    const k = {d: "d", o: "o", f: "f"}[mode];
+    const cal = mode === "f" && calH !== null && !!window.troutCal;
+    if (cal) calProps();
+    const k = cal ? "m" : {d: "d", o: "o", f: "f"}[mode];
     map.setPaintProperty("streams", "line-color", ["get", "c" + k]);
     map.setPaintProperty("streams", "line-width", zw("w" + k, HOVER(3)));
     map.setPaintProperty("streams", "line-opacity", ["*", ["get", "o" + k], focusMul()]);
@@ -530,9 +547,16 @@
     document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
     const key = document.getElementById("key");
     if (mode === "f") {
+      const tc = window.troutCal && troutCal.ready() ? troutCal : null;
       key.innerHTML = focusBar() + `<div class="ramp"><i style="background:${LOWCOL};flex:.9"></i>${RAMP.map(c => `<i style="background:${c}"></i>`).join("")}</div>
-        <div class="rl"><span>0</span><span>${LOW}</span><span>fish score</span><span>100</span></div>
-        <div class="dm">Gray = under ${LOW} (dry, tiny or burned). Wider = better.</div>`;
+        <div class="rl"><span>0</span><span>${LOW}</span><span>fish score</span><span>100</span></div>` +
+        (tc ? `<label class="calwhen">When <select>${[`<option value="">any time (the fish score)</option>`].concat(
+          Array.from({length: 24}, (_, h) => `<option value="${h}"${h === calH ? " selected" : ""}>${tc.name(h)}` +
+            `${h === tc.now() ? " (now)" : ""}</option>`)).join("")}</select></label>` : "") +
+        `<div class="dm">${calH === null || !tc ? `Gray = under ${LOW} (dry, tiny or burned). Wider = better.`
+          : `The fish score × how ${tc.name(calH)} rates on each creek (trout calendar, in its popup). Gray = under ${LOW}.`}</div>`;
+      const sel = key.querySelector(".calwhen select");
+      if (sel) sel.onchange = () => { calH = sel.value === "" ? null : +sel.value; restyle(); };
     } else if (mode === "o") {
       key.innerHTML = focusBar() + `<div class="ramp">${BLUE.slice(1, 7).map(c => `<i style="background:${c}"></i>`).join("")}</div>
         <div class="rl"><span>1</span><span>Strahler order (also line width)</span><span>6</span></div>`;

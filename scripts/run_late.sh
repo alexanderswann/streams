@@ -38,6 +38,7 @@ steps() {
   run $a "" 09_drive || return 1
   run $a "" 11_context || return 1
   run $a "" watertemp || echo "NOTE $a: no water-temperature fit; the thermal term stays neutral" >> $LOG
+  run $a "" 11b_calendar || echo "NOTE $a: no trout calendar; the popups show none" >> $LOG
   run $a "" 06_map || return 1
   [[ -f ../output/$a/profiles.html ]] || cp ../output/la/profiles.html ../output/$a/profiles.html
   run $a "" 12_profiles || return 1

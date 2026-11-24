@@ -1171,6 +1171,14 @@ props = pd.DataFrame({
     "y": mid_ll.y.round(5), "x": mid_ll.x.round(5),
     "np": no_prof})                               # no long profile here: the popup gives no profile link (above)
 props["_lk"] = s_show.lk_.values
+# The trout calendar (troutcal.py; 11b_calendar.py makes its files): each reach's horizon and, where it isn't the map's,
+# its time zone (cz), and the area's tables in LBL["cal"]; map_calendar.js works it out in the popups
+import troutcal
+props["cz"], _cal = troutcal.page_props(s_show.sid.values, done, MAP_OUT)
+if _cal:
+    LBL["cal"] = _cal
+print(f"trout calendar: {props.cz.notna().sum():,} of {len(props):,} drawn reaches"
+      + ("" if _cal else " (11b_calendar.py not run: no calendar)"))
 s_feat = gpd.GeoDataFrame(props, geometry=s_show.geometry.values, crs=4326).sort_values(["o", "fs"])
 s_feat_lake = s_feat[s_feat._lk.values].drop(columns="_lk")      # the whole reaches lying in a lake (above)
 s_feat = s_feat[~s_feat._lk.values].drop(columns="_lk")
@@ -1836,3 +1844,6 @@ with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
 
 print("streams", len(s_ll), "| drops", len(kp_ll))
 print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string())
+
+# the trout calendar on both pages, after map_score.js (troutcal.py, map_calendar.js)
+troutcal.add_to_pages(MAP_OUT)
