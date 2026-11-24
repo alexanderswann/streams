@@ -234,7 +234,8 @@ if osm is None:   # no Overpass and no earlier copy: the ranges' waterfall nodes
                 for n, p in zip(o.get("name", [None] * len(o)), o.geometry)]
 NOT_NATURE = re.compile(r"(?i)\b(road|rd|street|lane|drive|avenue|trailhead|parking|campground|picnic|church|school|"
                         r"apartments?|village|plaza|shopping|hotel|inn|motel|restaurant|information|lodge|cabins?|farm|"
-                        r"golf|club|estates?|condos?|subdivision|swim school|aquatic|pool slides|water slides|y?mca)\b")
+                        r"golf|club|estates?|condos?|subdivision|swim school|swimming pools?|aquatic|pool slides|water slides|"
+                        r"y?mca)\b")      # "swimming pool": a built pool (Somerton Springs Swimming pool, NE Philadelphia)
 n_osm = {"falls": 0, "rapids": 0, "swim": 0, "named": 0, "dropped": 0}
 for el in osm:
     t = el.get("tags", {})

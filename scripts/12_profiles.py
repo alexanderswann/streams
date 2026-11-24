@@ -13,8 +13,9 @@ from scipy.ndimage import minimum_filter
 from scipy.spatial import cKDTree
 from config import REGIONS, CRS, ROOT, MAP_OUT, RES, raw_dir, derived_dir
 from units import ft, sqmi, imperial_text   # the labels and notes profiles.html shows are imperial; the profile data stay metric
-# which creeks get a profile (MIN_KM, FLOWLINE_FTYPES, main_stems) and SNAP_FALL: shared with 06_map.py's popup links
-from creekprofiles import MIN_KM, SNAP_FALL, FLOWLINE_FTYPES, main_stems
+# which creeks get a profile (profile_stems: MIN_KM, main stems, the state line; FLOWLINE_FTYPES) and SNAP_FALL: shared
+# with 06_map.py's popup links
+from creekprofiles import SNAP_FALL, FLOWLINE_FTYPES, profile_stems
 
 STEP_M = 40           # spacing along the profile
 BOTTOM_M = 20         # channel-bottom search radius around the NHD line
@@ -84,9 +85,7 @@ for region, meta in REGIONS.items():
 
     by_name = {}
     for name, grp in nhd.groupby("gnis_name"):
-        for ln in main_stems(grp.geometry):
-            if ln.length < MIN_KM * 1000:
-                continue
+        for ln in profile_stems(grp.geometry):
             dist = np.r_[np.arange(0, ln.length, STEP_M), ln.length]
             p = [ln.interpolate(d) for d in dist]
             x, y = np.array([q.x for q in p]), np.array([q.y for q in p])

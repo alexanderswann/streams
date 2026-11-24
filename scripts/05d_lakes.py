@@ -1122,11 +1122,12 @@ if _far.any():
                       if g.geom_type == "GeometryCollection" else g for g in lk.geometry]
     print(f"stored to 2 km past the map: {int(_far.sum())} lakes that reach past it")
 # an area that stops at a state line keeps each lake's part on its side (areaclip.py): central Vermont has Lake
-# Champlain to the New York line, and none of the New York shore's ponds its boxes take in
+# Champlain to the New York line, and none of the New York shore's ponds its boxes take in; southeastern Pennsylvania
+# none of New Jersey's across the Delaware
 if areaclip.outline() is not None:
     n_ = len(lk)
     lk = areaclip.cut(lk).reset_index(drop=True)
-    print(f"cut at the {A['clip_state']} line: {len(lk)} of {n_} lakes kept")
+    print(f"cut at the {'/'.join(areaclip.states())} line: {len(lk)} of {n_} lakes kept")
 lk.to_file(OUT + ".tmp", driver="GPKG")
 os.replace(OUT + ".tmp", OUT)
 RECS = os.path.join(os.path.dirname(OUT), "lake_records.gpkg")      # New York's stocking and lake list (step 2c)

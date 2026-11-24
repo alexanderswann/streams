@@ -45,6 +45,12 @@ Twelve maps, each a set of boxes ("ranges") with its own UTM zone and drive-time
 `adk_northwest`, `adk_southwest`, `adk_southeast`. Adding one is still hand work (audit finding 9; the general-rules
 plan in §5).
 
+`se_pa` reaches the Delaware River since 2026-11-23 (the user: "expand the PA map south and east to the delaware
+river", "everything here west of the delaware river", "all the way up"): everything west of the river from Wilmington
+Manor and Claymont up past Chester and Philadelphia to Bristol, Morrisville and Washington Crossing, in four boxes
+(`brandywine` reaches 4,390.5 km N; new `claymont` and `pennypack_neshaminy`). The boxes reach into New Jersey, and
+the map is cut at the state line in the river, as central Vermont's is at the New York line in Lake Champlain.
+
 ## 3. Rules in force
 
 One row per rule that decides what the maps show. "Measured on" is where the rule's effect was checked; "all 12"
@@ -98,8 +104,8 @@ means it was measured on every map before it went in.
 
 | Rule | Value | Where | Since |
 |---|---|---|---|
-| Each area fits summer water temperature to August air (PRISM), elevation and stream size from its measured sites | at least 25 sites; must beat "every creek is the average" by 10 % (leave-one-out) | `scripts/watertemp.py:85`, `scripts/watertemp.py:212` | |
-| Three Adirondack maps add a lake term: the share of a creek's water that has just left a lake (carried past dams and ponds, and what runs on out of a lake along the routing before 03b's outlet) | counts within 200 m (650 ft) below a lake; full up to 50 km², none from 500 km² | `scripts/flowlib.py:315`, `scripts/flowlib.py:371`, `scripts/watertemp.py:202` | `52c2139`, `ee00f41` |
+| Each area fits summer water temperature to August air (PRISM), elevation and stream size from its measured sites; an area that stops at a state line, from the sites inside its states (New Jersey's coastal-plain streams had warmed southeastern Pennsylvania's fit) | at least 25 sites; must beat "every creek is the average" by 10 % (leave-one-out) | `scripts/watertemp.py:85`, `scripts/watertemp.py:218`, `scripts/watertemp.py:191` | the state-line sites: se_pa expansion |
+| Three Adirondack maps add a lake term: the share of a creek's water that has just left a lake (carried past dams and ponds, and what runs on out of a lake along the routing before 03b's outlet) | counts within 200 m (650 ft) below a lake; full up to 50 km², none from 500 km² | `scripts/flowlib.py:315`, `scripts/flowlib.py:371`, `scripts/watertemp.py:208` | `52c2139`, `ee00f41` |
 | Tailwaters below dams that release cold water take the elevation part of the thermal term in full | listed per area | `scripts/scoring.py:209` | |
 | Full temperature credit up to, none from | 20 °C (68 °F), 25 °C (77 °F) | `scripts/scoring.py:186` | |
 
@@ -134,6 +140,7 @@ means it was measured on every map before it went in.
 | A lake's outline from lidar where its surface is level | within 0.3 m; lakes over 600 ha keep NHD's outline | `scripts/05d_lakes.py:57`, `scripts/05d_lakes.py:444` | |
 | A drop is a candidate fall | slope 0.25 or more, 8 m (26 ft) or more, on 1 km² or more | `scripts/04_knickpoints.py:16`, `scripts/04_knickpoints.py:17` | |
 | Known falls merge OSM, NHD, GNIS, Wikidata, CDFW and the curated lists | | `scripts/02f_known_falls.py:49` | |
+| An area that stops at a state line keeps what lies in its states (central Vermont: VT; southeastern Pennsylvania: PA, DE and MD, so not New Jersey across the Delaware); a reach or drop goes by its middle point, except a line lying in the water of the river that is the line (the Delaware above Trenton), kept whole: NHD's river area near the line, since TIGER's line strays up to about 250 m from NHD's centre line; the river's own known falls show with it (Scudders Falls and the Falls of the Delaware at Trenton, on the New Jersey side of the line); no creek profile past the line (New Jersey's creeks in southeastern Pennsylvania's boxes, New York's in central Vermont's) | half its length in NHD's river area within 400 m (1,300 ft) of the line; a falls within 25 m (80 ft) of that water | `scripts/areaclip.py:32`, `scripts/areaclip.py:77`, `scripts/areaclip.py:112`, `scripts/areaclip.py:133`, `scripts/config.py:225`; the map step's lines drawn through breaks go by the same test (`scripts/06_map.py:142`); the falls, `scripts/05_score.py:931`; the profiles, `scripts/creekprofiles.py:56` | se_pa expansion |
 | Swimming holes and falls also from OSM creek pools and unnamed swimming spots on a creek, Overture Maps places (strictly: a waterfall-category place named falls, cascade or waterfall within 150 m of an NHD creek and not by a lake, a swimming hole within 250 m of a creek; only where no other source has a fall within 1 km, a swimming hole within 300 m, or a fall of that name within 25 km), and Google Maps listings looked up by hand | | `scripts/02f_known_falls.py:400`, `scripts/02f_known_falls.py:408` | `dd31f7c` |
 | A named NHD pond is kept under any map's smallest lake size; so are CT DEEP's stocked trout lakes, as PFBC's and NCWRC's are | 0.1 ha (a quarter acre) or more | `scripts/05d_lakes.py:55` | `dd31f7c` |
 | The maps open with streams, drainages, the long trail, terrain shading, place and road labels and lakes; everything else off | | | 2026-11-20 |
@@ -184,6 +191,7 @@ means it was measured on every map before it went in.
 | The cfs figure runs about 3x high on small Vermont creeks and 7x in Tallulah Gorge | audit finding 2 | none | | open |
 | NYSDEC permission for its layers on the four Adirondack maps (hidden; pages stay up) | audit finding 11 | the overview drafts, the user sends | | open |
 | The smallest lake to show (with counts); hosting beyond smaller pages; national gap-fillers | general-rules | the user | | later |
+| Lines over buried creeks in the cities: the terrain draws creeks that now run in sewers, as "NHD unmapped" with fish scores around 30 (about 32 mi in West and Southwest Philadelphia on the map before 2026-11-23; more in North and Northeast Philadelphia since `se_pa` reaches the Delaware) | se_pa expansion | none | the user's call: a general rule for every map | open |
 | USGS WaterServices ends 2027-02-22 | | done: `11_context.py` and `02b` use api.waterdata.usgs.gov | | watch |
 
 ## 6. Standing checks (before every publish)

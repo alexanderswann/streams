@@ -59,7 +59,7 @@ get drawn twice. The pipeline is the same everywhere except where it says otherw
 | `central_vt` | Central Vermont (the Green Mountains from the White River to the Lamoille, and the Champlain Valley west to the New York line in the middle of Lake Champlain: the boxes reach past the line, and the map is cut at it, `clip_state` in `AREAS` and `areaclip.py`) | `stowe_lamoille`, `mad_winooski`, `white_river` | 05753 Middlebury |
 | `ne_ct` | Northeastern Connecticut | `natchaug`, `quinebaug` | 06281 Woodstock |
 | `lexington_va` | Lexington, Virginia | `maury_goshen`, `blue_ridge_va` | 24450 Lexington |
-| `se_pa` | Southeastern Pennsylvania (and northern Delaware) | `brandywine`, `ridley_valley` | 19063 Media |
+| `se_pa` | Southeastern Pennsylvania and northern Delaware, east and south to the Delaware River (from Wilmington Manor and Claymont up past Philadelphia to Morrisville and Washington Crossing: the boxes reach past the river, and the map is cut at the New Jersey line in it, `clip_state` keeping PA, DE and MD; the river above Trenton is kept whole, with Scudders Falls and the Falls of the Delaware) | `brandywine`, `ridley_valley`, `claymont`, `pennypack_neshaminy` | 19063 Media |
 | `smokies` | Great Smoky Mountains National Park and around it (TN / NC) | `cades_cove`, `le_conte`, `cataloochee`, `tellico`, `snowbird`, `nantahala`, `tuckasegee` | 30305 Atlanta |
 | `adk_high_peaks` | Adirondacks: High Peaks & Lake Placid (the High Peaks, Saranac lakes, Ausable, Boquet, Lake Champlain shore, Chateaugay and Chazy lakes) | `high_peaks`, `boquet`, `saranac`, `wilmington`, `champlain`, `chateaugay` | 05753 Middlebury |
 | `adk_northwest` | Adirondacks: Long Lake, Tupper & Cranberry (the Raquette from Raquette Lake to Carry Falls, Stillwater, Cranberry Lake, Five Ponds, the St. Regis) | `beaver`, `long_lake`, `tupper`, `st_regis`, `lake_ozonia` | 05753 Middlebury |
@@ -686,7 +686,8 @@ Critical habitat, wilderness and non-Forest-Service land are shown as flags, not
 orders, usually cover less ground, and have to be checked on the forest's site.
 
 ### Water temperature (`watertemp.py`)
-`watertemp.py` fits the measured sites' July–August daytime medians (Water Quality Portal) per area, by least squares
+`watertemp.py` fits the measured sites' July–August daytime medians (Water Quality Portal) per area (an area cut at a
+state line, `clip_state`, on the sites inside its states only), by least squares
 on the best of a few predictor sets (PRISM August air temperature, elevation, drainage area, a lake term): the lowest
 leave-one-out error among the sets whose coefficients have the physical sign, a simpler set within 0.05 °C first.
 Sites are weighted by how well their median is known; sites with a median over 30 °C (hot springs), and in one pass

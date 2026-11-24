@@ -1026,7 +1026,9 @@ kp_ll.drop(columns=["top_idx", "base_idx"]).to_file(f"{os_}/waterfall_candidates
 t_ll = areaclip.cut(trails).to_crs(4326)
 t_ll = t_ll[~t_ll.is_empty].assign(geometry=shapely.set_precision(t_ll.geometry.simplify(0.0001).values, 1e-5))
 t_ll.assign(name=t_ll["name"].fillna("trail"))[["name", "geometry"]].to_file(f"{os_}/trails.gpkg")
-known_falls[known_falls.within(range_box) & areaclip.inside(known_falls.geometry.values)].to_crs(4326).to_file(
+# (and the falls of a river that is the state line, as the river: areaclip.in_river; Scudders Falls in the Delaware)
+_kf = known_falls.geometry.values
+known_falls[known_falls.within(range_box) & (areaclip.inside(_kf) | areaclip.in_river(_kf))].to_crs(4326).to_file(
     f"{os_}/known_falls.gpkg")
 
 # ---- hillshade overlay (warped to web mercator) ----

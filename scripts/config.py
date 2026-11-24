@@ -46,7 +46,9 @@ STREAM_KM2 = 0.25             # channel initiation (2,500 cells at 10 m): 03b_st
 # artificial_path = the flow class of NHD artificial paths (river and lake centrelines): "other" in LA, where they
 #   run through dry washes and reservoirs; "perennial" in wet country, where they are the rivers themselves.
 # clip_state = the state an area stops at where its boxes reach past a state line (areaclip.py): central Vermont's
-#   west edge is the New York line down the middle of Lake Champlain. The hydrology still runs on the whole boxes.
+#   west edge is the New York line down the middle of Lake Champlain. Several states where the map covers more than
+#   one: southeastern Pennsylvania keeps Pennsylvania, Delaware and Maryland and stops at the New Jersey line in the
+#   Delaware River. The hydrology still runs on the whole boxes.
 # water_temp_group = a name shared by areas that are one region cut into several maps (the four Adirondack maps): a map
 #   whose own measured sites give no water-temperature fit with skill takes the fit on all the group's sites
 #   (watertemp.py), where that fits its own sites.
@@ -205,24 +207,47 @@ AREAS = {
                                   bbox=(641000, 4156000, 673000, 4214000)),
         }),
     # Added 2026-11-19 for ZIP 19063 (Media, PA). Piedmont hills, suburbs and stocked creeks around Philadelphia, with a few
-    # Class A wild brown trout streams (Valley Creek, Hay Creek, Sixpenny Creek). The boxes leave out the New Jersey
-    # side of the Delaware estuary; the west box reaches the Octoraro / Conestoga headwaters (HU4 0205) and Big Elk Creek
-    # (0206), and south into northern Delaware (White Clay, Red Clay and Pike creeks, Delaware's stocked trout streams).
+    # Class A wild brown trout streams (Valley Creek, Hay Creek, Sixpenny Creek). The west box reaches the Octoraro /
+    # Conestoga headwaters (HU4 0205) and Big Elk Creek (0206), and south into northern Delaware (White Clay, Red Clay
+    # and Pike creeks, Delaware's stocked trout streams).
+    # Grown to the Delaware River on 2026-11-23 (user: "expand the PA map south and east to the delaware river", then,
+    # with a screenshot from Wilmington to Chester, "make sure to include everything here west of the delaware river";
+    # asked how far up the river, "all the way up"): everything west of the river from Wilmington Manor and Claymont up
+    # past Chester and Philadelphia to Bristol, Morrisville and the map's north edge at Washington Crossing. New Jersey
+    # stays off: the boxes are rectangles and reach across the river, and the map ends at the state line in it
+    # (clip_state). Edges placed on NHD's named streams and waterbodies: the west box's new south edge (4,390.5 km; it
+    # was 4,394) cuts no lake and lets White Clay Creek reach the Christina inside the map (the Christina itself loops
+    # out and back across any line there); the north edge carried east clears the Neshaminy (which crosses 4,459 km
+    # five times) and every lake; the east edge lies past Pennsylvania's last land at the Bordentown bend (523.5 km).
     "se_pa": dict(
         label="Southeastern Pennsylvania", crs=26918,
         min_relief=30,                                  # valleys 40-120 m deep: the 100 m test would drop most paths
+        clip_state=("PA", "DE", "MD"),    # the map ends at the New Jersey line in the Delaware River (areaclip.py)
         sources=("pa_trout", "de_trout", "tu_brook_trout"),
         long_trail=("Horse-Shoe Trail", "HST", r"^Horse-?Shoe Trail"),
         home=dict(label="19063 Media", lon=-75.3880, lat=39.9172),
         ranges={
             "brandywine": dict(label="Brandywine, French Creek & White Clay", hu4=("0204", "0205", "0206"),
-                               # Hay Creek and French Creek south through both Brandywine branches to White Clay Creek
-                               # and northern Delaware; Honey Brook / Morgantown east to West Chester
-                               bbox=(418000, 4394000, 453000, 4461000)),
+                               # Hay Creek and French Creek south through both Brandywine branches to White Clay Creek,
+                               # the Christina and northern Delaware down to Wilmington Manor; Honey Brook / Morgantown
+                               # east to West Chester
+                               bbox=(418000, 4390500, 453000, 4461000)),
             "ridley_valley": dict(label="Ridley, Crum & Darby, Valley Creek & the Wissahickon", hu4=("0204",),
                                   # Media's creeks, Valley Forge, the lower Perkiomen and the Wissahickon; Chester and
                                   # the airport north to Schwenksville and Lansdale
                                   bbox=(453000, 4408000, 487000, 4461000)),
+            "claymont": dict(label="Naamans & Shellpot creeks, Claymont, Marcus Hook & the Wilmington riverfront",
+                             hu4=("0204",),
+                             # Wilmington east of the Brandywine down to the Christina's mouth, Brandywine Hundred,
+                             # Claymont and Marcus Hook to the river (the rest is river and New Jersey)
+                             bbox=(453000, 4390500, 468000, 4408000)),
+            "pennypack_neshaminy": dict(label="Pennypack, Tacony, Poquessing & Neshaminy creeks: Philadelphia to Morrisville",
+                                        hu4=("0204",),
+                                        # Philadelphia east of Broad Street from the Navy Yard to the Bucks County line,
+                                        # Cheltenham, Abington and the Pennypack's head in Hatboro, and Bucks County from
+                                        # Bensalem and Bristol up the river to Morrisville, Yardley and Washington
+                                        # Crossing, with the Neshaminy from Chalfont down past Newtown and Tyler State Park
+                                        bbox=(487000, 4414000, 524000, 4461000)),
         }),
     # Added 2026-11-19 ("add in smokey mountain NP and the surrounding areas as a new location too"). The whole of Great
     # Smoky Mountains National Park (its NPS boundary spans x 226.8-319.1 km, y 3923.7-3968.5 km in zone 17N) and the

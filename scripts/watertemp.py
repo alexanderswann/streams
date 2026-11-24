@@ -183,6 +183,12 @@ def measured_sites():
                                      lat=("LatitudeMeasure", "first"), lon=("LongitudeMeasure", "first"))
     pts = gpd.GeoDataFrame(site, geometry=gpd.points_from_xy(site.lon, site.lat), crs=4326).to_crs(CRS)
     pts = pts[pts.intersects(area.union_all())].copy()
+    # an area that stops at a state line (config clip_state) is fitted on its own ground: the sites past the line are
+    # no part of the map. New Jersey's coastal-plain streams inside southeastern Pennsylvania's boxes (282 of 661 sites)
+    # read warmer than its Piedmont creeks and moved its fit to +1.86 per degree of air, from 1.49 on its own sites;
+    # central Vermont's 11 New York sites move its fit by a few hundredths of a degree
+    import areaclip
+    pts = pts[areaclip.inside(pts.geometry.values)].copy()
     pts["air"], pts["elev"] = air_at(pts), elev_at(pts)
     # the spread of single readings around their site's median (robust, sites with 3+ readings): fit()'s weights
     global SIGMA_W2

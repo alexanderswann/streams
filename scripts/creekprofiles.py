@@ -3,9 +3,14 @@ known-falls popups link to a creek's profile only where that profile passes (202
 
 A profile is drawn for each named creek in the USGS hydrography: the creek's NHD flowlines (stream / river lines and
 the artificial paths through ponds) are merged by name in each range, split into connected pieces, and the longest path
-through each piece of MIN_KM or more is its main stem. profiles.html opens a creek's profile from a map link by the
-creek's name and a point (#q=name&lat=&lon=): the profile of that name passing closest to the point.
+through each piece of MIN_KM or more is its main stem. In an area that stops at a state line (config clip_state) a main
+stem past the line gets none, as the map draws no creek there (areaclip.inside: by its middle point, or the water of
+the river that is the line, so the Delaware's profile stays): New Jersey's creeks inside southeastern Pennsylvania's
+boxes (66 profiles, 2026-11-24) and New York's inside central Vermont's (22) had been listed on the profiles page.
+profiles.html opens a creek's profile from a map link by the creek's name and a point (#q=name&lat=&lon=): the profile
+of that name passing closest to the point.
 """
+import areaclip
 import networkx as nx
 import numpy as np
 import shapely
@@ -48,10 +53,17 @@ def main_stems(lines):
     return out
 
 
+def profile_stems(lines):
+    """The main stems of one creek's lines in one range (in the area's CRS) that get a profile: MIN_KM or more, inside
+    the area's state line where it has one."""
+    st = [s for s in main_stems(lines) if s.length >= MIN_KM * 1000]
+    return [s for s, k in zip(st, areaclip.inside(st)) if k] if st else []
+
+
 class ProfileLines:
     """The profiles' main stems in a map, by creek name: built from each range's NHD flowlines on their own (as
-    12_profiles.py builds them), only for the names asked about. `nhd` holds the named flowlines in a metric CRS, with
-    the range in column "range"."""
+    12_profiles.py builds them), only for the names asked about. `nhd` holds the named flowlines in the area's CRS
+    (config.CRS: the state line is tested there), with the range in column "range"."""
 
     def __init__(self, nhd):
         nhd = nhd[nhd.gnis_name.notna() & nhd.ftype.isin(FLOWLINE_FTYPES)]
@@ -61,8 +73,7 @@ class ProfileLines:
     def stems(self, name):
         if name not in self._stems:
             g = self._by_name.get(name)
-            self._stems[name] = [] if g is None else [s for _, gr in g.groupby("range") for s in main_stems(gr.geometry)
-                                                      if s.length >= MIN_KM * 1000]
+            self._stems[name] = [] if g is None else [s for _, gr in g.groupby("range") for s in profile_stems(gr.geometry)]
         return self._stems[name]
 
     def passes(self, name, pt, within=SNAP_FALL):

@@ -136,6 +136,11 @@ def draw_through(s_ll):
             if d_ is None or not (0 <= r_ + d_[0] < H_ and 0 <= c_ + d_[1] < W_):
                 break
             r_, c_ = r_ + d_[0], c_ + d_[1]
+        # a break past the state line of an area that stops at one is no line of this map, as a reach there isn't
+        # (areaclip.inside: by its middle, or the water of the river that is the line). A New Jersey creek coming in
+        # from outside southeastern Pennsylvania's north edge was drawn from it into the Delaware with the river's values
+        if not areaclip.inside([shapely.LineString(pts) if len(pts) > 1 else shapely.Point(pts[0])])[0]:
+            continue
         up = None
         if kind == "edge" and ex is not None:
             pt = shapely.Point(ex, ey)
