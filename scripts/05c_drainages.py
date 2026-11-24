@@ -600,6 +600,11 @@ streams["area_full_km2"] = (streams.area_km2 + extra_full[own] + held_all[own]).
 # below made every river of 100 sq mi or more order 7: 520 lines; audit finding 14).
 with rasterio.open(f"{DERIVED}/strahler.tif") as src:
     streams["strahler"] = src.read(1).ravel()[own]
+# ... but a creek's reach that runs on through a junction only a lake's second outlet makes (05_score.py) keeps the
+# order it has above it: the second outlet's line, laid as a stream by 03b_stitch.py, carries no water of its own
+if "order_cap" in streams:
+    _cap, _st = pd.to_numeric(streams.order_cap, errors="coerce").to_numpy(float), streams.strahler.to_numpy(float)
+    streams["strahler"] = np.where(np.isfinite(_cap), np.minimum(_st, _cap), _st).astype(int)
 routed = streams.area_km2.to_numpy(float) + held_all[own]          # what the routing itself counts here
 full_ = streams.area_full_km2.to_numpy(float)
 carried = (full_ > 2 * routed) & (full_ - routed > 5)

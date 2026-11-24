@@ -486,13 +486,15 @@ print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reac
 # second outlet gather only their own few: its links stayed under the floor and the maps had no line there, or drew
 # one only where crossbox.py happened to put the lake's water in (13 such lines at 9 lakes until 2026-11-22: Round
 # Lake's, Marsh Creek Reservoir's side arms). Each is kept from the cell where the terrain takes the water on, down
-# its D8 path to the first link kept on its own (the outlet's creek where the two meet again, or another creek), a
-# lake, a pit or the box's edge, and is a side channel of the creek the lake's outlet starts (below). Nothing is
-# added to the drainage of any line: NHD gives no split of a lake's water, so it is not counted twice anywhere.
+# its D8 path to the outlet's creek where the two meet again (whatever that creek drains), the first link kept on its
+# own (another creek), a lake, a pit or the box's edge, and is a side channel of the creek the lake's outlet starts
+# (below). Nothing is added to the drainage of any line: NHD gives no split of a lake's water, so it is not counted
+# twice anywhere.
 SIDE_MAX_M = 5000          # a second outlet whose way meets no creek the map keeps within this far isn't drawn (printed)
 _lo = f"{SHARED_DERIVED}/lake_outlets.json"
 sides = json.load(open(_lo)).get("sides", {}).get(REGION, []) if os.path.exists(_lo) else []
 s["side_n"] = -1
+s["order_cap"] = np.nan     # a creek's order above a junction only a second outlet's line makes, it runs on through (below)
 if sides:
     fdir = rasterio.open(f"{DERIVED}/flowdir.tif").read(1)
     D8_ = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
@@ -514,12 +516,32 @@ if sides:
             cell_link.setdefault(int(kk), i)
         if len(cells_) > 1:
             head[i], tail[i] = int(cells_[0]), int(cells_[-1])
-    side_n, long_, own_, stops = s["side_n"].to_numpy(int).copy(), [], [], []
-    for n_, e in enumerate(sides):
-        r_, c_, marked = *e["top"], False
-        for _ in range(int(SIDE_MAX_M / RES)):
+    def main_way(e):
+        """The links the lake's main outlet's own way runs through, down D8 from the first cell below the outlet, twice
+        as far as a second outlet's way is followed: where the second outlet's way comes to one of them, the two meet
+        again. None where the outlet's creek starts in the next box."""
+        if e.get("main_box", REGION) != REGION:
+            return set()
+        (r_, c_), way = e["main"], set()
+        for _ in range(int(2 * SIDE_MAX_M / RES)):
             i = cell_link.get(r_ * fdir.shape[1] + c_)
-            if i is not None and side_n[i] != n_ and head.get(i) != r_ * fdir.shape[1] + c_:
+            if i is not None:
+                way.add(i)
+            d_ = D8_.get(int(fdir[r_, c_]))
+            if d_ is None or not (0 <= r_ + d_[0] < fdir.shape[0] and 0 <= c_ + d_[1] < fdir.shape[1]):
+                break
+            r_, c_ = r_ + d_[0], c_ + d_[1]
+        return way
+    into = {}                           # each junction: the links that end there
+    for i, t_ in tail.items():
+        into.setdefault(t_, []).append(i)
+    side_n, long_, own_, stops, meet_ = s["side_n"].to_numpy(int).copy(), [], [], [], []
+    for n_, e in enumerate(sides):
+        r_, c_, marked, way_ = *e["top"], False, main_way(e)
+        for _ in range(int(SIDE_MAX_M / RES)):
+            k_ = r_ * fdir.shape[1] + c_
+            i = cell_link.get(k_)
+            if i is not None and side_n[i] != n_ and head.get(i) != k_:
                 if not marked:
                     own_.append(e["lake"] + " (a creek passing its exit)")
                 break           # a creek the way runs into from the side (one that passes the lake's exit)
@@ -528,11 +550,27 @@ if sides:
                 if not marked and own_i:        # its first link gathers a creek's ground of its own: that creek,
                     own_.append(e["lake"])      # drawn from the lake on
                 elif marked and own_i:
-                    stops.append((n_, r_ * fdir.shape[1] + c_))
+                    stops.append((n_, k_))
                 break           # a link kept on its own (or the sea, the state line, another second outlet's way)
+            # A creek comes in at this junction (any link not of a second outlet's way: each ends on STREAM_KM2 or more
+            # of its own ground), or the link below lies on the lake's own outlet creek (its main outlet's D8 way: the
+            # two outlets meet again), and the floor keeps the link below: the second outlet ends here, whatever the
+            # link below drains, and the link is that creek's, as below a creek of its own. A pond's outlet creek often
+            # drains under 1 km2, and the way ran on down it: the creek's own reach was marked the pond's side channel,
+            # its popup saying its own drainage was small (43 links, 10.7 mi on the 12 maps of 2026-11-24). A link
+            # below the floor doesn't end it: the way runs on as before, so a second outlet never ends on a line the
+            # map doesn't draw
+            if i is not None and side_n[i] != n_ and own_keep[i]:
+                if i in way_ or any(side_n[u] < 0 for u in into.get(k_, [])):
+                    if marked:
+                        stops.append((n_, k_))
+                        meet_.append(e["lake"])
+                    else:
+                        own_.append(e["lake"] + " (a creek passing its exit)")
+                    break
             if i is not None:
                 if marked and side_n[i] != n_ and own_keep[i]:   # on into a link the floor keeps under 1 km2: the
-                    stops.append((n_, r_ * fdir.shape[1] + c_))   # creek above its junction is judged as at a stop
+                    stops.append((n_, k_))                        # creek above its junction is judged as at a stop
                 side_n[i], marked = n_, True
             d_ = D8_.get(int(fdir[r_, c_]))
             if d_ is None:
@@ -545,33 +583,56 @@ if sides:
         else:
             long_.append(e["lake"] + f" ({SIDE_MAX_M} m on)")
             side_n[side_n == n_] = -1       # a channel lost in flat ground: no line that stops short of a creek
-    # Where the second outlet's way joins a creek the map keeps, its new line can split that creek's link: the link
-    # above the junction then ends there, and its own drainage at its end can fall under the floor though the creek
-    # was drawn before (a creek of 1.06 km2 above a pond's second outlet lost its upper 0.9 mi). A junction only the
-    # new line makes (the creek and the second outlet run into it, nothing else, and the second outlet's last cell
-    # above it gathers under STREAM_KM2, so it had no stream line of its own there before 03b_stitch.py's side_streams)
-    # leaves the creek above it as the floor had it: part of the link it continues, which is kept on its own. Where
-    # the way had already become a stream above the junction (west of Crooked Lake: 0.41 km2), the junction was there
-    # before, and the creek above it (0.29 km2) was under the floor then too
-    into = {}
-    for i, t_ in tail.items():
-        into.setdefault(t_, []).append(i)
-    rest = []
+    # Where the second outlet's way joins a creek, its new line split that creek's link, and the creek's reach ended at
+    # the junction. A junction only the new line makes (the creek and the second outlet run into it, nothing else, and
+    # the second outlet's last cell above it gathers under STREAM_KM2, so it had no stream line of its own there before
+    # 03b_stitch.py's side_streams) is no junction for the creek: a side channel carries no water of its own (nothing
+    # is added to any line's drainage), so the creek's reach runs on through it, its links above and below one link
+    # again as before the second outlet's line was laid. On the 12 maps of 2026-11-24 such junctions ended 104.7 mi of
+    # creek reaches: Fender Brook's at the rejoin of its pond's parallel channel (fish 59 -> 48), Ledford Creek's lower
+    # end moved off the brook trout patch it touched (85 -> 57), and an Adirondack pond's outlet creek read its steep
+    # lower 761 m on their own gradient (96 -> 84). This replaces 6e0898c's junction rule, which kept the creek above
+    # drawn but still ended its reach there. The order 03b counted below such a junction (the second outlet's line
+    # coming in) is the creek's above it again (order_cap: 05c_drainages.py reads the order at a reach's end). Where the
+    # way had already become a stream above the junction (west of Crooked Lake: 0.41 km2), the junction was there
+    # before, and the creek's reach ends there as at any creek's
+    out_of = {h_: i for i, h_ in head.items()}
+    run_on = {}
     for n_, j_ in stops:
         up_ = into.get(j_, [])
         mine_ = [u for u in up_ if side_n[u] == n_]
         other_ = [u for u in up_ if side_n[u] < 0]
-        if (mine_ and len(other_) == 1 and len(up_) == 2 and not own_keep[other_[0]] and ok_[other_[0]]
-                and s.area_km2.values[mine_[0]] < STREAM_KM2):
-            rest.append(other_[0])
-    keep = keep | pd.Series(side_n >= 0, index=s.index) | pd.Series(np.isin(np.arange(len(s)), rest), index=s.index)
+        d_ = out_of.get(j_)
+        if (mine_ and len(other_) == 1 and len(up_) == 2 and ok_[other_[0]] and d_ is not None and side_n[d_] < 0
+                and own_keep[d_] and s.area_km2.values[mine_[0]] < STREAM_KM2):
+            run_on[other_[0]] = d_              # the creek's reach runs on through
+    geoms_, gone_, cap_ = s.geometry.values.copy(), [], s["order_cap"].to_numpy(float).copy()
+    for u in [u for u in run_on if u not in set(run_on.values())]:     # the top of each creek run on through
+        run_ = [u]
+        while run_[-1] in run_on:
+            run_.append(run_on[run_[-1]])
+        xy = list(geoms_[run_[0]].coords)
+        for k in run_[1:]:
+            xy += list(geoms_[k].coords)[1:]
+        geoms_[run_[-1]] = shapely.LineString(xy)
+        gone_ += run_[:-1]
+        top_ = geoms_[run_[0]].coords
+        cap_[run_[-1]] = float(sample(strahler, [shapely.Point(top_[-2] if len(top_) >= 2 else top_[0])])[0])
+    gone_km = s.length.values[gone_].sum() / 1000 if gone_ else 0.0
+    if gone_:
+        s[s.geometry.name] = gpd.GeoSeries(geoms_, index=s.index, crs=s.crs)
+        s["order_cap"] = cap_
+    keep = ((keep | pd.Series(side_n >= 0, index=s.index))
+            & ~pd.Series(np.isin(np.arange(len(s)), gone_), index=s.index))
     s["side_n"] = side_n
     print(f"second outlets of lakes: {len(sides)} ({', '.join(e['lake'] for e in sides)}); kept below the floor: "
           f"{int((side_n >= 0).sum())} links, {s.length[side_n >= 0].sum() / 1000:.1f} km"
           + (f"; a creek of its own from the lake on: {', '.join(own_)}" if own_ else "")
-          + (f"; not drawn, no creek the map keeps reached within the box: {', '.join(long_)}" if long_ else "")
-          + (f"; creek links above a junction only the new line makes, kept as before: {len(rest)}, "
-             f"{s.length.values[rest].sum() / 1000:.2f} km" if rest else ""))
+          + (f"; not drawn, no creek the map keeps reached within the box: {', '.join(long_)}" if long_ else ""))
+    print(f"second outlets ending where a creek the map draws comes in (their lake's outlet creek or another), under "
+          f"1 km2: {len(meet_)}" + (f" ({', '.join(meet_)})" if meet_ else "")
+          + f"; creek reaches run on through a junction only a second outlet's line makes: {len(gone_)} "
+          f"({gone_km:.2f} km of creek above them joined to the link below)")
 s = s[keep].copy()
 # A link is cut where it crosses a lake's shore. pysheds draws one line per link between confluences, so a link that
 # runs from a creek into a lake, or out of one, is part creek and part lake water. 05b_flow.py reads a reach as lying
@@ -671,7 +732,9 @@ _dpieces, _dsrc, _dwet, _ = cut_exact(s.geometry.values, _drawn)
 _dwet = np.array(_dwet, bool) | _in_drawn[np.asarray(_dsrc, int)]
 s["len_drawn_m"] = (pd.Series([0.0 if w_ else g_.length for g_, w_ in zip(_dpieces, _dwet)]).groupby(np.asarray(_dsrc)).sum()
                     .reindex(range(len(s))).fillna(0.0).round(0).values)
-s["order"] = sample(strahler, mid)
+_o = sample(strahler, mid)
+s["order"] = np.where(np.isfinite(s["order_cap"].to_numpy(float)),
+                      np.minimum(_o, s["order_cap"].to_numpy(float)), _o).astype(_o.dtype)
 s["elev_m"] = sample(dem, mid).round(0)
 s["len_m"] = s.length.round(0)
 s["gradient_pct"] = ((sample(dem, starts) - sample(dem, own_end)) / s.length * 100).clip(lower=0).round(1)
@@ -886,6 +949,12 @@ print(f"names along rivers: {len(renamed)} reaches take the river's name "
 # name that drain SIDE_RATIO times as much, and SIDE_RIVER_KM2 or more, run within SIDE_NEAR_M along SIDE_ALONG of its
 # length (the river is beside it), and it isn't lake water. Then, up its main stem:
 # - a reach of another name within 6 reaches, not much smaller than it: it is that creek's lower end, and takes its name;
+# - else, where its own line lies on NHD's lines of the river (SIDE_ON_RIVER of its length within SIDE_ON_M): NHD maps
+#   the channel itself as the river, and it is a side channel whatever drains into its head. Its D8 drainage says
+#   nothing of the water in it (above), so the stem below can't decide it: the pond routing of 2026-11-24 took the
+#   Winooski's 370 m side channel in the stowe_lamoille box under 1 km2, where the stem climbs any reach (71 % of it on
+#   NHD's Winooski lines), and it climbed an unnamed 0.39 km2 creek joining at its head; Otter Creek's 279 m at
+#   44.198 N 73.315 W (85-100 %) climbed a pond the routing now sends through it. Both lost the river's size and flow;
 # - else, where the stem up to its head lies along NHD's lines of the river (SIDE_ON_RIVER of its length within 150 m):
 #   a side channel of the river. It keeps the name and is marked (side_of, the river reach beside it in side_sid, that
 #   reach's drainage in river_km2): 05b_flow.py gives it the river's flow evidence, scoring.py the river's size, and
@@ -905,13 +974,15 @@ for i, g in enumerate(geoms):
 big = np.flatnonzero(is_named & (full_km2 >= SIDE_RIVER_KM2) & ~in_water)
 big_tree = shapely.STRtree(geoms[big]) if len(big) else None
 _zone = {}
-def river_zone(river):
-    """150 m around NHD's lines of that name (the river's own lines, its braids included)."""
-    if river not in _zone:
+def river_zone(river, d=150.0):
+    """d m around NHD's lines of that name (the river's own lines, its braids included)."""
+    if (river, d) not in _zone:
         ln = nhd_k.geometry[nhd_k.gnis_name.eq(river).values]
-        _zone[river] = shapely.union_all(ln.values).buffer(150) if len(ln) else None
-    return _zone[river]
-new_name, side = {}, {}
+        _zone[river, d] = shapely.union_all(ln.values).buffer(d) if len(ln) else None
+    return _zone[river, d]
+SIDE_ON_M = 30.0        # a reach this near NHD's lines of a river lies on the river's own channel (11_context.py reads
+                        # a designated stream's line within 30 m of a reach, too)
+new_name, side, by_line = {}, {}, []
 for i in (np.flatnonzero(is_named & ~in_water) if big_tree is not None else []):
     near = big[big_tree.query(geoms[i].buffer(SIDE_NEAR_M))]
     sib = near[(names0[near] == names0[i]) & (full_km2[near] >= SIDE_RATIO * full_km2[i])]
@@ -938,8 +1009,12 @@ for i in (np.flatnonzero(is_named & ~in_water) if big_tree is not None else []):
         tot += geoms[j].length
         inn += geoms[j].intersection(zone).length if zone is not None else 0.0
         j = stem_up[j]
-    if inn >= SIDE_ON_RIVER * tot:
+    on = river_zone(names0[i], SIDE_ON_M)                 # NHD maps this channel itself as the river
+    on_line = on is not None and geoms[i].intersection(on).length >= SIDE_ON_RIVER * geoms[i].length
+    if on_line or inn >= SIDE_ON_RIVER * tot:
         side[i] = sib[int(np.argmax(full_km2[sib]))]
+        if inn < SIDE_ON_RIVER * tot:
+            by_line.append(i)
     else:
         new_name[i] = None
 s["name"] = [new_name.get(i, n) for i, n in enumerate(names0)]
@@ -949,7 +1024,8 @@ s["river_km2"] = [round(float(full_km2[side[i]]), 2) if i in side else np.nan fo
 s["cut_row"] = np.where(_first, np.arange(len(s)) + 1, -1)      # a first stretch below a lake: the rest of its line
 print(f"small reaches named after the river beside them: {sum(v is not None for v in new_name.values())} take the name of "
       f"the creek they end, {sum(v is None for v in new_name.values())} end an unnamed creek and lose the name, "
-      f"{len(side)} are side channels of the river")
+      f"{len(side)} are side channels of the river ({len(by_line)} on NHD's own lines of the river though the stem up "
+      f"leaves it, {sum(geoms[i].length for i in by_line) / 1000:.2f} km)")
 # A lake's second outlet (kept above: side_n) is a side channel of the creek its lake's outlet starts, the first creek
 # piece on the D8 way from the first cell below the outlet ("main"): like a river's side channel it takes that reach's
 # flow evidence (05b_flow.py) and size (scoring.py, river_km2), and its lake share for the water temperature

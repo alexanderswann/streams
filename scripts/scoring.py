@@ -280,6 +280,15 @@ def side_lines_below(s):
             nxt_side[i] = j if nxt_side[i] < 0 else nxt_side[i]
         elif not lk[j] and nxt[i] < 0:
             nxt[i] = j                              # the biggest reach starting where this one ends
+    # where only the second outlet's line made the junction, 05_score.py runs the creek's reach on through it: the
+    # line the second outlet runs into passes through its last piece's end
+    end_ = np.flatnonzero(lk & (nxt < 0) & (nxt_side < 0))
+    if len(end_):
+        tree_ = shapely.STRtree(geom)
+        for i in end_:
+            c_ = [j for j in tree_.query(end[i], predicate="dwithin", distance=1.0) if j != i and not lk[j]]
+            if c_:
+                nxt[i] = max(c_, key=lambda j: big[j])
     row = pd.Series(np.arange(len(s)), index=s["sid"].values)
     main = s["side_sid"].map(row).to_numpy(float) if "side_sid" in s else np.full(len(s), np.nan)
     river = {}
