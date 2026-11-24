@@ -119,6 +119,7 @@ const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
 const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
 const canvas = L.canvas({tolerance: 9, padding: 0.3});            // a wide touch margin for thin lines under a finger
 const map = L.map("map", {zoomSnap: 0.5, preferCanvas: true, renderer: canvas});
+map.attributionControl.addAttribution("<a href='__SITE__credits.html'>Data sources</a>");   // the website's credits page, first in the line
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 const gray = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri, HERE, Garmin", maxZoom: 16}).addTo(map);
 const topo = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}", {attribution: "USGS", maxZoom: 16});

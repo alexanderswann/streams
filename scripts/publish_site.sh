@@ -61,6 +61,7 @@ rm -rf $DEST
 mkdir -p $DEST
 cp output/index.html $DEST/
 [[ -f output/preview.jpg ]] && cp output/preview.jpg $DEST/
+[[ -f output/credits.html ]] && cp output/credits.html $DEST/      # where the data comes from (credits.py, by 13_overview.py)
 for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; print(' '.join(config.AREAS))"); do
   [[ -f output/$a/stream_map.html ]] || continue
   mkdir -p $DEST/$a

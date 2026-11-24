@@ -25,6 +25,10 @@ for key in AREAS:
         areas.append(a)
 if not areas:
     raise SystemExit("no area has an overview.json yet: run 06_map.py for one first")
+# the credits page beside this one, credits.html (credits.py: every source the maps use, its terms and the maps it
+# covers); a download address or a waterfall guide with no entry there gets a NOTE in the log
+import credits
+credits.write(f"{OUT}/credits.html")
 
 HTML = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -65,6 +69,7 @@ __PHONE_CSS__
 <script>
 const AREAS = __AREAS__;
 const map = L.map("map", {zoomSnap: 0.5, preferCanvas: true});
+map.attributionControl.addAttribution("<a href='credits.html'>Data sources</a>");   // first, so a phone's folded credits line shows it
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 const gray = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri, HERE, Garmin", maxZoom: 16}).addTo(map);
 const topo = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}", {attribution: "USGS", maxZoom: 16});
@@ -123,7 +128,7 @@ panel.onAdd = () => {
   const d = L.DomUtil.create("div", "panel");
   d.innerHTML = "<h1 style='cursor:pointer' title='Hide / show the list'>Stream maps <span style='float:right;color:#6b7280'>–</span></h1><div class='list'>" + AREAS.map((a, i) => `<button class="a" data-i="${i}"><b>${esc(a.label)}</b>` +
     `<small>${a.reaches.toLocaleString()} reaches · ${a.drains.length} drainages · built ${a.built}</small></button>`).join("") +
-    `<button class="a" data-i="-1"><b>All areas</b></button><p>Click in an area to open its full map there. Scores rank creeks within an area; they aren't comparable between areas.</p></div>`;
+    `<button class="a" data-i="-1"><b>All areas</b></button><p>Click in an area to open its full map there. Scores rank creeks within an area; they aren't comparable between areas. <a href="credits.html">Where the data comes from</a></p></div>`;
   L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
   const list = d.querySelector(".list"), mark = d.querySelector("h1 span");
   const fold = hide => { list.style.display = hide ? "none" : ""; mark.textContent = hide ? "+" : "–"; };

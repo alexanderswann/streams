@@ -56,6 +56,9 @@ _guides = [s_ for s_, n_ in known_falls.src.str.split(" · ").explode().value_co
 if _guides:
     LBL["credits"] = LBL["credits"].replace("known falls: OSM, USGS GNIS, Wikidata and",
                                             "known falls: OSM, USGS GNIS, Wikidata, " + ", ".join(_guides) + " and")
+# the credits page (credits.html at the site root, from credits.py: every source, its terms and the maps it covers)
+# heads the credits of both maps
+LBL["credits"] = "<a href='../credits.html' target='_blank'>Data sources</a> · " + LBL["credits"]
 # Overture Maps places among the known falls (02f_known_falls.py): its licences ask for the credit, and the licence
 # texts and Foursquare's notice go with the data (2026-11-23)
 if known_falls.src.str.contains("Overture Maps", regex=False).any():
@@ -561,7 +564,10 @@ folium.TileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/
                  attr="USGS The National Map", name="USGS Topo (busy: its own streams)", max_zoom=16, show=False).add_to(m)
 folium.TileLayer(f"{ESRI}/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}",
                  attr="Esri, Maxar, Earthstar Geographics", name="Satellite (Esri)", max_zoom=19, show=False).add_to(m)
-folium.TileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", attr="OpenTopoMap (CC-BY-SA)",
+folium.TileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",     # the credit OpenTopoMap's terms ask for
+                 attr="Map data: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors, "
+                      "SRTM | Map display: © <a href='https://opentopomap.org'>OpenTopoMap</a> "
+                      "(<a href='https://creativecommons.org/licenses/by-sa/3.0/'>CC-BY-SA</a>)",
                  name="OpenTopoMap", max_zoom=17, show=False).add_to(m)
 folium.TileLayer(f"{ESRI}/Elevation/World_Hillshade/MapServer/tile/{{z}}/{{y}}/{{x}}", attr="Esri", overlay=True,
                  name="Terrain shading", opacity=0.45, max_zoom=16).add_to(m)
