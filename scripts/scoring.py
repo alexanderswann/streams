@@ -410,9 +410,10 @@ TYPICAL_GROUP = {"perennial": ["perennial"], "intermittent": ["intermittent"], "
                  "unmapped": ["perennial", "intermittent", "ephemeral", "unmapped"], "other": ["other"]}
 
 
-def typical_water(s, cls, water, which=None):
+def typical_water(s, cls, water, which=None, group_of=None):
     """For each reach with no flow estimate (or each one in `which`): what the map's creeks of its size and NHD label
-    read where the estimate is the model's own (flow_src "model"): the median of their water terms, each weighted by its
+    (`group_of`'s label where given, the creeks' own sorted by s.flow either way) read where the estimate is the
+    model's own (flow_src "model"): the median of their water terms, each weighted by its
     length and by how near its drainage is to the reach's (a Gaussian in log drainage, TYPICAL_SIGMA; drainage counted
     from config.STREAM_KM2, where the map's creeks start). NHD's label sorts them (TYPICAL_GROUP): a creek NHD has no
     line along is compared with creeks of every label, since the missing line says nothing of its water, and an
@@ -431,14 +432,15 @@ def typical_water(s, cls, water, which=None):
     own = src.eq("model").to_numpy() & cls.isin(WATER_CLASSES).to_numpy() & water.notna().to_numpy()
     length = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(config.CRS).length.to_numpy()
     lab = s.flow.fillna("unmapped").to_numpy()
+    grp = lab if group_of is None else pd.Series(group_of, index=s.index).fillna("unmapped").to_numpy()
     w_ = water.to_numpy(float)
-    for g in np.unique(lab[which]):
+    for g in np.unique(grp[which]):
         peer = own & np.isin(lab, TYPICAL_GROUP.get(g, [g]))
         if not peer.any():
             continue
         o = np.argsort(w_[peer])
         pk, pw, pl = km[peer][o], w_[peer][o], length[peer][o]
-        for i in np.flatnonzero(which & (lab == g)):
+        for i in np.flatnonzero(which & (grp == g)):
             c = np.cumsum(pl * np.exp(-0.5 * ((pk - km[i]) / TYPICAL_SIGMA) ** 2))
             if c[-1] > 0:
                 out.iat[i] = float(pw[np.searchsorted(c, 0.5 * c[-1])])
@@ -475,7 +477,22 @@ def score(s):
     # below NHD's class
     no_est = cls.eq("no data") | water.isna()
     bor = borrowed(s, cls) & ~no_est
-    typ = typical_water(s, cls, water, no_est | bor)
+    # a class 05_score.py read along the reach (flow_along: raised from the 3-point vote's flow_vote, where the vote
+    # missed NHD's line or read the drier side of where NHD's class changes) may raise the reach's water, never lower
+    # it: its typical value is the higher of its class's peers' and its 3-point class's, and every reach's peers are
+    # sorted by the 3-point class, so a raised class moves no other reach. Taken as the vote's, a filled "intermittent"
+    # put 5 NE CT pieces with borrowed estimates among the drier "NHD maps intermittent" peers: year-round -> usually
+    # flows, fish -12 to -21, 3 on wild trout water (2026-11-24). nhd_water (above) takes the raised class, the higher
+    along = s["flow_along"].fillna(False).astype(bool) if "flow_along" in s else pd.Series(False, index=s.index)
+    vote_ = s["flow_vote"].fillna("unmapped") if "flow_vote" in s else pd.Series("unmapped", index=s.index)
+    voted = s.assign(flow=s.flow.where(~along, vote_)) if along.any() else s
+    typ = typical_water(voted, cls, water, no_est | bor)
+    peers_ = voted.flow.fillna("unmapped").copy()
+    if (along & (no_est | bor)).any():
+        typ_a = typical_water(voted, cls, water, (no_est | bor) & along, group_of=s.flow)
+        hi_ = along & (no_est | bor) & (typ_a > typ + 1e-9)
+        typ, peers_ = typ.where(~hi_, typ_a), peers_.where(~hi_, s.flow)
+    s["typ_peers"] = peers_            # whose typical value it took, by NHD's label (06_map.py's popup line)
     if no_est.any():
         water = water.where(~no_est, np.fmax(typ, nhd_water))
         rule[no_est] = "no estimate"
@@ -576,11 +593,12 @@ def score(s):
     cls2[tr], rule[tr] = "usually flows", "trout record"
     # a lake's second outlet (second_outlets): the water term of the creek its lake's main outlet starts, where that
     # reads it at least as wet as its own evidence does and NHD doesn't map the channel itself intermittent or
-    # ephemeral; where NHD does, NHD's class; and never wetter than the line it runs into below, unless that line is
-    # the main outlet's own river (side_lines_below). Neither lowers one where trout are recorded on it
+    # ephemeral (by the 3-point class: one read along the channel doesn't lower it); where NHD does, NHD's class; and
+    # never wetter than the line it runs into below, unless that line is the main outlet's own river
+    # (side_lines_below). Neither lowers one where trout are recorded on it
     sec, of_ = second_outlets(s)
     lk_ = s["side_lake"].notna().to_numpy() if "side_lake" in s else np.zeros(len(s), bool)
-    nhd_dry = lk_ & s.flow.isin(["intermittent", "ephemeral"]).to_numpy() & cls.ne("reservoir").to_numpy()
+    nhd_dry = lk_ & voted.flow.isin(["intermittent", "ephemeral"]).to_numpy() & cls.ne("reservoir").to_numpy()
     wet_ = (water.to_numpy()[of_] >= water.to_numpy()[sec] - 1e-9) & ~nhd_dry[sec]
     sec, of_ = sec[wet_], of_[wet_]
     water, cls2, rule, by_gauge = water.copy(), cls2.copy(), rule.copy(), by_gauge.copy()

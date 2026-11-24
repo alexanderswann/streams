@@ -652,6 +652,13 @@ def peers(flow):
             "intermittent"}.get(flow, f" that NHD maps {flow}")
 
 
+def peers_of(r):
+    """peers() for the label whose creeks gave a reach its typical value (scoring.score()'s typ_peers): a class
+    05_score.py read along the reach takes every creek's where those read wetter than its class's."""
+    p = getattr(r, "typ_peers", None)
+    return peers(p if isinstance(p, str) else r.flow)
+
+
 def summer_flow(r):
     """Popup line from the flow model (05b_flow.py) and the rules scoring.py applies to it: the class, why a rule set
     it where one did, the model's typical / drought-year low flow and share of summers flowing, and NHD's class.
@@ -660,7 +667,7 @@ def summer_flow(r):
     rule = r.water_rule if isinstance(r.water_rule, str) else ""
     if rule == "no estimate":
         return (f"no flow estimate: the {LBL['flow']} has no line on this creek or below it on the map, so the score "
-                f"takes what the map's creeks of its size{peers(r.flow)} read on the model's own estimates, or NHD's "
+                f"takes what the map's creeks of its size{peers_of(r)} read on the model's own estimates, or NHD's "
                 f"class where that says more: {water_word(r.water_term)} · NHD: {r.flow}")
     # scoring.py: a borrowed estimate (scaled from another creek, or leaving out the water above a dam) never reads
     # drier than a creek with no estimate, nor shows a creek NHD has no line for mostly dry (said where it changed the
@@ -699,7 +706,7 @@ def summer_flow(r):
         if not FLOW_DRIES and c in ("year-round", "usually flows") and r.flow in ("intermittent", "ephemeral", "unmapped"):
             doubt = (" (" + ("no NHD stream line along it" if r.flow == "unmapped" else f"NHD maps it {r.flow}")
                      + ": NHDPlus's mean flow can't see a creek drying, so it may stop flowing in a dry summer)")
-        return (f"{c}{doubt} · {why}, so the score takes what the map's creeks of its size{peers(r.flow)} read on the "
+        return (f"{c}{doubt} · {why}, so the score takes what the map's creeks of its size{peers_of(r)} read on the "
                 f"model's own estimates, or NHD's class where that says more · {said} · NHD: {r.flow}")
     if not isinstance(c, str) or c == "no data":
         return ""
