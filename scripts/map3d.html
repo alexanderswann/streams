@@ -229,6 +229,7 @@
   // layer ids filled in by the load handler; wireInteraction() (outside it) hovers and clicks them
   const roadCoreIds = [], trailLineIds = [];
   let ROAD = {};
+  let layerPart = () => "";     // the layers for the 2D map's link (buildLayerPanel sets it, wireInteraction uses it)
   map.on("load", () => {
     map.addLayer({id: "labels-ref", type: "raster", source: "labels", paint: {"raster-opacity": 0.55}});
     const src = (id, data) => map.addSource(id, {type: "geojson", data});
@@ -628,6 +629,29 @@
       syncGroups();
     });
     syncGroups();
+    // The layers from the 2D map's link (layer_order.js: layerLink): this page's as it says and its base map if this
+    // page has it; the rest is kept for the link back. What this page opened with, first: each entry by its key (the
+    // labels too), and the base map.
+    const radios = [...document.querySelectorAll("input[name=base]")];
+    const entries = () => [...document.querySelectorAll("input[data-o]")].map(cb => [keyOf(cb.dataset.o), cb])
+      .concat([["labels", document.getElementById("lbl")]]);
+    const baseNow = () => (radios.find(r => r.checked) || {}).value || "";
+    const opened = new Map(entries().map(([k, cb]) => [k, cb.checked])), openedBase = baseNow();
+    const came = layerLink.parse(location.hash);
+    const keep = {on: [...came.on].filter(k => !opened.has(k)), off: [...came.off].filter(k => !opened.has(k)),
+                  base: radios.some(r => r.value === came.base) ? "" : came.base};
+    entries().forEach(([k, cb]) => {
+      const on = came.on.has(k) || (!came.off.has(k) && opened.get(k));
+      if (cb.checked !== on) { cb.checked = on; cb.dispatchEvent(new Event("change")); }
+    });
+    const nb = radios.find(r => r.value === came.base);
+    if (nb && !nb.checked) { nb.checked = true; nb.dispatchEvent(new Event("change")); }
+    radios.forEach(r => r.addEventListener("change", () => { keep.base = ""; }));   // a base map picked here goes back instead
+    layerPart = () => {
+      const on = new Set(keep.on), off = new Set(keep.off), b = baseNow();
+      entries().forEach(([k, cb]) => { if (cb.checked && !opened.get(k)) on.add(k); else if (!cb.checked && opened.get(k)) off.add(k); });
+      return layerLink.part(on, off, b !== openedBase ? b : keep.base);
+    };
     const ex = document.getElementById("exag");
     ex.oninput = () => { document.getElementById("exv").textContent = (+ex.value).toFixed(1);
                          map.setTerrain(+ex.value > 0 ? {source: "dem", exaggeration: +ex.value} : null); };
@@ -839,10 +863,13 @@
       pop.on("close", () => { if (popped === pop) { popped = null; unfold(true); } });
       place();
     });
-    // keep the 2D link pointed at the current view
+    // keep the 2D link pointed at the current view, with the layers that are on (layerPart, buildLayerPanel)
+    const to2d = document.getElementById("to2d");
     const sync = () => { const c = map.getCenter();
-      document.getElementById("to2d").href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}`; };
+      to2d.href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}` + layerPart(); };
     map.on("moveend", sync); sync();
+    document.getElementById("layers").addEventListener("change", sync);
+    to2d.addEventListener("click", sync);
     // "Go to": another area's 3D map, or the map of all areas at this view
     const asel = document.getElementById("areasel");
     ((D.lbl || {}).areas || []).filter(a => a.k !== D.lbl.area).forEach(a => asel.add(new Option(a.t, a.k)));
@@ -851,10 +878,11 @@
       else if (asel.value) location.href = `../${asel.value}/stream_map_3d.html`; };
   }
 
-  // open at #lat,lon,zoom[,pitch,bearing] (same links as the 2D map). The zoom in a link is the 2D map's: MapLibre
-  // shows the same scale one zoom level lower, so it is shifted by one here and in the link back to 2D above
+  // open at #lat,lon,zoom[,pitch,bearing] (same links as the 2D map; the 2D map's adds its layers after the view, read
+  // by buildLayerPanel). The zoom in a link is the 2D map's: MapLibre shows the same scale one zoom level lower, so it is
+  // shifted by one here and in the link back to 2D above
   function go() {
-    const h = location.hash.slice(1).split(",").map(Number);
+    const h = layerLink.parse(location.hash).view.split(",").map(Number);
     if (h.length >= 2 && h.every(v => !isNaN(v)))
       map.jumpTo({center: [h[1], h[0]], zoom: h[2] ? h[2] - 1 : 13, pitch: h.length > 3 ? h[3] : 60, bearing: h.length > 4 ? h[4] : map.getBearing()});
   }

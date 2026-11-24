@@ -678,10 +678,39 @@ function initDrainageMap(map, ctrl) {
     bindClear(key);
   }
   restyle();
-  // the 3D link opens the 3D map tilted over the current view
+  // The 3D link opens the 3D map tilted over the current view, with the layers that are on (layer_order.js: layerLink),
+  // and the 3D map's link here brings its own. What this page opened with, before a link's list: the overlays by key and
+  // the base map.
+  const BASE2D = [["gray", /^Light gray/], ["topo", /^USGS Topo/], ["sat", /^Satellite/], ["otm", /^OpenTopoMap/]];
+  const baseKey = o => (BASE2D.find(([, re]) => re.test(o.name)) || [""])[0];
+  const overlays = () => ctrl._layers.filter(o => o.overlay && keyOf(o));
+  const bases = () => ctrl._layers.filter(o => !o.overlay && baseKey(o));
+  const baseNow = () => { const b = bases().find(o => map.hasLayer(o.layer)); return b ? baseKey(b) : ""; };
+  const opened = new Map(overlays().map(o => [keyOf(o), map.hasLayer(o.layer)])), openedBase = baseNow();
+  // a link's list: this page's layers as it says (twice over: the trails bring their bike colouring when they come on)
+  // and its base map if this page has it; the rest is kept for the link back
+  const came = layerLink.parse(location.hash);
+  const keep = {on: [...came.on].filter(k => !opened.has(k)), off: [...came.off].filter(k => !opened.has(k)),
+                base: bases().some(o => baseKey(o) === came.base) ? "" : came.base};
+  if (came.on.size || came.off.size)
+    for (let pass = 0; pass < 2; pass++) overlays().forEach(o => {
+      const k = keyOf(o), on = came.on.has(k) || (!came.off.has(k) && opened.get(k));
+      if (on !== map.hasLayer(o.layer)) { if (on) map.addLayer(o.layer); else map.removeLayer(o.layer); }
+    });
+  const nb = came.base && bases().find(o => baseKey(o) === came.base);
+  if (nb && !map.hasLayer(nb.layer)) { bases().forEach(o => map.removeLayer(o.layer)); map.addLayer(nb.layer); }
+  map.on("baselayerchange", () => { keep.base = ""; });     // a base map picked here goes in the link back instead
+  const layerPart = () => {
+    const on = new Set(keep.on), off = new Set(keep.off), b = baseNow();
+    overlays().forEach(o => { const k = keyOf(o), now = map.hasLayer(o.layer);
+      if (now && !opened.get(k)) on.add(k); else if (!now && opened.get(k)) off.add(k); });
+    return layerLink.part(on, off, b !== openedBase ? b : keep.base);
+  };
+  const to3d = box.querySelector(".to3d");
   const sync3d = () => { const c = map.getCenter();
-    box.querySelector(".to3d").href = `stream_map_3d.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()},55`; };
-  map.on("moveend", sync3d);
+    to3d.href = `stream_map_3d.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()},55` + layerPart(); };
+  map.on("moveend overlayadd overlayremove baselayerchange", sync3d);
+  to3d.addEventListener("click", sync3d);
   // "Go to": another area's map, or the map of all areas at this view
   const asel = box.querySelector(".areasel");
   if (asel) asel.onchange = () => { const c = map.getCenter();
@@ -708,8 +737,8 @@ function initDrainageMap(map, ctrl) {
   // link's marker from the address so a reload doesn't bring it back
   function hidePin() {
     map.removeLayer(pin); map.removeLayer(pinTip);
-    const parts = location.hash.slice(1).split(",");
-    if (parts[3] === "pin") history.replaceState(null, "", "#" + parts.slice(0, 3).join(","));
+    const [view, ...rest] = location.hash.slice(1).split("&"), parts = view.split(",");     // rest: the layers (layerLink)
+    if (parts[3] === "pin") history.replaceState(null, "", "#" + [parts.slice(0, 3).join(","), ...rest].join("&"));
   }
   function showPin(m) {
     if (!m || m.seq === lastSeq || !isFinite(m.lat) || !isFinite(m.lon)) return;
@@ -737,16 +766,17 @@ function initDrainageMap(map, ctrl) {
     if (e.key === "streams-profile-spot" && e.newValue) try { showPin(JSON.parse(e.newValue)); } catch (_) {}
   });
 
-  // open at #lat,lon,zoom (the overview's links), with ",pin" from the profile viewer's "Show on map" links
+  // open at #lat,lon,zoom (the overview's links), with ",pin" from the profile viewer's "Show on map" links; the 3D
+  // map's link adds its layers after the view (layerLink, above); without a view, the whole area
   function go() {
-    const parts = location.hash.slice(1).split(","), h = parts.slice(0, 3).map(Number);
-    if (h.length >= 2 && h.every(v => !isNaN(v))) {
-      map.setView([h[0], h[1]], h[2] || 15, {animate: false});
-      if (parts[3] === "pin") showPin({seq: "hash" + location.hash, kind: "hover", lat: h[0], lon: h[1],
-                                       text: parts[4] ? decodeURIComponent(parts.slice(4).join(",")) : "Profile spot"});
-    }
+    const parts = layerLink.parse(location.hash).view.split(","), h = parts.slice(0, 3).map(Number);
+    if (!(h.length >= 2 && h.every(v => !isNaN(v)))) return false;
+    map.setView([h[0], h[1]], h[2] || 15, {animate: false});
+    if (parts[3] === "pin") showPin({seq: "hash" + location.hash, kind: "hover", lat: h[0], lon: h[1],
+                                     text: parts[4] ? decodeURIComponent(parts.slice(4).join(",")) : "Profile spot"});
+    return true;
   }
-  if (location.hash.length > 1) go(); else map.fitBounds(L.geoJSON(window.DIVIDES).getBounds(), {padding: [10, 10], animate: false});
+  if (!go()) map.fitBounds(L.geoJSON(window.DIVIDES).getBounds(), {padding: [10, 10], animate: false});
   window.addEventListener("hashchange", go);
   sync3d();
 }

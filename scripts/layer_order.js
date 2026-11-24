@@ -44,3 +44,34 @@ function layerKey2d(name, LBL) {
   const hit = fixed.find(([, re]) => re.test(text));
   return hit ? hit[0] : null;
 }
+
+// The layers go along with the switch between an area's 2D and 3D maps (the user, 2026-11-24: "keep my active layers
+// when switching from 2d to 3d"), in the link itself, after the view: #lat,lon,zoom[,pitch,bearing]&on=..&off=..&base=..
+// with the keys above. "on" lists the layers the page shows that it opens without, "off" those it opens with that are
+// off, "base" its base map when that isn't the one it opens with (gray, topo, sat; otm on the 2D map only). The page the
+// link opens turns on and off the layers it has and leaves its others as it opens them (both pages open with the same
+// ones: streams, drainages, the long trail, lakes, terrain shading and labels), and keeps the rest of the list (the
+// layers only the other page has) in its own link back, so they are on again after a round trip. A link without the
+// list (a fresh open, the overview's and the profiles' links) opens the default layers.
+const layerLink = {
+  // a key as it reads in a link: "drop:dam+/+weir" (a space is "+"; the few characters the link uses are %-coded)
+  enc: k => String(k).replace(/[%&,=#+]/g, encodeURIComponent).replace(/ /g, "+"),
+  // "#view&on=a,b&off=c&base=sat" -> {view: "view", on: Set, off: Set, base: "sat"}
+  parse(hash) {
+    const [view, ...parts] = String(hash || "").replace(/^#/, "").split("&");
+    const st = {view, on: new Set(), off: new Set(), base: ""};
+    const dec = x => { try { return decodeURIComponent(x.replace(/\+/g, " ")); } catch (_) { return ""; } };
+    parts.forEach(p => {
+      const i = p.indexOf("="), k = p.slice(0, i), v = p.slice(i + 1);
+      if (k === "on" || k === "off") v.split(",").map(dec).filter(Boolean).forEach(x => st[k].add(x));
+      else if (k === "base") st.base = dec(v);
+    });
+    return st;
+  },
+  // the part after the view: "" when the page shows what it opened with
+  part(on, off, base) {
+    const list = ks => [...ks].sort((a, b) => layerRank(a) - layerRank(b)).map(layerLink.enc).join(",");
+    return (on.size ? "&on=" + list(on) : "") + (off.size ? "&off=" + list(off) : "") +
+           (base ? "&base=" + layerLink.enc(base) : "");
+  },
+};
