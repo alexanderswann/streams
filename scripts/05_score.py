@@ -493,6 +493,13 @@ if sides:
     fdir = rasterio.open(f"{DERIVED}/flowdir.tif").read(1)
     D8_ = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
     own_keep = keep.to_numpy(bool).copy()
+    # On a second outlet's way only a link's own ground makes it a creek of its own (1 km2, with the water carried to
+    # it), not the floor's rules under 1 km2: NHD's vote there reads the outflow line itself, which NHD maps because the
+    # lake's water leaves by it, and a creek the floor runs on below carries the lake's water too (as nhd_says says of
+    # a bank link reading its river's line). Kept on those rules, 12 of the 51 second outlets became small creeks of
+    # their own from the lake on, and the lower links of 4 more, and read up to 32 points lower than as side channels
+    # (Woodhull Lake's, 0.14 sq mi, 100 -> 81; Marsh Creek Reservoir's lower 2,499 ft, 72 -> 45; 2026-11-23)
+    own_ground = own_keep & (full0 >= MAP_MIN_KM2).to_numpy()
     ok_ = (sea < 0.5) & np.asarray(areaclip.inside(s.geometry.values), bool)
     cell_link, head, tail = {}, {}, {}  # each link's cells, from its vertices (cell corners; its last is the junction,
     for i, g in enumerate(s.geometry.values):           # the next link's), its first, and the junction it ends at
@@ -512,13 +519,16 @@ if sides:
                 if not marked:
                     own_.append(e["lake"] + " (a creek passing its exit)")
                 break           # a creek the way runs into from the side (one that passes the lake's exit)
-            if i is not None and (own_keep[i] or not ok_[i] or (side_n[i] >= 0 and side_n[i] != n_)):
-                if not marked and own_keep[i]:  # its first link gathers a creek's ground of its own: that creek,
+            own_i = i is not None and bool(own_ground[i])
+            if i is not None and (own_i or not ok_[i] or (side_n[i] >= 0 and side_n[i] != n_)):
+                if not marked and own_i:        # its first link gathers a creek's ground of its own: that creek,
                     own_.append(e["lake"])      # drawn from the lake on
-                elif marked and own_keep[i]:
+                elif marked and own_i:
                     stops.append((n_, r_ * fdir.shape[1] + c_))
                 break           # a link kept on its own (or the sea, the state line, another second outlet's way)
             if i is not None:
+                if marked and side_n[i] != n_ and own_keep[i]:   # on into a link the floor keeps under 1 km2: the
+                    stops.append((n_, r_ * fdir.shape[1] + c_))   # creek above its junction is judged as at a stop
                 side_n[i], marked = n_, True
             d_ = D8_.get(int(fdir[r_, c_]))
             if d_ is None:
@@ -615,6 +625,14 @@ _own = [shapely.Point(q) for q in _own_xy]      # each piece's own cell (cut_exa
 _full = sample(area, _own) + sample(carried_grid, _own)
 _carried_lake = sample(carried_lake_km2(REGION).reshape(area.shape), _own)
 _lake_km2 = np.minimum(lake_water_km2(_shore, _carried_lake, _full - _carried_lake, _wet), _full)
+# A lake's second outlet (side_n, above) is the lake's water leaving by another channel. NHD gives no split of a
+# lake's water, so the routing sends it all down the main outlet and the second outlet's line carries none of it;
+# but what runs there is lake water, as warm as the main outlet's. So the whole of its drainage counts as the
+# lake's here, and the cut finds it where it finds a main outlet: its first 200 m are a reach of their own
+# (watertemp.py gives the rest its distance below the lake). Woodhull Lake's 811 m second outlet read 66 F as one
+# reach and 76 F over its first 650 ft in the popup (2026-11-22).
+_sd = s["side_n"].to_numpy()[np.asarray(_src, int)] >= 0
+_lake_km2 = np.where(_sd & ~np.asarray(_wet, bool), _full, _lake_km2)
 def _mostly_lake(ii, pts):     # the line's lake water (it takes none on along the line) against the drainage at the mark
     full = sample(area, pts) + sample(carried_grid, pts)
     return np.nan_to_num(lake_share(full - np.minimum(_lake_km2[ii], full), full), nan=0.0) >= 0.5
