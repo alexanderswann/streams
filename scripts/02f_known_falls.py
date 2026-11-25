@@ -31,7 +31,12 @@ One fall listed by several sources becomes one point: same name (ignoring words 
 named one, or any two within 25 m. A point never absorbs a second one from
 the same source: two OSM nodes are two falls. The kept point is the best placed one (OSM node, curated point marked
 precise, NHD, OSM way, other curated, GNIS, OSM area feature, Wikidata), the name the most deliberate one (curated,
-OSM, GNIS, NHD, Wikidata), and the sources are all listed.
+OSM, GNIS, NHD, Wikidata), and the sources are all listed. Two rules catch a name that is no name and a point that is
+no placement (2026-11-24; on the 12 maps, distance, the creek, the drops between and the height difference did not
+tell one fall from two): a kind with a number (OSM's "Waterfall #4", 30 m from Lower Fall Creek Falls) is no name,
+like a single common word; and a named point on whole arc-minutes (Wikidata gives some so: good to a kilometre or so)
+goes with the one unnamed fall within 1.2 km that lies on the creek its name names (Becky Branch Falls, 244 m from
+OSM's unnamed fall on Becky Branch). With two or more such unnamed falls it stays as it is.
 A fall is the map's when its point lies on the map (in its boxes, and in its state where the map stops at a state
 line), and also when that point lies past the map's edge (falls are kept 300 m past it, for 05_score.py's matching)
 but another of its sources lies on the map: it is still drawn at its best-placed point, and home_lon/home_lat keep that
@@ -105,14 +110,14 @@ GENERIC = {"the", "of", "at", "on", "falls", "fall", "waterfall", "waterfalls", 
 def tokens(name):
     """A name's distinctive words: 'Falls of Lana' and 'Lana Falls' are both {lana}. A name made only of common words
     keeps them ('Fall Creek Falls' is {fall, creek}, 'Cascade Falls' {cascade}), or it would count as no name; a single
-    common word ('Falls', 'Cascades') is a description, not a name."""
+    common word ('Falls', 'Cascades') is a description, not a name, and a kind with a number ('Waterfall #4') a label."""
     if not isinstance(name, str) or not name.strip():
         return frozenset()
     t = re.sub(r"[’'`]", "", name.lower())
     t = re.sub(r"[^a-z0-9]+", " ", t).split()
     keep = frozenset(w for w in t if w not in GENERIC)
     if keep:
-        return keep
+        return frozenset() if all(re.fullmatch(r"\d+[a-z]?", w) for w in keep) else keep
     words = [w for w in t if w not in {"the", "of", "at", "on", "and", "a", "s"}]
     if len(words) <= 1:
         return frozenset()
@@ -542,6 +547,25 @@ for i, j in zip(*tree.query(d.geometry.values, predicate="dwithin", distance=200
         pairs.append((1, dist, i, j))
     elif dist <= 25:
         pairs.append((2, dist, i, j))
+# a named point on whole arc-minutes and the one unnamed fall within 1.2 km on the creek its name names (NHD's name for
+# the line within 60 m of that fall): one fall (docstring)
+named_lines = fl[fl.ftype.isin([460, 558]) & fl.gnis_name.notna()].reset_index(drop=True)
+named_tree = shapely.STRtree(named_lines.geometry.values)
+on_minutes = np.array([abs(x * 60 - round(x * 60)) < 1e-4 and abs(y * 60 - round(y * 60)) < 1e-4 for x, y in zip(d.lon, d.lat)])
+for i in np.flatnonzero(on_minutes & np.array([bool(t) for t in d.tok], bool)):
+    cand = []
+    for j in tree.query(d.geometry.iat[i], predicate="dwithin", distance=1200):
+        if d.tok[j] or on_minutes[j] or d.src[j] == d.src[i]:
+            continue
+        k = named_tree.query(d.geometry.iat[j], predicate="dwithin", distance=60)
+        if len(k) and same_name(d.tok[i], tokens(named_lines.gnis_name.iat[
+                k[np.argmin(shapely.distance(named_lines.geometry.values[k], d.geometry.iat[j]))]])):
+            cand.append(j)
+    if len(cand) == 1:
+        pairs.append((1, float(np.hypot(*(xy[i] - xy[cand[0]]))), min(i, cand[0]), max(i, cand[0])))
+    print(f"{d.name[i]} ({d.src[i]}) is on whole arc-minutes: "
+          + (f"one fall with the unnamed {d.src[cand[0]]} fall {np.hypot(*(xy[i] - xy[cand[0]])):.0f} m off on its creek"
+             if len(cand) == 1 else f"{len(cand)} unnamed falls on its creek within 1.2 km, left as is"))
 parent = list(range(len(d)))
 srcs = [{s} for s in d.src]
 names = [{t} if t else set() for t in d.tok]
