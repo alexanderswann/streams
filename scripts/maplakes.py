@@ -12,7 +12,6 @@ import os, re, json, numpy as np, pandas as pd, geopandas as gpd, shapely, foliu
 import landnames     # a holding's name only where the maps may print it: never a private individual's
 from html import escape as hesc
 from branca.element import MacroElement, Template
-from urllib.parse import quote
 from config import REGIONS, MAP_OUT, SHARED_DERIVED, HOME
 from units import ft, mi, acres     # what the maps show is imperial (units.py)
 
@@ -173,8 +172,19 @@ def _depth(r):
     return "no measured depth found"
 
 
-def popup(r, approach):
+def popup(r, approach, profile=None):
+    """The lake's popup (cls, html, tip, short). profile(name, x, y): the link to that creek's profile where it opens at
+    the point (x, y; the lakes' CRS), or None (06_map.py: only where 12_profiles.py draws it there)."""
     cls, fish, recs = _fish(r)
+    # the outlet creek's profile, or the profile of the named water an unnamed outlet flows to (05d_lakes.py's
+    # outlet_links): the first that 12_profiles.py draws where that outlet leaves the shore or gets to it; else none
+    plink = None
+    ol_ = getattr(r, "outlet_links", None)
+    if profile is not None and isinstance(ol_, str) and ol_:
+        for n_, x_, y_ in json.loads(ol_):
+            plink = profile(n_, x_, y_)
+            if plink:
+                break
     nm = r.name if isinstance(r.name, str) else "Unnamed lake"
     alt = r.agency_name if isinstance(r.agency_name, str) and r.agency_name != nm else None
     kind = " / ".join(KIND.get(t, t) for t in r.lake_type.split(" / ")) if isinstance(r.lake_type, str) and r.lake_type else r.ftype
@@ -224,8 +234,7 @@ def popup(r, approach):
             + {"OpenStreetMap": " · name from OpenStreetMap", "survey": " · name from the depth survey",
                "agency list": " · name from the state's stocking or survey list"}.get(r.name_src, "") + "</div>"
             + f"<a href='{gm}' target='_blank'>Satellite view</a>"
-            + (f" · <a href='profiles.html#q={quote(r.outlet_name.split(', ')[0])}' target='_blank'>Outlet creek profile ↗</a>"
-               if isinstance(r.outlet_name, str) else "")
+            + (f" · {plink}" if plink else "")
             + (" · <a href='https://wgfd.wyo.gov/current-fishing-regulations' target='_blank'>Fishing regulations ↗</a>"
                if r.agency == "Wyoming Game & Fish" else "")
             + "".join(f" · <a href='{hesc(u)}' target='_blank'>Agency page ↗</a>"
@@ -244,12 +253,16 @@ def popup(r, approach):
     return cls, html, tip, short
 
 
-def add(m, X3D, done, approach):
-    """Add the lake layers to the folium map and X3D; write lakes.csv and lakes.gpx. Returns the lakes or None."""
+def add(m, X3D, done, approach, profile=None):
+    """Add the lake layers to the folium map and X3D; write lakes.csv and lakes.gpx. Returns the lakes or None.
+    profile: the outlet profile link (popup)."""
     lk = load(done)
     if lk is None or not len(lk):
         return None
-    out = [popup(r, approach) for r in lk.itertuples()]
+    out = [popup(r, approach, profile) for r in lk.itertuples()]
+    _n_out = int(lk.outlet_name.notna().sum()) if "outlet_name" in lk else 0
+    print(f"lake popups' profile links: {sum('profiles.html' in o[1] for o in out)} of {_n_out} lakes with a named "
+          f"outlet or one flowing to named water")
     lk["cls"], lk["html"], lk["tip"], lk["fish"] = ([o[k] for o in out] for k in range(4))
     lk["c"], lk["e"] = lk.cls.map(FILL), lk.cls.map(EDGE)
     lk["dry"] = lk.water_note.fillna("").str.startswith("no level water")

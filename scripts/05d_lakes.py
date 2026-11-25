@@ -799,23 +799,28 @@ st_tree = shapely.STRtree(sta)
 
 
 def drains_to(k):
-    """The first named NHD water downstream of line k (through ponds), or None."""
+    """The first named NHD water downstream of line k (through ponds) and its first line there, or (None, None)."""
     seen = {k}
     for _ in range(80):
         nm = fla.gnis_name.iat[k]
         if isinstance(nm, str):
-            return nm
+            return nm, k
         nxt = [c for c in st_tree.query(shapely.buffer(ena[k], 2)) if c not in seen]
         if not nxt:
-            return None
+            return None, None
         k = nxt[0]
         seen.add(k)
-    return None
+    return None, None
 
 
 shore = gpd.GeoSeries([a.union(b).buffer(20) for a, b in zip(lk.geometry, nhd_g)], crs=CRS)   # NHD's lines end on NHD's shore
 body = gpd.GeoSeries([a.union(b).buffer(2) for a, b in zip(lk.geometry, nhd_g)], crs=CRS)
-ins, outs, oname, iname, opt = [], [], [], [], []
+# ... and where a profile of the outlet's creek would open (outlet_links, for the popup's link: maplakes.py): each named
+# outlet where it leaves the shore, the longest first; for an unnamed one, the named water it flows to where it gets
+# there. The popup linked profiles.html by the first name in outlet_name alone, so 3,782 of the 12 maps' 5,689 lake
+# links opened a creek called "unnamed" (no profile), 47 a name with no profile and 31 a profile of the name kilometres
+# off (2026-11-24, site cf5b90c). A JSON list of [name, x, y] (the area's CRS)
+ins, outs, oname, iname, opt, olink = [], [], [], [], [], []
 for i in range(len(lk)):
     c = [k for k in fla.sindex.query(shore.iat[i], predicate="intersects") if k in fl.index]
     s_sh = [shore.iat[i].contains(sta[k]) for k in c]
@@ -827,14 +832,19 @@ for i in range(len(lk)):
     o = [k for k in o if k not in n_ or not body.iat[i].contains(ena[k])]
     outs.append(len(o)); ins.append(len(n_))
     named = sorted({fla.gnis_name.iat[k] for k in o if isinstance(fla.gnis_name.iat[k], str)})
+    at_ = [(fla.gnis_name.iat[k], sta[k]) for k in sorted(o, key=lambda k: -fla.geometry.iat[k].length)
+           if isinstance(fla.gnis_name.iat[k], str)]
     if not named and o:
-        to = drains_to(max(o, key=lambda k: fla.geometry.iat[k].length))
+        to, k_to = drains_to(max(o, key=lambda k: fla.geometry.iat[k].length))
         named = [f"unnamed, flows to {to}"] if to else []
+        at_ = [(to, sta[k_to])] if to else []
     oname.append(", ".join(named) or None)
+    olink.append(json.dumps([[n_, round(p_.x, 1), round(p_.y, 1)] for j_, (n_, p_) in enumerate(at_)
+                             if n_ not in [q_[0] for q_ in at_[:j_]]]) if at_ else None)
     iname.append(", ".join(sorted({fla.gnis_name.iat[k] for k in n_ if isinstance(fla.gnis_name.iat[k], str)})) or None)
     big = max(o, key=lambda k: fla.geometry.iat[k].length) if o else None
     opt.append(sta[big] if big is not None else None)
-lk["inlets"], lk["outlets"], lk["outlet_name"], lk["inlet_names"] = ins, outs, oname, iname
+lk["inlets"], lk["outlets"], lk["outlet_name"], lk["inlet_names"], lk["outlet_links"] = ins, outs, oname, iname, olink
 lk["connection"] = np.select([(lk.inlets > 0) & (lk.outlets > 0), lk.outlets > 0, lk.inlets > 0],
                              ["inlet and outlet", "outlet only", "inlet only"], "no mapped inlet or outlet (NHD)")
 print("connection:", lk.connection.value_counts().to_dict())
@@ -1118,7 +1128,7 @@ cols = ["lid", "name", "name_src", "gnis_name", "agency_name", "nhd_id", "osm_id
         "islands", "in_area", "elev_m", "elev_src", "water_level_m", "nhd_elev_m", "agency_elev_m", "lidar_survey",
         "lidar_dates", "lidar_ql", "lidar_share", "level_share", "dem_cells", "water_note", "agency", "agency_id",
         "lake_type", "game_fish", "common_fish", "private_shore", "regs_area", "depth_max_m", "depth_mean_m",
-        "depth_src", "depth_note", "inlets", "inlet_names", "outlets", "outlet_name", "connection", "drainage", "fork",
+        "depth_src", "depth_note", "inlets", "inlet_names", "outlets", "outlet_name", "outlet_links", "connection", "drainage", "fork",
         "label_x", "label_y",
         "land", "land_access", "access", "rules", "designation", "links", "n_records", "records", "also_recorded", "survey", "conflict", "match", "geometry"]
 for c in cols:

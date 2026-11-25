@@ -668,8 +668,37 @@ if len(_counted):
         c_ = _ct.query(_pieces[i], predicate="intersects")
         _in_drawn[i] = bool(len(c_)) and (shapely.union_all(_counted[c_]).intersection(_pieces[i]).length
                                           >= 0.5 * _pieces[i].length)
+# ... and such a piece whose end runs on through an outline 05b_flow.py reads where the map draws no lake (NHD's
+# outline reaching past the drawn shore) ends at the drawn shore: the stretch past it, SLIVER_M or longer, is a piece of
+# its own, lying in that water and drawn as a stream, as a reach lying wholly in such an outline is. Drawn with its
+# lake, the last 306 m of a reach in an unnamed 11.6 ha lake (adk_southeast 43.476,-73.303; NHD's outline there is
+# 30 ha) left a gap where the map shows no lake, and the lake's outlet undrawn (2026-11-23).
+from flowlib import SLIVER_M, before_vertex
+_ends = []
+if _in_drawn.any():
+    _P, _S, _W, _O, _D = [], [], [], [], []
+    for i, g in enumerate(_pieces):
+        lead_ = tail_ = 0.0
+        if _in_drawn[i]:
+            sub_, _, sw_, _ = cut_exact([g], _counted[_ct.query(g, predicate="intersects")])
+            if len(sub_) > 1:
+                lead_ = sub_[0].length if not sw_[0] and sub_[0].length >= SLIVER_M else 0.0
+                tail_ = sub_[-1].length if not sw_[-1] and sub_[-1].length >= SLIVER_M else 0.0
+        if not (lead_ or tail_):
+            _P.append(g); _S.append(_src[i]); _W.append(_wet[i]); _O.append(_own_xy[i]); _D.append(_in_drawn[i])
+            continue
+        L_ = g.length
+        for a_, b_, lake_ in ((0.0, lead_, False), (lead_, L_ - tail_, True), (L_ - tail_, L_, False)):
+            if b_ - a_ <= 0:
+                continue
+            _P.append(shapely.ops.substring(g, a_, b_)); _S.append(_src[i]); _W.append(True)
+            _O.append(_own_xy[i] if b_ >= L_ else before_vertex(g, b_)); _D.append(lake_)
+            if not lake_:
+                _ends.append(b_ - a_)
+    _pieces, _src, _wet, _own_xy, _in_drawn = _P, _S, _W, _O, np.array(_D, bool)
 print(f"links cut at lake shores: {len(_pieces) - len(s)} cuts on {int((pd.Series(_src).value_counts() > 1).sum())} "
-      f"of {len(s)} links")
+      f"of {len(s)} links; of them at the drawn shore where a lake's piece runs on through water the map draws no lake "
+      f"in: {len(_ends)} ({sum(_ends) / 1000:.2f} km, drawn as streams)")
 # The first LAKE_NEAR_M (200 m, 650 ft) below a lake is a reach of its own (flowlib.cut_below_lakes). A lake's outlet
 # runs at the temperature of its surface and the warmth fades fast below it, and a reach is scored on one water
 # temperature, the mean along it: a reach that started at a pond and ran on for half a mile read as a cool creek, its

@@ -414,11 +414,12 @@ def creek_lines(s):
     """The creek each reach is part of for the designated trout waters it reads (attrs). 05_score.py cuts a link where
     it crosses the shore of a lake the map draws, at the outlet of a lake that passes its water on, and 200 m below a
     lake, and every creek piece of one link (link_id) reads the designated trout waters and brook trout patches on the
-    whole link, as the uncut link did: measured on its own, a short piece where a creek runs through a pond or across a
-    delta to a lake fell outside the 30 m a designation is read within (Big Elk Creek's last 48 m above Palisades
-    Reservoir, Canada Creek's 51 m; on the 12 maps of 2026-11-23 about 1.9 mi lost its designation and 10+ of its fish
-    score). A piece lying in a lake keeps its own, and a link never takes another's (a tributary's mouth is a link of
-    its own); a designation read on the whole link counts only where it covers CREEK_SHARE of the link's creek (attrs):
+    whole link, as the uncut link did: measured on its own, a creek's piece between two drawn ponds fell outside the 30
+    m a designation is read within (Piru Creek between two ponds below Pyramid Dam). A piece lying in a lake keeps its
+    own, and a link never takes another's: a creek's last piece at a lake's mouth is a link of its own, and reads its
+    own creek's designation across the lake by name (attrs, NAME_NEAR_M: Big Elk Creek's last 48 m above Palisades
+    Reservoir, Canada Creek's 51 m). A designation read on the whole link counts only where it covers CREEK_SHARE of the
+    link's creek (attrs):
     the last 11 m of an unnamed tributary in the Hoback box, past a pond, touch Bailey Creek's line, and on that touch
     its whole 2.6 km read as Bailey Creek's trout water. Records keep cut_lines (they go by the creek's name, so a named
     creek's pieces on both sides of a pond share them already), and so do fires and critical habitat."""

@@ -300,6 +300,15 @@ def counted_water(drawn, region):
     return drawn[keep]
 
 
+def before_vertex(g, d):
+    """The last vertex of line g before the distance d along it (a piece's own point, cut_exact): a cell corner where g
+    is a routed line or a piece of one."""
+    xy = np.asarray(g.coords)[:, :2]
+    cum = np.r_[0.0, np.cumsum(np.hypot(*np.diff(xy, axis=0).T))]
+    k = max(int(np.searchsorted(cum, d - 1e-6, side="left")) - 1, 0)
+    return tuple(xy[k])
+
+
 def cut_exact(lines, water, stub_m=STUB_M, sliver_m=SLIVER_M):
     """Each line cut exactly where it crosses the shore of the water (an array of polygons, as drawn_water()):
     (pieces, the number of the line each piece comes from, whether the piece lies in the water, its own point), in
@@ -320,11 +329,7 @@ def cut_exact(lines, water, stub_m=STUB_M, sliver_m=SLIVER_M):
         for i, w in zip(li.tolist(), wi.tolist()):
             hit.setdefault(i, []).append(w)
 
-    def own_point(g, b_):
-        xy = np.asarray(g.coords)[:, :2]
-        cum = np.r_[0.0, np.cumsum(np.hypot(*np.diff(xy, axis=0).T))]
-        k = max(int(np.searchsorted(cum, b_ - 1e-6, side="left")) - 1, 0)
-        return tuple(xy[k])
+    own_point = before_vertex
 
     for i, g in enumerate(lines):
         if i not in hit or g is None or g.is_empty or g.length == 0:

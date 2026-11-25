@@ -344,7 +344,8 @@ def table(gdf, key):
         why = [lab for j, lab in enumerate(LABELS) if fin and dsum[j, i] >= CHECK_MIN]
         rows.append(dict({key: k}, approach_min=round(float(mins), 0) if fin else None,
                          bike_min=round(float(bsum[i]), 0) if fin else None,
-                         walk_min=round(float(mins - bsum[i]), 0) if fin else None,
+                         # the bike leg can round a hair above the whole approach: never "hike -0 min" (153 lines)
+                         walk_min=max(0.0, round(float(mins - bsum[i]), 0)) if fin else None,
                          bike_check="; ".join(why) if why else None,
                          bike_check_min=round(float(dsum[-1, i]), 0) if why else None,
                          approach_med_min=round(float(med), 0) if np.isfinite(med) else None,

@@ -971,6 +971,91 @@ if dm_cr and lw_ is not None and len(lw_):
           f"below a dam (median {np.median(dm_len):.0f} m, longest {dm_len.max():.0f} m); {sum(c_[2] for c_ in dm_con)} "
           f"joined to the shore from inside the lake, shown while Lakes is off; {len(dm_rep)} pieces from a lake to a pit "
           f"by its dam drawn as the river below the dam")
+# A creek drawn short of the lake it runs out of or into. The routing's lines run from cell to cell of the 10 m grid, so
+# an outlet starts at the first cell past the lake's water and an inlet stops at the last one before it, while the map
+# draws the shore from the lidar or an agency's outline, and at phone zoom the creek stops short of its pond: the South
+# Branch Middlebury River starts 11 m below Pleiad Lake (central_vt; 218 creek ends on the 12 maps, 2-28 m, median 5.5
+# m, 1,643 m in all, 2026-11-23). A line's free end (no other drawn line there) lying 2 m to SHORE_GAP_M outside a lake the map draws is
+# drawn on to that lake's nearest shore where the routing runs out of it (a head: up the biggest inflow) or into it (a
+# mouth: down the flow) within SHORE_CELLS cells, a cell centre within 5 m of the shore. A lake the routing doesn't run
+# through there is never joined. Geometry only: the reach's length, values and table stay as they are.
+SHORE_GAP_M, SHORE_CELLS = 30.0, 5
+if lw_ is not None and len(lw_):
+    from config import derived_dir
+    sh_step = {64: (-1, 0), 128: (-1, 1), 1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1)}
+    sh_on = np.flatnonzero(~s_show.lk_.values.astype(bool))
+    sh_g = np.array(s_show.geometry.to_crs(EPSG).values, dtype=object)
+    sh_tree, sh_lt = shapely.STRtree(sh_g[sh_on]), shapely.STRtree(lw_.geometry.values)
+    sh_ras, sh_new, sh_gaps = {}, {}, []
+
+    def sh_routed(b_, p_, lake_, up_):
+        """True where b_'s routing, from p_'s cell, runs out of (up_) or into lake_ within SHORE_CELLS cells. The lines
+        run on the top-left corners of their cells (03b_stitch.py), so an end's own cell is the one whose corner it is
+        (every pair of vertices on two central_vt boxes' lines follows flowdir that way, 2026-11-23)."""
+        if b_ not in sh_ras:
+            try:
+                sh_ras[b_] = (rasterio.open(crossbox.fdir_path(b_)), rasterio.open(f"{derived_dir(b_)}/area_km2.tif"))
+            except Exception:
+                sh_ras[b_] = None
+        if sh_ras[b_] is None:
+            return False
+        fd_, ar_ = sh_ras[b_]
+        n_ = 2 * SHORE_CELLS + 2
+        cx_, cy_ = (int(v) for v in np.rint(np.array(~fd_.transform * (p_.x, p_.y))))
+        w_ = rasterio.windows.Window(cx_ - SHORE_CELLS - 1, cy_ - SHORE_CELLS - 1, n_, n_)
+        F_ = fd_.read(1, window=w_, boundless=True, fill_value=0)
+        A_ = ar_.read(1, window=w_, boundless=True, fill_value=0)
+        T_, near_ = fd_.window_transform(w_), lake_.buffer(5)
+        return sh_trace(F_, A_, T_, near_, SHORE_CELLS + 1, SHORE_CELLS + 1, up_, n_)
+
+    def sh_trace(F_, A_, T_, near_, r_, c_, up_, n_):
+        """From cell (r_, c_) of the window: up the biggest inflow (up_) or down the flow, a cell centre in near_ within
+        SHORE_CELLS cells."""
+        for _ in range(SHORE_CELLS):
+            if up_:
+                ins_ = [(r_ - a, c_ - b) for k, (a, b) in sh_step.items()
+                        if 0 <= r_ - a < n_ and 0 <= c_ - b < n_ and F_[r_ - a, c_ - b] == k]
+                if not ins_:
+                    return False
+                r_, c_ = max(ins_, key=lambda q: A_[q])
+            else:
+                k = int(F_[r_, c_])
+                if k not in sh_step or not (0 <= r_ + sh_step[k][0] < n_ and 0 <= c_ + sh_step[k][1] < n_):
+                    return False
+                r_, c_ = r_ + sh_step[k][0], c_ + sh_step[k][1]
+            if near_.contains(shapely.Point(*(T_ * (c_ + 0.5, r_ + 0.5)))):
+                return True
+        return False
+
+    for i_ in sh_on:
+        g_ = sh_g[i_]
+        if g_ is None or g_.is_empty or g_.geom_type != "LineString":
+            continue
+        cs_ = list(g_.coords)
+        for head_, p_ in ((True, shapely.Point(cs_[0])), (False, shapely.Point(cs_[-1]))):
+            if any(sh_on[j] != i_ for j in sh_tree.query(p_, predicate="dwithin", distance=1.0)):
+                continue
+            k_ = sh_lt.query(p_, predicate="dwithin", distance=SHORE_GAP_M)
+            if not len(k_):
+                continue
+            d_ = shapely.distance(lw_.geometry.values[k_], p_)
+            lake_ = lw_.geometry.values[k_[int(np.argmin(d_))]]
+            if not 2.0 <= d_.min() <= SHORE_GAP_M or lake_.contains(p_):
+                continue
+            if not sh_routed(str(s_show.sid.iat[i_]).split(":")[0], p_, lake_, head_):
+                continue
+            q_ = shapely.ops.nearest_points(lake_.boundary, p_)[0]     # an island's shore too
+            cs_ = [q_.coords[0]] + cs_ if head_ else cs_ + [q_.coords[0]]
+            sh_gaps.append(float(d_.min()))
+        if len(cs_) != len(g_.coords):
+            sh_new[s_show.index[i_]] = shapely.LineString(cs_)
+    for f_ in sh_ras.values():
+        if f_ is not None:
+            f_[0].close(); f_[1].close()
+    if sh_new:
+        s_show.loc[list(sh_new), "geometry"] = gpd.GeoSeries(list(sh_new.values()), crs=EPSG).to_crs(s_show.crs).values
+    print(f"creek ends drawn on to the shore of the lake the routing runs them out of or into: {len(sh_gaps)} (median "
+          f"{np.median(sh_gaps or [0]):.0f} m, longest {max(sh_gaps or [0]):.0f} m, {sum(sh_gaps):.0f} m in all)")
 s_show = s_show.assign(geometry=shapely.set_precision(s_show.geometry.simplify(0.00008).values, 1e-5))
 s_show = s_show[~s_show.geometry.is_empty & (s_show.geom_type == "LineString")]
 mid_ll = s_show.geometry.interpolate(0.5, normalized=True)
@@ -1656,7 +1741,21 @@ if os.path.exists(f"{SHARED}/closure_areas.gpkg"):
 
 # ---- lakes (05d_lakes.py, in the areas where they are built; maplakes.py) ----
 import maplakes
-maplakes.add(m, X3D, done, approach)
+
+
+def lake_profile(name, x, y):
+    """A lake popup's link to its outlet creek's profile, or to that of the named water its unnamed outlet flows to,
+    opening at the point (x, y; the lakes' CRS, metres) where the creek leaves the shore or the outlet gets to that
+    water (05d_lakes.py's outlet_links): only where 12_profiles.py draws that creek's profile within SNAP_FALL of the
+    point, as for the drops and known falls (above); else None."""
+    pt = shapely.Point(x, y)
+    if not PROFILES.passes(name, pt):
+        return None
+    ll_ = gpd.GeoSeries([pt], crs=EPSG).to_crs(4326).iloc[0]
+    return profile_link(name, ll_.y, ll_.x)
+
+
+maplakes.add(m, X3D, done, approach, profile=lake_profile)
 
 # ---- context layers (11_context.py) ----
 fires = ctx("fires")
