@@ -14,7 +14,9 @@ What is measured, all on the maps as published (SITE_DIR: <area>/map3d_data.js a
             standing water (05d_lakes.py's copy): shown when a lake of the map overlaps it. By size: at or above the
             map's own smallest size (05d_lakes.py BUILT), between 0.5 ha and that, under 0.5 ha; named ones apart.
             What a single floor would add: the ponds of 0.5 ha (1.2 acres) or more, and the ponds of 0.1 ha or more
-            that are named or that an NHD stream line runs into or out of; with their size on the site.
+            that are named or that an NHD stream line runs into or out of; with their size on the site. The state
+            agencies' trout lake lists as cached (shown when a map lake is within 100 m); NCWRC's game-land blanket
+            rule, drawn on some unnamed ponds, is no list entry and has its own row ("state rule").
   falls     every source's waterfalls as downloaded (OSM, NHD, GNIS, Wikidata, NPS, CDFW, the curated lists): on the
             map when a map fall is within 150 m or one of the same name within 2 km; whether a terrain drop the map
             draws is within 100 m (330 ft) of each map fall (DEM artifacts and dams not counted); each source's
@@ -300,7 +302,13 @@ def lakes(area, clip, state, page, nhd_wb):
             continue
         g["shown"] = np.isin(np.arange(len(g)), Lt.query(g.geometry.values, predicate="dwithin", distance=100)[0])
         g["ha"] = g.geometry.area / 1e4
-        row("state list", os.path.basename(p)[6:-8], np.ones(len(g), bool), g)
+        # NCWRC's game lands' blanket rule ("waters on ... Game Land ... are classified as Wild Trout Waters unless
+        # otherwise noted"), drawn on some of their unnamed ponds, is a rule, not an entry of the list: troutdata.py
+        # and lakesources.py leave it out, as for creeks. Counted on its own row, outside the list's share
+        rule = (g.Reg_Descri.fillna("").astype(str).str.contains("unless otherwise noted", case=False).to_numpy()
+                if "Reg_Descri" in g else np.zeros(len(g), bool))
+        row("state list", os.path.basename(p)[6:-8], ~rule, g)
+        row("state rule", os.path.basename(p)[6:-8] + " (blanket rule, not a list entry)", rule, g)
     row("NHD HR", f"at or above the map's floor ({floor / ACRE:.1f} acres)", N.ha >= floor, N)
     row("NHD HR", f"0.5 ha (1.2 acres) to the floor", (N.ha >= 0.5) & (N.ha < floor), N)
     row("NHD HR", "under 0.5 ha (1.2 acres)", N.ha < 0.5, N)

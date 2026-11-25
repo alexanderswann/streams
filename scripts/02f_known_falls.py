@@ -32,6 +32,12 @@ named one, or any two within 25 m. A point never absorbs a second one from
 the same source: two OSM nodes are two falls. The kept point is the best placed one (OSM node, curated point marked
 precise, NHD, OSM way, other curated, GNIS, OSM area feature, Wikidata), the name the most deliberate one (curated,
 OSM, GNIS, NHD, Wikidata), and the sources are all listed.
+A fall is the map's when its point lies on the map (in its boxes, and in its state where the map stops at a state
+line), and also when that point lies past the map's edge (falls are kept 300 m past it, for 05_score.py's matching)
+but another of its sources lies on the map: it is still drawn at its best-placed point, and home_lon/home_lat keep that
+source's point, which tells 05_score.py which range shows it. Until 2026-11-24 a fall on the line between two maps
+showed on one only: Christine Falls on the Sacandaga, OSM's node 6 m into adk_southeast and GNIS's point 63 m into
+adk_southwest.
 precise = the point sits on the fall itself (OSM falls and rapids nodes and small ways, NHD, curated points marked
 precise). Only these may outrank 05_score.py's artifact tests (a mapped fall within 50 m of the step); the others, GNIS
 placements especially (Bingham Falls' is 340 m off the falls), still name a drop within 200 m.
@@ -557,9 +563,16 @@ for pri, _, i, j in sorted(pairs):
     names[a] |= names[b]
 d["cl"] = [find(i) for i in range(len(d))]
 
-out = []
+# which points lie on the map: in its boxes, and in its state where the map stops at a state line, or in a river that
+# is the state line (areaclip.py; as 05_score.py keeps them)
+import areaclip
+d["on_map"] = d.within(area_u).to_numpy() & (areaclip.inside(d.geometry.values) | areaclip.in_river(d.geometry.values))
+out, home = [], []
 for _, g in d.groupby("cl"):
-    pos = g.sort_values(["rank", "precise"], ascending=[True, False]).iloc[0]
+    gs = g.sort_values(["rank", "precise"], ascending=[True, False])
+    pos = gs.iloc[0]
+    # past the map's edge by its best point, on the map by another source's: that one puts it on the map (docstring)
+    home.append(gs.geometry[gs.on_map].iat[0] if not pos.on_map and gs.on_map.any() else None)
     named = g[g.name.notna() & (g.name.astype(str).str.strip() != "")].sort_values("nrank")
     name = named.name.iloc[0] if len(named) else None
     kinds = g.sort_values("nrank").kind
@@ -578,6 +591,9 @@ for _, g in d.groupby("cl"):
     out.append(dict(name=name, src=" · ".join(labels), kind=kind, precise=bool(pos.precise),
                     note=" ".join(notes) or None, url=urls[0] if urls else None, n_src=len(labels), geometry=pos.geometry))
 kf = gpd.GeoDataFrame(out, crs=CRS)
+hp = [None if p is None else gpd.GeoSeries([p], crs=CRS).to_crs(4326).iat[0] for p in home]
+kf["home_lon"] = [np.nan if p is None else round(p.x, 7) for p in hp]
+kf["home_lat"] = [np.nan if p is None else round(p.y, 7) for p in hp]
 kf.to_crs(4326).to_file(OUTF + ".tmp.gpkg", driver="GPKG")
 os.replace(OUTF + ".tmp.gpkg", OUTF)
 # every source point with the fall it went into (`cl`), for checking the merges
@@ -588,5 +604,9 @@ print(f"{AREA_LABEL}: {len(d)} points from {d.src.nunique()} sources -> {len(kf)
       f"({int(kf.precise.sum())} precisely placed, {int(kf.name.notna().sum())} named)")
 print("points by source:", d.src.value_counts().to_dict())
 print("falls by kind:", kf.kind.value_counts().to_dict())
+edge = kf[kf.home_lon.notna()]
+if len(edge):
+    print(f"{len(edge)} falls drawn just past the map's edge, put on it by another source:",
+          sorted(edge.name.fillna("(unnamed)"))[:20])
 only = kf[~kf.src.str.contains("OpenStreetMap|USGS NHD")]
 print(f"{len(only)} known falls that OSM and NHD don't have:", sorted(only.name.dropna())[:60])

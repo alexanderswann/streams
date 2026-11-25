@@ -101,7 +101,8 @@ nhd["flow"] = nhd.fcode.map({46006: "perennial", 46003: "intermittent", 46007: "
 # Known waterfalls: the area's list from every source, merged (02f_known_falls.py: OpenStreetMap, NHD, USGS GNIS,
 # Wikidata, CDFW's barrier surveys in LA, and falls from guidebooks and state inventories in data/known_falls_curated.csv).
 # This range takes those within 500 m of its box, so a drop near an edge still finds its fall, and writes out only those
-# inside it, so each fall is drawn once (the lon/lat box each range used to take overlapped its neighbours').
+# inside it, so each fall is drawn once (the lon/lat box each range used to take overlapped its neighbours'), and
+# those just past the map's edge that another source puts inside it (02f_known_falls.py: home_lon, home_lat).
 kf_path = f"{SHARED}/known_falls.gpkg"
 if not os.path.exists(kf_path):
     raise SystemExit(f"{kf_path} is missing: run AREA={AREA} 02f_known_falls.py first (run_mid.sh does)")
@@ -1327,10 +1328,17 @@ kp_ll.drop(columns=["top_idx", "base_idx"]).to_file(f"{os_}/waterfall_candidates
 t_ll = areaclip.cut(trails).to_crs(4326)
 t_ll = t_ll[~t_ll.is_empty].assign(geometry=shapely.set_precision(t_ll.geometry.simplify(0.0001).values, 1e-5))
 t_ll.assign(name=t_ll["name"].fillna("trail"))[["name", "geometry"]].to_file(f"{os_}/trails.gpkg")
-# (and the falls of a river that is the state line, as the river: areaclip.in_river; Scudders Falls in the Delaware)
-_kf = known_falls.geometry.values
-known_falls[known_falls.within(range_box) & (areaclip.inside(_kf) | areaclip.in_river(_kf))].to_crs(4326).to_file(
-    f"{os_}/known_falls.gpkg")
+# each range draws the falls whose point lies in it (and the falls of a river that is the state line, as the river:
+# areaclip.in_river; Scudders Falls in the Delaware), and those drawn just past the map's edge whose other source on
+# the map lies in it (02f_known_falls.py's home_lon/home_lat)
+_kh = np.array(known_falls.geometry.values, dtype=object)
+if "home_lon" in known_falls:
+    _hm = known_falls.home_lon.notna().to_numpy()
+    if _hm.any():
+        _kh[_hm] = np.array(gpd.GeoSeries(gpd.points_from_xy(known_falls.home_lon[_hm], known_falls.home_lat[_hm]),
+                                          crs=4326).to_crs(CRS).values, dtype=object)
+known_falls[shapely.within(_kh, range_box) & (areaclip.inside(_kh) | areaclip.in_river(_kh))] \
+    .drop(columns=["home_lon", "home_lat"], errors="ignore").to_crs(4326).to_file(f"{os_}/known_falls.gpkg")
 
 # ---- hillshade overlay (warped to web mercator) ----
 def hillshade(z, az=315, alt=45):

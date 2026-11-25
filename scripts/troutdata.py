@@ -390,6 +390,23 @@ def _ncwrc_newest(kind):
     return (max(yrs), yrs[max(yrs)]) if yrs else (2026, f"PMTW_{kind}_2026")
 
 
+NC_LAKE_FIELDS = "WRC_Class,DISPL_NAME,GNIS_Name,Reg_Name,Reg_Descri"     # one download for _nc and lakesources.py
+
+
+def nc_lake_entries(k):
+    """NCWRC's impoundments that are entries of its list, with DISPL_NAME filled in: the display name, else the lake's
+    GNIS name, else the name of the water its rule covers (2026: Potato Hill Lake in Watauga County has only the last
+    two). Not the game lands' blanket "Wild Trout Waters unless otherwise noted" (a rule, see _nc), nor a nameless one.
+    A download made before GNIS_Name and Reg_Name were asked for has the display names only."""
+    nm = pd.Series("", index=k.index)
+    for c in ("Reg_Name", "GNIS_Name", "DISPL_NAME"):          # the last one set wins
+        if c in k:
+            v = k[c].fillna("").astype(str).str.strip()
+            nm = nm.where(v.eq(""), v)
+    keep = ~k.Reg_Descri.fillna("").str.contains("unless otherwise noted", case=False) & nm.ne("")
+    return k[keep].assign(DISPL_NAME=nm[keep])
+
+
 def _nc():
     ev, wa = [], []
     yr, svc = _ncwrc_newest("Streams")
@@ -409,9 +426,9 @@ def _nc():
             ev.append(_ev(s[stocked], "NCWRC stocking", name[stocked], THIS_YEAR, True,
                           [f"{c.lower()} trout water: NCWRC stocks it each season" for c in cls[stocked]], lake=False))
     yr, svc = _ncwrc_newest("Impoundments")
-    k = _try(f"nc_pmtw_lakes_{yr}", f"{NCWRC}/{svc}/FeatureServer/0", fields="WRC_Class,DISPL_NAME,Reg_Descri")
+    k = _try(f"nc_pmtw_lakes_{yr}", f"{NCWRC}/{svc}/FeatureServer/0", fields=NC_LAKE_FIELDS)
     if len(k):
-        k = k[~k.Reg_Descri.fillna("").str.contains("unless otherwise noted", case=False) & k.DISPL_NAME.fillna("").str.strip().ne("")]
+        k = nc_lake_entries(k)
         cls = k.WRC_Class.fillna("").str.replace(r"\s*Trout Waters$", "", regex=True).str.strip()
         if len(k):
             wa.append(_waters(k, k.DISPL_NAME, cls + " trout water (NCWRC)"))

@@ -244,19 +244,20 @@ def extras(states, bounds_ll):
 
 
 def _nc_impoundments():
-    """NCWRC's Public Mountain Trout Waters impoundments in the area (EPSG:4326): name, class, reach; or None. Not the
-    game lands' blanket "Wild Trout Waters unless otherwise noted" (troutdata.py leaves it out too)."""
+    """NCWRC's Public Mountain Trout Waters impoundments in the area (EPSG:4326): name, class, reach; or None. The
+    list's entries as troutdata.nc_lake_entries names them (a lake without a display name goes by its GNIS name); not
+    the game lands' blanket "Wild Trout Waters unless otherwise noted" (troutdata.py leaves it out too)."""
     import troutdata
     yr, svc = troutdata._ncwrc_newest("Impoundments")
     try:
         k = troutdata.fetch(f"nc_pmtw_lakes_{yr}", f"{troutdata.NCWRC}/{svc}/FeatureServer/0",
-                            fields="WRC_Class,DISPL_NAME,Reg_Descri")
+                            fields=troutdata.NC_LAKE_FIELDS)
     except Exception as ex:
         print(f"  lake source unavailable: NCWRC impoundments ({str(ex)[:80]})")
         return None
     if not len(k):
         return None
-    k = k[~k.Reg_Descri.fillna("").str.contains("unless otherwise noted", case=False) & k.DISPL_NAME.fillna("").str.strip().ne("")]
+    k = troutdata.nc_lake_entries(k)
     if not len(k):
         return None
     return gpd.GeoDataFrame({"name": k.DISPL_NAME.str.strip(),
