@@ -40,13 +40,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591784.1354592,
-   "ended_at": "2026-11-25 02:29:44",
-   "pid": 24532,
-   "started": 1795591777.435543,
-   "started_at": "2026-11-25 02:29:37",
+   "ended": 1795610699.447954,
+   "ended_at": "2026-11-25 07:44:59",
+   "pid": 51655,
+   "started": 1795610692.585422,
+   "started_at": "2026-11-25 07:44:52",
    "status": "ended",
    "step": "02c_pct",
    "uncommitted": [],
@@ -65,13 +65,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591761.736057,
-   "ended_at": "2026-11-25 02:29:21",
-   "pid": 24157,
-   "started": 1795591754.597318,
-   "started_at": "2026-11-25 02:29:14",
+   "ended": 1795610681.774631,
+   "ended_at": "2026-11-25 07:44:41",
+   "pid": 51174,
+   "started": 1795610677.332004,
+   "started_at": "2026-11-25 07:44:37",
    "status": "ended",
    "step": "02d_trails",
    "uncommitted": [],
@@ -90,13 +90,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591776.6192498,
-   "ended_at": "2026-11-25 02:29:36",
-   "pid": 24282,
-   "started": 1795591762.37856,
-   "started_at": "2026-11-25 02:29:22",
+   "ended": 1795610692.202294,
+   "ended_at": "2026-11-25 07:44:52",
+   "pid": 51342,
+   "started": 1795610682.114511,
+   "started_at": "2026-11-25 07:44:42",
    "status": "ended",
    "step": "02e_access",
    "uncommitted": [],
@@ -143,13 +143,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591735.742916,
-   "ended_at": "2026-11-25 02:28:55",
-   "pid": 23837,
-   "started": 1795591735.064545,
-   "started_at": "2026-11-25 02:28:55",
+   "ended": 1795610664.6418,
+   "ended_at": "2026-11-25 07:44:24",
+   "pid": 50775,
+   "started": 1795610664.2844732,
+   "started_at": "2026-11-25 07:44:24",
    "status": "ended",
    "step": "02g_greenness",
    "uncommitted": [],
@@ -212,7 +212,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -227,55 +227,55 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591734.5598562,
-   "ended_at": "2026-11-25 02:28:54",
-   "pid": 23565,
-   "started": 1795591720.265416,
-   "started_at": "2026-11-25 02:28:40",
+   "ended": 1795610663.935136,
+   "ended_at": "2026-11-25 07:44:23",
+   "pid": 50350,
+   "started": 1795610652.659486,
+   "started_at": "2026-11-25 07:44:12",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/buried_reaches.gpkg": [
-     1795591732519131748,
+     1795610662060357843,
      98304
     ],
     "blue_ridge_va/drawn_pieces.gpkg": [
-     1795591732757503483,
+     1795610662268450967,
      3809280
     ],
     "blue_ridge_va/hillshade.png": [
-     1795591734550232360,
+     1795610663926604050,
      794543
     ],
     "blue_ridge_va/hillshade_bounds.json": [
-     1795591734552574134,
+     1795610663929057534,
      112
     ],
     "blue_ridge_va/known_falls.gpkg": [
-     1795591732805571226,
+     1795610662316300182,
      98304
     ],
     "blue_ridge_va/stream_reaches_ranked.csv": [
-     1795591732618953313,
-     372221
+     1795610662138252003,
+     372206
     ],
     "blue_ridge_va/streams_scored.gpkg": [
-     1795591732689939416,
+     1795610662197184878,
      4251648
     ],
     "blue_ridge_va/trails.gpkg": [
-     1795591732796793553,
+     1795610662309472943,
      307200
     ],
     "blue_ridge_va/waterfall_candidates.csv": [
-     1795591732550498111,
+     1795610662088861687,
      47839
     ],
     "blue_ridge_va/waterfall_candidates.gpkg": [
-     1795591732767521461,
+     1795610662281018100,
      172032
     ]
    }
@@ -285,7 +285,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -300,55 +300,55 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591719.275955,
-   "ended_at": "2026-11-25 02:28:39",
-   "pid": 23290,
-   "started": 1795591701.923334,
-   "started_at": "2026-11-25 02:28:21",
+   "ended": 1795610652.126585,
+   "ended_at": "2026-11-25 07:44:12",
+   "pid": 49978,
+   "started": 1795610640.628756,
+   "started_at": "2026-11-25 07:44:00",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "maury_goshen/buried_reaches.gpkg": [
-     1795591716478060147,
+     1795610650213136590,
      98304
     ],
     "maury_goshen/drawn_pieces.gpkg": [
-     1795591716809417377,
+     1795610650423255277,
      3588096
     ],
     "maury_goshen/hillshade.png": [
-     1795591719263886871,
+     1795610652117357866,
      828132
     ],
     "maury_goshen/hillshade_bounds.json": [
-     1795591719267346032,
+     1795610652120886987,
      113
     ],
     "maury_goshen/known_falls.gpkg": [
-     1795591716871579056,
+     1795610650468326004,
      98304
     ],
     "maury_goshen/stream_reaches_ranked.csv": [
-     1795591716594243838,
+     1795610650289678152,
      343079
     ],
     "maury_goshen/streams_scored.gpkg": [
-     1795591716694933454,
+     1795610650354615507,
      3985408
     ],
     "maury_goshen/trails.gpkg": [
-     1795591716863238262,
+     1795610650461063802,
      294912
     ],
     "maury_goshen/waterfall_candidates.csv": [
-     1795591716509979849,
+     1795610650239192283,
      17667
     ],
     "maury_goshen/waterfall_candidates.gpkg": [
-     1795591716821262874,
+     1795610650432494166,
      122880
     ]
    }
@@ -369,23 +369,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591753.851705,
-   "ended_at": "2026-11-25 02:29:13",
-   "pid": 24123,
-   "started": 1795591751.907159,
-   "started_at": "2026-11-25 02:29:11",
+   "ended": 1795610676.817662,
+   "ended_at": "2026-11-25 07:44:36",
+   "pid": 51108,
+   "started": 1795610675.788382,
+   "started_at": "2026-11-25 07:44:35",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/flow_drops.csv": [
-     1795591753849545277,
+     1795610676815925562,
      14425
     ],
     "blue_ridge_va/flow_streams.csv": [
-     1795591753830613750,
+     1795610676803816892,
      225006
     ]
    }
@@ -406,23 +406,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591751.3994482,
-   "ended_at": "2026-11-25 02:29:11",
-   "pid": 24053,
-   "started": 1795591749.549152,
-   "started_at": "2026-11-25 02:29:09",
+   "ended": 1795610675.441154,
+   "ended_at": "2026-11-25 07:44:35",
+   "pid": 51103,
+   "started": 1795610674.394347,
+   "started_at": "2026-11-25 07:44:34",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "maury_goshen/flow_drops.csv": [
-     1795591751395439204,
+     1795610675439429924,
      5506
     ],
     "maury_goshen/flow_streams.csv": [
-     1795591751367840172,
+     1795610675430828416,
      217923
     ]
    }
@@ -443,31 +443,31 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591748.906633,
-   "ended_at": "2026-11-25 02:29:08",
-   "pid": 23958,
-   "started": 1795591743.1666539,
-   "started_at": "2026-11-25 02:29:03",
+   "ended": 1795610673.9894028,
+   "ended_at": "2026-11-25 07:44:33",
+   "pid": 50940,
+   "started": 1795610669.6673448,
+   "started_at": "2026-11-25 07:44:29",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/area_streams.csv": [
-     1795591748646637401,
+     1795610673765952595,
      73219
     ],
     "blue_ridge_va/buried_areas.csv": [
-     1795591748608602095,
+     1795610673731585731,
      61
     ],
     "blue_ridge_va/drainages.gpkg": [
-     1795591748903538118,
+     1795610673987168232,
      516096
     ],
     "blue_ridge_va/stream_drainage.csv": [
-     1795591748643482077,
+     1795610673763404360,
      169163
     ]
    }
@@ -488,31 +488,31 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591742.411286,
-   "ended_at": "2026-11-25 02:29:02",
-   "pid": 23846,
-   "started": 1795591736.292855,
-   "started_at": "2026-11-25 02:28:56",
+   "ended": 1795610669.3024268,
+   "ended_at": "2026-11-25 07:44:29",
+   "pid": 50780,
+   "started": 1795610664.9889028,
+   "started_at": "2026-11-25 07:44:24",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "maury_goshen/area_streams.csv": [
-     1795591742066931704,
+     1795610669117826223,
      70912
     ],
     "maury_goshen/buried_areas.csv": [
-     1795591742010006871,
+     1795610669083947030,
      62
     ],
     "maury_goshen/drainages.gpkg": [
-     1795591742401918430,
+     1795610669300359950,
      380928
     ],
     "maury_goshen/stream_drainage.csv": [
-     1795591742060720141,
+     1795610669114821858,
      168720
     ]
    }
@@ -599,59 +599,59 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591983.8099892,
-   "ended_at": "2026-11-25 02:33:03",
-   "pid": 27231,
-   "started": 1795591953.529653,
-   "started_at": "2026-11-25 02:32:33",
+   "ended": 1795610839.830844,
+   "ended_at": "2026-11-25 07:47:19",
+   "pid": 55580,
+   "started": 1795610817.012007,
+   "started_at": "2026-11-25 07:46:57",
    "status": "ended",
    "step": "06_map",
    "uncommitted": [],
    "wrote": {
     "lakes.csv": [
-     1795591980226742452,
+     1795610836560491749,
      64113
     ],
     "lakes.gpx": [
-     1795591980230726314,
+     1795610836564337498,
      43734
     ],
     "map3d_data.js": [
-     1795591983637960674,
-     9281151
+     1795610839697051010,
+     9281138
     ],
     "overview.json": [
-     1795591983442695941,
+     1795610839522618951,
      443292
     ],
     "routes_data.js": [
-     1795591983521833260,
+     1795610839594112918,
      217911
     ],
     "stream_map.html": [
-     1795591983788423774,
+     1795610839818189336,
      8452167
     ],
     "stream_map_3d.html": [
-     1795591983802306142,
+     1795610839829200869,
      5160795
     ],
     "stream_reaches_ranked.csv": [
-     1795591957243308321,
-     2165066
+     1795610819000672336,
+     2165051
     ],
     "streams_drawn.gpkg": [
-     1795591956071776983,
+     1795610818284192988,
      7254016
     ],
     "waterfall_candidates.csv": [
-     1795591957023233267,
+     1795610818886168872,
      159217
     ],
     "waterfall_candidates.gpx": [
-     1795591957257504747,
+     1795610819006600691,
      40222
     ]
    }
@@ -668,31 +668,31 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591790.380301,
-   "ended_at": "2026-11-25 02:29:50",
-   "pid": 24672,
-   "started": 1795591785.325078,
-   "started_at": "2026-11-25 02:29:45",
+   "ended": 1795610704.239635,
+   "ended_at": "2026-11-25 07:45:04",
+   "pid": 51928,
+   "started": 1795610699.9059892,
+   "started_at": "2026-11-25 07:44:59",
    "status": "ended",
    "step": "07_road_closures",
    "uncommitted": [],
    "wrote": {
     "gated_roads.gpkg": [
-     1795591790374867567,
+     1795610704236767917,
      446464
     ],
     "road_closures.csv": [
-     1795591790343926541,
+     1795610704211552816,
      449
     ],
     "road_closures.gpkg": [
-     1795591790341750186,
+     1795610704209727464,
      102400
     ],
     "road_closures.json": [
-     1795591790344373088,
+     1795610704214720433,
      96
     ]
    }
@@ -713,39 +713,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591864.2907798,
-   "ended_at": "2026-11-25 02:31:04",
-   "pid": 25421,
-   "started": 1795591831.562757,
-   "started_at": "2026-11-25 02:30:31",
+   "ended": 1795610756.279976,
+   "ended_at": "2026-11-25 07:45:56",
+   "pid": 52893,
+   "started": 1795610731.620812,
+   "started_at": "2026-11-25 07:45:31",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/hike_drops.csv": [
-     1795591861525046747,
+     1795610753762528340,
      14833
     ],
     "blue_ridge_va/hike_lakes.csv": [
-     1795591861527318896,
+     1795610753764922449,
      8518
     ],
     "blue_ridge_va/hike_route_starts.csv": [
-     1795591864275071188,
+     1795610756270477768,
      109687
     ],
     "blue_ridge_va/hike_routes.gpkg": [
-     1795591864265659425,
+     1795610756266980481,
      745472
     ],
     "blue_ridge_va/hike_streams.csv": [
-     1795591861524018778,
+     1795610753761486079,
      177665
     ],
     "blue_ridge_va/trailheads.gpkg": [
-     1795591861542361925,
+     1795610753780029401,
      356352
     ]
    }
@@ -766,40 +766,40 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591826.864757,
-   "ended_at": "2026-11-25 02:30:26",
-   "pid": 24789,
-   "started": 1795591791.734228,
-   "started_at": "2026-11-25 02:29:51",
+   "ended": 1795610728.898709,
+   "ended_at": "2026-11-25 07:45:28",
+   "pid": 52083,
+   "started": 1795610705.030952,
+   "started_at": "2026-11-25 07:45:05",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "maury_goshen/hike_drops.csv": [
-     1795591823080945914,
+     1795610726343271543,
      5442
     ],
     "maury_goshen/hike_lakes.csv": [
-     1795591823083897070,
+     1795610726345375941,
      3366
     ],
     "maury_goshen/hike_route_starts.csv": [
-     1795591826855591357,
+     1795610728889393043,
      99375
     ],
     "maury_goshen/hike_routes.gpkg": [
-     1795591826852039321,
+     1795610728885988840,
      729088
     ],
     "maury_goshen/hike_streams.csv": [
-     1795591823079192730,
+     1795610726342603411,
      172251
     ],
     "maury_goshen/trailheads.gpkg": [
-     1795591823105091828,
-     311296
+     1795610726359045627,
+     315392
     ]
    }
   },
@@ -816,23 +816,23 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591872.3071191,
-   "ended_at": "2026-11-25 02:31:12",
-   "pid": 25954,
-   "started": 1795591869.060189,
-   "started_at": "2026-11-25 02:31:09",
+   "ended": 1795610760.366855,
+   "ended_at": "2026-11-25 07:46:00",
+   "pid": 53828,
+   "started": 1795610759.361888,
+   "started_at": "2026-11-25 07:45:59",
    "status": "ended",
    "step": "09_drive",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/trailheads.gpkg": [
-     1795591872304879958,
+     1795610760366200324,
      356352
     ],
     "maury_goshen/trailheads.gpkg": [
-     1795591872275029069,
+     1795610760349947277,
      315392
     ]
    }
@@ -848,23 +848,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591868.0901492,
-   "ended_at": "2026-11-25 02:31:08",
-   "pid": 25896,
-   "started": 1795591865.4251919,
-   "started_at": "2026-11-25 02:31:05",
+   "ended": 1795610758.789473,
+   "ended_at": "2026-11-25 07:45:58",
+   "pid": 53693,
+   "started": 1795610756.9927769,
+   "started_at": "2026-11-25 07:45:56",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/sun_drops.csv": [
-     1795591868088592071,
+     1795610758788298467,
      6770
     ],
     "blue_ridge_va/sun_streams.csv": [
-     1795591868087752396,
+     1795610758787731211,
      84165
     ]
    }
@@ -880,23 +880,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591830.725754,
-   "ended_at": "2026-11-25 02:30:30",
-   "pid": 25357,
-   "started": 1795591828.0227861,
-   "started_at": "2026-11-25 02:30:28",
+   "ended": 1795610731.145612,
+   "ended_at": "2026-11-25 07:45:31",
+   "pid": 52887,
+   "started": 1795610729.4490108,
+   "started_at": "2026-11-25 07:45:29",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "maury_goshen/sun_drops.csv": [
-     1795591830724587226,
+     1795610731144537415,
      2440
     ],
     "maury_goshen/sun_streams.csv": [
-     1795591830723933011,
+     1795610731143985492,
      80687
     ]
    }
@@ -939,67 +939,67 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591941.716296,
-   "ended_at": "2026-11-25 02:32:21",
-   "pid": 26031,
-   "started": 1795591873.3942559,
-   "started_at": "2026-11-25 02:31:13",
+   "ended": 1795610810.924659,
+   "ended_at": "2026-11-25 07:46:50",
+   "pid": 53866,
+   "started": 1795610760.876609,
+   "started_at": "2026-11-25 07:46:00",
    "status": "ended",
    "step": "11_context",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/context_drops.csv": [
-     1795591941712403900,
+     1795610810923558978,
      27241
     ],
     "blue_ridge_va/context_streams.csv": [
-     1795591941709862999,
+     1795610810922593676,
      261711
     ],
     "context/cpad_restricted.gpkg": [
-     1795591901245341913,
+     1795610776132436260,
      3907584
     ],
     "context/critical_habitat.gpkg": [
-     1795591923577236958,
+     1795610796080676417,
      102400
     ],
     "context/fires.gpkg": [
-     1795591880751707295,
+     1795610762938362974,
      188416
     ],
     "context/gauges.gpkg": [
-     1795591931544176084,
+     1795610803865189547,
      98304
     ],
     "context/non_fs_land.gpkg": [
-     1795591897107436330,
+     1795610772775789041,
      4657152
     ],
     "context/springs.gpkg": [
-     1795591880938636669,
+     1795610763534761215,
      98304
     ],
     "context/trout_evidence.gpkg": [
-     1795591928388372777,
+     1795610801310502499,
      122880
     ],
     "context/wild_trout_waters.gpkg": [
-     1795591923941892946,
+     1795610796314716857,
      3887104
     ],
     "context/wilderness.gpkg": [
-     1795591880952982066,
+     1795610763548476777,
      188416
     ],
     "maury_goshen/context_drops.csv": [
-     1795591936034543364,
+     1795610807057026269,
      4352
     ],
     "maury_goshen/context_streams.csv": [
-     1795591936031891045,
+     1795610807056328178,
      229397
     ]
    }
@@ -1024,27 +1024,27 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591952.724397,
-   "ended_at": "2026-11-25 02:32:32",
-   "pid": 27113,
-   "started": 1795591945.763384,
-   "started_at": "2026-11-25 02:32:25",
+   "ended": 1795610816.527701,
+   "ended_at": "2026-11-25 07:46:56",
+   "pid": 55420,
+   "started": 1795610812.280123,
+   "started_at": "2026-11-25 07:46:52",
    "status": "ended",
    "step": "11b_calendar",
    "uncommitted": [],
    "wrote": {
     "blue_ridge_va/calendar_streams.csv": [
-     1795591952719208687,
+     1795610816525743967,
      88810
     ],
     "calendar.json": [
-     1795591952724071722,
+     1795610816527398068,
      4928
     ],
     "maury_goshen/calendar_streams.csv": [
-     1795591952707984112,
+     1795610816522797769,
      85120
     ]
    }
@@ -1065,19 +1065,19 @@
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591990.318613,
-   "ended_at": "2026-11-25 02:33:10",
-   "pid": 27737,
-   "started": 1795591984.857047,
-   "started_at": "2026-11-25 02:33:04",
+   "ended": 1795610845.573173,
+   "ended_at": "2026-11-25 07:47:25",
+   "pid": 56342,
+   "started": 1795610840.756307,
+   "started_at": "2026-11-25 07:47:20",
    "status": "ended",
    "step": "12_profiles",
    "uncommitted": [],
    "wrote": {
     "profiles_data.js": [
-     1795591990317932758,
+     1795610845572211893,
      3196527
     ]
    }
@@ -1127,13 +1127,13 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591944.768391,
-   "ended_at": "2026-11-25 02:32:24",
-   "pid": 27047,
-   "started": 1795591942.943469,
-   "started_at": "2026-11-25 02:32:22",
+   "ended": 1795610811.9226828,
+   "ended_at": "2026-11-25 07:46:51",
+   "pid": 55414,
+   "started": 1795610811.362265,
+   "started_at": "2026-11-25 07:46:51",
    "status": "ended",
    "step": "watertemp",
    "uncommitted": [],

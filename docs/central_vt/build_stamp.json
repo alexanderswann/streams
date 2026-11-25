@@ -40,13 +40,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590119.276972,
-   "ended_at": "2026-11-25 02:01:59",
-   "pid": 8156,
-   "started": 1795590114.6638122,
-   "started_at": "2026-11-25 02:01:54",
+   "ended": 1795607720.1686091,
+   "ended_at": "2026-11-25 06:55:20",
+   "pid": 32959,
+   "started": 1795607714.2020679,
+   "started_at": "2026-11-25 06:55:14",
    "status": "ended",
    "step": "02c_pct",
    "uncommitted": [],
@@ -65,13 +65,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590101.378876,
-   "ended_at": "2026-11-25 02:01:41",
-   "pid": 7957,
-   "started": 1795590090.551042,
-   "started_at": "2026-11-25 02:01:30",
+   "ended": 1795607690.582377,
+   "ended_at": "2026-11-25 06:54:50",
+   "pid": 31965,
+   "started": 1795607680.444031,
+   "started_at": "2026-11-25 06:54:40",
    "status": "ended",
    "step": "02d_trails",
    "uncommitted": [],
@@ -90,13 +90,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590114.113224,
-   "ended_at": "2026-11-25 02:01:54",
-   "pid": 8072,
-   "started": 1795590101.874579,
-   "started_at": "2026-11-25 02:01:41",
+   "ended": 1795607713.639007,
+   "ended_at": "2026-11-25 06:55:13",
+   "pid": 32327,
+   "started": 1795607691.003959,
+   "started_at": "2026-11-25 06:54:51",
    "status": "ended",
    "step": "02e_access",
    "uncommitted": [],
@@ -143,13 +143,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590034.802617,
-   "ended_at": "2026-11-25 02:00:34",
-   "pid": 7531,
-   "started": 1795590034.364886,
-   "started_at": "2026-11-25 02:00:34",
+   "ended": 1795607628.416668,
+   "ended_at": "2026-11-25 06:53:48",
+   "pid": 30234,
+   "started": 1795607628.018101,
+   "started_at": "2026-11-25 06:53:48",
    "status": "ended",
    "step": "02g_greenness",
    "uncommitted": [],
@@ -238,7 +238,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -253,51 +253,51 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795589999.700602,
-   "ended_at": "2026-11-25 01:59:59",
-   "pid": 7132,
-   "started": 1795589966.1634429,
-   "started_at": "2026-11-25 01:59:26",
+   "ended": 1795607596.270582,
+   "ended_at": "2026-11-25 06:53:16",
+   "pid": 28220,
+   "started": 1795607563.95968,
+   "started_at": "2026-11-25 06:52:43",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "mad_winooski/drawn_pieces.gpkg": [
-     1795589995000675291,
+     1795607591599661604,
      6209536
     ],
     "mad_winooski/hillshade.png": [
-     1795589999689193727,
+     1795607596261508460,
      889810
     ],
     "mad_winooski/hillshade_bounds.json": [
-     1795589999690169320,
+     1795607596263844410,
      111
     ],
     "mad_winooski/known_falls.gpkg": [
-     1795589996941471504,
+     1795607593475307468,
      110592
     ],
     "mad_winooski/stream_reaches_ranked.csv": [
-     1795589994784499582,
+     1795607591360610409,
      630512
     ],
     "mad_winooski/streams_scored.gpkg": [
-     1795589994892845773,
+     1795607591481051207,
      6967296
     ],
     "mad_winooski/trails.gpkg": [
-     1795589996931394193,
+     1795607593464766026,
      909312
     ],
     "mad_winooski/waterfall_candidates.csv": [
-     1795589994718761577,
+     1795607591296917170,
      53107
     ],
     "mad_winooski/waterfall_candidates.gpkg": [
-     1795589995011943865,
+     1795607591612508078,
      180224
     ]
    }
@@ -307,7 +307,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -322,55 +322,55 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795589965.380912,
-   "ended_at": "2026-11-25 01:59:25",
-   "pid": 6826,
-   "started": 1795589914.607136,
-   "started_at": "2026-11-25 01:58:34",
+   "ended": 1795607563.257194,
+   "ended_at": "2026-11-25 06:52:43",
+   "pid": 26774,
+   "started": 1795607517.248502,
+   "started_at": "2026-11-25 06:51:57",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "stowe_lamoille/buried_reaches.gpkg": [
-     1795589954976916003,
+     1795607554325306789,
      106496
     ],
     "stowe_lamoille/drawn_pieces.gpkg": [
-     1795589955771248527,
+     1795607554701605769,
      6426624
     ],
     "stowe_lamoille/hillshade.png": [
-     1795589965366307998,
+     1795607563247566289,
      934140
     ],
     "stowe_lamoille/hillshade_bounds.json": [
-     1795589965369393404,
+     1795607563249620693,
      112
     ],
     "stowe_lamoille/known_falls.gpkg": [
-     1795589961813153095,
+     1795607560246688241,
      114688
     ],
     "stowe_lamoille/stream_reaches_ranked.csv": [
-     1795589955118002475,
-     575632
+     1795607554443927143,
+     575621
     ],
     "stowe_lamoille/streams_scored.gpkg": [
-     1795589955530105988,
+     1795607554570329067,
      7139328
     ],
     "stowe_lamoille/trails.gpkg": [
-     1795589961803465957,
+     1795607560237536360,
      2605056
     ],
     "stowe_lamoille/waterfall_candidates.csv": [
-     1795589955029851441,
+     1795607554376947023,
      64924
     ],
     "stowe_lamoille/waterfall_candidates.gpkg": [
-     1795589955790391257,
+     1795607554713288352,
      196608
     ]
    }
@@ -380,7 +380,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -395,51 +395,51 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590033.841525,
-   "ended_at": "2026-11-25 02:00:33",
-   "pid": 7322,
-   "started": 1795590000.445399,
-   "started_at": "2026-11-25 02:00:00",
+   "ended": 1795607627.58764,
+   "ended_at": "2026-11-25 06:53:47",
+   "pid": 29293,
+   "started": 1795607597.0048928,
+   "started_at": "2026-11-25 06:53:17",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "white_river/drawn_pieces.gpkg": [
-     1795590028721155958,
+     1795607623841280990,
      6651904
     ],
     "white_river/hillshade.png": [
-     1795590033823560624,
+     1795607627580149542,
      944642
     ],
     "white_river/hillshade_bounds.json": [
-     1795590033824608343,
+     1795607627580893178,
      113
     ],
     "white_river/known_falls.gpkg": [
-     1795590029847755920,
+     1795607624676565379,
      106496
     ],
     "white_river/stream_reaches_ranked.csv": [
-     1795590028452704123,
+     1795607623596088208,
      660774
     ],
     "white_river/streams_scored.gpkg": [
-     1795590028599592420,
+     1795607623714693980,
      7487488
     ],
     "white_river/trails.gpkg": [
-     1795590029838928205,
+     1795607624666637404,
      462848
     ],
     "white_river/waterfall_candidates.csv": [
-     1795590028380011087,
+     1795607623532060713,
      48451
     ],
     "white_river/waterfall_candidates.gpkg": [
-     1795590028736170445,
+     1795607623853083241,
      176128
     ]
    }
@@ -460,23 +460,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590083.235552,
-   "ended_at": "2026-11-25 02:01:23",
-   "pid": 7832,
-   "started": 1795590076.430519,
-   "started_at": "2026-11-25 02:01:16",
+   "ended": 1795607673.3988469,
+   "ended_at": "2026-11-25 06:54:33",
+   "pid": 31515,
+   "started": 1795607667.279541,
+   "started_at": "2026-11-25 06:54:27",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "mad_winooski/flow_drops.csv": [
-     1795590083233087773,
+     1795607673396838407,
      17377
     ],
     "mad_winooski/flow_streams.csv": [
-     1795590083218588083,
+     1795607673383629177,
      465134
     ]
    }
@@ -497,23 +497,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590075.999557,
-   "ended_at": "2026-11-25 02:01:15",
-   "pid": 7786,
-   "started": 1795590069.795253,
-   "started_at": "2026-11-25 02:01:09",
+   "ended": 1795607666.9091682,
+   "ended_at": "2026-11-25 06:54:26",
+   "pid": 31353,
+   "started": 1795607661.073975,
+   "started_at": "2026-11-25 06:54:21",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "stowe_lamoille/flow_drops.csv": [
-     1795590075996659298,
+     1795607666906440564,
      23200
     ],
     "stowe_lamoille/flow_streams.csv": [
-     1795590075978763323,
+     1795607666891178972,
      482492
     ]
    }
@@ -534,23 +534,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590089.969342,
-   "ended_at": "2026-11-25 02:01:29",
-   "pid": 7901,
-   "started": 1795590083.658967,
-   "started_at": "2026-11-25 02:01:23",
+   "ended": 1795607679.878209,
+   "ended_at": "2026-11-25 06:54:39",
+   "pid": 31687,
+   "started": 1795607673.799097,
+   "started_at": "2026-11-25 06:54:33",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "white_river/flow_drops.csv": [
-     1795590089966577674,
+     1795607679876069466,
      15439
     ],
     "white_river/flow_streams.csv": [
-     1795590089949778919,
+     1795607679862807986,
      460911
     ]
    }
@@ -571,27 +571,27 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590059.3209548,
-   "ended_at": "2026-11-25 02:00:59",
-   "pid": 7640,
-   "started": 1795590049.568269,
-   "started_at": "2026-11-25 02:00:49",
+   "ended": 1795607651.2212422,
+   "ended_at": "2026-11-25 06:54:11",
+   "pid": 30717,
+   "started": 1795607641.9649658,
+   "started_at": "2026-11-25 06:54:01",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "mad_winooski/area_streams.csv": [
-     1795590058200164156,
+     1795607650046330368,
      136157
     ],
     "mad_winooski/drainages.gpkg": [
-     1795590059316217430,
+     1795607651217699541,
      819200
     ],
     "mad_winooski/stream_drainage.csv": [
-     1795590058195135021,
+     1795607650041010584,
      294119
     ]
    }
@@ -612,31 +612,31 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590049.1032152,
-   "ended_at": "2026-11-25 02:00:49",
-   "pid": 7537,
-   "started": 1795590035.232984,
-   "started_at": "2026-11-25 02:00:35",
+   "ended": 1795607641.4542148,
+   "ended_at": "2026-11-25 06:54:01",
+   "pid": 30269,
+   "started": 1795607628.798286,
+   "started_at": "2026-11-25 06:53:48",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "stowe_lamoille/area_streams.csv": [
-     1795590048429563457,
+     1795607640931115748,
      149116
     ],
     "stowe_lamoille/buried_areas.csv": [
-     1795590048367064025,
+     1795607640874498609,
      106
     ],
     "stowe_lamoille/drainages.gpkg": [
-     1795590049099726077,
+     1795607641451332194,
      450560
     ],
     "stowe_lamoille/stream_drainage.csv": [
-     1795590048424267903,
+     1795607640926693102,
      305287
     ]
    }
@@ -657,27 +657,27 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590069.328802,
-   "ended_at": "2026-11-25 02:01:09",
-   "pid": 7710,
-   "started": 1795590059.7750552,
-   "started_at": "2026-11-25 02:00:59",
+   "ended": 1795607660.566615,
+   "ended_at": "2026-11-25 06:54:20",
+   "pid": 31042,
+   "started": 1795607651.7323241,
+   "started_at": "2026-11-25 06:54:11",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "white_river/area_streams.csv": [
-     1795590068471109486,
+     1795607659787182312,
      133122
     ],
     "white_river/drainages.gpkg": [
-     1795590069324828613,
+     1795607660563872159,
      659456
     ],
     "white_river/stream_drainage.csv": [
-     1795590068464942298,
+     1795607659782225700,
      350429
     ]
    }
@@ -764,59 +764,59 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590400.6556292,
-   "ended_at": "2026-11-25 02:06:40",
-   "pid": 10016,
-   "started": 1795590356.488569,
-   "started_at": "2026-11-25 02:05:56",
+   "ended": 1795608020.959338,
+   "ended_at": "2026-11-25 07:00:20",
+   "pid": 42154,
+   "started": 1795607977.1164129,
+   "started_at": "2026-11-25 06:59:37",
    "status": "ended",
    "step": "06_map",
    "uncommitted": [],
    "wrote": {
     "lakes.csv": [
-     1795590393355814241,
+     1795608013538935989,
      186378
     ],
     "lakes.gpx": [
-     1795590393364027408,
+     1795608013552761602,
      116279
     ],
     "map3d_data.js": [
-     1795590400273494489,
-     27214712
+     1795608020533981220,
+     27214703
     ],
     "overview.json": [
-     1795590399752999361,
-     872537
+     1795608019928755189,
+     872528
     ],
     "routes_data.js": [
-     1795590399938739516,
+     1795608020121650018,
      551309
     ],
     "stream_map.html": [
-     1795590400608096586,
-     21401099
+     1795608020905058585,
+     21401105
     ],
     "stream_map_3d.html": [
-     1795590400647914744,
-     11786788
+     1795608020951822501,
+     11786794
     ],
     "stream_reaches_ranked.csv": [
-     1795590363669688171,
-     6673908
+     1795607984272307878,
+     6673897
     ],
     "streams_drawn.gpkg": [
-     1795590361948376525,
+     1795607982598860350,
      19046400
     ],
     "waterfall_candidates.csv": [
-     1795590363349991769,
+     1795607983993450950,
      432855
     ],
     "waterfall_candidates.gpx": [
-     1795590363682371843,
+     1795607984287454844,
      132108
     ]
    }
@@ -833,31 +833,31 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590123.1561549,
-   "ended_at": "2026-11-25 02:02:03",
-   "pid": 8194,
-   "started": 1795590119.749526,
-   "started_at": "2026-11-25 02:01:59",
+   "ended": 1795607724.982935,
+   "ended_at": "2026-11-25 06:55:24",
+   "pid": 33247,
+   "started": 1795607720.7599201,
+   "started_at": "2026-11-25 06:55:20",
    "status": "ended",
    "step": "07_road_closures",
    "uncommitted": [],
    "wrote": {
     "gated_roads.gpkg": [
-     1795590123152687623,
+     1795607724979212963,
      430080
     ],
     "road_closures.csv": [
-     1795590123129120465,
+     1795607724956244178,
      1636
     ],
     "road_closures.gpkg": [
-     1795590123126743649,
+     1795607724953367970,
      122880
     ],
     "road_closures.json": [
-     1795590123129513760,
+     1795607724956637975,
      96
     ]
    }
@@ -878,39 +878,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590224.989769,
-   "ended_at": "2026-11-25 02:03:44",
-   "pid": 8605,
-   "started": 1795590181.944324,
-   "started_at": "2026-11-25 02:03:01",
+   "ended": 1795607829.9671428,
+   "ended_at": "2026-11-25 06:57:09",
+   "pid": 35259,
+   "started": 1795607786.075365,
+   "started_at": "2026-11-25 06:56:26",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "mad_winooski/hike_drops.csv": [
-     1795590221285402185,
+     1795607826216550842,
      16515
     ],
     "mad_winooski/hike_lakes.csv": [
-     1795590221290061899,
+     1795607826219809097,
      8712
     ],
     "mad_winooski/hike_route_starts.csv": [
-     1795590224971813558,
+     1795607829950050150,
      196763
     ],
     "mad_winooski/hike_routes.gpkg": [
-     1795590224965672120,
+     1795607829944305235,
      1007616
     ],
     "mad_winooski/hike_streams.csv": [
-     1795590221282378612,
+     1795607826214836943,
      332988
     ],
     "mad_winooski/trailheads.gpkg": [
-     1795590221311717621,
+     1795607826242975969,
      573440
     ]
    }
@@ -931,39 +931,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590177.626189,
-   "ended_at": "2026-11-25 02:02:57",
-   "pid": 8230,
-   "started": 1795590124.145825,
-   "started_at": "2026-11-25 02:02:04",
+   "ended": 1795607781.460543,
+   "ended_at": "2026-11-25 06:56:21",
+   "pid": 33406,
+   "started": 1795607725.95299,
+   "started_at": "2026-11-25 06:55:25",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "stowe_lamoille/hike_drops.csv": [
-     1795590173120528644,
+     1795607776993164998,
      22701
     ],
     "stowe_lamoille/hike_lakes.csv": [
-     1795590173123492841,
+     1795607776995848536,
      14957
     ],
     "stowe_lamoille/hike_route_starts.csv": [
-     1795590177598743177,
+     1795607781431099292,
      218124
     ],
     "stowe_lamoille/hike_routes.gpkg": [
-     1795590177591813898,
+     1795607781424217902,
      1208320
     ],
     "stowe_lamoille/hike_streams.csv": [
-     1795590173118876627,
+     1795607776991746311,
      359523
     ],
     "stowe_lamoille/trailheads.gpkg": [
-     1795590173145902612,
+     1795607777028947507,
      548864
     ]
    }
@@ -984,39 +984,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590275.609518,
-   "ended_at": "2026-11-25 02:04:35",
-   "pid": 9037,
-   "started": 1795590229.079404,
-   "started_at": "2026-11-25 02:03:49",
+   "ended": 1795607879.1880891,
+   "ended_at": "2026-11-25 06:57:59",
+   "pid": 36864,
+   "started": 1795607834.020892,
+   "started_at": "2026-11-25 06:57:14",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "white_river/hike_drops.csv": [
-     1795590271742885434,
+     1795607875282014637,
      14420
     ],
     "white_river/hike_lakes.csv": [
-     1795590271745449918,
+     1795607875284010957,
      8255
     ],
     "white_river/hike_route_starts.csv": [
-     1795590275595014087,
+     1795607879173002520,
      195061
     ],
     "white_river/hike_routes.gpkg": [
-     1795590275588983192,
+     1795607879166945434,
      1146880
     ],
     "white_river/hike_streams.csv": [
-     1795590271741732755,
+     1795607875281130833,
      328939
     ],
     "white_river/trailheads.gpkg": [
-     1795590271766124713,
+     1795607875307366748,
      524288
     ]
    }
@@ -1034,27 +1034,27 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590282.161925,
-   "ended_at": "2026-11-25 02:04:42",
-   "pid": 9364,
-   "started": 1795590279.788029,
-   "started_at": "2026-11-25 02:04:39",
+   "ended": 1795607886.895902,
+   "ended_at": "2026-11-25 06:58:06",
+   "pid": 38474,
+   "started": 1795607884.4076512,
+   "started_at": "2026-11-25 06:58:04",
    "status": "ended",
    "step": "09_drive",
    "uncommitted": [],
    "wrote": {
     "mad_winooski/trailheads.gpkg": [
-     1795590282138765461,
+     1795607886866476359,
      573440
     ],
     "stowe_lamoille/trailheads.gpkg": [
-     1795590282112994072,
+     1795607886838829882,
      548864
     ],
     "white_river/trailheads.gpkg": [
-     1795590282160668310,
+     1795607886895127350,
      524288
     ]
    }
@@ -1070,23 +1070,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590228.508737,
-   "ended_at": "2026-11-25 02:03:48",
-   "pid": 9004,
-   "started": 1795590225.7111628,
-   "started_at": "2026-11-25 02:03:45",
+   "ended": 1795607833.4867089,
+   "ended_at": "2026-11-25 06:57:13",
+   "pid": 36712,
+   "started": 1795607830.801561,
+   "started_at": "2026-11-25 06:57:10",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "mad_winooski/sun_drops.csv": [
-     1795590228507094716,
+     1795607833485496597,
      7646
     ],
     "mad_winooski/sun_streams.csv": [
-     1795590228506030163,
+     1795607833484761628,
      155377
     ]
    }
@@ -1102,23 +1102,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590181.4041631,
-   "ended_at": "2026-11-25 02:03:01",
-   "pid": 8596,
-   "started": 1795590178.5593112,
-   "started_at": "2026-11-25 02:02:58",
+   "ended": 1795607785.536486,
+   "ended_at": "2026-11-25 06:56:25",
+   "pid": 35216,
+   "started": 1795607782.4852219,
+   "started_at": "2026-11-25 06:56:22",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "stowe_lamoille/sun_drops.csv": [
-     1795590181402880341,
+     1795607785535161501,
      10525
     ],
     "stowe_lamoille/sun_streams.csv": [
-     1795590181402224334,
+     1795607785534524283,
      169324
     ]
    }
@@ -1134,23 +1134,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590279.190279,
-   "ended_at": "2026-11-25 02:04:39",
-   "pid": 9321,
-   "started": 1795590276.3756,
-   "started_at": "2026-11-25 02:04:36",
+   "ended": 1795607883.385032,
+   "ended_at": "2026-11-25 06:58:03",
+   "pid": 38304,
+   "started": 1795607879.9840488,
+   "started_at": "2026-11-25 06:57:59",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "white_river/sun_drops.csv": [
-     1795590279188627801,
+     1795607883383727078,
      6665
     ],
     "white_river/sun_streams.csv": [
-     1795590279187632207,
+     1795607883380867496,
      153179
     ]
    }
@@ -1193,75 +1193,75 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590343.085978,
-   "ended_at": "2026-11-25 02:05:43",
-   "pid": 9388,
-   "started": 1795590282.801406,
-   "started_at": "2026-11-25 02:04:42",
+   "ended": 1795607962.8575099,
+   "ended_at": "2026-11-25 06:59:22",
+   "pid": 38604,
+   "started": 1795607887.490582,
+   "started_at": "2026-11-25 06:58:07",
    "status": "ended",
    "step": "11_context",
    "uncommitted": [],
    "wrote": {
     "context/cpad_restricted.gpkg": [
-     1795590289390399173,
+     1795607911660667603,
      4587520
     ],
     "context/critical_habitat.gpkg": [
-     1795590289848321075,
+     1795607912291186994,
      98304
     ],
     "context/fires.gpkg": [
-     1795590283663549008,
+     1795607895750609229,
      110592
     ],
     "context/gauges.gpkg": [
-     1795590300592931012,
+     1795607921910775790,
      106496
     ],
     "context/non_fs_land.gpkg": [
-     1795590285236590425,
+     1795607906353857776,
      581632
     ],
     "context/springs.gpkg": [
-     1795590283858413838,
+     1795607896113241557,
      98304
     ],
     "context/trout_evidence.gpkg": [
-     1795590298324745635,
+     1795607919613846513,
      139264
     ],
     "context/wild_trout_waters.gpkg": [
-     1795590290466312285,
+     1795607912906707755,
      7811072
     ],
     "context/wilderness.gpkg": [
-     1795590283869931998,
+     1795607896124484342,
      147456
     ],
     "mad_winooski/context_drops.csv": [
-     1795590326158345800,
+     1795607946548756519,
      32485
     ],
     "mad_winooski/context_streams.csv": [
-     1795590326156594699,
+     1795607946547841589,
      609867
     ],
     "stowe_lamoille/context_drops.csv": [
-     1795590313475760286,
+     1795607934405405342,
      34831
     ],
     "stowe_lamoille/context_streams.csv": [
-     1795590313474285355,
+     1795607934404138574,
      563957
     ],
     "white_river/context_drops.csv": [
-     1795590343084108018,
+     1795607962855346912,
      26311
     ],
     "white_river/context_streams.csv": [
-     1795590343083223717,
+     1795607962854037144,
      656778
     ]
    }
@@ -1286,31 +1286,31 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590355.976162,
-   "ended_at": "2026-11-25 02:05:55",
-   "pid": 9898,
-   "started": 1795590346.767843,
-   "started_at": "2026-11-25 02:05:46",
+   "ended": 1795607976.521045,
+   "ended_at": "2026-11-25 06:59:36",
+   "pid": 41726,
+   "started": 1795607966.878728,
+   "started_at": "2026-11-25 06:59:26",
    "status": "ended",
    "step": "11b_calendar",
    "uncommitted": [],
    "wrote": {
     "calendar.json": [
-     1795590355975945635,
+     1795607976520834963,
      8498
     ],
     "mad_winooski/calendar_streams.csv": [
-     1795590355967092711,
+     1795607976512640763,
      166480
     ],
     "stowe_lamoille/calendar_streams.csv": [
-     1795590355961506237,
+     1795607976507353896,
      179894
     ],
     "white_river/calendar_streams.csv": [
-     1795590355972618601,
+     1795607976517472498,
      163890
     ]
    }
@@ -1331,20 +1331,20 @@
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590413.241826,
-   "ended_at": "2026-11-25 02:06:53",
-   "pid": 10492,
-   "started": 1795590402.3108711,
-   "started_at": "2026-11-25 02:06:42",
+   "ended": 1795608034.6603038,
+   "ended_at": "2026-11-25 07:00:34",
+   "pid": 44053,
+   "started": 1795608022.740809,
+   "started_at": "2026-11-25 07:00:22",
    "status": "ended",
    "step": "12_profiles",
    "uncommitted": [],
    "wrote": {
     "profiles_data.js": [
-     1795590413239268190,
-     5371040
+     1795608034657902296,
+     5371041
     ]
    }
   },
@@ -1393,13 +1393,13 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795590346.388279,
-   "ended_at": "2026-11-25 02:05:46",
-   "pid": 9823,
-   "started": 1795590343.520055,
-   "started_at": "2026-11-25 02:05:43",
+   "ended": 1795607966.479143,
+   "ended_at": "2026-11-25 06:59:26",
+   "pid": 41613,
+   "started": 1795607963.455324,
+   "started_at": "2026-11-25 06:59:23",
    "status": "ended",
    "step": "watertemp",
    "uncommitted": [],

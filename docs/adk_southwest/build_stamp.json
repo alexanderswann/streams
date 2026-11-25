@@ -40,13 +40,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591668.681843,
-   "ended_at": "2026-11-25 02:27:48",
-   "pid": 22656,
-   "started": 1795591662.545971,
-   "started_at": "2026-11-25 02:27:42",
+   "ended": 1795609378.945772,
+   "ended_at": "2026-11-25 07:22:58",
+   "pid": 1979,
+   "started": 1795609374.601154,
+   "started_at": "2026-11-25 07:22:54",
    "status": "ended",
    "step": "02c_pct",
    "uncommitted": [],
@@ -65,13 +65,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591651.456848,
-   "ended_at": "2026-11-25 02:27:31",
-   "pid": 22394,
-   "started": 1795591648.568547,
-   "started_at": "2026-11-25 02:27:28",
+   "ended": 1795609363.410256,
+   "ended_at": "2026-11-25 07:22:43",
+   "pid": 1414,
+   "started": 1795609360.6765592,
+   "started_at": "2026-11-25 07:22:40",
    "status": "ended",
    "step": "02d_trails",
    "uncommitted": [],
@@ -90,13 +90,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591662.056971,
-   "ended_at": "2026-11-25 02:27:42",
-   "pid": 22433,
-   "started": 1795591651.839325,
-   "started_at": "2026-11-25 02:27:31",
+   "ended": 1795609374.0812411,
+   "ended_at": "2026-11-25 07:22:54",
+   "pid": 1559,
+   "started": 1795609363.757388,
+   "started_at": "2026-11-25 07:22:43",
    "status": "ended",
    "step": "02e_access",
    "uncommitted": [],
@@ -143,13 +143,13 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591608.033837,
-   "ended_at": "2026-11-25 02:26:48",
-   "pid": 21624,
-   "started": 1795591607.094784,
-   "started_at": "2026-11-25 02:26:47",
+   "ended": 1795609326.39792,
+   "ended_at": "2026-11-25 07:22:06",
+   "pid": 99723,
+   "started": 1795609326.0121338,
+   "started_at": "2026-11-25 07:22:06",
    "status": "ended",
    "step": "02g_greenness",
    "uncommitted": [],
@@ -264,7 +264,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -279,51 +279,51 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591503.975591,
-   "ended_at": "2026-11-25 02:25:03",
-   "pid": 19991,
-   "started": 1795591457.179329,
-   "started_at": "2026-11-25 02:24:17",
+   "ended": 1795609251.67913,
+   "ended_at": "2026-11-25 07:20:51",
+   "pid": 94974,
+   "started": 1795609217.705725,
+   "started_at": "2026-11-25 07:20:17",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "moose/drawn_pieces.gpkg": [
-     1795591499317471491,
+     1795609249237078127,
      5287936
     ],
     "moose/hillshade.png": [
-     1795591503939631371,
+     1795609251669828152,
      793635
     ],
     "moose/hillshade_bounds.json": [
-     1795591503959112571,
+     1795609251673065773,
      112
     ],
     "moose/known_falls.gpkg": [
-     1795591499360496598,
+     1795609249283790492,
      106496
     ],
     "moose/stream_reaches_ranked.csv": [
-     1795591499104757435,
+     1795609249022308680,
      542914
     ],
     "moose/streams_scored.gpkg": [
-     1795591499207748324,
+     1795609249119087574,
      5914624
     ],
     "moose/trails.gpkg": [
-     1795591499351013793,
+     1795609249275933278,
      241664
     ],
     "moose/waterfall_candidates.csv": [
-     1795591499029504789,
+     1795609248963951515,
      26162
     ],
     "moose/waterfall_candidates.gpkg": [
-     1795591499328175892,
+     1795609249253584065,
      143360
     ]
    }
@@ -333,7 +333,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -348,51 +348,51 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591606.518421,
-   "ended_at": "2026-11-25 02:26:46",
-   "pid": 21179,
-   "started": 1795591569.574377,
-   "started_at": "2026-11-25 02:26:09",
+   "ended": 1795609325.6420228,
+   "ended_at": "2026-11-25 07:22:05",
+   "pid": 98556,
+   "started": 1795609300.612475,
+   "started_at": "2026-11-25 07:21:40",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "speculator/drawn_pieces.gpkg": [
-     1795591603856706020,
+     1795609323741867791,
      4026368
     ],
     "speculator/hillshade.png": [
-     1795591606504369243,
+     1795609325633196873,
      660256
     ],
     "speculator/hillshade_bounds.json": [
-     1795591606508212116,
+     1795609325635710487,
      112
     ],
     "speculator/known_falls.gpkg": [
-     1795591603922641571,
+     1795609323789362880,
      98304
     ],
     "speculator/stream_reaches_ranked.csv": [
-     1795591603643078496,
+     1795609323564209129,
      451850
     ],
     "speculator/streams_scored.gpkg": [
-     1795591603744926915,
+     1795609323656983738,
      4595712
     ],
     "speculator/trails.gpkg": [
-     1795591603913218224,
+     1795609323781532658,
      413696
     ],
     "speculator/waterfall_candidates.csv": [
-     1795591603565361866,
+     1795609323509698453,
      16021
     ],
     "speculator/waterfall_candidates.gpkg": [
-     1795591603867139418,
+     1795609323751825164,
      118784
     ]
    }
@@ -402,7 +402,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -417,51 +417,51 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591568.2805,
-   "ended_at": "2026-11-25 02:26:08",
-   "pid": 20726,
-   "started": 1795591529.967416,
-   "started_at": "2026-11-25 02:25:29",
+   "ended": 1795609300.115896,
+   "ended_at": "2026-11-25 07:21:40",
+   "pid": 97249,
+   "started": 1795609270.03541,
+   "started_at": "2026-11-25 07:21:10",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "west_canada/drawn_pieces.gpkg": [
-     1795591566195653422,
+     1795609298693508792,
      3796992
     ],
     "west_canada/hillshade.png": [
-     1795591568266341273,
+     1795609300108338919,
      437915
     ],
     "west_canada/hillshade_bounds.json": [
-     1795591568270174396,
+     1795609300110265734,
      111
     ],
     "west_canada/known_falls.gpkg": [
-     1795591566281305675,
+     1795609298718746979,
      106496
     ],
     "west_canada/stream_reaches_ranked.csv": [
-     1795591566026311186,
+     1795609298544492241,
      323571
     ],
     "west_canada/streams_scored.gpkg": [
-     1795591566113799291,
+     1795609298618589407,
      4218880
     ],
     "west_canada/trails.gpkg": [
-     1795591566261536555,
+     1795609298712081272,
      139264
     ],
     "west_canada/waterfall_candidates.csv": [
-     1795591565927535423,
+     1795609298494910877,
      15764
     ],
     "west_canada/waterfall_candidates.gpkg": [
-     1795591566232050253,
+     1795609298702172066,
      118784
     ]
    }
@@ -471,7 +471,7 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "4dc30d594c362cc53163c22920be6f1ae34b68cc",
+    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
     "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
     "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
@@ -486,51 +486,51 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591528.9816298,
-   "ended_at": "2026-11-25 02:25:28",
-   "pid": 20484,
-   "started": 1795591505.3202372,
-   "started_at": "2026-11-25 02:25:05",
+   "ended": 1795609269.54839,
+   "ended_at": "2026-11-25 07:21:09",
+   "pid": 96420,
+   "started": 1795609252.236177,
+   "started_at": "2026-11-25 07:20:52",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "west_canada_lakes/drawn_pieces.gpkg": [
-     1795591528338947610,
+     1795609268997243621,
      1216512
     ],
     "west_canada_lakes/hillshade.png": [
-     1795591528973067818,
+     1795609269541620934,
      236405
     ],
     "west_canada_lakes/hillshade_bounds.json": [
-     1795591528975825471,
+     1795609269543666042,
      113
     ],
     "west_canada_lakes/known_falls.gpkg": [
-     1795591528368475829,
+     1795609269023843527,
      98304
     ],
     "west_canada_lakes/stream_reaches_ranked.csv": [
-     1795591528277785941,
-     126749
+     1795609268945132989,
+     126736
     ],
     "west_canada_lakes/streams_scored.gpkg": [
-     1795591528309709310,
+     1795609268972325736,
      1380352
     ],
     "west_canada_lakes/trails.gpkg": [
-     1795591528360297537,
+     1795609269016870651,
      126976
     ],
     "west_canada_lakes/waterfall_candidates.csv": [
-     1795591528202302584,
+     1795609268899190140,
      3101
     ],
     "west_canada_lakes/waterfall_candidates.gpkg": [
-     1795591528347488572,
+     1795609269006214022,
      106496
     ]
    }
@@ -551,23 +551,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591635.921292,
-   "ended_at": "2026-11-25 02:27:15",
-   "pid": 22080,
-   "started": 1795591632.5072708,
-   "started_at": "2026-11-25 02:27:12",
+   "ended": 1795609350.16704,
+   "ended_at": "2026-11-25 07:22:30",
+   "pid": 845,
+   "started": 1795609346.8723352,
+   "started_at": "2026-11-25 07:22:26",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "moose/flow_drops.csv": [
-     1795591635919201103,
+     1795609350165335971,
      7069
     ],
     "moose/flow_streams.csv": [
-     1795591635906575182,
+     1795609350154365334,
      312963
     ]
    }
@@ -588,23 +588,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591647.9710011,
-   "ended_at": "2026-11-25 02:27:27",
-   "pid": 22310,
-   "started": 1795591644.4497569,
-   "started_at": "2026-11-25 02:27:24",
+   "ended": 1795609360.1079402,
+   "ended_at": "2026-11-25 07:22:40",
+   "pid": 1299,
+   "started": 1795609357.01982,
+   "started_at": "2026-11-25 07:22:37",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "speculator/flow_drops.csv": [
-     1795591647969109249,
+     1795609360106195616,
      4604
     ],
     "speculator/flow_streams.csv": [
-     1795591647958818311,
+     1795609360096492246,
      275699
     ]
    }
@@ -625,23 +625,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591643.690547,
-   "ended_at": "2026-11-25 02:27:23",
-   "pid": 22207,
-   "started": 1795591639.593343,
-   "started_at": "2026-11-25 02:27:19",
+   "ended": 1795609356.6344042,
+   "ended_at": "2026-11-25 07:22:36",
+   "pid": 1111,
+   "started": 1795609353.660213,
+   "started_at": "2026-11-25 07:22:33",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "west_canada/flow_drops.csv": [
-     1795591643687534318,
+     1795609356632673221,
      4967
     ],
     "west_canada/flow_streams.csv": [
-     1795591643667299027,
+     1795609356623468440,
      216763
     ]
    }
@@ -662,23 +662,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591639.165246,
-   "ended_at": "2026-11-25 02:27:19",
-   "pid": 22142,
-   "started": 1795591636.3514,
-   "started_at": "2026-11-25 02:27:16",
+   "ended": 1795609353.261424,
+   "ended_at": "2026-11-25 07:22:33",
+   "pid": 962,
+   "started": 1795609350.543235,
+   "started_at": "2026-11-25 07:22:30",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "west_canada_lakes/flow_drops.csv": [
-     1795591639162774353,
+     1795609353260377625,
      1171
     ],
     "west_canada_lakes/flow_streams.csv": [
-     1795591639150888231,
+     1795609353251795602,
      87014
     ]
    }
@@ -699,27 +699,27 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591617.305714,
-   "ended_at": "2026-11-25 02:26:57",
-   "pid": 21647,
-   "started": 1795591608.736798,
-   "started_at": "2026-11-25 02:26:48",
+   "ended": 1795609333.268522,
+   "ended_at": "2026-11-25 07:22:13",
+   "pid": 99750,
+   "started": 1795609326.803873,
+   "started_at": "2026-11-25 07:22:06",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "moose/area_streams.csv": [
-     1795591616974403612,
+     1795609332999377826,
      77832
     ],
     "moose/drainages.gpkg": [
-     1795591617301457840,
+     1795609333266074301,
      495616
     ],
     "moose/stream_drainage.csv": [
-     1795591616970312237,
+     1795609332995890116,
      203343
     ]
    }
@@ -740,27 +740,27 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591632.0746958,
-   "ended_at": "2026-11-25 02:27:12",
-   "pid": 21890,
-   "started": 1795591625.999444,
-   "started_at": "2026-11-25 02:27:05",
+   "ended": 1795609346.469549,
+   "ended_at": "2026-11-25 07:22:26",
+   "pid": 469,
+   "started": 1795609340.84902,
+   "started_at": "2026-11-25 07:22:20",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "speculator/area_streams.csv": [
-     1795591631815344993,
+     1795609346219230591,
      79404
     ],
     "speculator/drainages.gpkg": [
-     1795591632068372587,
+     1795609346467037707,
      577536
     ],
     "speculator/stream_drainage.csv": [
-     1795591631812510506,
+     1795609346215948800,
      222611
     ]
    }
@@ -781,27 +781,27 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591625.398657,
-   "ended_at": "2026-11-25 02:27:05",
-   "pid": 21800,
-   "started": 1795591620.251918,
-   "started_at": "2026-11-25 02:27:00",
+   "ended": 1795609340.4505432,
+   "ended_at": "2026-11-25 07:22:20",
+   "pid": 189,
+   "started": 1795609336.207875,
+   "started_at": "2026-11-25 07:22:16",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "west_canada/area_streams.csv": [
-     1795591625187014006,
+     1795609340242233598,
      64595
     ],
     "west_canada/drainages.gpkg": [
-     1795591625396075066,
+     1795609340448228320,
      487424
     ],
     "west_canada/stream_drainage.csv": [
-     1795591625184545064,
+     1795609340239516898,
      153521
     ]
    }
@@ -822,27 +822,27 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591619.827368,
-   "ended_at": "2026-11-25 02:26:59",
-   "pid": 21754,
-   "started": 1795591617.8152509,
-   "started_at": "2026-11-25 02:26:57",
+   "ended": 1795609335.763982,
+   "ended_at": "2026-11-25 07:22:15",
+   "pid": 99998,
+   "started": 1795609333.696239,
+   "started_at": "2026-11-25 07:22:13",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "west_canada_lakes/area_streams.csv": [
-     1795591619658782170,
+     1795609335591273687,
      28751
     ],
     "west_canada_lakes/drainages.gpkg": [
-     1795591619824199033,
+     1795609335760457952,
      401408
     ],
     "west_canada_lakes/stream_drainage.csv": [
-     1795591619657337906,
+     1795609335589729043,
      70570
     ]
    }
@@ -929,59 +929,59 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591950.893549,
-   "ended_at": "2026-11-25 02:32:30",
-   "pid": 26633,
-   "started": 1795591912.4771578,
-   "started_at": "2026-11-25 02:31:52",
+   "ended": 1795609567.823411,
+   "ended_at": "2026-11-25 07:26:07",
+   "pid": 9078,
+   "started": 1795609541.770674,
+   "started_at": "2026-11-25 07:25:41",
    "status": "ended",
    "step": "06_map",
    "uncommitted": [],
    "wrote": {
     "lakes.csv": [
-     1795591943982935092,
+     1795609563040971169,
      426601
     ],
     "lakes.gpx": [
-     1795591944011691678,
+     1795609563054058415,
      236839
     ],
     "map3d_data.js": [
-     1795591950516856136,
-     16488743
+     1795609567579486075,
+     16488660
     ],
     "overview.json": [
-     1795591949964252568,
-     733034
+     1795609567213698077,
+     733023
     ],
     "routes_data.js": [
-     1795591950262633572,
+     1795609567415284579,
      597566
     ],
     "stream_map.html": [
-     1795591950809132210,
+     1795609567790601403,
      14915006
     ],
     "stream_map_3d.html": [
-     1795591950879752020,
+     1795609567812719886,
      8122686
     ],
     "stream_reaches_ranked.csv": [
-     1795591919642048161,
-     4799973
+     1795609546280291170,
+     4799888
     ],
     "streams_drawn.gpkg": [
-     1795591917415927217,
+     1795609544736491511,
      13926400
     ],
     "waterfall_candidates.csv": [
-     1795591919310904725,
+     1795609546083947191,
      142502
     ],
     "waterfall_candidates.gpx": [
-     1795591919655289588,
+     1795609546288767150,
      52838
     ]
    }
@@ -998,23 +998,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591671.299532,
-   "ended_at": "2026-11-25 02:27:51",
-   "pid": 22806,
-   "started": 1795591669.823078,
-   "started_at": "2026-11-25 02:27:49",
+   "ended": 1795609380.472533,
+   "ended_at": "2026-11-25 07:23:00",
+   "pid": 2213,
+   "started": 1795609379.520642,
+   "started_at": "2026-11-25 07:22:59",
    "status": "ended",
    "step": "07_road_closures",
    "uncommitted": [],
    "wrote": {
     "gated_roads.gpkg": [
-     1795591671293471969,
+     1795609380470750694,
      139264
     ],
     "road_closures.json": [
-     1795591671271482785,
+     1795609380457738784,
      96
     ]
    }
@@ -1035,39 +1035,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591731.312594,
-   "ended_at": "2026-11-25 02:28:51",
-   "pid": 22834,
-   "started": 1795591672.1894841,
-   "started_at": "2026-11-25 02:27:52",
+   "ended": 1795609419.55856,
+   "ended_at": "2026-11-25 07:23:39",
+   "pid": 2285,
+   "started": 1795609381.0997472,
+   "started_at": "2026-11-25 07:23:01",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "moose/hike_drops.csv": [
-     1795591726314072100,
+     1795609416289047902,
      5838
     ],
     "moose/hike_lakes.csv": [
-     1795591726319707616,
+     1795609416294880641,
      23586
     ],
     "moose/hike_route_starts.csv": [
-     1795591731269606482,
+     1795609419539248028,
      138492
     ],
     "moose/hike_routes.gpkg": [
-     1795591731256310512,
+     1795609419534412593,
      1454080
     ],
     "moose/hike_streams.csv": [
-     1795591726312516376,
+     1795609416288101682,
      207430
     ],
     "moose/trailheads.gpkg": [
-     1795591726345639924,
+     1795609416308658437,
      286720
     ]
    }
@@ -1088,40 +1088,40 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591821.5175822,
-   "ended_at": "2026-11-25 02:30:21",
-   "pid": 24674,
-   "started": 1795591785.538261,
-   "started_at": "2026-11-25 02:29:45",
+   "ended": 1795609482.487566,
+   "ended_at": "2026-11-25 07:24:42",
+   "pid": 5483,
+   "started": 1795609456.730974,
+   "started_at": "2026-11-25 07:24:16",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "speculator/hike_drops.csv": [
-     1795591817142257996,
+     1795609479901685873,
      4364
     ],
     "speculator/hike_lakes.csv": [
-     1795591817145108859,
+     1795609479904215113,
      21240
     ],
     "speculator/hike_route_starts.csv": [
-     1795591821483065284,
+     1795609482470945341,
      130695
     ],
     "speculator/hike_routes.gpkg": [
-     1795591821472283507,
+     1795609482466452410,
      1253376
     ],
     "speculator/hike_streams.csv": [
-     1795591817140344643,
+     1795609479900790154,
      204463
     ],
     "speculator/trailheads.gpkg": [
-     1795591817163369879,
-     237568
+     1795609479915756006,
+     241664
     ]
    }
   },
@@ -1141,39 +1141,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591781.353,
-   "ended_at": "2026-11-25 02:29:41",
-   "pid": 24104,
-   "started": 1795591751.424289,
-   "started_at": "2026-11-25 02:29:11",
+   "ended": 1795609453.999527,
+   "ended_at": "2026-11-25 07:24:13",
+   "pid": 4526,
+   "started": 1795609432.837076,
+   "started_at": "2026-11-25 07:23:52",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "west_canada/hike_drops.csv": [
-     1795591778435875849,
+     1795609451841718400,
      4422
     ],
     "west_canada/hike_lakes.csv": [
-     1795591778437506116,
+     1795609451843369920,
      9651
     ],
     "west_canada/hike_route_starts.csv": [
-     1795591781340529374,
+     1795609453990446107,
      96919
     ],
     "west_canada/hike_routes.gpkg": [
-     1795591781334123392,
+     1795609453986977689,
      737280
     ],
     "west_canada/hike_streams.csv": [
-     1795591778435104133,
+     1795609451840781305,
      160949
     ],
     "west_canada/trailheads.gpkg": [
-     1795591778452028473,
+     1795609451858008435,
      282624
     ]
    }
@@ -1194,39 +1194,39 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591748.491603,
-   "ended_at": "2026-11-25 02:29:08",
-   "pid": 23844,
-   "started": 1795591736.052764,
-   "started_at": "2026-11-25 02:28:56",
+   "ended": 1795609431.306999,
+   "ended_at": "2026-11-25 07:23:51",
+   "pid": 4102,
+   "started": 1795609422.765897,
+   "started_at": "2026-11-25 07:23:42",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "west_canada_lakes/hike_drops.csv": [
-     1795591747205430253,
+     1795609430510937895,
      1270
     ],
     "west_canada_lakes/hike_lakes.csv": [
-     1795591747207225188,
+     1795609430512208035,
      6934
     ],
     "west_canada_lakes/hike_route_starts.csv": [
-     1795591748480066944,
+     1795609431301331162,
      45694
     ],
     "west_canada_lakes/hike_routes.gpkg": [
-     1795591748472576867,
+     1795609431299322887,
      520192
     ],
     "west_canada_lakes/hike_streams.csv": [
-     1795591747204557619,
+     1795609430510350179,
      79252
     ],
     "west_canada_lakes/trailheads.gpkg": [
-     1795591747225431625,
+     1795609430521558235,
      118784
     ]
    }
@@ -1244,31 +1244,31 @@
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591829.3027399,
-   "ended_at": "2026-11-25 02:30:29",
-   "pid": 25328,
-   "started": 1795591826.988246,
-   "started_at": "2026-11-25 02:30:26",
+   "ended": 1795609486.155524,
+   "ended_at": "2026-11-25 07:24:46",
+   "pid": 6711,
+   "started": 1795609485.370782,
+   "started_at": "2026-11-25 07:24:45",
    "status": "ended",
    "step": "09_drive",
    "uncommitted": [],
    "wrote": {
     "moose/trailheads.gpkg": [
-     1795591829228804102,
+     1795609486126141701,
      286720
     ],
     "speculator/trailheads.gpkg": [
-     1795591829300262626,
+     1795609486154889850,
      241664
     ],
     "west_canada/trailheads.gpkg": [
-     1795591829274980742,
+     1795609486144744265,
      282624
     ],
     "west_canada_lakes/trailheads.gpkg": [
-     1795591829248008423,
+     1795609486132902327,
      118784
     ]
    }
@@ -1284,23 +1284,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591735.2340522,
-   "ended_at": "2026-11-25 02:28:55",
-   "pid": 23742,
-   "started": 1795591732.3261282,
-   "started_at": "2026-11-25 02:28:52",
+   "ended": 1795609422.2700832,
+   "ended_at": "2026-11-25 07:23:42",
+   "pid": 3929,
+   "started": 1795609420.066729,
+   "started_at": "2026-11-25 07:23:40",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "moose/sun_drops.csv": [
-     1795591735232533146,
+     1795609422268893945,
      2524
     ],
     "moose/sun_streams.csv": [
-     1795591735231552553,
+     1795609422268433939,
      90621
     ]
    }
@@ -1316,23 +1316,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591825.891694,
-   "ended_at": "2026-11-25 02:30:25",
-   "pid": 25287,
-   "started": 1795591822.7581818,
-   "started_at": "2026-11-25 02:30:22",
+   "ended": 1795609484.822369,
+   "ended_at": "2026-11-25 07:24:44",
+   "pid": 6669,
+   "started": 1795609482.946573,
+   "started_at": "2026-11-25 07:24:42",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "speculator/sun_drops.csv": [
-     1795591825890451506,
+     1795609484821265299,
      1932
     ],
     "speculator/sun_streams.csv": [
-     1795591825889756207,
+     1795609484820774210,
      92042
     ]
    }
@@ -1348,23 +1348,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591784.623806,
-   "ended_at": "2026-11-25 02:29:44",
-   "pid": 24627,
-   "started": 1795591782.383698,
-   "started_at": "2026-11-25 02:29:42",
+   "ended": 1795609456.2495859,
+   "ended_at": "2026-11-25 07:24:16",
+   "pid": 5367,
+   "started": 1795609454.62693,
+   "started_at": "2026-11-25 07:24:14",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "west_canada/sun_drops.csv": [
-     1795591784622331682,
+     1795609456248471463,
      2026
     ],
     "west_canada/sun_streams.csv": [
-     1795591784621635549,
+     1795609456247872747,
      73572
     ]
    }
@@ -1380,23 +1380,23 @@
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591750.4874182,
-   "ended_at": "2026-11-25 02:29:10",
-   "pid": 24050,
-   "started": 1795591749.1699772,
-   "started_at": "2026-11-25 02:29:09",
+   "ended": 1795609432.375251,
+   "ended_at": "2026-11-25 07:23:52",
+   "pid": 4421,
+   "started": 1795609431.689827,
+   "started_at": "2026-11-25 07:23:51",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "west_canada_lakes/sun_drops.csv": [
-     1795591750486235425,
+     1795609432374069849,
      503
     ],
     "west_canada_lakes/sun_streams.csv": [
-     1795591750485882088,
+     1795609432373468550,
      32458
     ]
    }
@@ -1439,84 +1439,84 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591896.685098,
-   "ended_at": "2026-11-25 02:31:36",
-   "pid": 25418,
-   "started": 1795591830.956414,
-   "started_at": "2026-11-25 02:30:30",
+   "ended": 1795609533.0663218,
+   "ended_at": "2026-11-25 07:25:33",
+   "pid": 6782,
+   "started": 1795609486.658189,
+   "started_at": "2026-11-25 07:24:46",
    "status": "ended",
    "step": "11_context",
    "uncommitted": [],
    "wrote": {
     "context/cpad_restricted.gpkg": [
-     1795591834652867994,
+     1795609489361208307,
      552960
     ],
     "context/critical_habitat.gpkg": [
-     1795591834864186869,
+     1795609489594189198,
      98304
     ],
     "context/fires.gpkg": [
-     1795591833181441994,
+     1795609487999151570,
      98304
     ],
     "context/gauges.gpkg": [
-     1795591852609768025,
+     1795609499050485925,
      98304
     ],
     "context/non_fs_land.gpkg": [
-     1795591833824728880,
+     1795609488669934061,
      98304
     ],
     "context/springs.gpkg": [
-     1795591833528626344,
+     1795609488214419158,
      98304
     ],
     "context/trout_evidence.gpkg": [
-     1795591849796133725,
+     1795609497460273941,
      110592
     ],
     "context/wild_trout_waters.gpkg": [
-     1795591841212727155,
+     1795609494032377317,
      35868672
     ],
     "context/wilderness.gpkg": [
-     1795591833556150043,
+     1795609488233218850,
      454656
     ],
     "moose/context_drops.csv": [
-     1795591866501963306,
+     1795609511158149847,
      10226
     ],
     "moose/context_streams.csv": [
-     1795591866500849920,
+     1795609511157595590,
      493044
     ],
     "speculator/context_drops.csv": [
-     1795591896680062115,
+     1795609533063704611,
      5216
     ],
     "speculator/context_streams.csv": [
-     1795591896679124772,
+     1795609533063238814,
      306855
     ],
     "west_canada/context_drops.csv": [
-     1795591886748671518,
+     1795609526206820351,
      9087
     ],
     "west_canada/context_streams.csv": [
-     1795591886748087429,
+     1795609526206273927,
      387717
     ],
     "west_canada_lakes/context_drops.csv": [
-     1795591872221730314,
+     1795609516313547992,
      2244
     ],
     "west_canada_lakes/context_streams.csv": [
-     1795591872220827597,
-     153891
+     1795609516313168613,
+     153819
     ]
    }
   },
@@ -1540,35 +1540,35 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591911.158855,
-   "ended_at": "2026-11-25 02:31:51",
-   "pid": 26444,
-   "started": 1795591901.561766,
-   "started_at": "2026-11-25 02:31:41",
+   "ended": 1795609541.2738738,
+   "ended_at": "2026-11-25 07:25:41",
+   "pid": 8856,
+   "started": 1795609535.500493,
+   "started_at": "2026-11-25 07:25:35",
    "status": "ended",
    "step": "11b_calendar",
    "uncommitted": [],
    "wrote": {
     "calendar.json": [
-     1795591911158523781,
+     1795609541273543161,
      4015
     ],
     "moose/calendar_streams.csv": [
-     1795591911133124063,
+     1795609541263763081,
      100168
     ],
     "speculator/calendar_streams.csv": [
-     1795591911156067631,
+     1795609541271315133,
      98996
     ],
     "west_canada/calendar_streams.csv": [
-     1795591911147102039,
+     1795609541268340347,
      79260
     ],
     "west_canada_lakes/calendar_streams.csv": [
-     1795591911140336595,
+     1795609541265850816,
      34620
     ]
    }
@@ -1589,19 +1589,19 @@
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591963.748714,
-   "ended_at": "2026-11-25 02:32:43",
-   "pid": 27205,
-   "started": 1795591952.412265,
-   "started_at": "2026-11-25 02:32:32",
+   "ended": 1795609576.576729,
+   "ended_at": "2026-11-25 07:26:16",
+   "pid": 10331,
+   "started": 1795609568.811832,
+   "started_at": "2026-11-25 07:26:08",
    "status": "ended",
    "step": "12_profiles",
    "uncommitted": [],
    "wrote": {
     "profiles_data.js": [
-     1795591963748054131,
+     1795609576574257908,
      4397369
     ]
    }
@@ -1651,13 +1651,13 @@
     "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
    "edited_during": [],
-   "ended": 1795591899.873009,
-   "ended_at": "2026-11-25 02:31:39",
-   "pid": 26410,
-   "started": 1795591897.777401,
-   "started_at": "2026-11-25 02:31:37",
+   "ended": 1795609535.118141,
+   "ended_at": "2026-11-25 07:25:35",
+   "pid": 8809,
+   "started": 1795609533.597954,
+   "started_at": "2026-11-25 07:25:33",
    "status": "ended",
    "step": "watertemp",
    "uncommitted": [],
