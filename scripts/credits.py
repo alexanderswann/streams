@@ -113,6 +113,17 @@ SOURCES = [
       "outlines meet its boxes.",
       "all", PUBLIC_USGS, USGS_TERMS, "U.S. Geological Survey, Watershed Boundary Dataset",
       hosts=("hydro.nationalmap.gov/arcgis/rest/services/wbd",)),
+    S("nlcd_impervious", "streams", "NLCD 2021 impervious cover, 30 m",
+      "U.S. Geological Survey, served by the Multi-Resolution Land Characteristics Consortium (MRLC)",
+      "https://www.mrlc.gov/",
+      "The National Land Cover Database's share of each 30 m cell covered by roofs, roads and pavement, for 2021.",
+      "Creeks a city has put in sewers: an unnamed line NHD doesn't map, through ground 40 % or more paved over, "
+      "with hardly any open waterway along it and no trout water near, isn't drawn. Drawn all the same: the outlet "
+      "NHD maps from a lake or pond of 2.5 acres or more, and a gap under 1,640 ft (500 m) with the creek drawn "
+      "above and below.",
+      "all", "Public domain (USGS data); MRLC's service states no fees and no access constraints. USGS asks to be "
+      "credited.", USGS_TERMS, "U.S. Geological Survey, National Land Cover Database (NLCD) 2021",
+      hosts=("www.mrlc.gov/geoserver/mrlc_download",)),
     S("tiger", "streams", "TIGER/Line state outlines (2024)", "U.S. Census Bureau",
       "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
       "The Census Bureau's boundaries of the states.",
