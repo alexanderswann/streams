@@ -176,11 +176,14 @@ def _trout():
     return wa[~shapely.is_empty(wa) & ~pd.isna(wa)], ev[~shapely.is_empty(ev) & ~pd.isna(ev)]
 
 
-def reaches(geoms, name, flow, in_lake, nhd):
+def reaches(geoms, name, flow, in_lake, nhd, low=None):
     """Which reaches a city has buried (the module's docstring): (not drawn, kept for a trout water or record nearby),
-    two boolean arrays. geoms, name, flow, in_lake: 05_score.py's reaches as named; nhd: the range's NHD lines (ftype)."""
+    two boolean arrays. geoms, name, flow, in_lake: 05_score.py's reaches as named; nhd: the range's NHD lines (ftype).
+    low: the lines 03b_stitch.py laid lower along NHD's lines and the links drawn only for them (05_score.py's
+    low_channel 1 and 2): a record's nearest reach is found as 11_context.trout_attrs gives it one."""
     geoms = np.asarray(geoms, dtype=object)
     n = len(geoms)
+    low_ = np.zeros(n, bool) if low is None else np.asarray(low, bool)
     out, trout = np.zeros(n, bool), np.zeros(n, bool)
     cand = (pd.isna(pd.Series(name, dtype=object)).to_numpy() & (np.asarray(flow, dtype=object) == "unmapped")
             & ~np.asarray(in_lake, bool))
@@ -206,8 +209,13 @@ def reaches(geoms, name, flow, in_lake, nhd):
             near_t[np.unique(shapely.STRtree(tw).query(geoms[k], predicate="dwithin", distance=TROUT_WATER_M)[0])] = True
         if len(tr):         # a record within 300 m whose nearest reach this is: 11_context.py could read it onto it
             close = np.unique(shapely.STRtree(geoms[k]).query(tr, predicate="dwithin", distance=TROUT_RECORD_M)[0])
-            if len(close):
-                nearest = shapely.STRtree(geoms).query_nearest(tr[close], all_matches=True)[1]
+            if len(close):       # the nearest reach of the 0.25 km2 network as without the lines laid lower (low),
+                reg = np.flatnonzero(~low_)          # and such a line where it is the nearest of all
+                nearest = (reg[shapely.STRtree(geoms[reg]).query_nearest(tr[close], all_matches=True)[1]] if len(reg)
+                           else np.array([], int))
+                if low_.any():
+                    na_ = shapely.STRtree(geoms).query_nearest(tr[close], all_matches=True)[1]
+                    nearest = np.union1d(nearest, na_[low_[na_]])
                 near_t |= np.isin(k, nearest)
         trout[k[near_t]] = True
         out[k[~near_t]] = True
@@ -223,9 +231,11 @@ OUTLET_LAKE_HA = 1.0
 LAKES = None                    # the lakes layer to read outlets from; None: the area's (05d_lakes.py writes it)
 
 
-def keep(geoms, out, area_km2, nhd):
+def keep(geoms, out, area_km2, nhd, low=None):
     """Which of the reaches `reaches` leaves out (`out`) stay drawn after all, by the switches above: (mask, reason per
-    reach: "outlet", "short gap" or ""). The outlets come first; a stretch is then measured without them."""
+    reach: "outlet", "short gap" or ""). The outlets come first; a stretch is then measured without them. low: as in
+    reaches(); the 0.25 km2 network's stretches and the stems drawn above and below them are found without those lines,
+    which are judged with everything."""
     geoms, out = np.asarray(geoms, dtype=object), np.asarray(out, bool)
     kept, why = np.zeros(len(geoms), bool), np.full(len(geoms), "", dtype=object)
     if KEEP_LAKE_OUTLETS and out.any():
@@ -233,7 +243,14 @@ def keep(geoms, out, area_km2, nhd):
         kept |= o
         why[o] = "outlet"
     if KEEP_GAP_UNDER_M > 0 and (out & ~kept).any():
-        g = _short_gaps(geoms, out & ~kept, np.asarray(area_km2, float), KEEP_GAP_UNDER_M)
+        a_ = np.asarray(area_km2, float)
+        g = _short_gaps(geoms, out & ~kept, a_, KEEP_GAP_UNDER_M)
+        low_ = np.zeros(len(geoms), bool) if low is None else np.asarray(low, bool)
+        if low_.any():
+            net = np.flatnonzero(~low_)
+            g_net = np.zeros(len(geoms), bool)
+            g_net[net] = _short_gaps(geoms[net], (out & ~kept)[net], a_[net], KEEP_GAP_UNDER_M)
+            g = np.where(low_, g, g_net)
         kept |= g
         why[g] = "short gap"
     return kept, why

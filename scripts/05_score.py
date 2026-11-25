@@ -31,6 +31,10 @@ def sample(arr, geoms):
     return arr[np.clip(rows.astype(int), 0, arr.shape[0] - 1), np.clip(cols.astype(int), 0, arr.shape[1] - 1)]
 
 streams = gpd.read_file(f"{DERIVED}/dem_streams.gpkg")
+# low_channel: a line 03b_stitch.py laid along an NHD named or year-round line from where that line starts, upstream of
+# its channel start at STREAM_KM2 (low_channels); it ends on the stream it runs into, which isn't cut there (none in a
+# routing made before 2026-11-24)
+streams["low_channel"] = streams["low_channel"].fillna(0).astype(int) if "low_channel" in streams else 0
 # A river that comes in from outside the map (crossbox.py's "outside" water: over the outer edge, or through a
 # reservoir the edge cuts and on below its dam) starts its line where its water goes in, not where 0.25 km2 has
 # gathered inside the map: 03b_stitch.py's streams count only the map's own cells, so a river's first few hundred
@@ -48,12 +52,33 @@ streams = gpd.read_file(f"{DERIVED}/dem_streams.gpkg")
 # NHD, one the terrain refuses, a way out leading back), where crossbox.py puts the lake's water in below it ("dam", and
 # "pond" for a pond NHDPlus has no line for): 06_map.py drew those through too.
 import crossbox
-_leads = crossbox.lead_ins(REGION, streams.geometry,
+# The lead-ins run to the first line of the STREAM_KM2 network, as without the lines laid lower along NHD's named or
+# year-round lines (low_channel); such a line that runs onto a lead-in's way ends where it meets it, as on a stream.
+# Run to the first line of either, a pond's way out in NE Connecticut stopped on a new line 14 m below the pond, and
+# Bucks Horn Brook's 591 m reach below it went with that line (first try, 2026-11-25)
+_reg = streams.low_channel.to_numpy() == 0
+_leads = crossbox.lead_ins(REGION, streams.geometry.values[_reg],
                            [e for e in crossbox.inflows(REGION, through_dams=True)
                             if e[3] == "outside" or (e[4] == "edge" and e[2] >= STREAM_KM2) or e[4] in ("dam", "pond")])
 print(f"lines from where a river from outside the map, water carried across a box edge or a lake's pit goes in to its "
       f"first link: {len(_leads)}, {sum(g.length for g in _leads) / 1000:.1f} km")
+if len(_leads) and not _reg.all():
+    _on_lead = {(round(x, 1), round(y, 1)) for g in _leads for x, y, *_ in g.coords}
+    _gl, _keep_l, _n_met = list(streams.geometry.values), np.ones(len(streams), bool), 0
+    for i in np.flatnonzero(~_reg):
+        _cs = list(_gl[i].coords)
+        k = next((k for k, c in enumerate(_cs) if (round(c[0], 1), round(c[1], 1)) in _on_lead), None)
+        if k is not None:
+            _n_met += 1
+            if k >= 1:
+                _gl[i] = shapely.LineString(_cs[:k + 1])
+            else:
+                _keep_l[i] = False      # it starts on a lead-in's way: no line of its own
+    streams = gpd.GeoDataFrame(streams.drop(columns="geometry"), geometry=_gl, crs=CRS)[_keep_l].reset_index(drop=True)
+    print(f"lines laid lower along NHD's lines that run onto a lead-in's way, ended where they meet it: {_n_met} "
+          f"({int((~_keep_l).sum())} starting on one, left out)")
 streams = pd.concat([streams, gpd.GeoDataFrame(geometry=_leads, crs=CRS)], ignore_index=True)
+streams["low_channel"] = streams.low_channel.fillna(0).astype(int)
 # A lake that passes its water on at its outlet (03b_stitch.py's "wet" outlets, since 2026-11-23) used to end its links
 # there in a pit; a link now runs on through it. Each link is cut at the outlet's corner, so every rule below judges the
 # links as the pits ended them: the size floor on the water at a link's end, the sea test on its own share of sea-level
@@ -66,8 +91,8 @@ _lo_w = f"{SHARED_DERIVED}/lake_outlets.json"
 _wet_o = ({(int(q[0]), int(q[1])) for q in json.load(open(_lo_w)).get("wet", {}).get(REGION, [])}
           if os.path.exists(_lo_w) else set())
 if _wet_o:
-    _lines, _n_out = [], 0
-    for g_ in streams.geometry.values:
+    _lines, _low, _n_out = [], [], 0
+    for g_, lw_ in zip(streams.geometry.values, streams.low_channel.values):
         v_ = np.asarray(g_.coords)[:, :2]
         cc_, rr_ = inv * (v_[:, 0], v_[:, 1])
         at_ = [i for i in range(1, len(v_) - 1) if (int(np.rint(rr_[i])), int(np.rint(cc_[i]))) in _wet_o]
@@ -77,7 +102,8 @@ if _wet_o:
             last_ = i
             _n_out += 1
         _lines.append(shapely.LineString(v_[last_:]) if at_ else g_)
-    streams = gpd.GeoDataFrame(geometry=_lines, crs=CRS)
+        _low += [lw_] * (len(at_) + 1)
+    streams = gpd.GeoDataFrame({"low_channel": _low}, geometry=_lines, crs=CRS)
     print(f"links cut at the outlets of lakes that pass their water on: {_n_out}")
 nhd = gpd.read_file(f"{RAW}/nhd_flowlines.gpkg")
 nhd_pts = gpd.read_file(f"{RAW}/nhd_points.gpkg")
@@ -380,13 +406,23 @@ full0 = pd.Series(sample(area, own_end).round(2), index=s.index) + carried
 through_ = sample(held, own_end) + carried
 base = (sea < 0.5) & areaclip.inside(s.geometry.values)
 _f, _g = full0.to_numpy(float), s.geometry.values
-small = ((full0 < MAP_MIN_KM2) & (full0 >= STREAM_KM2) & base).to_numpy()
-_big = np.flatnonzero((full0 >= MAP_MIN_KM2).to_numpy() & base)
+_lowc = s.low_channel.to_numpy(bool)       # 03b's lines laid along NHD's named or year-round lines (below)
+small = ((full0 < MAP_MIN_KM2) & (full0 >= STREAM_KM2) & base).to_numpy() & ~_lowc
+_big = np.flatnonzero((full0 >= MAP_MIN_KM2).to_numpy() & base & ~_lowc)
 by_nhd = np.zeros(len(s), bool)
 if small.any():
     by_nhd[small] = nhd_keeps(_g[small], _f[small], floor_lines(nhd), _g[_big], _f[_big], _floor_lakes)
-keep = ((full0 >= MAP_MIN_KM2) | by_nhd | (through_ >= OUTFLOW_MIN_KM2)) & base
-by_outflow = (keep & (full0 < MAP_MIN_KM2)).to_numpy() & ~by_nhd
+# Under STREAM_KM2 a creek has a line only where 03b_stitch.py laid one along NHD's named or year-round lines, from
+# where NHD's line starts (low_channel): it is drawn on the floor's own vote (a named or year-round NHD line, no canal
+# or ditch, read at its 25/50/75 % points, through a lake, or along its length), less the test against a bigger stream
+# beside it, as it runs down NHD's own line from where NHD starts it; and the creek it runs into goes on with it to a
+# kept line (below).
+by_low = np.zeros(len(s), bool)
+if (_lowc & base).any():
+    _j = np.flatnonzero(_lowc & base)
+    by_low[_j] = nhd_keeps(_g[_j], _f[_j], floor_lines(nhd), np.array([], dtype=object), np.array([]), _floor_lakes)
+keep = ((full0 >= MAP_MIN_KM2) | by_nhd | by_low | (through_ >= OUTFLOW_MIN_KM2)) & base
+by_outflow = (keep & (full0 < MAP_MIN_KM2)).to_numpy() & ~by_nhd & ~by_low
 # A creek kept goes on downstream until it meets a kept line: NHD's class changes along a creek, and the vote with it, so
 # a creek kept on its NHD evidence could end in the woods where NHD calls it intermittent (14 such ends in NE Connecticut
 # on the first try). Across an edge two boxes share, the link that ends on it in the next box is judged here with the
@@ -395,7 +431,7 @@ _key = lambda c: (round(c[0], 1), round(c[1], 1))
 _starts = defaultdict(list)
 for i, ln in enumerate(_g):
     _starts[_key(ln.coords[0])].append(i)
-_kp, _seam = keep.to_numpy().copy(), []
+_kp, _seam, _seam_low = keep.to_numpy().copy(), [], []
 for nb in REGIONS:
     if nb == REGION or not shapely.box(*REGIONS[nb]["bbox"]).intersection(range_box).length:
         continue
@@ -418,8 +454,17 @@ for nb in REGIONS:
         _ok += _sm[nhd_keeps(_ns.geometry.values[_sm], _a[_sm], floor_lines(_nl), _ns.geometry.values[_bg],
                             _a[_bg], _floor_lakes)].tolist()
     _seam += [j for k in _ok for j in _starts.get(_key(_ns.geometry.values[k].coords[-1]), []) if base[j] and not _kp[j]]
+    _lw = np.flatnonzero(_in & _ns.low_channel.fillna(0).to_numpy(bool)) if "low_channel" in _ns else []
+    if len(_lw):                   # a line laid lower along NHD's named or year-round lines, as here
+        _okl = _lw[nhd_keeps(_ns.geometry.values[_lw], _a[_lw], floor_lines(_nl), np.array([], dtype=object),
+                             np.array([]), _floor_lakes)]
+        _seam_low += [j for k in _okl for j in _starts.get(_key(_ns.geometry.values[k].coords[-1]), [])
+                      if base[j] and not _kp[j]]
 _n0 = int(_kp.sum())
+_kp0 = _kp & ~_lowc                 # the links kept as without the lines laid lower along NHD's lines (below)
+_kp0[_seam] = True
 _kp[_seam] = True
+_kp[_seam_low] = True
 # ... and through a pond or reservoir: a creek kept into it goes on below its outlet, where crossbox.py carries the
 # lake's water on (dam_links: the lake's dead end -> the cell below the outlet). On the first try Munson Pond's outflow
 # in the High Peaks (drawn through on live) had no line: the creek into the pond was kept, the one out of it wasn't,
@@ -427,14 +472,30 @@ _kp[_seam] = True
 with rasterio.open(crossbox.fdir_path(REGION)) as _src:
     _T, _W = _src.transform, _src.width
 _past = {_key(_T * (o_ % _W, o_ // _W)): _key(_T * (c_, r_)) for o_, (r_, c_) in crossbox.dam_links(REGION).items()}
-_stack = list(np.flatnonzero(_kp))
-while _stack:
-    i = _stack.pop()
-    _e = _key(_g[i].coords[-1])
-    for j in _starts.get(_e, []) + _starts.get(_past.get(_e), []):
-        if not _kp[j] and base[j]:
-            _kp[j] = True
-            _stack.append(j)
+# A line laid lower along NHD's named or year-round lines (low_channel) ends on the stream it runs into, which isn't
+# cut there: where no link starts at its end, the link it ends on goes on with it.
+_lowt = None
+def _down(kp):
+    """kp with every link below a kept one kept, down to a kept line."""
+    global _lowt
+    kp, stack = kp.copy(), list(np.flatnonzero(kp))
+    while stack:
+        i = stack.pop()
+        e = _key(_g[i].coords[-1])
+        nx = _starts.get(e, []) + _starts.get(_past.get(e), [])
+        if not nx and _lowc[i]:
+            _lowt = shapely.STRtree(_g) if _lowt is None else _lowt
+            nx = [j for j in _lowt.query(shapely.Point(_g[i].coords[-1]), predicate="dwithin", distance=0.5)
+                  if j != i and not _lowc[j] and e in {_key(c) for c in _g[j].coords[1:-1]}]
+        for j in nx:
+            if not kp[j] and base[j]:
+                kp[j] = True
+                stack.append(j)
+    return kp
+# Run twice: as without the lines laid lower (_kp0), and with them. A 0.25-1 km2 link drawn only because such a line
+# runs into it (or into the creek above it) is marked as they are (low_channel 2, below): the rules that read one reach
+# by others leave both out for the rest, which read as without them
+_kp0, _kp = _down(_kp0), _down(_kp)
 by_down = _kp & ~keep.to_numpy()
 keep = pd.Series(_kp, index=s.index)
 by_carried = keep & (s.area_km2 < MAP_MIN_KM2) & (full0 >= MAP_MIN_KM2)
@@ -454,27 +515,33 @@ by_joint = np.zeros(len(s), bool)
 if _wet:
     _ends = defaultdict(list)
     for i, ln in enumerate(_g):
-        _ends[_key(ln.coords[-1])].append(i)
+        if not _lowc[i]:                 # not a line laid lower along NHD's lines (low_channel): it takes no part
+            _ends[_key(ln.coords[-1])].append(i)
     def _through_outlet(i):
         v = np.asarray(_g[i].coords)[:, :2]
         if len(v) < 2:
             return False
         cc_, rr_ = inv * (v[-2, 0], v[-2, 1])
         return (int(np.rint(rr_)), int(np.rint(cc_))) in _wet
+    def _joint(kp, flag):
+        for _ in range(5):
+            more = 0
+            for J, ins in _ends.items():
+                nxt = _starts.get(J, [])
+                if len(ins) != 2 or len(nxt) != 1 or not kp[nxt[0]]:
+                    continue
+                for i, j in (ins, ins[::-1]):
+                    if not kp[i] and base[i] and _through_outlet(j):
+                        kp[i] = flag[i] = True
+                        more += 1
+            if not more:
+                break
     _kp = keep.to_numpy().copy()
-    for _ in range(5):
-        more = 0
-        for J, ins in _ends.items():
-            nxt = _starts.get(J, [])
-            if len(ins) != 2 or len(nxt) != 1 or not _kp[nxt[0]]:
-                continue
-            for i, j in (ins, ins[::-1]):
-                if not _kp[i] and base[i] and _through_outlet(j):
-                    _kp[i] = by_joint[i] = True
-                    more += 1
-        if not more:
-            break
+    _joint(_kp, by_joint)
+    _joint(_kp0, np.zeros(len(s), bool))
     keep = pd.Series(_kp, index=s.index)
+_new2 = keep.to_numpy() & ~_kp0 & ~_lowc        # drawn only because a line laid lower runs into it (above)
+s["low_channel"] = np.where(_new2, 2, s["low_channel"].to_numpy())
 print(f"links kept with the creek they continue, at a junction a lake's way out makes beside them: {int(by_joint.sum())}, "
       f"{s.length[by_joint].sum() / 1000:.1f} km")
 print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reaches them from elsewhere (below a lake's "
@@ -483,7 +550,11 @@ print(f"links under {MAP_MIN_KM2:g} km2 of their own kept on the water that reac
       f"{s.length[by_nhd].sum() / 1000:.1f} km; below a kept creek: {int(by_down.sum())}, "
       f"{s.length[by_down].sum() / 1000:.1f} km ({len(set(_seam))} on from a creek kept in the next box); "
       f"lake outflows on {OUTFLOW_MIN_KM2:g} km2 or more through the lake: {int(by_outflow.sum())}, "
-      f"{s.length[by_outflow].sum() / 1000:.1f} km")
+      f"{s.length[by_outflow].sum() / 1000:.1f} km; lines started under {STREAM_KM2:g} km2 along NHD's named or "
+      f"year-round lines (03b_stitch.py's low_channels): {int((by_low & keep.to_numpy()).sum())} of "
+      f"{int(_lowc.sum())}, "
+      f"{s.length[by_low & keep.to_numpy()].sum() / 1000:.1f} km, and {int(_new2.sum())} links of {STREAM_KM2:g}-"
+      f"{MAP_MIN_KM2:g} km2 below them drawn only because they run into them, {s.length[_new2].sum() / 1000:.1f} km")
 # A lake's second outlets (03b_stitch.py's "sides" in lake_outlets.json: the lake's other NHD outflow lines the terrain
 # takes the water on down, by the outlet's own test). D8 sends the lake's water down its outlet, so the cells below a
 # second outlet gather only their own few: its links stayed under the floor and the maps had no line there, or drew
@@ -501,7 +572,7 @@ s["order_cap"] = np.nan     # a creek's order above a junction only a second out
 if sides:
     fdir = rasterio.open(f"{DERIVED}/flowdir.tif").read(1)
     D8_ = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
-    own_keep = keep.to_numpy(bool).copy()
+    own_keep = keep.to_numpy(bool) & (s["low_channel"].to_numpy() == 0)     # as without the new lines (low_channel)
     # On a second outlet's way only a link's own ground makes it a creek of its own (1 km2, with the water carried to
     # it), not the floor's rules under 1 km2: NHD's vote there reads the outflow line itself, which NHD maps because the
     # lake's water leaves by it, and a creek the floor runs on below carries the lake's water too (as nhd_says says of
@@ -512,6 +583,8 @@ if sides:
     ok_ = (sea < 0.5) & np.asarray(areaclip.inside(s.geometry.values), bool)
     cell_link, head, tail = {}, {}, {}  # each link's cells, from its vertices (cell corners; its last is the junction,
     for i, g in enumerate(s.geometry.values):           # the next link's), its first, and the junction it ends at
+        if _lowc[i]:    # not a line 03b laid lower along NHD's lines (low_channel): it ends on a stream whose link isn't
+            continue    # cut there, so a second outlet's way and its junctions read the 0.25 km2 network as without them
         v = np.asarray(g.coords)
         vc, vr = inv * (v[:, 0], v[:, 1])
         cells_ = np.rint(vr).astype(int) * fdir.shape[1] + np.rint(vc).astype(int)
@@ -721,7 +794,8 @@ _shore = np.array(_pieces, dtype=object)
 _own = [shapely.Point(q) for q in _own_xy]      # each piece's own cell (cut_exact: a piece cut at a shore can end off the grid)
 _full = sample(area, _own) + sample(carried_grid, _own)
 _carried_lake = sample(carried_lake_km2(REGION).reshape(area.shape), _own)
-_lake_km2 = np.minimum(lake_water_km2(_shore, _carried_lake, _full - _carried_lake, _wet), _full)
+_low_sh = s["low_channel"].to_numpy(bool)[np.asarray(_src, int)]     # 03b's lines laid lower (low_channel): no donors
+_lake_km2 = np.minimum(lake_water_km2(_shore, _carried_lake, _full - _carried_lake, _wet, low=_low_sh), _full)
 # A lake's second outlet (side_n, above) is the lake's water leaving by another channel. NHD gives no split of a
 # lake's water, so the routing sends it all down the main outlet and the second outlet's line carries none of it;
 # but what runs there is lake water, as warm as the main outlet's. So the whole of its drainage counts as the
@@ -733,7 +807,7 @@ _lake_km2 = np.where(_sd & ~np.asarray(_wet, bool), _full, _lake_km2)
 def _mostly_lake(ii, pts):     # the line's lake water (it takes none on along the line) against the drainage at the mark
     full = sample(area, pts) + sample(carried_grid, pts)
     return np.nan_to_num(lake_share(full - np.minimum(_lake_km2[ii], full), full), nan=0.0) >= 0.5
-_pieces, _from, _wet = cut_below_lakes(_shore, _lake_km2, _wet, _lakes, keep=_mostly_lake)
+_pieces, _from, _wet = cut_below_lakes(_shore, _lake_km2, _wet, _lakes, keep=_mostly_lake, low=_low_sh)
 _from = np.asarray(_from, int)
 _in_drawn = _in_drawn[_from]
 _src = [_src[k] for k in _from]
@@ -822,8 +896,10 @@ _creek = s["len_drawn_m"].to_numpy(float) > 0           # the pieces the map dra
 _unn = np.flatnonzero(s["name"].isna().to_numpy() & _creek)
 _vn, _bs, _got, _held = s["name"].to_numpy(object).copy(), {}, [], [0, 0, 0]
 _ends = defaultdict(list)
-for k, g in enumerate(_G):
-    _ends[(round(g.coords[-1][0], 1), round(g.coords[-1][1], 1))].append(k)
+_lowp = s["low_channel"].to_numpy(bool)    # 03b's lines laid lower along NHD's lines: no stem above, nor a reach beside,
+for k, g in enumerate(_G):                 # for the other pieces (whose names read here as without them)
+    if not _lowp[k]:
+        _ends[(round(g.coords[-1][0], 1), round(g.coords[-1][1], 1))].append(k)
 def _up_name(i):
     """The name of reach i's main stem above it (the reach of most water ending at its start): its vote's, else
     read along it."""
@@ -840,14 +916,14 @@ for _i, _n in zip(_unn, name_by_share(_G[_unn], _fl)):
         _held[2] += 1
         continue
     _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=SIDE_NEAR_M)
-            if full_km2[k] >= SIDE_RATIO * full_km2[_i]]
+            if full_km2[k] >= SIDE_RATIO * full_km2[_i] and (_lowp[_i] or not _lowp[k])]
     for k in _big:
         if k not in _bs:
             _bs[k] = name_by_share(np.array([_G[k]], dtype=object), _fl, 0.0, 0.0, SIDE_NEAR_M)[0]
     if any(_vn[k] == _n or _bs[k] == _n for k in _big):
         _held[0] += 1
         continue
-    _same = np.flatnonzero(_vn == _n)
+    _same = np.flatnonzero((_vn == _n) & (_lowp[_i] | ~_lowp))
     if len(_same) and beside(np.array([_G[_i]], dtype=object), _G[_same])[0]:
         _held[1] += 1
         continue
@@ -919,7 +995,7 @@ while _todo:
             _held_main[3] += 1
             continue
         _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=SIDE_NEAR_M)
-                if full_km2[k] >= SIDE_RATIO * full_km2[_i]]
+                if full_km2[k] >= SIDE_RATIO * full_km2[_i] and (_lowp[_i] or not _lowp[k])]
         for k in _big:
             if k not in _bs:
                 _bs[k] = name_by_share(np.array([_G[k]], dtype=object), _fl, 0.0, 0.0, SIDE_NEAR_M)[0]
@@ -927,7 +1003,8 @@ while _todo:
             _held_main[1] += 1
             continue
         _touch = set(_ups) | set(_starts_at.get((round(_G[_i].coords[-1][0], 1), round(_G[_i].coords[-1][1], 1)), []))
-        _same = np.array([k for k in np.flatnonzero(_nm == _n) if k not in _touch and k != _i], dtype=int)
+        _same = np.array([k for k in np.flatnonzero((_nm == _n) & (_lowp[_i] | ~_lowp)) if k not in _touch and k != _i],
+                         dtype=int)     # (not a line laid lower along NHD's lines, for a reach of the network: _lowp)
         if len(_same) and beside(np.array([_G[_i]], dtype=object), _G[_same])[0]:
             _held_main[2] += 1
             continue
@@ -968,7 +1045,7 @@ for _i, _p, _m in zip(_cand, _per, _most):
     if _c is None or CLASS_RANK[_c] <= CLASS_RANK[_vote_cls[_i]]:
         continue
     _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=150)
-            if full_km2[k] >= max(SIDE_RIVER_KM2, SIDE_RATIO * full_km2[_i])]
+            if full_km2[k] >= max(SIDE_RIVER_KM2, SIDE_RATIO * full_km2[_i]) and (_lowp[_i] or not _lowp[k])]
     _along = _G[_i].intersection(shapely.union_all(shapely.buffer(_G[_big], 150))).length if _big else 0.0
     if _along >= SIDE_ON_RIVER * _G[_i].length and _big:
         _held_cls += 1
@@ -1032,12 +1109,13 @@ for i, g in enumerate(geoms):
 # NHD's cell, 480 m from the lake's last reach, and the Snake's first 580 m keeps no name.
 _starts = {end_key(g.coords[0]) for g in geoms}
 _end_tree = shapely.STRtree(shapely.points([g.coords[-1][:2] for g in geoms]))
-def donors_of(i):
+_low_r = s["low_channel"].to_numpy(bool)     # 03b's lines laid lower along NHD's lines (low_channel): no donor of another
+def donors_of(i):                            # reach, which reads its stem as without them
     """The reaches running into reach i: those ending at its start, else a lake's last reach ending a cell short."""
-    d = ends.get(end_key(geoms[i].coords[0]), [])
+    d = [j for j in ends.get(end_key(geoms[i].coords[0]), []) if _low_r[i] or not _low_r[j]]
     if not d:
         d = [int(j) for j in _end_tree.query(shapely.Point(geoms[i].coords[0][:2]), predicate="dwithin", distance=1.5 * RES)
-             if j != i and end_key(geoms[j].coords[-1]) not in _starts]
+             if j != i and end_key(geoms[j].coords[-1]) not in _starts and (_low_r[i] or not _low_r[j])]
     return d
 km2 = full_km2      # sizes are compared with the water carried past dams (since 2026-11-21: below a dam a river's own
                     # count starts again near nothing, and on it the main stem above a junction could be a side creek)
@@ -1047,7 +1125,7 @@ for i, g in enumerate(geoms):
     donors = donors_of(i)
     if donors:
         main_up[i] = max(donors, key=lambda j: km2[j])
-    down[donors] = i
+    down[[j for j in donors if _low_r[j] or not _low_r[i]]] = i     # no other reach's reach below is a low_channel one
 def named_along(i, ptr, steps=20):
     """The vote's name of the first named reach from reach i along ptr (upstream main stem, or downstream)."""
     for _ in range(steps):
@@ -1165,6 +1243,9 @@ side_lake = np.full(len(s), None, object)
 if sides:
     cell_piece = {}
     for i, g in enumerate(geoms):
+        if _low_r[i]:       # not a line laid lower along NHD's lines, nor a link drawn only for one (low_channel): the
+            continue        # outlet's creek is found as without them (first try: two NE Connecticut side channels
+                            # took a new line's 0.03 and 0.08 sq mi for their creek's, Stickney Hill Brook's 69 -> 53)
         v = np.asarray(g.coords)[:-1]
         vc, vr = inv * (v[:, 0], v[:, 1])
         for kk in np.rint(vr).astype(int) * fdir.shape[1] + np.rint(vc).astype(int):
@@ -1265,7 +1346,8 @@ if os.path.exists(_lakes_p) and len(kp):
 # it (testing to the pool flagged 19 more, among them a 101 m fall in the Santa Ana Mountains over a highway bridge).
 step = shapely.linestrings(np.stack([np.c_[kp.geometry.x, kp.geometry.y], np.c_[kp.pool_x, kp.pool_y]], axis=1))
 zone = shapely.buffer(kp.geometry.values, 40)
-chan_g, road_g = streams.geometry.values, drivable.geometry.values
+chan_g, road_g = streams.geometry.values[streams.low_channel.to_numpy() == 0], drivable.geometry.values   # the
+# drop's own channel: not a line 03b laid lower along NHD's lines (low_channel), which drops (1 km2 or more) never lie on
 chan_t, road_t = shapely.STRtree(chan_g), shapely.STRtree(road_g)
 def crosses(z):
     rd = road_g[road_t.query(z)]
@@ -1300,11 +1382,13 @@ kp = kp.sort_values("drop_m", ascending=False)
 # the naming run as before, and the routing still carries the water. A drop candidate whose top lies on such a reach
 # goes with it; the rows the reaches and pieces point to are renumbered.
 import buried
-_bur, _bur_trout = buried.reaches(s.geometry.values, s["name"].to_numpy(object), s["flow"].to_numpy(object),
-                                  s["in_lake"].to_numpy(bool), nhd)
+_lowb = s["low_channel"].to_numpy(bool)      # 03b's lines laid lower along NHD's lines (low_channel 1 and 2): they read
+_bur, _bur_trout = buried.reaches(s.geometry.values, s["name"].to_numpy(object), s["flow"].to_numpy(object),   # the
+                                  s["in_lake"].to_numpy(bool), nhd, low=_lowb)       # network's reaches, not it them
 print(f"reaches a city has buried (buried.py), not drawn: {int(_bur.sum())}, {s.length.values[_bur].sum() / 1000:.1f} km; "
       f"kept for a trout water or record nearby: {int(_bur_trout.sum())}, {s.length.values[_bur_trout].sum() / 1000:.1f} km")
-_bur_keep, _bur_why = buried.keep(s.geometry.values, _bur, s["area_km2"].to_numpy(float), nhd)   # its two exceptions
+_bur_keep, _bur_why = buried.keep(s.geometry.values, _bur, s["area_km2"].to_numpy(float), nhd, low=_lowb)   # its two
+                                                                                                          # exceptions
 print(f"of those drawn after all: {int((_bur_why == 'outlet').sum())} carrying a lake's outlet NHD maps, "
       f"{int((_bur_why == 'short gap').sum())} in short stretches drawn above and below, "
       f"{s.length.values[_bur_keep].sum() / 1000:.1f} km")
@@ -1317,7 +1401,7 @@ _bur &= ~_bur_keep
 # dams ran on down the buried lines to the next drawn reach (1.6 mi drawn again on 4 paths).
 _bp = f"{OUT}/buried_reaches.gpkg"
 if _bur.any():
-    s.loc[_bur, ["area_km2"] + [c_ for c_ in ("own_x", "own_y") if c_ in s] + ["geometry"]].assign(
+    s.loc[_bur, ["area_km2"] + [c_ for c_ in ("own_x", "own_y", "low_channel") if c_ in s] + ["geometry"]].assign(
         row=np.flatnonzero(_bur)).to_crs(4326).to_file(_bp)
 elif os.path.exists(_bp):
     os.remove(_bp)

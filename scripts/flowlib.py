@@ -464,7 +464,7 @@ LAKE_JOIN_M = 25.0      # a reach end this near a reach start runs into it (a ce
 LAKE_AT_M = 100.0       # lake water put into a channel this near a lake reach enters at the lake's outlet
 
 
-def below_lake(geom, carried, in_lake, lakes=None, limit=LAKE_NEAR_M):
+def below_lake(geom, carried, in_lake, lakes=None, limit=LAKE_NEAR_M, low=None):
     """Metres from the nearest lake to each reach's start, up the channel the lake water comes down; inf where there
     is none within `limit`. geom: the reaches' lines (upstream end first, a projected CRS); carried: the km2 of each
     reach's drainage that came through a lake (area_full_km2 - area_edge_km2); in_lake: the reach lies in a lake
@@ -472,15 +472,17 @@ def below_lake(geom, carried, in_lake, lakes=None, limit=LAKE_NEAR_M):
     lying in a lake runs into it, or where crossbox puts a lake's water in by the lake: most of the reach's lake water
     is new there, and its start lies within LAKE_AT_M of a lake's outline or of a reach lying in one (a pond at the
     head of a creek has no reach in it). From there the distance is carried down the reaches that bring the lake
-    water."""
+    water. low: lines 03b_stitch.py laid lower along NHD's lines (low_channel), which are no donors of other lines:
+    those read their distance as without them."""
     n = len(geom)
+    low = np.zeros(n, bool) if low is None else np.asarray(low, bool)
     length = shapely.length(geom)
     start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
     carried = np.nan_to_num(np.asarray(carried, float), nan=0.0).clip(min=0)
     in_lake = np.asarray(in_lake, bool)
     donors = [[] for _ in range(n)]
     for i, j in zip(*(a_.tolist() for a_ in shapely.STRtree(end).query(start, predicate="dwithin", distance=LAKE_JOIN_M))):
-        if i != j:
+        if i != j and (low[i] or not low[j]):
             donors[i].append(j)
     at_lake = np.zeros(n, bool)
     for water in (geom[in_lake], lakes):
@@ -515,7 +517,7 @@ def below_lake(geom, carried, in_lake, lakes=None, limit=LAKE_NEAR_M):
     return d0
 
 
-def lake_water_km2(geom, carried, edge, in_lake):
+def lake_water_km2(geom, carried, edge, in_lake, low=None):
     """The km2 of each reach's drainage that came through a lake: what crossbox.py carries past dams and ponds (carried:
     05c_drainages.py's area_full_km2 - area_edge_km2), and the water that runs on out of a lake along the routing before
     03b_stitch.py ends the lake's paths at its outlet, which can lie past the shore the map draws: a reach that a reach
@@ -523,7 +525,10 @@ def lake_water_km2(geom, carried, edge, in_lake):
     it on down until the routing starts again from nothing. Counting only the carried water, the stretch between the
     drawn shore and the routed outlet read as a creek with no lake: the first 131 m below Limekiln Lake read 63 F where
     the outlet measures 78.8 F, and 184 such reaches (30 mi, median 120 m) on the three Adirondack maps with a lake term
-    (2026-11-22). geom: upstream end first, a projected CRS."""
+    (2026-11-22). geom: upstream end first, a projected CRS. low: lines 03b_stitch.py laid lower along NHD's lines
+    (low_channel), which are no donors of other lines, as in below_lake(): those take their lake water as without them
+    (on the first try a new line's piece lying in a pond made two reaches below it in the Adirondacks' southwest read
+    up to 1 F warmer, fish 72 -> 70, 2026-11-25)."""
     geom = np.asarray(geom, dtype=object)
     n = len(geom)
     carried = np.nan_to_num(np.asarray(carried, float), nan=0.0).clip(min=0)
@@ -531,11 +536,12 @@ def lake_water_km2(geom, carried, edge, in_lake):
     in_lake = np.asarray(in_lake, bool)
     if not n:
         return carried
+    low = np.zeros(n, bool) if low is None else np.asarray(low, bool)
     start, end = shapely.get_point(geom, 0), shapely.get_point(geom, -1)
     donors = [[] for _ in range(n)]
     below = [[] for _ in range(n)]
     for i, j in zip(*(a_.tolist() for a_ in shapely.STRtree(end).query(start, predicate="dwithin", distance=LAKE_JOIN_M))):
-        if i != j:
+        if i != j and (low[i] or not low[j]):
             donors[i].append(j)
             below[j].append(i)
     left = np.array([len(d) for d in donors])
@@ -581,16 +587,16 @@ def carried_lake_km2(region):
     return np.where(ex >= 0.01, ex, 0.0)
 
 
-def cut_below_lakes(lines, carried, wet, lakes, keep=None, at_m=LAKE_NEAR_M, min_m=LAKE_PIECE_M):
+def cut_below_lakes(lines, carried, wet, lakes, keep=None, at_m=LAKE_NEAR_M, min_m=LAKE_PIECE_M, low=None):
     """Each creek line cut where it has run at_m below a lake, along the channel the lake's water takes: (pieces, the
     number of the line each piece comes from, whether the piece lies in a lake), in order along each line. lines: upstream
     end first, a projected CRS; carried: the km2 of each line's drainage that came through a lake (carried_lake_km2);
     wet: the line lies in a lake; lakes: the outlines (lake_water); keep: a test of the cut points, where given (the
-    lines' numbers and the points -> bools). How far below a lake a line starts is below_lake()'s. The cut is at the
+    lines' numbers and the points -> bools). How far below a lake a line starts is below_lake()'s (low: its). The cut is at the
     vertex nearest the mark, and only where both pieces are min_m long or more. Lines in a lake stay whole."""
     lines = np.asarray(lines, dtype=object)
     wet = np.asarray(wet, bool)
-    d0 = below_lake(lines, carried, wet, lakes, limit=at_m)
+    d0 = below_lake(lines, carried, wet, lakes, limit=at_m, low=low)
     marks = {}
     for i, g in enumerate(lines):
         if not wet[i] and np.isfinite(d0[i]) and d0[i] < at_m and len(g.coords) >= 3:

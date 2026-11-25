@@ -7,7 +7,9 @@ surface:
     rule pysheds uses, with the neighbours across a shared edge taken from the next box. So water crosses the
     edge where the ground says, instead of stopping at the box's rim.
   - Streams start where 0.25 km2 has gathered counting everything upstream in the group, so a creek's line runs on
-    across the edge, and its Strahler order carries over.
+    across the edge, and its Strahler order carries over. Where NHD names a creek or maps it year-round above that, its
+    channel starts where NHD's line starts, on the terrain's own channel (low_channels, LOW_LINES): a line of its own,
+    order 1.
   - A lake that holds water still ends the paths that enter it, at the cell where its water leaves (flowlib.
     still_water; "holds water" read off the DEM, at least LEVEL_HA of the outline at one elevation). A lake lying
     across a shared edge now has one outlet, not one in each box. crossbox.py carries the area on past the dam.
@@ -42,7 +44,9 @@ Each box still gets its own files, as the later steps expect them:
                  their dams.
   strahler.tif   stream order, 0 off the streams; counted across the group
   dem_streams.gpkg   one line per link between confluences; a line that leaves the box ends on the first cell of
-                 the next box, where that box's line for the same creek begins
+                 the next box, where that box's line for the same creek begins. low_channel 1: a line started lower
+                 along NHD's named or year-round lines, which ends on the stream it runs into (that stream's link isn't
+                 cut there)
 and <area>/_shared/stitched.json lists the boxes done this way (crossbox.py then takes the crossings as exact).
 """
 import json, os, sys
@@ -67,6 +71,31 @@ V_AT = 100           # m: NHDPlus's line leaves a lake "where the terrain does" 
 SIDE_FTYPES = (460, 558)    # a lake's second outlet is a channel NHD maps: StreamRiver, or ArtificialPath through water
 LEVEL_TOL = 0.5      # m: a lake whose level (its lidar surface) stands this much above another's is upstream of it
 SEAM_KM2 = STREAM_KM2  # a dead end on an edge between two boxes gathering this much is mended (mend_seams)
+# Channels start lower along NHD's named and year-round creeks (step 4, low_channels). STREAM_KM2 is where a channel
+# starts on the terrain alone, and 05_score.py's floor draws a creek NHD names or maps year-round only down to it; but
+# NHD HR names creeks and maps them year-round above that, brook trout headwaters among them: on the 12 maps of
+# 2026-11-24, 958 of NHD's 23,200 named stream miles and 5,740 of its 44,200 year-round ones drained under 0.1 sq mi
+# where they ran (the Smokies 409 and 2,164, central Vermont 58 and 1,887; audit/scripts/completeness.py). The user
+# chose both (2026-11-24). Such a creek's channel now starts where NHD's line starts, on the terrain's own channel:
+# going down NHD's line from its upper end (low_heads), the first cell with LOW_MIN_CELLS or more that is the wettest
+# within LOW_WIN cells of the line, lies nearest that line and whose D8 path follows NHD, as a lake's way out must
+# (FOLLOW_SHARE of its next FOLLOW_M within FOLLOW_TOL of an NHD channel line); the new line runs from there down its
+# D8 path to the first stream. One that keeps under LOW_SHARE of its cells near NHD's lines isn't laid, nor one at an
+# upper end that is a creek from outside the map (LOW_EDGE). The new lines are links of their own (dem_streams.gpkg's
+# low_channel) that end on the stream they run into, which isn't cut there, so no link of the STREAM_KM2 network
+# changes; and the Strahler order stays that network's (a channel start lower everywhere would raise every order by
+# about one): their cells are order 1. 05_score.py draws one on the floor's own vote (a named or year-round NHD line,
+# no canal), as it runs from NHD's line.
+LOW_LINES = ("named", "perennial")   # the NHD HR stream lines (StreamRiver) whose channels start lower: named ones and
+                                     # year-round ones (FCode 46006)
+LOW_WIN = 4              # cells (40 m): the channel at a point of NHD's line is the wettest cell this near it
+LOW_MIN_CELLS = 100      # cells (1 ha, 2.5 acres): the least a new line's first cell gathers
+LOW_REACH_M = 3000       # m: how far down NHD's line from its upper end the first cell is looked for
+LOW_SHARE = 0.7          # of a new line's cells within FOLLOW_TOL of NHD's channel lines, or it isn't laid
+LOW_MAX_CELLS = 5000     # cells: a new line that meets no stream within this many isn't laid
+LOW_EDGE = 30            # cells (300 m): no head whose NHD network above it starts this near the map's edge or outside
+                         # it: a creek or river from outside (each box's file holds the lines that reach into it, so
+                         # they seem to start at the edge, or below a path through water that does)
 MEND_R = (300, 3000)   # cells: the piece of DEM conditioned again around it reaches 3 km each way at first, 30 at most
 MEND_EDGE = 150        # cells: a band inside the piece's own edges (not the map's), where its paths aren't taken
 FLAT_EPS = 1e-9        # as in 03_hydrology.py
@@ -871,6 +900,192 @@ def side_streams(fd, stream, tops, max_cells=3000):
     return round(added * RES / 1000, 1)
 
 
+@njit(cache=True)
+def low_best(acc, rr, cc, k):
+    """low_channels: for each point (rr, cc) of the grid, the wettest cell within k cells of it (row, col, cells; -1 off
+    the grid)."""
+    H, W = acc.shape
+    n = rr.size
+    br, bc, bv = np.full(n, -1, np.int64), np.full(n, -1, np.int64), np.full(n, -1, np.int64)
+    for i in range(n):
+        for r in range(max(rr[i] - k, 0), min(rr[i] + k + 1, H)):
+            for c in range(max(cc[i] - k, 0), min(cc[i] + k + 1, W)):
+                if acc[r, c] > bv[i]:
+                    bv[i], br[i], bc[i] = acc[r, c], r, c
+    return br, bc, bv
+
+
+@njit(cache=True)
+def low_walk(fd, stream, order, acc, thr, r, c, maxn, DR, DC, out_r, out_c):
+    """low_channels: the cells of the D8 path from (r, c) to the first stream cell (end 1), the first cell of a line
+    laid lower already (2: order > 0 off the streams), a pit or the grid's edge (3), maxn cells (4), or a cell gathering
+    thr or more that carries no stream (5: a lake whose water leaves the map, step 4). Returns (n, end): out[:n] are
+    the path's own cells, and out[n] the cell it ends on for ends 1 and 2."""
+    H, W = fd.shape
+    n = 0
+    while n < maxn:
+        if stream[r, c] or order[r, c] > 0:
+            out_r[n], out_c[n] = r, c
+            return n, (1 if stream[r, c] else 2)
+        if acc[r, c] >= thr:
+            return n, 5
+        out_r[n], out_c[n] = r, c
+        n += 1
+        k = fd[r, c]
+        if DR[k] == 0 and DC[k] == 0:
+            return n, 3
+        r2, c2 = r + DR[k], c + DC[k]
+        if r2 < 0 or r2 >= H or c2 < 0 or c2 >= W or fd[r2, c2] == 0:
+            return n, 3
+        r, c = r2, c2
+    return n, 4
+
+
+def low_heads(group, inside):
+    """low_channels: NHD HR's lines of the group's boxes (each once: a box's file reaches past the box) as single parts,
+    and for each upper end of the network of LOW_LINES lines (a part whose start is no such part's end, nor the end of a
+    path through water or a connector that one leads into: a river that runs on below a lake or a wide stretch, where
+    NHD's stream line starts again, has no upper end there) NHD's line from there down LOW_REACH_M m, on along the part
+    that starts where it ends with the same name (none, for an unnamed head), never into another creek: (heads, each
+    head's parts as places in the next, the channel lines' parts: for the tests that a cell is on the head's own line
+    and that a path follows NHD; and how many heads were left out because NHD's network above them, through any of its
+    channel lines, starts where inside(x, y) is False: a creek from outside the map)."""
+    import pandas as pd
+    parts = [gpd.read_file(p, columns=["ftype", "fcode", "gnis_name"]).to_crs(CRS)
+             for p in (f"{raw_dir(r)}/nhd_flowlines.gpkg" for r in group) if os.path.exists(p)]
+    if not parts:
+        return [], [], [], 0
+    nl = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS)
+    nl = nl[nl.geometry.notna() & ~nl.geometry.is_empty]
+    nl = nl[~nl.geometry.to_wkb().duplicated()]
+    one, kind, name, qual = [], [], [], []
+    for g, ft, fc, nm in zip(shapely.force_2d(nl.geometry.values), nl.ftype.values, nl.fcode.values,
+                             nl.gnis_name.values):
+        nm = nm.strip() if isinstance(nm, str) and nm.strip() else None
+        q_ = ft == 460 and (("named" in LOW_LINES and nm is not None) or ("perennial" in LOW_LINES and fc == 46006))
+        for p in getattr(g, "geoms", [g]):
+            if p.geom_type == "LineString" and p.length > 1:
+                one.append(p)
+                kind.append(int(ft))
+                name.append(nm)
+                qual.append(bool(q_))
+    key = lambda xy: (round(xy[0]), round(xy[1]))
+    begins, ends, ends_q, at = {}, {}, set(), {}
+    for i, p in enumerate(one):
+        if kind[i] in LAKE_LINE_FTYPES:
+            begins.setdefault(key(p.coords[0]), []).append(i)
+            ends.setdefault(key(p.coords[-1]), []).append(i)
+            at[i] = len(at)
+        if qual[i]:
+            ends_q.add(key(p.coords[-1]))
+    # whether NHD's network above part i, through any of its channel lines, starts outside the map or near its edge
+    def from_outside(i, cap=2000):
+        stack, seen_ = [i], {i}
+        while stack:
+            j = stack.pop()
+            if not inside(*one[j].coords[0]):
+                return True
+            for k in ends.get(key(one[j].coords[0]), []):
+                if k not in seen_:
+                    seen_.add(k)
+                    stack.append(k)
+            if len(seen_) > cap:
+                return True
+        return False
+    through = {}                                        # paths through water and connectors, by their start
+    for i, p in enumerate(one):
+        if kind[i] in (558, 334):
+            through.setdefault(key(p.coords[0]), []).append(i)
+    stack = list(ends_q)
+    while stack:
+        for i in through.get(stack.pop(), []):
+            e_ = key(one[i].coords[-1])
+            if e_ not in ends_q:
+                ends_q.add(e_)
+                stack.append(e_)
+    heads, own, n_out = [], [], 0
+    for i, p in enumerate(one):
+        if not qual[i] or key(p.coords[0]) in ends_q:
+            continue
+        if from_outside(i):
+            n_out += 1
+            continue
+        seq, L, j, seen = [np.asarray(p.coords)], p.length, i, [i]
+        while L < LOW_REACH_M:
+            nxt = [k for k in begins.get(key(one[j].coords[-1]), []) if k not in seen and name[k] == name[i]]
+            if not nxt:
+                break
+            j = nxt[0]
+            seen.append(j)
+            seq.append(np.asarray(one[j].coords)[1:])
+            L += one[j].length
+        heads.append(shapely.LineString(np.concatenate(seq)))
+        own.append({at[k] for k in seen})
+    return heads, own, [p for p, k in zip(one, kind) if k in LAKE_LINE_FTYPES], n_out
+
+
+def low_channels(fd, acc, stream, order, T, group):
+    """Lays the lines whose channels start lower than STREAM_KM2 along NHD's LOW_LINES lines (see LOW_LINES): marks
+    their cells order 1 in `order`, in place. Returns (heads of such lines, lines laid, cells laid, {why: heads with
+    none})."""
+    H, W = fd.shape
+    thr = int(round(STREAM_KM2 * 1e6 / (RES * RES)))
+    inv = ~T
+    def inside(x, y):                                   # on the map's ground, LOW_EDGE cells or more from its edge
+        c_, r_ = inv * (x, y)
+        r_, c_ = int(np.floor(r_)), int(np.floor(c_))
+        return (LOW_EDGE <= r_ < H - LOW_EDGE and LOW_EDGE <= c_ < W - LOW_EDGE
+                and bool(fd[r_ - LOW_EDGE:r_ + LOW_EDGE + 1, c_ - LOW_EDGE:c_ + LOW_EDGE + 1].all()))
+    heads, own, chan, n_out = low_heads(group, inside)
+    if not heads:
+        return n_out, 0, 0, ({"NHD's network above it starts at the map's edge or outside it": n_out} if n_out else {})
+    tree = shapely.STRtree(chan)
+    def on_nhd(rr, cc):                                 # each cell's centre within FOLLOW_TOL of an NHD channel line
+        x, y = T * (cc + 0.5, rr + 0.5)
+        on = np.zeros(len(rr), bool)
+        on[tree.query(shapely.points(x, y), predicate="dwithin", distance=FOLLOW_TOL)[0]] = True
+        return on
+    out_r, out_c = np.zeros(LOW_MAX_CELLS + 1, np.int64), np.zeros(LOW_MAX_CELLS + 1, np.int64)
+    laid, cells = 0, 0
+    why = {"NHD's network above it starts at the map's edge or outside it": n_out} if n_out else {}
+    for line, own_ in zip(heads, own):
+        pts = shapely.line_interpolate_point(line, np.arange(0.0, min(line.length, LOW_REACH_M), RES))
+        cc, rr = inv * (shapely.get_x(pts), shapely.get_y(pts))
+        rr, cc = np.floor(rr).astype(np.int64), np.floor(cc).astype(np.int64)
+        br, bc, bv = low_best(acc, rr, cc, LOW_WIN)
+        w_ = "no cell gathers enough near NHD's line"
+        for k in range(len(bv)):
+            if bv[k] < LOW_MIN_CELLS:
+                continue
+            r0, c0 = br[k], bc[k]
+            if stream[r0, c0] or order[r0, c0] or bv[k] >= thr:
+                w_ = "NHD's line meets a stream first"
+                break
+            if int(tree.query_nearest(shapely.Point(*(T * (c0 + 0.5, r0 + 0.5))))[0]) not in own_:
+                w_ = "the wettest cell near NHD's line lies on another line"     # a creek or river beside its head
+                continue
+            n, end = low_walk(fd, stream, order, acc, thr, r0, c0, int(FOLLOW_M / RES), DR, DC, out_r, out_c)
+            if n >= 3 and on_nhd(out_r[:n], out_c[:n]).mean() < FOLLOW_SHARE:
+                w_ = "no cell whose path follows NHD's line"
+                continue
+            n, end = low_walk(fd, stream, order, acc, thr, r0, c0, LOW_MAX_CELLS, DR, DC, out_r, out_c)
+            if end == 4:
+                w_ = f"meets no stream within {LOW_MAX_CELLS * RES / 1000:g} km"
+            elif n < 2:
+                w_ = "NHD's line meets a stream first"
+            elif on_nhd(out_r[:n], out_c[:n]).mean() < LOW_SHARE:
+                w_ = "the line would run off NHD's lines"
+            else:
+                order[out_r[:n], out_c[:n]] = 1
+                laid += 1
+                cells += n
+                w_ = None
+            break
+        if w_:
+            why[w_] = why.get(w_, 0) + 1
+    return len(heads) + n_out, laid, cells, why
+
+
 def held_below(fd, acc, starts, stops, max_cells=10 ** 6):
     """{flat cell: cells of drainage}: the water that reaches each cell through the lake outlets in `starts` (flat
     cells), followed down the D8 path from each outlet, with what that outlet gathers (acc) added to every cell on the
@@ -1309,6 +1524,8 @@ def run(group):
             stream[r0_:r1_, c0_:c1_] &= ~wet
             del wet
     order = strahler(fd, stream, DR, DC)
+    # ... and the channels that start lower along NHD's named and year-round lines: order 1, off `stream` (low_channels)
+    n_lh, n_low, c_low, why_low = low_channels(fd, acc, stream, order, T, group) if LOW_LINES else (0, 0, 0, {})
     print(f"{' + '.join(group)}: {W} x {H} cells, {int(stream.sum())} stream cells, max order {int(order.max())}, "
           f"{n_wet} of {len(lakes)} lakes end paths at their outlet ({n_nhd} at NHD's outlet, {len(far)} of them 300 m "
           f"or more from the cell with the most water; {n_routed} routed to it along NHD's lines; "
@@ -1333,9 +1550,14 @@ def run(group):
               + ", ".join(side_ok))
     for why_, names_ in side_not.items():
         print(f"  other outflow lines the terrain takes the water on down, not second outlets ({why_}): " + ", ".join(names_))
+    if n_lh:
+        print(f"  channels started lower along NHD's {' or '.join(LOW_LINES)} lines: {n_low} of {n_lh} upper ends, "
+              f"{c_low * RES / 1000:.1f} km of line (order 1); none at the others: "
+              + ", ".join(f"{k} {v}" for k, v in sorted(why_low.items(), key=lambda q: -q[1])))
     # 5. each box's files
     from pysheds.grid import Grid
     from pysheds.sview import Raster, ViewFinder
+    import pandas as pd
     for r in group:
         sl = where[r]
         f, st, od = fd[sl], stream[sl], order[sl]
@@ -1378,21 +1600,36 @@ def run(group):
         rr0, rr1, cc0, cc1 = max(R0, 0), min(R0 + h + 2, H), max(C0, 0), min(C0 + w + 2, W)
         fp[rr0 - R0:rr1 - R0, cc0 - C0:cc1 - C0] = fd[rr0:rr1, cc0:cc1]
         sp[rr0 - R0:rr1 - R0, cc0 - C0:cc1 - C0] = stream[rr0:rr1, cc0:cc1]
-        sp[1, 1:-1] &= fp[0, 1:-1] > 0
-        sp[-2, 1:-1] &= fp[-1, 1:-1] > 0
-        sp[1:-1, 1] &= fp[1:-1, 0] > 0
-        sp[1:-1, -2] &= fp[1:-1, -1] > 0
+        # the lines laid lower along NHD's named and year-round lines (step 4) are taken apart, so that each is a link
+        # of its own that ends on the stream it runs into, and no link of the STREAM_KM2 network is cut where one
+        # comes in
+        lp = np.zeros((h + 2, w + 2), bool)
+        lp[rr0 - R0:rr1 - R0, cc0 - C0:cc1 - C0] = (order[rr0:rr1, cc0:cc1] > 0) & ~stream[rr0:rr1, cc0:cc1]
+        for m_ in (sp, lp):
+            m_[1, 1:-1] &= fp[0, 1:-1] > 0
+            m_[-2, 1:-1] &= fp[-1, 1:-1] > 0
+            m_[1:-1, 1] &= fp[1:-1, 0] > 0
+            m_[1:-1, -2] &= fp[1:-1, -1] > 0
         fp[~np.isin(fp, CODES)] = 0
         Tp = T * rasterio.Affine.translation(C0, R0)
         grid = Grid(viewfinder=ViewFinder(affine=Tp, shape=fp.shape, crs=CRS, nodata=0))
-        net = grid.extract_river_network(Raster(fp, viewfinder=ViewFinder(affine=Tp, shape=fp.shape, crs=CRS, nodata=0)),
-                                         Raster(sp, viewfinder=ViewFinder(affine=Tp, shape=fp.shape, crs=CRS, nodata=False)),
-                                         dirmap=CODES)
-        g = gpd.GeoDataFrame.from_features(net["features"], crs=CRS)
+        vf, parts_ = (lambda nd: ViewFinder(affine=Tp, shape=fp.shape, crs=CRS, nodata=nd)), []
+        for m_ in (sp, lp):
+            if m_ is lp and not lp.any():
+                continue
+            net = grid.extract_river_network(Raster(fp, viewfinder=vf(0)), Raster(m_, viewfinder=vf(False)),
+                                             dirmap=CODES)
+            if net["features"]:
+                g_ = gpd.GeoDataFrame.from_features(net["features"], crs=CRS)
+                parts_.append(g_.assign(low_channel=int(m_ is lp)))
+        del lp
+        g = (gpd.GeoDataFrame(pd.concat(parts_, ignore_index=True), crs=CRS) if parts_
+             else gpd.GeoDataFrame({"low_channel": []}, geometry=[], crs=CRS))
         ex = g.geometry.apply(lambda ln: not (boxes[r][0] <= ln.coords[-1][0] < boxes[r][2] and boxes[r][1] < ln.coords[-1][1] <= boxes[r][3]))
         n_on = int(ex.sum())
         g.to_file(f"{derived_dir(r)}/dem_streams.gpkg")
-        print(f"  {r}: stream cells {int(st.sum())}, links {len(g)}, max order {int(od.max())}, {n_on} lines run on into the next box")
+        print(f"  {r}: stream cells {int(st.sum())}, links {len(g)} ({int(g.low_channel.sum())} started lower along "
+              f"NHD's lines), max order {int(od.max())}, {n_on} lines run on into the next box")
     wet_ = {r: [] for r in group}
     for o, pd_ in opened:
         rr_, cc_ = divmod(o, W)

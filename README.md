@@ -252,7 +252,7 @@ its words, with the imperial figure in brackets after each metric one (`units.im
 | `stream_map.html` | Combined interactive map. It loads `map3d_data.js`; keep it next to that file and the range folders, which hold the hillshade PNGs |
 | `map3d_data.js` | The layers both maps draw (streams, drainage fills and divides, the long trail, trails, roads, parking and their labels), loaded by both pages so they are stored once (the website's 1 GB limit) |
 | `stream_map_3d.html` | The same map in 3D (tilt, rotate, real terrain), with the layers only it draws inside the page; the rest comes from `map3d_data.js`. Keep it next to that file. Needs internet for MapLibre and the terrain tiles |
-| `stream_reaches_ranked.csv` | Every reach of every range, ranked by fish score: the DEM stream links draining 1 km² or more with the water carried to them, or 0.25 km² where NHD maps the creek perennial or names it, cut at lake shores and 200 m below lakes (step 5), with the final score and its terms |
+| `stream_reaches_ranked.csv` | Every reach of every range, ranked by fish score: the DEM stream links draining 1 km² or more with the water carried to them, or 0.25 km² where NHD maps the creek perennial or names it, and those creeks on up from where NHD's line starts (step 3), cut at lake shores and 200 m below lakes (step 5), with the final score and its terms |
 | `waterfall_candidates.csv` | All detected drops with status, height, run, slope above/below, plunge-pool coordinates |
 | `waterfall_candidates.gpx` | The unmapped waterfall-like steps, cascades and short falls and the drops at mapped waterfalls, each with its pool. Import into Gaia, CalTopo or onX |
 | `road_closures.csv` / `.gpkg` | Current closures on mountain roads (step 07), routed along the roads; whether the approach times count them (`in_season`, `times`) and the access-line note of those they don't (`note`). `road_closures.json`: when the feeds were read |
@@ -282,6 +282,14 @@ The rules that decide what the maps show are listed with their values, code loca
    dead end is left on an edge). Flats rise 1e-9 m a cell, not pysheds' default 1e-5, which piles up across a river's
    flattened water until the flat becomes a pit. The order is pysheds' version of Strahler's: it steps up only where
    all the streams that meet share the highest order, and by one at a lake's outlet.
+   - **Named and year-round creeks above the channel start** (`low_channels`). Where NHD HR names a creek or maps it
+     year-round above 0.25 km², its channel starts where NHD's line starts, on the terrain's own channel: going down
+     NHD's line from its upper end, the first cell that is the wettest within 40 m of the line, gathers 1 ha or more,
+     lies nearest that line and whose D8 path follows NHD's lines (80 % of its next 200 m within 40 m), and from there
+     down its D8 path to the first stream. Not where under 70 % of the new line would lie within 40 m of NHD's lines,
+     nor where NHD's network above the head reaches the map's edge (a creek from outside, whose line is cut off at the
+     edge). Each such line is a link of its own (`low_channel` in `dem_streams.gpkg`), order 1, ending on the stream it
+     runs into, which isn't cut there: the 0.25 km² network, its links and its orders don't change.
    - **Filled flats.** A flat of filled ground (10 cells or more, half of them or more raised 5 cm or more by the
      fill: a swamp, a wetland, a valley flat behind a sill) drains along NHD HR's lines instead of resolve_flats'
      shortest ways, which drew ruler-straight lines across it (`flatlines.py`, in 03 and in the pieces 03b conditions
@@ -358,7 +366,12 @@ The rules that decide what the maps show are listed with their values, code loca
    path through the lake (not a lake NHD maps as intermittent, and only where NHD maps a creek below it) and its creek
    from where it leaves the lake, so a pond's outlet creek doesn't depend on where the routing splits the link in the
    pond. A creek kept this way runs on down through 0.25-1 km² links until it meets a kept line, across box edges and
-   below a pond's outlet; nothing under 0.25 km² is drawn. **Links are cut at lake shores**, so every reach is creek
+   below a pond's outlet. Under 0.25 km² only the lines 03b starts along NHD's named and year-round creeks are drawn
+   (`low_channel`), on the same vote without the test against a bigger stream alongside, and the creek such a line
+   runs into goes on with it to a kept line (a link drawn only for that is marked with them, `low_channel` 2). These
+   lines take their values from the reaches around them, but the
+   rules that read one reach by others (from here to the map) leave them out for the rest: every reach of the
+   0.25 km² network reads as it did without them. **Links are cut at lake shores**, so every reach is creek
    or lake water, never both: the shores of the lakes `05b_flow.py` can flag a reach in (NHD's lakes of 8 ha or more,
    with the shore the lakes layer draws, and the layer's own; `05d_lakes.py` runs first). A stretch under 50 m on one
    side of a shore stays with its neighbour. Links mostly on sea-level cells, or past a state line the area is cut

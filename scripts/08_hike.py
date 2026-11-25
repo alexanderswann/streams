@@ -422,7 +422,17 @@ if LAKES is not None and len(LAKES):
 # trailheads: snap origins to a 250 m grid so neighbouring road cells collapse into one access point
 both = pd.concat([ts, td] + ([tl] if tl is not None else []), ignore_index=True)
 both["th_id"] = REGION + ":t" + ((both.th_x // 250).astype(int).astype(str) + "_" + (both.th_y // 250).astype(int).astype(str))
-th = both.groupby("th_id").agg(x=("th_x", "median"), y=("th_y", "median"), n=("th_x", "size")).reset_index()
+# A trailhead stands at the middle of the start points of what it serves. Where it serves any of the 0.25 km2 network's
+# reaches, a drop or a lake, those alone place it, as before 03b_stitch.py laid lines lower along NHD's lines
+# (low_channel): one of those sharing its 250 m cell moved it, and with it the drive and the road named for the places
+# it served before. Its count (n) is of all it serves
+_lo = np.zeros(len(both), bool)
+if "low_channel" in streams:
+    _lo[:len(ts)] = ts.sid.map(dict(zip(streams.sid, pd.to_numeric(streams.low_channel, errors="coerce").fillna(0) > 0))
+                               ).fillna(False).to_numpy(bool)
+_b = both[~_lo | ~both.th_id.isin(set(both.th_id[~_lo]))]
+th = _b.groupby("th_id").agg(x=("th_x", "median"), y=("th_y", "median")).reset_index()
+th["n"] = th.th_id.map(both.groupby("th_id").size()).astype(int)
 th = gpd.GeoDataFrame(th, geometry=gpd.points_from_xy(th.x, th.y), crs=CRS)
 # a start point is never on a freeway (see `source`), so it isn't named after one that runs beside its road either
 named = drivable[drivable.name.notna() & ~drivable.highway.isin(["motorway", "motorway_link"])]

@@ -77,6 +77,8 @@ def with_buried(g, b):
     add = gpd.GeoDataFrame({c_: [None] * len(t) for c_ in g.columns if c_ != "geometry"}, geometry=t.geometry.values,
                            crs=g.crs)
     add["sid"], add["area_km2"] = [f"{b}:buried{i}" for i in range(len(t))], t.area_km2.to_numpy(float)
+    if "low_channel" in add and "low_channel" in t:   # a line 03b laid lower along NHD's lines, or a link drawn for one
+        add["low_channel"] = pd.to_numeric(t["low_channel"], errors="coerce").fillna(0).to_numpy(int)
     if "flow" in g:
         add["flow"] = "unmapped"
     pa = f"{out_dir(b)}/buried_areas.csv"           # their drainage as 05c_drainages.py measures it, where it has
@@ -93,8 +95,8 @@ def is_buried(sid):
 
 
 s = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
-s = with_buried(s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid", "in_lake") if c_ in s]],
-                REGION)
+s = with_buried(s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid", "in_lake", "low_channel")
+                                                             if c_ in s]], REGION)
 # A creek cut 200 m below a lake (05_score.py cuts it for its water temperature alone; a first piece's cut_sid names
 # the rest of its line) is read here whole, as it was before the cut, and both pieces take its row: its model line and
 # flow, the dam above it, its greenness and its gauge record. Measured on its own, a piece matched another model line
@@ -761,7 +763,11 @@ fs_.to_csv(f"{OUT}/flow_streams.csv", index=False)
 
 # ---- drops take the evidence of the reach they sit on ----
 kp = gpd.read_file(f"{OUT}/waterfall_candidates.gpkg")[["did", "area_km2", "geometry"]].to_crs(CRS)
-near = gpd.sjoin_nearest(kp, s[["geometry"]].join(ev), max_distance=80, how="left").groupby(level=0).first()
+# (drops lie on channels of 1 km2 or more, 04_knickpoints.py: never on a line 03b_stitch.py laid lower along NHD's
+# lines, low_channel, which ends on the stream it runs into and so can lie as near a drop at that junction)
+_reg = (pd.to_numeric(s["low_channel"], errors="coerce").fillna(0).to_numpy() == 0) if "low_channel" in s \
+    else np.ones(len(s), bool)
+near = gpd.sjoin_nearest(kp, s[["geometry"]].join(ev)[_reg], max_distance=80, how="left").groupby(level=0).first()
 cols = list(ev.columns)
 kpe = near[cols].reindex(kp.index)
 miss = kpe.flow_src.isna()

@@ -261,11 +261,13 @@ def _lake_frame(s):
     full = pd.to_numeric(s["area_full_km2"], errors="coerce").to_numpy(float)
     edge = pd.to_numeric(s["area_edge_km2"], errors="coerce").to_numpy(float)
     in_lake = s["below_dam"].fillna("").astype(str).str.startswith("in:").to_numpy() if "below_dam" in s else np.zeros(len(s), bool)
-    lake = np.minimum(lake_water_km2(geom, full - edge, edge, in_lake), np.nan_to_num(full, nan=0.0))
+    # 03b's lines laid lower along NHD's lines (low_channel) are no donors of others, for the lake water and the distance
+    low = s["low_channel"].fillna(0).astype(bool).to_numpy() if "low_channel" in s else None
+    lake = np.minimum(lake_water_km2(geom, full - edge, edge, in_lake, low=low), np.nan_to_num(full, nan=0.0))
     share = np.nan_to_num(lake_share(full - lake, full), nan=0.0)
     fade = np.nan_to_num(lake_share(np.zeros(len(s)), full), nan=0.0)       # all of a lake reach's water is lake water
     share = np.where(in_lake, fade, share)
-    d0 = below_lake(geom, lake, in_lake, _lake_outlines())
+    d0 = below_lake(geom, lake, in_lake, _lake_outlines(), low=low)
     # a lake's second outlet (05_score.py's side_lake) runs out of the lake with the water of the creek the lake's
     # outlet starts (side_sid), which it is scored on: it takes that creek's lake share, and its own distance below the
     # lake (_side_below). Its own few km2 carry no lake water, so below_lake finds no lake above it
@@ -274,7 +276,8 @@ def _lake_frame(s):
         j = s["side_sid"].iloc[sec].map(pd.Series(np.arange(len(s)), index=s["sid"].values)).to_numpy(float)
         sec, j = sec[~np.isnan(j)], j[~np.isnan(j)].astype(int)
         share[sec] = share[j]
-        d0[sec] = _side_below(geom[sec], s["side_sid"].to_numpy()[sec], geom[in_lake])
+        d0[sec] = _side_below(geom[sec], s["side_sid"].to_numpy()[sec], geom[in_lake & ~low] if low is not None
+                              else geom[in_lake])     # the reaches lying in a lake, as without the new lines
     return geom, share, in_lake, d0
 
 
@@ -354,6 +357,8 @@ def lake_at(pts):
         d = out_dir(r)
         if all(os.path.exists(f"{d}/{f_}") for f_ in ("streams_scored.gpkg", "area_streams.csv", "flow_streams.csv")):
             s = gpd.read_file(f"{d}/streams_scored.gpkg")
+            if "low_channel" in s:          # a site takes a reach of the 0.25 km2 network (not a line 03b laid
+                s = s[s.low_channel.fillna(0).astype(int) == 0]     # lower along NHD's lines), as without them
             s = s[["sid", "geometry"] + [c_ for c_ in ("cut_sid",) if c_ in s]].to_crs(CRS)
             s = s.merge(pd.read_csv(f"{d}/area_streams.csv"), on="sid")
             parts.append(s.merge(pd.read_csv(f"{d}/flow_streams.csv", low_memory=False)[["sid", "below_dam"]], on="sid", how="left"))

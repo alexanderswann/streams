@@ -461,15 +461,19 @@ def trout_attrs(s):
         return out
     s = s.reset_index(drop=True)
     named = s["name"].fillna("").map(norm)
-    hits = []
-    for e in trout_ev[~trout_ev.lake & trout_ev.geometry.notna()].itertuples():
-        d = s.distance(e.geometry)
+    # The lines 03b_stitch.py laid lower along NHD's named and year-round lines (05_score.py's low_channel) take records
+    # as any reach does, but a record goes to the 0.25 km2 network's reaches as without them: a sighting nearer a new
+    # line at the top of a creek stays with the creek's reach it went to before
+    low = (pd.to_numeric(s["low_channel"], errors="coerce").fillna(0).to_numpy() > 0) if "low_channel" in s \
+        else np.zeros(len(s), bool)
+    def pick(e, d):
+        """The reaches a record counts for, by the distances d (inf: left out); None for none."""
         if not len(d) or d.min() > 5000:
-            continue
+            return None
         j = d.idxmin()
         if e.kind == "iNaturalist":
             if d[j] > 150:
-                continue
+                return None
             sel = (d <= 1500) & (named == named[j]) if named[j] else (d.index == j)
         else:   # same name, or the reach's name inside the survey's (NHD calls the East Fork "San Gabriel River")
             # A no-trout sample outside California speaks for the creek within 1.5 km of its site only: the states
@@ -481,6 +485,17 @@ def trout_attrs(s):
             sel = close & named.map(lambda n: ok.get(n, False))
             if not sel.any() and d[j] <= 300:   # else the nearest reach and the same creek within 1.5 km
                 sel = (d <= 1500) & (named == named[j]) if named[j] else (d.index == j)
+        return np.asarray(sel, bool)
+    hits = []
+    for e in trout_ev[~trout_ev.lake & trout_ev.geometry.notna()].itertuples():
+        d = s.distance(e.geometry)
+        sel = pick(e, d.where(~low, np.inf)) if low.any() else pick(e, d)
+        if low.any():
+            sl = pick(e, d)
+            if sl is not None:
+                sel = (sl & low) if sel is None else (sel | (sl & low))
+        if sel is None:
+            continue
         hits += [(sid, e.Index, e.kind, e.year, e.trout, e.label, e.wild_brook) for sid in s.sid[sel]]
     if not hits:
         return out

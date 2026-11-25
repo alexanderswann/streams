@@ -160,6 +160,15 @@ def num(s, c):
     return pd.to_numeric(s[c], errors="coerce") if c in s else pd.Series(np.nan, index=s.index)
 
 
+def low_lines(s):
+    """The lines 03b_stitch.py laid lower along NHD's named and year-round lines (05_score.py's low_channel). The rules
+    here that read one reach by others (a creek's reaches between confluences, the creeks a reach with no estimate is
+    compared with, the line a second outlet runs into, a gauge's creek) read the other reaches without them, as before
+    they were drawn; they read the 0.25 km2 network's reaches."""
+    return (pd.to_numeric(s["low_channel"], errors="coerce").fillna(0).to_numpy() > 0) if "low_channel" in s \
+        else np.zeros(len(s), bool)
+
+
 RIDE_REMOTENESS = 2.0    # a minute ridden on the approach counts as this many minutes of remoteness (user's choice)
 # Size term on wild brook trout water: the drainage counts this many times over. The median drainage at the nearest
 # reach of records of other trout only (brown, rainbow, cutthroat; no brook trout), over the median at records of
@@ -272,6 +281,7 @@ def side_lines_below(s):
     if "below_dam" in s:
         wet = wet | s["below_dam"].fillna("").astype(str).str.startswith("in:").to_numpy()
     big = num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float)
+    low = low_lines(s)
     nxt_side, nxt = np.full(len(s), -1), np.full(len(s), -1)
     i_, j_ = shapely.STRtree(start).query(end, predicate="dwithin", distance=SIDE_JOIN_M)
     for i, j in sorted(zip(i_.tolist(), j_.tolist()), key=lambda ij: -big[ij[1]]):
@@ -279,7 +289,7 @@ def side_lines_below(s):
             continue
         if lk[i] and lk[j] and grp[i] == grp[j]:
             nxt_side[i] = j if nxt_side[i] < 0 else nxt_side[i]
-        elif not lk[j] and nxt[i] < 0:
+        elif not lk[j] and nxt[i] < 0 and not low[j]:
             nxt[i] = j                              # the biggest reach starting where this one ends
     # where only the second outlet's line made the junction, 05_score.py runs the creek's reach on through it: the
     # line the second outlet runs into passes through its last piece's end
@@ -287,7 +297,7 @@ def side_lines_below(s):
     if len(end_):
         tree_ = shapely.STRtree(geom)
         for i in end_:
-            c_ = [j for j in tree_.query(end[i], predicate="dwithin", distance=1.0) if j != i and not lk[j]]
+            c_ = [j for j in tree_.query(end[i], predicate="dwithin", distance=1.0) if j != i and not lk[j] and not low[j]]
             if c_:
                 nxt[i] = max(c_, key=lambda j: big[j])
     row = pd.Series(np.arange(len(s)), index=s["sid"].values)
@@ -394,10 +404,12 @@ def creeks(s, extra=None):
     km2 = num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float)
     lake = (s["water_class"].astype(str).eq("reservoir") if "water_class" in s else pd.Series(False, index=s.index)).to_numpy()
     n = len(s)
+    low = low_lines(s)          # a line laid lower along NHD's lines joins only such lines (low_lines)
     if extra is not None and len(extra):
         g = np.concatenate([g, gpd.GeoSeries(extra.geometry.values, crs=extra.crs).to_crs(CRS).values])
         km2 = np.concatenate([km2, num(extra, "area_full_km2").fillna(extra["area_km2"]).to_numpy(float)])
         lake = np.concatenate([lake, np.zeros(len(extra), bool)])
+        low = np.concatenate([low, low_lines(extra)])
     first, last = shapely.get_point(g, 0), shapely.get_point(g, -1)
     t_first, t_line = shapely.STRtree(first), shapely.STRtree(g)
     parent = np.arange(len(g))
@@ -409,10 +421,10 @@ def creeks(s, extra=None):
         return i
 
     for i in range(len(g)):
-        c = [j for j in t_first.query(last[i], predicate="dwithin", distance=1.0) if j != i]
+        c = [j for j in t_first.query(last[i], predicate="dwithin", distance=1.0) if j != i and low[j] == low[i]]
         if not c:
             c = [j for j in t_line.query(last[i], predicate="dwithin", distance=15.0)
-                 if j != i and shapely.distance(last[j], last[i]) > 1.0]
+                 if j != i and shapely.distance(last[j], last[i]) > 1.0 and low[j] == low[i]]
             c = sorted(c, key=lambda j: shapely.distance(g[j], last[i]))[:1]
         if not c:
             continue
@@ -452,7 +464,7 @@ def typical_water(s, cls, water, which=None, group_of=None):
     config = __import__("config")
     km = np.log(np.clip(num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float), config.STREAM_KM2, None))
     src = s["flow_src"] if "flow_src" in s else pd.Series("", index=s.index)
-    own = src.eq("model").to_numpy() & cls.isin(WATER_CLASSES).to_numpy() & water.notna().to_numpy()
+    own = src.eq("model").to_numpy() & cls.isin(WATER_CLASSES).to_numpy() & water.notna().to_numpy() & ~low_lines(s)
     length = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(config.CRS).length.to_numpy()
     lab = s.flow.fillna("unmapped").to_numpy()
     grp = lab if group_of is None else pd.Series(group_of, index=s.index).fillna("unmapped").to_numpy()
@@ -604,7 +616,8 @@ def score(s, left_out=None):
     gwt = 0.05 + 0.95 * gsh
     site = s["gauge_site"].astype(object) if "gauge_site" in s else pd.Series(None, index=s.index, dtype=object)
     below = s["gauge_below"].astype(object).eq(True) if "gauge_below" in s else pd.Series(False, index=s.index)
-    trout_site = set(site[pos & gsh.notna()].dropna())    # trout anywhere on the creek a gauge stands for: not lowered
+    trout_site = set(site[pos & gsh.notna() & ~low_lines(s)].dropna())  # trout anywhere on the creek a gauge stands
+                                                                        # for: not lowered
     rec = gsh.notna() & (((water > gwt + 0.05) & below & ~site.isin(trout_site)) | (water < gwt - 0.05))
     water = water.where(~rec, gwt)
     cls2[rec] = pd.cut(gsh[rec], [-1, 0.2, 0.5, 0.85, 1.0], labels=["mostly dry", "seasonal", "usually flows",

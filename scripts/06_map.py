@@ -96,6 +96,10 @@ def left_out(d_):
         lo_["area_full_km2"] = pd.read_csv(f"{d_}/buried_areas.csv").set_index("row").area_full_km2.reindex(
             lo_["row"]).to_numpy(float)
     return lo_
+def net_rows(d_):
+    """d_ without the lines 03b_stitch.py laid lower along NHD's lines and the links drawn only for them (05_score.py's
+    low_channel 1 and 2): the paths drawn through below dams and at the edges read the 0.25 km2 network's reaches."""
+    return d_[pd.to_numeric(d_["low_channel"], errors="coerce").fillna(0).to_numpy() == 0] if "low_channel" in d_ else d_
 _lo = [left_out(d_) for d_ in dirs if os.path.exists(f"{d_}/buried_reaches.gpkg")]
 s_ll = score(attach(s_ll.drop(columns="fish_score"), "sid", dirs, "streams"),
              left_out=pd.concat(_lo, ignore_index=True) if _lo else None)
@@ -126,7 +130,10 @@ def draw_through(s_ll):
     from rasterio import features as rfeatures
     cross = [c_ for c_ in crossbox.crossings() if c_[6] >= 0.25 and c_[3] in done and c_[7] != "edge"]
     sm = s_ll.geometry.to_crs(EPSG).values
-    line = np.array([g is not None and g.geom_type == "LineString" for g in sm])
+    # not on a line 03b_stitch.py laid lower along NHD's lines (low_channel): drawn as without them
+    low_ = (pd.to_numeric(s_ll["low_channel"], errors="coerce").fillna(0).to_numpy() > 0) if "low_channel" in s_ll \
+        else np.zeros(len(s_ll), bool)
+    line = np.array([g is not None and g.geom_type == "LineString" for g in sm]) & ~low_
     rk = s_ll.sid.str.split(":").str[0].values
     pos = np.flatnonzero(line)
     heads = shapely.STRtree(shapely.points([sm[i].coords[0][:2] for i in pos]))
@@ -142,7 +149,8 @@ def draw_through(s_ll):
             # are dropped), so the line is carried down to one that is drawn; and those of the reaches 05_score.py
             # left out as buried (buried_reaches.gpkg), where it stops as it did while they were drawn
             bp_ = f"{MAP_OUT}/{b}/buried_reaches.gpkg"
-            bg_ = gpd.read_file(bp_).to_crs(EPSG).geometry.values if os.path.exists(bp_) else np.array([], dtype=object)
+            bg_ = (net_rows(gpd.read_file(bp_)).to_crs(EPSG).geometry.values if os.path.exists(bp_)
+                   else np.array([], dtype=object))
             bur[b] = (bg_, shapely.STRtree(bg_) if len(bg_) else None)
             ras[b] = (fd_, T_, rfeatures.rasterize([(g, 1) for g in sm[pos[rk[pos] == b]]], out_shape=fd_.shape,
                                                    transform=T_, all_touched=True, dtype="uint8"),
@@ -226,7 +234,7 @@ def draw_through(s_ll):
         ends_at.setdefault(k1(sm[i].coords[-1]), []).append(i)
     # the ends of the reaches 05_score.py left out as buried, every box: a lake's creek is looked for among them too, as
     # while they were drawn, and a path whose creek is one of them goes with it (lake_creek() gives -1; not drawn)
-    lo_g = [left_out(f"{MAP_OUT}/{r_}").to_crs(EPSG) for r_ in done
+    lo_g = [net_rows(left_out(f"{MAP_OUT}/{r_}")).to_crs(EPSG) for r_ in done
             if os.path.exists(f"{MAP_OUT}/{r_}/buried_reaches.gpkg")]
     lo_g = pd.concat(lo_g, ignore_index=True) if lo_g else None
     lo_end = shapely.points([g_.coords[-1][:2] for g_ in lo_g.geometry.values]) if lo_g is not None else None
@@ -366,6 +374,15 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
     # positions in the full s_ll (grouping a filtered copy would give positions within the copy)
     groups = {g: np.asarray(ix) for g, ix in s_ll.reset_index(drop=True).groupby(["rkey", "out_x", "out_y"],
                                                                                    dropna=True).indices.items()}
+    # The lines 03b_stitch.py laid lower along NHD's named and year-round lines and the links drawn only for them
+    # (low_channel 1 and 2) take no part in joining the basins across the edges: the network's reaches find the stream
+    # across an edge, stand for a basin and decide a move, as without them, and the new lines follow their group's
+    # (on the first try a new line by a seam in central Vermont took 0.03 km2 of the Winooski's outline into the
+    # Huntington River's drainage, and the fork shades of 69 reaches moved)
+    _lo6 = ((pd.to_numeric(s_ll["low_channel"], errors="coerce").fillna(0).to_numpy() > 0) if "low_channel" in s_ll
+            else np.zeros(len(s_ll), bool))
+    first_ = {g: int((ix[~_lo6[ix]] if (~_lo6[ix]).any() else ix)[0]) for g, ix in groups.items()}
+    net_g = {g for g, ix in groups.items() if (~_lo6[ix]).any()}
     outlines = {(r_, x_, y_) for r_, x_, y_ in zip(basins.rkey, basins.out_x, basins.out_y) if pd.notna(x_)}
     edges, fdirs = crossbox.shared_edges(done), {}
     def fdir_of(region):
@@ -377,11 +394,11 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
     # edge): the biggest reach of the outline its exit lands in, across the edge. Only into a bigger basin: a lake
     # lying across the edge sends each side's water to the other, and the smaller creek is the tributary.
     b_tree = shapely.STRtree(basins.geometry.values)
-    rep = s_ll.reset_index(drop=True).groupby(["rkey", "drainage", "fork"]).area_km2.idxmax().to_dict()
+    rep = s_ll.reset_index(drop=True)[~_lo6].groupby(["rkey", "drainage", "fork"]).area_km2.idxmax().to_dict()
     size_of = basins.assign(a=basins.area).groupby(["rkey", "drainage"]).a.sum().to_dict()
     def across_edge(g):
         pt = shapely.Point(g[1], g[2])
-        mine = size_of.get((g[0], s_ll.drainage.iat[groups[g][0]]), 0)
+        mine = size_of.get((g[0], s_ll.drainage.iat[first_[g]]), 0)
         cand = [j for j in b_tree.query(pt, predicate="dwithin", distance=30)
                 if basins.rkey.iat[j] != g[0] and basins.drainage.iat[j] != MINOR
                 and size_of[(basins.rkey.iat[j], basins.drainage.iat[j])] > mine]
@@ -395,13 +412,13 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
             # mapped stream: the neighbour's streams start only where enough area has gathered below the edge
             for *_, x_, y_ in crossbox.crossing(b_, *fdir_of(b_), g[1], g[2], away):
                 cand = [i for i in tree.query(shapely.Point(x_, y_), predicate="dwithin", distance=30)
-                        if s_ll.rkey.iat[i] == b_]
+                        if s_ll.rkey.iat[i] == b_ and not _lo6[i]]
                 if cand:
                     target[g] = max(cand, key=lambda i: s_ll.area_km2.iat[i])
                     break
             if g in target:
                 break
-        if g not in target and g in groups and s_ll.drainage.iat[groups[g][0]] != MINOR:
+        if g not in target and g in groups and s_ll.drainage.iat[first_[g]] != MINOR:
             ti = across_edge(g)
             if ti is not None:
                 target[g] = int(ti)
@@ -410,15 +427,15 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
     # leaves into Hightower Creek's box and Hightower Creek back into the Hiwassee's (where it lands on the lake,
     # with no stream to find). The smaller is the tributary: the bigger one's link goes, and the smaller one's
     # exits that found nothing lead to the bigger one's main reach. Left in, the river took its tributary's name.
-    rep_d = s_ll.reset_index(drop=True).groupby(["rkey", "drainage"]).area_km2.idxmax().to_dict()
+    rep_d = s_ll.reset_index(drop=True)[~_lo6].groupby(["rkey", "drainage"]).area_km2.idxmax().to_dict()
     by_src = {}
-    for g in groups:
-        if d0[groups[g][0]] != MINOR:
-            by_src.setdefault((g[0], d0[groups[g][0]]), []).append(g)
+    for g in net_g:
+        if d0[first_[g]] != MINOR:
+            by_src.setdefault((g[0], d0[first_[g]]), []).append(g)
     pairs = {}
     for g, ti in target.items():
-        if g in groups and MINOR not in (d0[groups[g][0]], d0[ti]) and d0[groups[g][0]] != d0[ti]:
-            pairs.setdefault(((g[0], d0[groups[g][0]]), (s_ll.rkey.iat[ti], d0[ti])), []).append(g)
+        if g in net_g and MINOR not in (d0[first_[g]], d0[ti]) and d0[first_[g]] != d0[ti]:
+            pairs.setdefault(((g[0], d0[first_[g]]), (s_ll.rkey.iat[ti], d0[ti])), []).append(g)
     for (a_, b_), gs in pairs.items():
         back = [g for g in by_src.get(b_, []) if any(n_ == a_[0] for n_, _ in crossbox.neighbours(g[0], g[1], g[2], edges))]
         if back and size_of.get(a_, 0) > size_of.get(b_, 0):
@@ -434,7 +451,7 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
             if g not in groups or dcur[ti] == MINOR:
                 continue
             ix = groups[g]
-            if d0[ix[0]] == MINOR:
+            if d0[first_[g]] == MINOR:
                 dnew[ix], fnew[ix] = dcur[ti], fcur[ti]
             else:
                 dnew[ix] = dcur[ti]
@@ -443,8 +460,9 @@ if "out_x" in s_ll and s_ll.out_x.notna().any():
         dcur, fcur = dnew, fnew
     # only when the whole named basin moved. The parts of it that end at a dam or a pond inside the box (no exit of
     # their own) go with the rest: left behind, they kept the old name while the outline took the new one.
-    moved = pd.DataFrame({"r": s_ll.region.values, "a": d0, "b": dcur, "exits": s_ll.out_x.notna().values})
-    moved = moved[(moved.a != MINOR) & moved.exits].groupby(["r", "a"]).b.agg(lambda x: x.iloc[0] if x.nunique() == 1 else None)
+    moved = pd.DataFrame({"r": s_ll.region.values, "a": d0, "b": dcur, "exits": s_ll.out_x.notna().values, "low": _lo6})
+    moved = moved[(moved.a != MINOR) & moved.exits & ~moved.low].groupby(["r", "a"]).b.agg(
+        lambda x: x.iloc[0] if x.nunique() == 1 else None)
     relabel = {k: v for k, v in moved.items() if pd.notna(v) and v != k[1]}
     dcur = np.array([relabel.get((r_, a_), b_) if b_ == a_ else b_ for r_, a_, b_ in zip(s_ll.region.values, d0, dcur)],
                     dtype=object)
@@ -943,9 +961,11 @@ if dm_cr and lw_ is not None and len(lw_):
     dm_bx = s_ll.sid.astype(str).str.split(":").str[0].values
     dm_il = s_ll.in_lake_drawn.values
     dm_tree = shapely.STRtree(dm_g)
+    dm_lo = (pd.to_numeric(s_ll["low_channel"], errors="coerce").fillna(0).to_numpy() > 0) if "low_channel" in s_ll \
+        else np.zeros(len(s_ll), bool)          # lines 03b laid lower along NHD's lines (low_channel): no part here
     dm_S, dm_E = shapely.get_point(dm_g, 0), shapely.get_point(dm_g, -1)
     dm_i, dm_j = dm_tree.query(dm_E, predicate="dwithin", distance=1)
-    dm_dang = np.setdiff1d(np.arange(len(dm_g)), dm_i[dm_j != dm_i])  # reach ends nothing goes on from
+    dm_dang = np.setdiff1d(np.flatnonzero(~dm_lo), dm_i[(dm_j != dm_i) & ~dm_lo[dm_j]])  # reach ends nothing goes on from
     dm_con = []                                                     # (row whose values it takes, line, Lakes-off layer)
     dm_pit = []                                                     # (river's line stopping in a pit, line below)
     for (dm_b, dm_row, dm_col), (dm_xy, dm_km2) in dm_below.items():
@@ -956,10 +976,11 @@ if dm_cr and lw_ is not None and len(lw_):
         dm_D = dm_E[dm_t] if dm_t is not None else None
         # the line the river goes on along: one starting in the cell below the dam, else one running past it
         dm_on = [i for i in dm_tree.query(dm_p, predicate="dwithin", distance=1)
-                 if i != dm_t and dm_S[i].distance(dm_p) <= 1]
+                 if i != dm_t and dm_S[i].distance(dm_p) <= 1 and not dm_lo[i]]
         dm_past = not dm_on
         if dm_past:
-            dm_on = [i for i in dm_tree.query(dm_p, predicate="dwithin", distance=10) if i != dm_t and not dm_il[i]]
+            dm_on = [i for i in dm_tree.query(dm_p, predicate="dwithin", distance=10)
+                     if i != dm_t and not dm_il[i] and not dm_lo[i]]
         if not dm_on:
             continue
         dm_jb = min(dm_on, key=lambda i: dm_g[i].distance(dm_p))
@@ -985,7 +1006,8 @@ if dm_cr and lw_ is not None and len(lw_):
         if dm_Q is not None and dm_Q.distance(dm_p) >= 2 and not dm_by:
             dm_x = shapely.LineString([dm_Q, dm_p])
             dm_mid = shapely.difference(dm_x, shapely.union_all([dm_Q.buffer(3), dm_p.buffer(3)]))
-            if not dm_mid.is_empty and any(i not in (dm_jb, dm_t) for i in dm_tree.query(dm_mid, predicate="intersects")):
+            if not dm_mid.is_empty and any(i not in (dm_jb, dm_t) and not dm_lo[i]
+                                           for i in dm_tree.query(dm_mid, predicate="intersects")):
                 continue                                            # it would cross another line: left as it was
             dm_con.append((dm_jb, dm_x, False))
             if dm_Q is dm_D:
@@ -1036,6 +1058,9 @@ if lw_ is not None and len(lw_):
     from config import derived_dir
     sh_step = {64: (-1, 0), 128: (-1, 1), 1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1)}
     sh_on = np.flatnonzero(~s_show.lk_.values.astype(bool))
+    # a line 03b laid lower along NHD's lines (low_channel 1 and 2) ending there leaves a reach of the network's end free
+    sh_lo = ((pd.to_numeric(s_show["low_channel"], errors="coerce").fillna(0).to_numpy() > 0) if "low_channel" in s_show
+             else np.zeros(len(s_show), bool))
     sh_g = np.array(s_show.geometry.to_crs(EPSG).values, dtype=object)
     sh_tree, sh_lt = shapely.STRtree(sh_g[sh_on]), shapely.STRtree(lw_.geometry.values)
     sh_ras, sh_new, sh_gaps = {}, {}, []
@@ -1085,7 +1110,8 @@ if lw_ is not None and len(lw_):
             continue
         cs_ = list(g_.coords)
         for head_, p_ in ((True, shapely.Point(cs_[0])), (False, shapely.Point(cs_[-1]))):
-            if any(sh_on[j] != i_ for j in sh_tree.query(p_, predicate="dwithin", distance=1.0)):
+            if any(sh_on[j] != i_ and (sh_lo[i_] or not sh_lo[sh_on[j]])
+                   for j in sh_tree.query(p_, predicate="dwithin", distance=1.0)):
                 continue
             k_ = sh_lt.query(p_, predicate="dwithin", distance=SHORE_GAP_M)
             if not len(k_):

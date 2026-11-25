@@ -412,6 +412,8 @@ def candidates(sub, share=0.5):
     area), most channel length first; then every other name by its biggest area. Length-weighting at the bottom
     avoids a side creek whose last reach straddles the confluence and so carries the trunk's area."""
     named = sub[sub["name"].notna() & ~sub["name"].fillna("").str.contains(ARTIFICIAL)]
+    if "low_channel" in named:          # not a line 03b laid lower along NHD's lines: the names read as without them
+        named = named[pd.to_numeric(named.low_channel, errors="coerce").fillna(0) == 0]
     if not len(named):
         return []
     low = named[named.area_km2 >= share * named.area_km2.max()]
@@ -624,7 +626,11 @@ routed = streams.area_km2.to_numpy(float) + held_all[own]          # what the ro
 full_ = streams.area_full_km2.to_numpy(float)
 carried = (full_ > 2 * routed) & (full_ - routed > 5)
 strahler0 = streams.strahler.to_numpy(int).clip(1, 7)
-med = pd.DataFrame({"o": strahler0[~carried], "f": full_[~carried]}).groupby("o").f.agg(["median", "size"])
+# (the orders' sizes from the network they are counted on: not the creeks 03b_stitch.py starts lower along NHD's named
+# and year-round lines, order 1 under its channel start)
+_low = streams.low_channel.fillna(0).to_numpy(bool) if "low_channel" in streams else np.zeros(len(streams), bool)
+_ref = ~carried & ~_low
+med = pd.DataFrame({"o": strahler0[_ref], "f": full_[_ref]}).groupby("o").f.agg(["median", "size"])
 med = med[med["size"] >= 5]["median"]
 # an order whose median lies below an order beneath it (a few odd reaches) says nothing of its size: the fit fills it
 med = med[med.values >= np.maximum.accumulate(med.values)]
