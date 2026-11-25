@@ -1,5 +1,6 @@
 #!/bin/zsh
-# Every audit measurement on one set of maps (about 17 minutes, 12 of them the completeness check's streams). Read-only on the project; tables go to
+# Every audit measurement on one set of maps (about 17 minutes, 12 of them the completeness check's streams), and the
+# golden places (golden_check.py: problems once fixed, each still fixed on these maps; audit/golden_places.csv). Read-only on the project; tables go to
 # audit/tables/<label>/, with the report's per-area tables in report_tables.md and the completeness table in completeness.md
 # (completeness.py: streams, lakes, falls and swimming holes against every independent list we may use; completeness.sh
 # runs it alone).
@@ -21,7 +22,7 @@ mkdir -p $AUDIT_TABLES
 failed=()
 rm -f $AUDIT_TABLES/run_all_status.json
 for s in provenance_steps streams_vs_nhd area_vs_reference flow_vs_gauges drawn_jumps popup_checks fish_score_audit falls_lakes_checks \
-         watertemp_vs_sites extra_tables completeness report_tables; do
+         watertemp_vs_sites extra_tables completeness golden_check report_tables; do
   echo "== $s $(date +%H:%M:%S)"
   if [[ $s == report_tables ]]; then $PY audit/scripts/$s.py $label > /dev/null 2>&1 || { echo "FAILED $s"; failed+=$s; }; continue; fi
   if [[ $s == provenance_steps ]]; then args=(); else args=(${=AUDIT_AREAS}); fi
@@ -41,7 +42,7 @@ def sha1(p):
 golden = {"ran": False}
 if os.path.exists(f"{tables}/golden_check.json"):      # the golden places (golden_check.py), when it ran
     g = json.load(open(f"{tables}/golden_check.json"))
-    golden = {"ran": True, "failed": [r["row"] for r in g.get("rows", []) if r.get("status") == "broken"]}
+    golden = {"ran": True, "failed": [f"{r['row']} ({r.get('status')})" for r in g.get("rows", []) if r.get("status") != "holds"]}
 st = dict(label=label, maps=maps, finished=time.strftime("%Y-%m-%d %H:%M:%S"), failed=[f for f in failed.split(",") if f],
           golden=golden, areas={a: sha1(f"{maps}/{a}/map3d_data.js") for a in areas if os.path.exists(f"{maps}/{a}/map3d_data.js")})
 with open(f"{tables}/run_all_status.json.tmp", "w") as f:

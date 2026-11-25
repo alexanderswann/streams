@@ -1,0 +1,31 @@
+id,area,lon,lat,name,near_m,check,value,tol,was,must,since
+seventh_lake_outlet,adk_southwest,-74.78256,43.74502,,100,area_sqmi,16.94,0.05,"the lake's 43.5 km2 put back in 555 m below its outlet; the channel to Fifth Lake not drawn","a reach leaves at NHD's outlet, with 16.9 sq mi there","lake outlets from NHD's outflow lines (f337bfb, e5fe7b2; 2026-11-22)"
+raquette_below_pond,adk_northwest,-74.570,44.235,Raquette,150,area_sqmi,724.2,0.10,"the box edge filled Raquette Pond 6 cm above its surface, cutting the river off","the Raquette at Piercefield within 10 % of NHDPlus (1,876 km2)","03b mends lakes and flats cut by box edges (2026-11-20)"
+jackson_lake_snake,jackson,-110.587,43.859,Snake,300,area_sqmi,807.0,0.10,"lines stopped 18.9 km short around Jackson Lake","the Snake below Jackson Lake Dam within 10 % of the Moran gauge (13011000, 2,090 km2)","Jackson's boxes laid out again (2026-11-19)"
+palisades_snake,jackson,-111.219,43.351,Snake,300,area_sqmi,5225.0,0.10,"a box edge in the filled flat ended the Snake at x 503 km (3,619 km2)","the Snake below Palisades Dam within 10 % of the Irwin gauge (13032500, 13,533 km2)","Jackson's boxes laid out again (2026-11-19)"
+pacific_creek_moran,jackson,-110.516,43.851,Pacific,300,area_sqmi,169.0,0.10,"1 km2: Pacific Creek's basin lay outside the old boxes","within 10 % of the Moran gauge (13011500, 437.7 km2)","Jackson grown to all of Grand Teton NP (2026-11-19)"
+cabin_creek_hoback,jackson,-110.86029,43.27105,^Cabin Creek,3000,area_max_sqmi,20,,"its profile showed the Snake's 3,138 km2 at its mouth","no reach of Cabin Creek drains more than 20 sq mi","cabin-creek drainage fix (2026-11-19)"
+taggart_creek_name,jackson,-110.75012,43.6993,Taggart,200,name_is,^Taggart Creek,,"read 'Cottonwood Creek, 67.4 sq mi'","its own name","names along rivers (05_score)"
+taggart_creek_area,jackson,-110.77,43.70,^Taggart,3000,area_max_sqmi,10,,"read 'Cottonwood Creek, 67.4 sq mi'","no Taggart Creek reach drains more than 10 sq mi","names along rivers (05_score)"
+guys_run_no_dip,lexington_va,-79.51601,37.91067,^Guys Run,3000,fish_min,40,,"one reach at fish 13 between reaches in the 80s (a split channel's trickle)","no Guys Run reach there under fish 40","NHDPlus split-channel flags, EROM areas (2026-11-21)"
+temescal_lake_mathews,la,-117.511,33.841,Temescal,300,area_sqmi,164.0,0.10,"Lake Mathews spilled north; both Temescal Creek gauges fell","Temescal Creek near Corona within 10 % of its gauge (11072000, 424.8 km2)","lake routing (2026-11-21)"
+topanga_own_basin,la,-118.587,34.064,Topanga,300,area_sqmi,18.0,0.10,"186 km2, with Santa Monica Creek as a fork","within 10 % of the Topanga gauge (11104000, 46.6 km2)","05c drainage names (2026-11-19)"
+piru_below_pyramid,la,-118.748,34.631,Piru,300,flow_min,year-round,,"read mostly dry or seasonal below Pyramid Dam","year-round, on the dam's releases","the tailwater floor (scoring.py)"
+hooch_above_morgan_falls,n_georgia,-84.37599,33.97591,Chattahoochee,300,text_lacks,sun=tailwater below,,"named Bull Sluice Lake's tailwater though above Morgan Falls Dam (hooch_tailwater:s1492)","not a tailwater","tailwater extents (scoring.py)"
+fontana_below_dam,smokies,-83.80467,35.45182,Little Tennessee,150,area_sqmi,1571.8,0.05,"drainage started again below the dam","within 5 % of NHDPlus just below Fontana Dam (4,071 km2)","lake routing through reservoirs (2026-11-21)"
+cheoah_below_dam,smokies,-83.93674,35.44845,Little Tennessee,150,area_sqmi,1607.9,0.05,"drainage started again below the dam","within 5 % of NHDPlus just below Cheoah Dam (4,165 km2)","lake routing through reservoirs (2026-11-21)"
+calderwood_below_dam,smokies,-83.97989,35.49207,Little Tennessee,150,area_sqmi,1855.9,0.05,"drainage started again below the dam","within 5 % of NHDPlus just below Calderwood Dam (4,807 km2)","lake routing through reservoirs (2026-11-21)"
+chilhowee_dam,smokies,-84.04981,35.54634,Little Tennessee,150,area_sqmi,1975.9,0.05,"drainage started again below the dam","within 5 % of NHDPlus at Chilhowee Dam (5,118 km2)","lake routing through reservoirs (2026-11-21)"
+green_river_below_reservoir,central_vt,-72.531,44.600,Green River,150,area_sqmi,16.42,0.05,"an edge cut Green River Reservoir's basin: two headwater lines over the box's north edge weren't carried (31.5 km2, 0.74 of NHDPlus)","within 5 % of NHDPlus comid 4586370 (42.54 km2) below the reservoir; NHDPlus, not the Garfield gauge (46.6 km2, USGS's own delineation), is the yardstick","edges-and-floor (#4, a37db23, 2026-11-23): rivers from outside carry their drainage in"
+ridley_own_drainage,se_pa,-75.393,39.903,Ridley,300,drainage_is,^Ridley Creek,,"a fork of Darby Creek across the tidal Delaware","its own drainage","drainages end at tidal water (05c)"
+crum_own_drainage,se_pa,-75.350,39.879,Crum,300,drainage_is,^Crum Creek,,"a fork of Darby Creek across the tidal Delaware","its own drainage","drainages end at tidal water (05c)"
+# rows to add when the fix they hold is published (frozen from that build):,,,,,,,,,,,
+# leicester_swamp (central_vt; #6): the Leicester River drawn along NHD's line through the swamp,,,,,,,,,,,
+# limekiln_lake_outlet (adk_southwest; #1): the outlet's water estimate within fix-open-items' tolerance of the measured 78.8 F,,,,,,,,,,,
+# willow_creek_arrowhead (la; #2): Willow Creek below Lake Arrowhead not drier than NHD's class,,,,,,,,,,,
+# cascade_creek_access (jackson; f18342c): text_lacks acc=Teton Park Road → bike (the open-season approach),,,,,,,,,,,
+# buford_tailwater and chilhowee_tailwater (n_georgia and smokies; #4): scored reaches starting at the dams,,,,,,,,,,,
+# second_outlets (adk_*; #5): the 13 second outlets drawn as side channels,,,,,,,,,,,
+# ny_trails_label (adk_*; B3): layer_lacks trails=CA State Parks,,,,,,,,,,,
+# piseco_outlet_s518 (adk_southwest): cfs_min in line with its 174 km2 (needs the reach's point),,,,,,,,,,,
+# spencer_big_pond (ne_ct) and big_brook_port_kent (adk_high_peaks): need the reaches' points,,,,,,,,,,,
