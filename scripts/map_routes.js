@@ -93,17 +93,22 @@
     r.runs.forEach(u => u.ll.forEach(([a, b]) => { s = Math.min(s, a); n = Math.max(n, a); w = Math.min(w, b); e = Math.max(e, b); }));
     return [[s, w], [n, e]];
   }
-  // The room the map's controls and panels leave, as padding for a fit (px): each one is kept clear from the side that
-  // costs least (the zoom buttons from the left, the area panel from the bottom), leaving at least 30 % of each way.
+  // The room the map's controls and panels leave, as padding for a fit (px): the biggest first, each one is kept clear
+  // from the side that leaves the room's shorter way the longest (on a phone the area panel or the open legend, most of
+  // the screen's width, from the bottom, not beside it in a strip a quarter of the screen wide; the zoom buttons then
+  // from the left), leaving at least 30 % of each way.
   function room(cont, els) {
     const m = cont.getBoundingClientRect(), p = {top: 16, bottom: 16, left: 16, right: 16};
-    els.forEach(el => {
-      const r = el.getBoundingClientRect();
-      if (!r.width || !r.height || r.bottom <= m.top || r.top >= m.bottom || r.right <= m.left || r.left >= m.right) return;
-      const need = {top: r.bottom - m.top, bottom: m.bottom - r.top, left: r.right - m.left, right: m.right - r.left};
-      const side = Object.keys(need).reduce((a, b) => need[b] < need[a] ? b : a);
-      p[side] = Math.max(p[side], need[side] + 16);
-    });
+    const short = q => Math.min(m.width - q.left - q.right, m.height - q.top - q.bottom);
+    els.map(el => el.getBoundingClientRect())
+      .filter(r => r.width && r.height && r.bottom > m.top && r.top < m.bottom && r.right > m.left && r.left < m.right)
+      .sort((a, b) => b.width * b.height - a.width * a.height)
+      .forEach(r => {
+        const need = {top: r.bottom - m.top, bottom: m.bottom - r.top, left: r.right - m.left, right: m.right - r.left};
+        const clear = k => Object.assign({}, p, {[k]: Math.max(p[k], need[k] + 16)});
+        const side = Object.keys(need).reduce((a, b) => short(clear(b)) > short(clear(a)) ? b : a);
+        p[side] = Math.max(p[side], need[side] + 16);
+      });
     [["top", "bottom", m.height], ["left", "right", m.width]].forEach(([a, b, len]) => {
       const k = Math.min(1, 0.7 * len / (p[a] + p[b]));
       p[a] = Math.round(p[a] * k); p[b] = Math.round(p[b] * k);
@@ -244,21 +249,28 @@
       map.getSource("route").setData({type: "FeatureCollection", features: fs});
     }
     // fitBounds frames the route as if the map were flat: tilted over terrain, a near end can stay off the screen (a
-    // trailhead 60° tilted, n_georgia). Once there, each point is looked up on the screen and the map zooms out half a
-    // step while one is outside the room, three times at most.
+    // trailhead 60° tilted, n_georgia). Once there, each point is looked up on the screen, and while one is more than a
+    // few pixels outside the room (over terrain even a flat fit misses by 2-3 px), the route is fitted into the room
+    // again half a step further out, three times at most (zooming out about the screen's centre instead carried a
+    // route fitted beside the area panel under it).
     const ctl = control(draw, (b, r) => later(() => {
       const c = map.getContainer();
       const p = room(c, [...c.querySelectorAll(".maplibregl-ctrl"), ...document.querySelectorAll(".panel")]);
+      const bb = [[b[0][1], b[0][0]], [b[1][1], b[1][0]]];
       const out = () => {
         const m = c.getBoundingClientRect();
         return r.runs.some(u => u.ll.some(([a, o]) => {
           const s = map.project([o, a]);
-          return s.x < p.left || s.y < p.top || s.x > m.width - p.right || s.y > m.height - p.bottom;
+          return s.x < p.left - 4 || s.y < p.top - 4 || s.x > m.width - p.right + 4 || s.y > m.height - p.bottom + 4;
         }));
       };
-      const check = n => { if (n && out()) { map.once("moveend", () => check(n - 1)); map.easeTo({zoom: map.getZoom() - 0.5, duration: 300}); } };
+      const check = n => {
+        if (!n || !out()) return;
+        map.once("moveend", () => check(n - 1));
+        map.fitBounds(bb, {padding: p, maxZoom: map.getZoom() - 0.5, duration: 300});
+      };
       map.once("moveend", () => check(3));
-      map.fitBounds([[b[0][1], b[0][0]], [b[1][1], b[1][0]]], {padding: p, maxZoom: 16, duration: 700});
+      map.fitBounds(bb, {padding: p, maxZoom: 16, duration: 700});
     }), popup => popup.remove());
     map.on("click", ctl.tap);
     map.on("dblclick", ctl.zoomTap);
