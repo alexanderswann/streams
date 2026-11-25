@@ -1529,7 +1529,8 @@ if os.path.exists(f"{SHARED}/access_roads.gpkg"):
     r_feat = gpd.GeoDataFrame({"n": ar["name"], "c": ar.cls, "sf": getc("surface"), "tt": getc("tracktype"),
                                "sm": getc("smoothness"), "fs": getc("fs_id"), "lv": getc("fs_level"),
                                "se": getc("seasonal"), "ac": getc("access_conditional"),
-                               "mv": getc("mvum"), "od": getc("open_dates"), "cw": getc("closed_why")},
+                               "mv": getc("mvum"), "od": getc("open_dates"), "cw": getc("closed_why"),
+                               "src": getc("source").where(lambda x: x != "OSM")},     # "USFS records only" (02e)
                               geometry=shapely.set_precision(ar.geometry.simplify(0.00004).values, 1e-5), crs=4326)
     print("access roads:")
     roads_json = json.loads(beside_creeks(r_feat).to_json(na="drop", drop_id=True))

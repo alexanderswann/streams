@@ -358,7 +358,8 @@ function initDrainageMap(map, ctrl) {
      p.sm ? "Smoothness: " + esc(String(p.sm).replace(/_/g, " ")) : "",
      p.se === "yes" ? "<span class='warn'>Seasonal road</span>" : "", p.ac ? "Restrictions: " + esc(p.ac) : "",
      p.mv ? "Forest Service vehicle rules: " + esc(p.mv) : "", p.od ? "<span class='warn'>Open to " + esc(p.od) + "</span>" : "",
-     p.cw ? "<span class='warn'>" + esc(p.cw) + "</span>" : ""]
+     p.cw ? "<span class='warn'>" + esc(p.cw) + "</span>" : "",
+     p.src ? "<span class='dm'>From Forest Service records only; not in OpenStreetMap, may be overgrown or gated</span>" : ""]
       .filter(Boolean).join("<br>");
   if (window.ROADS) {
     Object.entries(ROAD).forEach(([c, [label, core, edge, dash, minz, on]]) => {

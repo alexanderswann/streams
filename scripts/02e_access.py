@@ -17,6 +17,10 @@ takes to get up it, from OSM tags and the USFS road layers (maintenance level; o
   dirt             dirt road with no condition data
 Left out: private roads (unless bicycles are allowed), roads closed to bikes (bicycle = no, or closed roads in
 wilderness), driveways, parking aisles and other service minutiae.
+Forest Service roads OSM lacks (the user, 2026-11-25: "Draw and ride them"): the pieces of the USFS road lines no way
+the maps have covers, less the offset copies of an OSM way (trailrules.usfs_only), are roads too (source "USFS records
+only", no osm_id), classed like the others by their USFS layer, level and MVUM designation; 08_hike.py rides them
+like a fire road, flagged.
 
 Parking: OSM amenity=parking that is public, in mountain terrain or within 300 m of a trail.
 Trailheads: OSM highway=trailhead, USFS recreation sites of type trailhead, and USFS recreation opportunities marked
@@ -87,7 +91,9 @@ out center tags;""")
     print(f"{REGIONS[key]['label']}: {len(roads)} road ways, {len(pts)} parking / trailhead points so far")
 
 rd = gpd.GeoDataFrame(list(roads.values()), crs=4326).to_crs(CRS).reset_index(drop=True)
+osm_here = rd.geometry.values          # every way downloaded here, for the USFS-only test below
 rd = rd[~rd.service.isin(SERVICE_SKIP)].reset_index(drop=True)
+rd["source"] = "OSM"
 
 # ---- USFS roads: open to the public (layer 0) and closed to the public (layer 1) ----
 def stack(parts, key):
@@ -100,6 +106,22 @@ fields = "objectid,id,name,oper_maint_level,surface_type,openforuseto"
 fs_open = stack([esri(f"{EDW}/EDW_RoadBasic_01/MapServer/0", bb, fields) for bb in boxes.values()], "objectid")
 fs_closed = stack([esri(f"{EDW}/EDW_RoadBasic_01/MapServer/1", bb, fields) for bb in boxes.values()], "objectid")
 print(f"USFS roads: {len(fs_open)} open, {len(fs_closed)} closed to the public")
+# Forest Service roads OSM lacks (the user, 2026-11-25: "Draw and ride them"; trailrules.usfs_only): the pieces no way
+# the maps have covers, inside the map's boxes and not an offset copy of an OSM way, join the roads as ways of their
+# own, so the USFS and MVUM matching and the classes below treat them as the roads they are
+fs_both = pd.concat([fs_open, fs_closed], ignore_index=True)
+if len(fs_both):
+    union = shapely.union_all([shapely.box(*r["bbox"]) for r in REGIONS.values()])
+    U = trailrules.usfs_only(shapely.intersection(fs_both.geometry.values, union), trailrules.map_ways(osm_here))
+    cp = U.offset_copy.astype(bool).values
+    copies, U = U[cp], U[~cp]
+    fs_name = lambda v: re.sub(r"\b[A-Z][A-Z']*\b", lambda m: m.group(0).capitalize(), v.strip()) \
+        if isinstance(v, str) and v.strip() else None                 # "UPPER WINESPRINGS CR." -> "Upper Winesprings Cr."
+    us = gpd.GeoDataFrame({"name": [fs_name(v) for v in fs_both["name"].values[U.line.values]],
+                           "source": "USFS records only"}, geometry=list(U.geometry.values), crs=CRS)
+    print(f"USFS roads OSM lacks: {len(us)} pieces, {U.len_m.sum() / 1609.344:.0f} mi "
+          f"({copies.len_m.sum() / 1609.344:.0f} mi more were offset copies of OSM ways)")
+    rd = pd.concat([rd, us], ignore_index=True)
 # USFS Motor Vehicle Use Map: the official designation of which vehicles may use each forest road, and when
 mv_fields = ("objectid,id,name,mvum_symbol_name,surfacetype,seasonal,passengervehicle,passengervehicle_datesopen,"
              "highclearancevehicle,highclearancevehicle_datesopen")
@@ -125,7 +147,8 @@ surf = rd.surface.fillna("")
 fs_paved = rd.fs_surface.fillna("").str.match(r"^(AC|BST|PCC|P)\b")
 unpaved = surf.isin(UNPAVED) | (rd.highway == "track") & ~surf.isin(PAVED) | rd.tracktype.notna() & ~surf.isin(PAVED) \
     | rd.fs_surface.fillna("").str.match(r"^(NAT|AGG|IMP)\b")
-paved = ~unpaved & (surf.isin(PAVED) | fs_paved | (rd.highway != "track") & (surf == ""))
+osm = rd.source.eq("OSM")             # OSM's untagged roads are paved; a USFS road is paved only where USFS says so
+paved = ~unpaved & (surf.isin(PAVED) | fs_paved | (rd.highway != "track") & (surf == "") & osm)
 closed_cars = rd.motor_vehicle.isin(NO) | rd.motorcar.isin(NO) | \
     (rd.access.isin({"no", "private"}) & ~rd.motor_vehicle.isin(OK)) | rd.fs_closed | \
     rd.highway.eq("cycleway") & ~rd.motor_vehicle.isin(OK)              # cycleways are closed to cars by default
@@ -177,12 +200,13 @@ rd = rd[keep].copy()
 rd["name"] = rd["name"].fillna(rd.fs_id.map(lambda v: f"USFS road {v}" if isinstance(v, str) else None))
 rd = rd.rename(columns={"access:conditional": "access_conditional"})
 cols = ["osm_id", "name", "ref", "highway", "cls", "surface", "tracktype", "smoothness", "fs_id", "fs_level", "seasonal",
-        "access_conditional", "mvum", "open_dates", "closed_why", "geometry"]
+        "access_conditional", "mvum", "open_dates", "closed_why", "source", "geometry"]
 rd[[c for c in cols if c in rd]].to_crs(4326).to_file(f"{SHARED}/access_roads.tmp.gpkg")
 os.replace(f"{SHARED}/access_roads.tmp.gpkg", f"{SHARED}/access_roads.gpkg")    # 08_hike.py may be reading it
 km = rd.length / 1000
 print("access roads:", len(rd), "ways,", round(km.sum()), "km | km by class:",
-      km.groupby(rd.cls.values).sum().round().to_dict())
+      km.groupby(rd.cls.values).sum().round().to_dict(), "| USFS records only, km by class:",
+      km[rd.source.ne("OSM").values].groupby(rd.cls.values[rd.source.ne("OSM").values]).sum().round().to_dict())
 
 # ---- parking and trailheads ----
 p = gpd.GeoDataFrame(list(pts.values()), crs=4326).to_crs(CRS)

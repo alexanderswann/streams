@@ -2,8 +2,11 @@
 (cost-distance on the DEM).
 
 Walking speed is Tobler's hiking function on the local slope, averaged uphill/downhill:
-  - trails, tracks, gated and closed roads, and the trail layer's steps and bike paths: grade capped at 15% (trails
-    switchback), full Tobler speed
+  - trails, tracks, gated and closed roads, the trail layer's steps and bike paths, and the Forest Service roads OSM
+    lacks (02e_access.py): grade capped at 15% (trails switchback), full Tobler speed
+  - faint trails: the agencies' trails OSM lacks (02d_trails.py's "official only", drawn dotted), off any OSM way:
+    FAINT_FACTOR of that speed (the user, 2026-11-25: "Walk them slower", since OSM's lack of a trail often means it is
+    overgrown), between a trail and open ground below; never slower than the ground under them
   - creek bottoms (1 km^2 of drainage up to CHANNEL_MAX_KM2, 25 sq mi) off trail: 45% of Tobler (boulder-hopping,
     wading); a bigger river is walked along its bank, at the off-trail speed below
   - other off-trail terrain: 30% of Tobler (SoCal chaparral), slopes over 45 degrees nearly impassable
@@ -13,6 +16,8 @@ Bikeable (ridden wherever it beats walking):
     bikes) and all fire roads of the trail layer (02d_trails.py). Fire roads count even where bikes may not be
     allowed (wilderness, posted no bikes, fire closures, closed or private in OSM): the bike time stays in and the
     reach / drop gets a bike_check flag (below). Other private roads (ranch roads neither layer lists) stay out.
+  - the Forest Service roads OSM lacks (02e_access.py, source "USFS records only"; the user, 2026-11-25: "Draw and ride
+    them"), open or closed to cars, as dirt roads: flagged like a doubtful fire road (they may be overgrown or gated)
   - bike paths: every OSM highway=cycleway in the region, downloaded here (the trail layer, 02d_trails.py, draws them,
     and the road layer those OSM names as roads, like Old Pass Road); walked too; never ridden in wilderness
   - singletrack only where it is clearly bike-legal (trail layer bike = "yes"); never in wilderness
@@ -40,6 +45,7 @@ from geomatch import overpass, wilderness_path
 import roadclosures
 
 TRAIL_MAX_GRADE = 0.15
+FAINT_FACTOR = 0.6          # a faint trail (an agency's trail OSM lacks): this share of a trail's speed (open ground: 0.30)
 CHANNEL_FACTOR, OFFTRAIL_FACTOR = 0.45, 0.30
 # A creek bottom is walked up to this drainage; a bigger river along its bank, off trail. Since #7 a lake's outlet river
 # carries the water of the lake above it, and its channel counted as a creek bottom however big: the Raquette below
@@ -75,10 +81,19 @@ roads = gpd.read_file(f"{RAW}/osm_roads.gpkg")
 trails = gpd.read_file(f"{RAW}/osm_trails.gpkg")
 # the trail layer's steps and bike paths are walked too (02d_trails.py): this range's own OSM download has neither, and
 # a stair down a gorge wall (Tallulah Gorge's 550 m of them) joined no path to the river. Bike paths are ridden below
-_tl = gpd.read_file(f"{SHARED}/trails.gpkg").to_crs(CRS) if os.path.exists(f"{SHARED}/trails.gpkg") else None
-if _tl is not None and "highway" in _tl:
-    _tl = _tl[_tl.highway.isin(["steps", "cycleway"])].cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
+_tl_all = gpd.read_file(f"{SHARED}/trails.gpkg").to_crs(CRS) if os.path.exists(f"{SHARED}/trails.gpkg") else None
+if _tl_all is not None and "highway" in _tl_all:
+    _tl = _tl_all[_tl_all.highway.isin(["steps", "cycleway"])].cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
     trails = pd.concat([trails, _tl[["highway", "name", "geometry"]].to_crs(trails.crs)], ignore_index=True)
+# The Forest Service roads OSM lacks (02e_access.py: source "USFS records only") are walked like the fire roads, and
+# ridden below. The agencies' trails OSM lacks (02d_trails.py: "official only", drawn dotted; not the water trails it
+# doesn't draw) are faint trails, walked slower (FAINT_FACTOR)
+_ar = gpd.read_file(f"{SHARED}/access_roads.gpkg").to_crs(CRS).cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
+usfs_only = _ar[_ar.source.ne("OSM").values] if "source" in _ar else _ar.iloc[:0]
+trails = pd.concat([trails, usfs_only[["name", "geometry"]].to_crs(trails.crs)], ignore_index=True)
+faint_lines = _tl_all.iloc[:0] if _tl_all is None or "source" not in _tl_all else \
+    _tl_all[_tl_all.source.eq("official only").values & ~_tl_all.get("undrawn", pd.Series(False, index=_tl_all.index))
+            .fillna(False).astype(bool).values].cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
 drivable = roads[~roads.access.isin(["private", "no"]) & ~roads.motor_vehicle.isin(["no", "private"])
                  & (roads.highway != "track")]
 # The times are for mid-July: a full closure cuts its road only if 07_road_closures.py counts it as still in force then
@@ -125,6 +140,9 @@ def burn(geoms):
     return features.rasterize(((g, 1) for g in geoms), out_shape=shape, transform=T, all_touched=True,
                               dtype="uint8").astype(bool)
 on_path = burn(pd.concat([trails.geometry, roads.geometry]))   # anything with a tread is walkable at trail speed
+faint = burn(faint_lines.geometry) & ~on_path                  # faint trails: where no OSM way runs
+print(f"{LABEL}: faint trails (agency records only) {len(faint_lines)} lines, {int(faint.sum()):,} cells off OSM ways | "
+      f"Forest Service roads OSM lacks {len(usfs_only)} pieces, {usfs_only.length.sum() / 1609.344:.0f} mi")
 # A freeway is no place to leave a car: its lanes and ramps aren't trailheads (476 reaches used to start from I-5, the
 # 210 and others). The exits' surface roads and the roads beside it still are; freeways stay in the network test above.
 source = burn(open_roads[~open_roads.highway.isin(["motorway", "motorway_link"])].geometry)
@@ -167,7 +185,9 @@ if closed is not None:     # the closed stretches themselves, ridden (5 m past t
 gated = roads[(roads.access == "no") | roads.motor_vehicle.isin(["no"]) | (roads.highway == "track")]
 gated = gated[gated.access != "private"]            # private roads count only where the layers below list them
 ar = clip(gpd.read_file(f"{SHARED}/access_roads.gpkg").to_crs(CRS))        # 02e_access.py
-ab = ar[ar.cls == "bike"]                                                    # closed to cars, open to bikes
+usf = ar.source.ne("OSM").values if "source" in ar else np.zeros(len(ar), bool)
+ab = ar[(ar.cls == "bike").values & ~usf]                                    # closed to cars, open to bikes
+us = ar[usf]                                         # the Forest Service roads OSM lacks, open or closed to cars
 tl = clip(gpd.read_file(f"{SHARED}/trails.gpkg").to_crs(CRS))              # 02d_trails.py
 fire = tl[tl.kind == "fire road"]
 single = tl[(tl.kind == "trail") & (tl.bike == "yes")]
@@ -188,6 +208,7 @@ bl = pd.concat([part(closed_roads, np.where(track(closed_roads), "dirt", "paved"
                 part(ab, np.where(paved(ab.surface) | ~track(ab) & ab.surface.isna().values & ab.tracktype.isna().values,
                                   "paved", "dirt"), "road"),
                 part(fire, np.where(paved(fire.surface), "paved", "dirt"), "road"),
+                part(us, np.where(us.cls.eq("paved"), "paved", "dirt"), "road"),
                 part(cyc, np.where(cyc.surface.isna().values | paved(cyc.surface), "paved", "dirt"), "path"),
                 part(single, "single", "path")], ignore_index=True)
 in_wild = bl.intersects(wild).values
@@ -206,7 +227,8 @@ osm_closed = (fire.bike_why.eq("closed").values & ~fire_closure) | \
 CHECK = {"wilderness, no bikes by law": burn(bl.geometry[in_wild & bl.kind.eq("road").values].intersection(wild)),
          "posted no bikes": burn(fire.geometry[(fire.bike.eq("no") & fire.bike_why.isin(NO_BIKES)).values]),
          "fire closure": burn(pd.concat([fire.geometry[fire_closure], ar.geometry[ar.cls.eq("closed").values]])),
-         "closed or private in OpenStreetMap": burn(fire.geometry[osm_closed])}
+         "closed or private in OpenStreetMap": burn(fire.geometry[osm_closed]),
+         "a Forest Service road missing from OpenStreetMap, maybe overgrown or gated": burn(us.geometry)}
 CHECK = {k: v & bike for k, v in CHECK.items()}
 print(f"{LABEL}: bikeable cells {int(bike.sum()):,} ({int(bike.sum() - (surf_factor < 0.6)[bike].sum()):,} on roads), "
       f"on doubtful fire roads " + ", ".join(f"{k} {int(v.sum()):,}" for k, v in CHECK.items()) + f" | cycleways {len(cyc)}")
@@ -241,6 +263,8 @@ lg = line_grade(bl.geometry.values)
 speed = np.where(on_path, tobler(np.minimum(slope, TRAIL_MAX_GRADE)),
                  tobler(slope) * np.where((area >= 1.0) & (area < CHANNEL_MAX_KM2), CHANNEL_FACTOR, OFFTRAIL_FACTOR))
 speed = np.where(~on_path & (slope > CLIFF_SLOPE), CLIFF_KMH, speed)
+# faint trails: FAINT_FACTOR of a trail's speed (switchbacks too), never slower than the ground under them
+speed = np.where(faint, np.maximum(speed, tobler(np.minimum(slope, TRAIL_MAX_GRADE)) * FAINT_FACTOR), speed)
 grade = np.where(np.isfinite(lg), np.minimum(lg, BIKE_MAX_GRADE), np.minimum(slope, TRAIL_MAX_GRADE))
 print(f"{LABEL}: bike-cell grade median {np.median(grade[bike]):.3f} along the lines "
       f"(cell slope capped at 15%: {np.median(np.minimum(slope, TRAIL_MAX_GRADE)[bike]):.3f}), "
@@ -428,8 +452,8 @@ print(f"reaches: median approach along reach {ts.approach_med_min.median():.0f} 
 import approach_routes
 approach_routes.build(
     OUT, CRS, {k: (start_ids[k], start_cells[k]) for k in start_cells},
-    tbf, offs, T, bike, on_path, area, bike_lines=bl.geometry.values,
-    path_lines=pd.concat([trails.geometry, roads.geometry]).values,                      # on_path
+    tbf, offs, T, bike, on_path | faint, area, bike_lines=bl.geometry.values,          # a faint trail is a trail
+    path_lines=pd.concat([trails.geometry, roads.geometry, faint_lines.geometry.to_crs(trails.crs)]).values,  # on_path
     road_lines=open_roads[~open_roads.highway.isin(["motorway", "motorway_link"])].geometry.values,   # source
     jump=JUMP, creek_km2=1.0, creek_max_km2=CHANNEL_MAX_KM2,   # creek bottoms, as `speed` walks them (the cap too)
     label=LABEL)

@@ -770,7 +770,8 @@
            p.sm ? "Smoothness: " + esc(String(p.sm).replace(/_/g, " ")) : "",
            p.se === "yes" ? "<span class='warn'>Seasonal road</span>" : "", p.ac ? "Restrictions: " + esc(p.ac) : "",
            p.mv ? "Forest Service vehicle rules: " + esc(p.mv) : "", p.od ? "<span class='warn'>Open to " + esc(p.od) + "</span>" : "",
-           p.cw ? "<span class='warn'>" + esc(p.cw) + "</span>" : ""]
+           p.cw ? "<span class='warn'>" + esc(p.cw) + "</span>" : "",
+           p.src ? "<span class='dm'>From Forest Service records only; not in OpenStreetMap, may be overgrown or gated</span>" : ""]
             .filter(Boolean).join("<br>");
       }
       if (id.startsWith("trail-line")) return `<b>${esc(p.n || (p.k === "fire road" ? "Unnamed fire road" : "Unnamed trail"))}</b>` +

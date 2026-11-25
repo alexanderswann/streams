@@ -479,7 +479,8 @@ paths (`highway=cycleway`: paved greenways like the Rottenwood Creek Trail, mapp
 names as a road, like Old Pass Road, is a road closed to cars in the road layer) and tracks (fire roads), the most
 complete source in every test area. USGS National Digital Trails (public domain) gives official name, trail number,
 agency and allowed uses to OSM ways that follow an official trail, and adds named official trails missing from OSM,
-dotted, as "agency records only; may be faint or abandoned"; its water trails (canoe and paddle routes, such as the
+dotted, as "agency records only; may be faint or abandoned" (the approach times walk them as faint trails, slower
+than a trail: `08_hike.py`); its water trails (canoe and paddle routes, such as the
 Chattooga River Canoe Trail) are no walking trails: they name no path and draw no line (their pieces stay in the data
 for the parking test). The USFS layer of roads closed to the public marks
 gated fire roads. Left out: sidewalks; sidepaths (an unnamed footway, path or bike path within 20 m of a car road for
@@ -514,7 +515,12 @@ path only where it follows an official trail, as a rail trail does), so a town l
 is no trail parking; and any lot OSM names after a trail
 ("Schuylkill River Trail Parker Ford Trailhead") or a way onto the water (a boat ramp or launch, a fishing or canoe
 access). Trailheads: OSM and USFS (with a link and the open / closed status), merged within 150 m, official names
-first. Road and trail downloads are cached for a week (`REFRESH=1` forces new ones).
+first. **Forest Service roads OSM lacks** (the user, 2026-11-25: "Draw and ride them") are roads too: the pieces of
+the USFS road lines (open and closed to the public) more than 40 m from every way the maps have, 200 m or longer, and
+not an offset copy of an OSM way (half the piece within 100 m of one, or within 300 m with 60 % of it running beside
+one within 30° of its direction: `trailrules.usfs_only`). They are classed like the others by their USFS layer, level
+and MVUM designation, named from the USFS record, and say "From Forest Service records only; not in OpenStreetMap,
+may be overgrown or gated". Road and trail downloads are cached for a week (`REFRESH=1` forces new ones).
 
 **Map cartography** (`06_map.py` with `map_drainages.js` + `map_style.css`, inlined into the HTML; 3D:
 `scripts/map3d.html`):
@@ -607,18 +613,22 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
 - `08_hike.py` (per range): cost-distance approach time from the nearest road a car can reach, on the 10 m DEM.
   Freeways and their ramps, and road pieces stranded behind a closure, are no places to start from.
   - **Walking** uses Tobler's hiking function on the cell's slope, capped at 15% on anything with a tread (every OSM
-    road and trail in the range, and the trail layer's steps and bike paths), since trails switchback. Off-trail creek bottoms walk at 45% of that speed and
+    road and trail in the range, the trail layer's steps and bike paths, and the Forest Service roads OSM lacks), since
+    trails switchback. The agencies' trails OSM lacks (the trail layer's dotted "official only" ones) are **faint
+    trails**, walked at 60% of a trail's speed where no OSM way runs (the user, 2026-11-25: "Walk them slower", since
+    OSM's lack of a trail often means it is overgrown). Off-trail creek bottoms walk at 45% of a trail's speed and
     other ground (chaparral) at 30%; slopes over 45° are near-impassable, and so are lakes off trails.
   - **Biking** is used wherever it beats walking: 18 km/h on the flat, slowed by grade (about 10 km/h at 6%), ×0.7 on
     dirt roads and ×0.5 on singletrack, on the road's or trail's own grade along the line over 200 m (capped at 25%),
     not the hillside's. **Bikeable:** every road closed to cars and every fire road (the closures counted for
     mid-July and roads cut off by them, OSM roads tagged access=no / motor_vehicle=no, OSM tracks, access roads of
-    class "bike", the trail layer's fire roads), every OSM bike path (downloaded by `08_hike.py`, kept a week), and
+    class "bike", the trail layer's fire roads, the Forest Service roads OSM lacks), every OSM bike path (downloaded
+    by `08_hike.py`, kept a week), and
     singletrack the trail layer marks bike-legal; never in wilderness. Other singletrack is walked; private roads
     neither layer lists stay out.
   - **Fire roads where bikes may not be allowed are still ridden**, and their bike time counts. A route that rides
     one for a minute or more gets `bike_check` (why: wilderness, posted no bikes, a fire closure, closed or private in
-    OSM) and `bike_check_min`; popups say "⚠ fire road: double-check bike access".
+    OSM, a Forest Service road missing from OSM) and `bike_check_min`; popups say "⚠ fire road: double-check bike access".
   - Each reach/drop gets `approach_min` = `bike_min` + `walk_min` and its trailhead; reaches also get
     `approach_med_min`, the typical time along the reach, and `bike_med_min`, the minutes of it ridden. A point in a
     lake counts as reached at the nearest reachable shore of its own lake, and each lake gets an approach

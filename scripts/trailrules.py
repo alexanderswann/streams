@@ -13,7 +13,7 @@ and it is not a sidepath: an unnamed footway, path or bike path that runs within
 of its length is that road's sidewalk or side path (OSM often leaves it untagged), and the basemap draws the road.
 Measured on the 12 maps (2026-11-25, trails-and-roads session); the numbers are in its notes.
 """
-import os, json, time, numpy as np, pandas as pd, geopandas as gpd, shapely
+import os, json, time, numpy as np, pandas as pd, geopandas as gpd, shapely, shapely.ops
 from config import REGIONS, CRS, SHARED, SHARED_DERIVED, raw_dir, out_dir
 
 SIDE_M, SIDE_SHARE = 20.0, 0.6      # a sidepath: this share of an unnamed way within SIDE_M of a car road
@@ -100,3 +100,76 @@ def along_water(lines, wet=None):
 def beside_road(lines, roads=None):
     """True for each projected line with SIDE_SHARE of it within SIDE_M of a car road (car_roads())."""
     return share_near(lines, car_roads() if roads is None else roads, SIDE_M) >= SIDE_SHARE
+
+
+# ---- Forest Service roads OpenStreetMap lacks (the user, 2026-11-25: "Draw and ride them") ----
+# A USFS road line (EDW RoadBasic, open or closed to the public) is cut USFS_CUT_M around every OSM way; a piece of
+# USFS_MIN_M or more is a road OSM lacks, unless it is an offset copy of a way the maps have (map_ways(): OSM's, and the
+# agencies' trails the trail layer draws): the median distance of its points (USFS_STEP_M apart) to the nearest way under
+# COPY_M, or under COPY_PAR_M with PAR_SHARE of its points beside a way that runs within PAR_DEG of the piece's own
+# direction. A USFS line drawn off the road OSM has runs alongside it; a road OSM lacks leaves the ways it starts from.
+USFS_CUT_M, USFS_MIN_M, USFS_STEP_M = 40.0, 200.0, 50.0
+COPY_M, COPY_PAR_M, PAR_SHARE, PAR_DEG = 100.0, 300.0, 0.6, 30.0
+
+
+def map_ways(extra=()):
+    """Every way the maps have, projected LineStrings: each range's OSM roads and paths (02_download_vectors.py), the
+    trail layer's lines (02d_trails.py: its OSM tracks, steps and bike paths, and the agencies' trails OSM lacks, but not
+    the water trails it doesn't draw) and `extra` (02e_access.py's own download)."""
+    parts = [np.asarray(list(extra), dtype=object)]
+    for r in REGIONS:
+        for f in ("osm_roads", "osm_trails"):
+            p = f"{raw_dir(r)}/{f}.gpkg"
+            if os.path.exists(p):
+                parts.append(gpd.read_file(p, columns=[]).to_crs(CRS).geometry.values)
+    p = f"{SHARED}/trails.gpkg"
+    if os.path.exists(p):
+        t = gpd.read_file(p)
+        drawn = ~t.undrawn.fillna(False).astype(bool) if "undrawn" in t else pd.Series(True, index=t.index)
+        parts.append(t[t.osm_id.notna() | drawn].to_crs(CRS).geometry.values)
+    g = shapely.get_parts(np.concatenate([np.asarray(x, dtype=object) for x in parts]))
+    return g[shapely.get_type_id(g) == 1]
+
+
+def _heading(lines, d):
+    """Each line's direction (degrees, 0-180) at d m along it, over 20 m."""
+    a = shapely.line_interpolate_point(lines, np.maximum(d - 10.0, 0.0))
+    b = shapely.line_interpolate_point(lines, np.minimum(d + 10.0, shapely.length(lines)))
+    return np.degrees(np.arctan2(shapely.get_y(b) - shapely.get_y(a), shapely.get_x(b) - shapely.get_x(a))) % 180
+
+
+def usfs_only(lines, ways):
+    """The pieces of USFS road lines (projected) no way covers (ways: map_ways()). A DataFrame: line (the index
+    into `lines`), geometry (the piece, lengthened by USFS_CUT_M along its own line at each cut end so it meets the
+    way it was cut from), len_m (before that), median_m (to the nearest OSM way), parallel (the share of its points
+    beside a way running its way) and offset_copy (a copy of an OSM way drawn off it, by the rule above)."""
+    ways = np.asarray(ways, dtype=object)
+    tree = shapely.STRtree(ways) if len(ways) else None
+    rows = []
+    for i, ln in enumerate(lines):
+        if ln is None or ln.is_empty:
+            continue
+        for part in shapely.get_parts(ln):
+            if part.geom_type != "LineString" or part.length < USFS_MIN_M:
+                continue
+            near = tree.query(part, predicate="dwithin", distance=USFS_CUT_M) if tree is not None else []
+            rest = part.difference(shapely.union_all(shapely.buffer(ways[near], USFS_CUT_M))) if len(near) else part
+            for piece in shapely.get_parts(shapely.line_merge(rest) if rest.geom_type == "MultiLineString" else rest):
+                if piece.geom_type != "LineString" or piece.length < USFS_MIN_M:
+                    continue
+                d = np.linspace(0.0, piece.length, max(3, int(piece.length // USFS_STEP_M)))
+                pts = shapely.line_interpolate_point(piece, d)
+                med, par = np.inf, 0.0
+                if tree is not None:
+                    (pi, wi), dist = tree.query_nearest(pts, return_distance=True, all_matches=False)
+                    med = float(np.median(dist))
+                    turn = np.abs(_heading(np.full(len(pi), piece, dtype=object), d[pi])
+                                  - _heading(ways[wi], shapely.line_locate_point(ways[wi], pts[pi]))) % 180
+                    par = float(np.mean(np.minimum(turn, 180 - turn) < PAR_DEG))
+                s, e = sorted((part.project(shapely.Point(piece.coords[0])), part.project(shapely.Point(piece.coords[-1]))))
+                geom = shapely.ops.substring(part, max(s - USFS_CUT_M, 0.0), min(e + USFS_CUT_M, part.length))
+                if geom.geom_type != "LineString" or geom.length > piece.length + 2 * USFS_CUT_M + 1:
+                    geom = piece                       # a line that loops back on itself: the piece as cut
+                rows.append(dict(line=i, geometry=geom, len_m=piece.length, median_m=med, parallel=par,
+                                 offset_copy=med < COPY_M or (med < COPY_PAR_M and par >= PAR_SHARE)))
+    return pd.DataFrame(rows, columns=["line", "geometry", "len_m", "median_m", "parallel", "offset_copy"])
