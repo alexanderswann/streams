@@ -135,7 +135,7 @@ __LAYER_ORDER_JS__
 // file carries no profiles (each area's sits beside its maps there, as profiles.html)
 const onSite = (html, a) => html == null ? html : String(html).replace(/href='profiles\.html#/g, `href='__SITE__${a.key}/profiles.html#`);
 phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
-map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD · Trails © OpenStreetMap contributors · USFS · iNaturalist · PRISM Group, Oregon State University");
+map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD · Trails © OpenStreetMap contributors · USFS · iNaturalist · PRISM Group, Oregon State University__SENTINEL__");
 
 const all = L.latLngBounds([]);
 AREAS.forEach(a => all.extend(L.latLngBounds(a.bounds)));
@@ -361,6 +361,10 @@ _page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file
 html = HTML.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
 html = html.replace("__SCORE_JS__", _page_file("map_score.js"))      # the fish score's breakdown in the popups
 html = html.replace("__LAYER_ORDER_JS__", _page_file("layer_order.js")).replace("__SITE__", SITE)   # the switches' order
+# the Copernicus credit (flowlib.SENTINEL_CREDIT) where an area in the file has the late_summer_green source
+from flowlib import SENTINEL_CREDIT
+html = html.replace("__SENTINEL__", " · " + SENTINEL_CREDIT if any("late_summer_green" in AREAS[a["key"]].get("sources", ())
+                                                                  for a in areas) else "")
 html = html.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace("__BLOBS__", "\n".join(blobs))
 path = f"{OUT}/stream_maps_all.html"
 with open(path, "w", encoding="utf-8") as f:

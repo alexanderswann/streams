@@ -68,6 +68,11 @@ if known_falls.src.str.contains("Overture Maps", regex=False).any():
                        "Foursquare data © 2024 Foursquare Labs, Inc., <a href='https://www.apache.org/licenses/LICENSE-2.0' "
                        "target='_blank'>Apache-2.0</a> (<a href='https://docs.overturemaps.org/attribution/' target='_blank'>"
                        "notice</a>)")
+# Sentinel-2's late-summer greenness (02g_greenness.py) goes into the summer flow classes and the fish score where the
+# area has it: the Copernicus terms ask for their credit (2026-11-24)
+if has("late_summer_green"):
+    from flowlib import SENTINEL_CREDIT
+    LBL["credits"] += " · " + SENTINEL_CREDIT
 # road closures from 07_road_closures.py (optional; re-run that script to refresh)
 closures = gpd.read_file(f"{MAP_OUT}/road_closures.gpkg") if os.path.exists(f"{MAP_OUT}/road_closures.gpkg") else None
 gated = gpd.read_file(f"{MAP_OUT}/gated_roads.gpkg") if os.path.exists(f"{MAP_OUT}/gated_roads.gpkg") else None

@@ -771,6 +771,12 @@ def gauge_summers(sites, first_year=2011, min_summers=5):
 #   - a gauge on the reach's own creek (creek_gauges, gauge_record): its share of summers flowing;
 #   - the channel's late-summer greenness (channel_green): bare where it's near-certainly dry.
 GREEN_YEARS = (2022, 2023, 2024)     # the late summers 02g_greenness.py fetches (the rule was measured on these)
+# The credit the Copernicus Sentinel data terms ask for where their data, modified (02g's NDVI rasters), goes into what a
+# map shows: the area maps of areas with the late_summer_green source (06_map.py), the map of all areas (13_overview.py)
+# and the one-file map (14_portable.py)
+SENTINEL_CREDIT = "Contains modified Copernicus Sentinel data " + (
+    f"{min(GREEN_YEARS)}–{max(GREEN_YEARS)}" if sorted(GREEN_YEARS) == list(range(min(GREEN_YEARS), max(GREEN_YEARS) + 1))
+    else ", ".join(str(y) for y in sorted(GREEN_YEARS)))
 GAUGE_KM = 4.0                       # a gauge's record stands for its creek this far along its model line
 GAUGE_SITE_M = 500                   # gauges this close together are one site (Whitewater River at Windy Point)
 # Station names of gauges that measure plumbing, not a creek (canals, conduits, powerhouses, spills, reservoirs),

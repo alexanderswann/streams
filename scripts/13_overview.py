@@ -77,7 +77,7 @@ const shade = L.tileLayer(ESRI + "/Elevation/World_Hillshade/MapServer/tile/{z}/
 const places = L.tileLayer(ESRI + "/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {attribution: "Esri", maxZoom: 16, pane: "shadowPane"}).addTo(map);
 L.control.layers({"Light gray": gray, "USGS topo": topo}, {"Terrain shading": shade, "Place &amp; road labels": places}, {collapsed: true}).addTo(map);
 L.control.scale({metric: false}).addTo(map);
-map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD");
+map.attributionControl.addAttribution("Streams: USGS 3DEP &amp; NHD__SENTINEL__");
 __PHONE_JS__
 phoneControls(map);      // map_phone.js: one-line credits on phones, "my location" button
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
@@ -167,6 +167,10 @@ html = HTML.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).repla
     "__PREVIEW_V__", str(int(os.path.getmtime(f"{OUT}/preview.jpg"))) if os.path.exists(f"{OUT}/preview.jpg") else "0")   # a new picture, a new link: apps keep the old card otherwise
 _page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f_)).read()
 html = html.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
+# the Copernicus credit (flowlib.SENTINEL_CREDIT) where an area shown here has the late_summer_green source
+from flowlib import SENTINEL_CREDIT
+html = html.replace("__SENTINEL__", " · " + SENTINEL_CREDIT if any("late_summer_green" in AREAS[a["key"]].get("sources", ())
+                                                                  for a in areas) else "")
 with open(f"{OUT}/index.html", "w", encoding="utf-8") as f:
     f.write(html)
 print(f"{OUT}/index.html: {len(areas)} areas ({', '.join(a['key'] for a in areas)}), {len(html) / 1e6:.1f} MB")
