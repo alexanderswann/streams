@@ -13,7 +13,8 @@ import ast, json, os, pickle, hashlib, subprocess, warnings
 import numpy as np
 
 warnings.filterwarnings("ignore")
-ROOT = "/Users/mac/Fishing"
+# the project this folder is in (a scratch copy's own, when run from one: the new-area test)
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCR = f"{ROOT}/scripts"
 CLONE = f"{ROOT}/publish/streams-site"
 SITE_DIR = os.environ.get("SITE_DIR", f"{CLONE}/docs")
@@ -37,6 +38,10 @@ def _areas():
         if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "AREAS":
             ns = {}
             exec(compile(ast.Module([node], []), "config_AREAS", "exec"), {"dict": dict}, ns)
+            if os.environ.get("AREAS_FILE"):          # the new-area test's places (config.py reads them the same way)
+                with open(os.environ["AREAS_FILE"]) as f:
+                    for k, v in json.load(f).items():
+                        ns["AREAS"].setdefault(k, v)
             return ns["AREAS"]
     raise SystemExit("AREAS not found in config.py")
 

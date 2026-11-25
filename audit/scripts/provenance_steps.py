@@ -11,7 +11,7 @@ Writes audit/tables/provenance_steps.csv and prints a summary.
 """
 import ast, csv, os, re, sys, datetime as dt, subprocess
 
-ROOT = "/Users/mac/Fishing"
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCR = f"{ROOT}/scripts"
 YEAR = 2026
 AREAS = ["la", "jackson", "n_georgia", "central_vt", "ne_ct", "lexington_va", "se_pa", "smokies",

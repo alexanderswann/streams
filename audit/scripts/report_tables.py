@@ -4,7 +4,7 @@
 """
 import sys, os
 import numpy as np, pandas as pd
-ROOT = "/Users/mac/Fishing"
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 label = sys.argv[1]
 T = f"{ROOT}/audit/tables/{label}"
 ORDER = ["la", "jackson", "n_georgia", "central_vt", "ne_ct", "lexington_va", "se_pa", "smokies",
