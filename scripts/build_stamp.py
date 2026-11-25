@@ -47,6 +47,7 @@ SITE_STEPS = {"13_overview", "14_portable", "15_preview"}       # the site's pag
 TOLERATED = {"05d_lakes", "lake_bathymetry", "07_road_closures", "watertemp",
              "11b_calendar"}                          # the drivers go on without them
 PUBLISHED = {"map3d_data.js": "06_map", "stream_map.html": "06_map", "stream_map_3d.html": "06_map",
+             "routes_data.js": "06_map",                         # approach_routes.pack(), beside each map
              "profiles_data.js": "12_profiles", "hillshade.png": "05_score"}    # publish_site.sh's map files: the step
 SKIP_IN_SITE = {"build_stamp.json", "profiles.html"}      # the stamp itself; the page template (scripts/profiles.html)
 

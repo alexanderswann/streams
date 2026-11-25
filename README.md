@@ -234,6 +234,7 @@ its words, with the imperial figure in brackets after each metric one (`units.im
 | `profiles.html` | Creek profile viewer: elevation vs. distance for every creek with 2 km or more of channel named in NHD (a link from the map to any other creek says it has no profile), with drops, falls, gauges and fish score / burn / trout-water strips. A hand-made page kept in git, its source `scripts/profiles.html` (no script writes it; `run_late.sh` copies it to a new area). Keep it next to `profiles_data.js` and the map |
 | `fish_score_diagram.png` | How the fish score is computed (`fish_score_diagram.py`, run by `run_late.sh`; not on the website). It is simpler than the score: it leaves out the channel factor, and its water panel names only the TNC flow model and the diversion gauge, in every area. `scoring.py` is the score |
 | `streams_drawn.gpkg` | The stream lines as `06_map.py` draws them, for checking the drawn map |
+| `routes_data.js` | Each drawn reach's approach route (Approach routes, below), loaded by both maps on the first tap on a reach; keep it next to the map. A range's whole route network is in `<range>/hike_routes.gpkg` (segments: `seg`, `parent`, `kind` 0 bike, 1 on a trail or road, 2 off trail, 3 creek bottom) and `<range>/hike_route_starts.csv` (each reach's, drop's and lake's first segment and the metres of each kind) |
 | `context/` | Fire perimeters, stream gauges (USGS, and CDEC in LA; live), wilderness, land status, critical habitat, trout waters, trout evidence, springs |
 | `<range>/` | The same per range, plus `streams_scored.gpkg` / `waterfall_candidates.gpkg` for QGIS. The `fish_score` in a range's own files is `05_score.py`'s first pass (NHD class, size, elevation, gradient, distance to a road); the final score is only in the combined `stream_reaches_ranked.csv` and the maps |
 
@@ -516,8 +517,17 @@ first. Road and trail downloads are cached for a week (`REFRESH=1` forces new on
   as of Nov 22, winter ones not counted"), sun (direct sun, terrain shade, canopy, aspect, August air and the estimated
   summer water temperature), trout waters and records, the heat gate, the latest fire and debris-flow hazard, and
   notes (critical habitat, wilderness, "⚠ No Public Access" or non-Forest-Service land, a built channel), with a link
-  to the creek's profile. A drop's popup gives its status and class, height and run, slopes, pool, drainage and flow,
+  to the creek's profile; and the route's miles ("bike 3.1 mi · hike 1.2 mi, 0.9 mi of it on trails or roads"), below
+  the access line. A drop's popup gives its status and class, height and run, slopes, pool, drainage and flow,
   the access line, any full road closure within 3 km, and links to satellite imagery and the creek's profile.
+
+- **Approach routes** (the user, 2026-11-24). A tap on a reach draws its fastest route from the trailhead to its
+  approach point, as `08_hike.py` found it (`map_routes.js`, in both maps): the bike leg orange; the walk raspberry,
+  solid on a trail or road (drawn on that line), dashed off trail, dotted up a creek bottom; the trailhead a white dot.
+  On a phone the popup covers most of the map, so the route stays when the popup closes, until the next tap on the map
+  or on another reach; "See it on the map" in the popup closes it and fits the whole route into view (the user's choice,
+  2026-11-24). The routes of a map are in `routes_data.js`, loaded on the first tap. A reach drawn in pieces (cut at a
+  pond) or a stretch drawn for another reach shows its reach's route, and a reach in a lake is reached at the shore.
 
 `07_road_closures.py` (per area) fetches **current road closures**: active now or starting in the next 7 days, in
 mountain terrain (≥150 m of relief within 1 km; park roads wherever they are). Run it, then `06_map.py`, for fresh
@@ -572,6 +582,12 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
     `approach_med_min`, the typical time along the reach, and `bike_med_min`, the minutes of it ridden. A point in a
     lake counts as reached at the nearest reachable shore of its own lake, and each lake gets an approach
     (`hike_lakes.csv`).
+  - Last, **the routes themselves** (`approach_routes.py`), for the maps to draw on a tap: every route followed back
+    from its approach point through the cost-distance's traceback to its trailhead, kept once as a network
+    (`hike_routes.gpkg`, `hike_route_starts.csv`: the routes share their trunks), cut where they join, start or change
+    kind (bike, on a trail or road, off trail, creek bottom; a run under 30 m between two of one other kind takes
+    theirs, under 60 m between off trail and creek bottom). A bike run or a trail-or-road run is drawn on the line `08_hike.py` burned in, not on the 10 m cells.
+    Read after everything above is written: the times don't change.
 - `09_drive.py`: free-flow drive time and distance from the area's drive-time starting point (`home` in `AREAS`) to
   each trailhead, over regional OSM highways plus local roads, without the closures counted for mid-July and with
   winding mountain roads at ×0.75 speed; no traffic. A road reaching the network only through streets outside every

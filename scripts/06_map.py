@@ -41,6 +41,7 @@ LBL = dict(
 from scoring import attach, score, SIDE_NHD, SIDE_BELOW, THIS_YEAR
 import crossbox
 import areaclip      # an area that stops at a state line (config clip_state) shows nothing past it
+import approach_routes   # each reach's route from its trailhead, drawn on a click (08_hike.py builds them)
 
 done = [r for r in REGIONS if os.path.exists(f"{MAP_OUT}/{r}/streams_scored.gpkg")]
 read = lambda name: pd.concat([gpd.read_file(f"{MAP_OUT}/{r}/{name}") for r in done], ignore_index=True)
@@ -1528,8 +1529,8 @@ _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
 m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_filter.js") + "</script>"))
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
-    + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_drainages.js")
-    + "</script>"))
+    + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_routes.js")
+    + _page_file("map_drainages.js") + "</script>"))
 
 # every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
@@ -1951,6 +1952,18 @@ with open(f"{MAP_OUT}/overview.json", "w") as f:
                    reaches=int(len(s_ll)) - N_DRAWN_EXTRA, trail=ov_t, trail_name=LONG_TRAIL[0] if LONG_TRAIL else None, drains=[dict(name=e["name"], color=e["color"], km2=e["km2"], lab=e["lab"])
                                                     for e in drains if e["name"] != MINOR],
                    basins=json.loads(ov_d.to_json(drop_id=True)), streams=json.loads(ov_s.to_json(na="null", drop_id=True))), f)
+# Approach routes (approach_routes.py, from 08_hike.py): each drawn reach's route from its trailhead, in routes_data.js
+# beside the pages, which load it on the first click on a reach (map_routes.js); LBL.routes tells them it is there
+_routes = approach_routes.pack(MAP_OUT, done, EPSG, s_show.sid.loc[s_feat.index].values,
+                               s_show.sid.loc[s_feat_lake.index].values, mi)
+if _routes:
+    approach_routes.write(f"{MAP_OUT}/routes_data.js", _routes)
+    LBL["routes"] = 1
+    print(f"approach routes: {sum(r_ >= 0 for r_ in _routes['s'] + _routes['l']):,} of "
+          f"{len(_routes['s']) + len(_routes['l']):,} drawn reaches, {len(_routes['k']):,} segments, routes_data.js "
+          f"{os.path.getsize(f'{MAP_OUT}/routes_data.js') / 1e6:.2f} MB")
+elif os.path.exists(f"{MAP_OUT}/routes_data.js"):
+    os.remove(f"{MAP_OUT}/routes_data.js")           # no range has its routes (08_hike.py not run since): none drawn
 # 3D map: map3d_data.js holds the layers both maps draw (SHARED_3D; the 2D page loads it too). The layers only the 3D
 # map draws go into its page (map3d.html), right after its <script src="map3d_data.js">. Plain <script>s, so both maps
 # also work opened straight from disk. 14_portable.py reads both parts.
@@ -1967,7 +1980,7 @@ assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
     f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
                            + ");</script>\n<script>" + _page_file("map_score.js") + "</script>\n<script>"
-                           + _page_file("layer_order.js") + "</script>"))
+                           + _page_file("layer_order.js") + "</script>\n<script>" + _page_file("map_routes.js") + "</script>"))
 
 print("streams", len(s_ll), "| drops", len(kp_ll))
 print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string())

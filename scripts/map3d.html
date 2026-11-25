@@ -710,6 +710,7 @@
       `${fsRow(p)}<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +     // fsRow: map_score.js
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}${(D.lbl || {}).acc_asof ? `<div class="dm">${esc(D.lbl.acc_asof)}</div>` : ""}</td></tr>` +
+      (window.routeRow ? routeRow(p) : "") +     // map_routes.js: the route's miles, filled in as it is drawn
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
       (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
@@ -717,6 +718,7 @@
       (p.flags ? `<tr><td>Notes</td><td>${esc(p.flags)}</td></tr>` : "") + `</table>${prof}</div>`;
   }
   function wireInteraction() {
+    const routes = window.routesMaplibre ? routesMaplibre(map, D) : null;   // a reach's route (map_routes.js)
     const tip = new maplibregl.Popup({closeButton: false, closeOnClick: false, className: "tip", offset: 12, maxWidth: "300px"});
     const hoverIds = ["poi-trailhead", "poi-parking", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "lakes", "lake-depth", "wild_trout_waters", "wilderness",
                       "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i)]
@@ -893,12 +895,17 @@
       const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
-      if (!narrow()) { new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map); return; }
+      if (!narrow()) {
+        const pd = new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map);
+        if (routes && id === "streams") routes.show(f.id, pd);
+        return;
+      }
       folded.forEach(x => { x[1] = true; });  // a popup opened in place of another keeps the panels folded for that one
       const pop = popped = new maplibregl.Popup({maxWidth: (window.innerWidth - 16) + "px",
                                      anchor: e.point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
         .setLngLat(e.lngLat).setHTML(html).addTo(map);
       pop.on("close", () => { if (popped === pop) { popped = null; unfold(true); } });
+      if (routes && id === "streams") routes.show(f.id, pop);
       place();
     });
     // keep the 2D link pointed at the current view, with the layers that are on (layerPart, buildLayerPanel)

@@ -130,6 +130,7 @@ means it was measured on every map before it went in.
 | Fire roads are ridden; a route on a doubtful one is flagged | flagged after 1 minute on it | `scripts/08_hike.py:42` | |
 | Walking: trails up to 15 % grade; along a channel and off trail at a share of trail speed | 0.45 and 0.30 | `scripts/08_hike.py:37`, `scripts/08_hike.py:38` | |
 | Biking | 18 km/h (11 mph) on the flat; dirt x0.7, singletrack x0.5; up to 25 % grade | `scripts/08_hike.py:40` | |
+| Approach routes drawn on a tap (the user's request, 2026-11-24): each reach's route from 08_hike's traceback, its bike and trail-or-road runs on the lines it burned in (a cell takes a line within 7.5 m); a run under 30 m between two of one other kind takes theirs (60 m between off trail and creek bottom, which differ only in the dashes); the route stays after its popup closes until the next tap, and "See it on the map" shows it all (the user's choice) | 7.5 m, 30 m, 60 m | `scripts/approach_routes.py:39`, `scripts/approach_routes.py:43`, `scripts/map_routes.js` | |
 | Driving: speed by road class; winding roads slower; a trailhead joins a road within 400 m | winding x0.75 | `scripts/09_drive.py:19`, `scripts/09_drive.py:22` | |
 | Blue Ridge Parkway: a section closes only when the park's Status column says Closed; in an open section, the milepost ranges its notes call closed; each mile is laid on the Parkway's own OSM lines between the park's milepost points, and a closure with no milepost range closes no road | | `scripts/07_road_closures.py` (`blri_roads`) | `491aeba` |
 

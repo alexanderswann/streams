@@ -123,6 +123,7 @@ function initDrainageMap(map, ctrl) {
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
       `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}${(window.LBL || {}).acc_asof ? `<div class="dm">${esc(window.LBL.acc_asof)}</div>` : ""}</td></tr>` +
+      (window.routeRow ? routeRow(p) : "") +     // map_routes.js: the route's miles, filled in as it is drawn
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
       (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
@@ -178,9 +179,12 @@ function initDrainageMap(map, ctrl) {
   const hideHover = () => { if (map.hasLayer(hoverLine)) hoverLine.remove(); };
   const halo = L.geoJSON(S, {filter: f => f.properties.o >= 3, style: hstyle, interactive: false,
                              renderer: L.canvas({pane: "halo", padding: 0.4})});
+  // a reach's approach route, drawn when its popup opens and kept until the next tap on the map (map_routes.js)
+  const routes = window.routesLeaflet ? routesLeaflet(map) : null;
   const bindStream = (f, l) => {
     l.bindTooltip(() => tip(f.properties), {sticky: true, className: "stip", direction: "top", offset: [0, -6]});
     l.bindPopup(() => pop(f.properties), {maxWidth: 340});
+    if (routes) l.on("popupopen", e => routes.show(f, e.popup)).on("popupclose", e => routes.hide(e.popup));
     l.on("mouseover", () => showHover(l, col(f.properties), W[f.properties.o] * zf() + 3));
     l.on("mouseout", hideHover);
   };

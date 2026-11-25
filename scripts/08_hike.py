@@ -25,6 +25,9 @@ Sources are cells on open public drivable roads a car can reach, minus the full 
 the season the map scores (07_road_closures.py: a winter gate or a night's road work doesn't cut its road; 09_drive.py
 names today's closures on the access line instead).
 Each reach also gets the trailhead (the road cell its fastest route starts from). Run with REGION=<name>.
+Last, the routes themselves, for the map pages to draw on a click: each reach's, drop's and lake's fastest route from
+its trailhead to its approach point, one network of segments the routes share (approach_routes.py: hike_routes.gpkg,
+hike_route_starts.csv). They are read from the traceback after everything above is written, which they don't change.
 """
 import numpy as np, pandas as pd, geopandas as gpd, rasterio, os, json, time, shapely
 from rasterio import features
@@ -265,6 +268,7 @@ pc = np.where(tbf >= 0, cc.ravel() - offs[np.clip(tbf, 0, None), 1], cc.ravel())
 parent = (np.clip(pr, 0, H - 1) * W + np.clip(pc, 0, W - 1)).astype(np.int64)
 del rr, cc, pr, pc
 cumf = cum.ravel()
+JUMP = None           # lake cells and the shore cells they lead to (below), for the routes (approach_routes.py)
 # A point in a lake is reached at the lake's shore: every water cell takes the approach of the nearest shore cell of its
 # own lake that can be reached, and leads there, with no time or distance added (its lake's quickest shore where none
 # can). Without this, a reach mapped through a lake (an artificial path) cost the crossing of the impassable water: up
@@ -302,6 +306,7 @@ if LAKES is not None and lake_cells.any():
         tgt = np.where(ring[tgt] == own, tgt, best_i[own])            # the nearest shore cell is another lake's: quickest
         li, tgt = li[tgt >= 0], tgt[tgt >= 0]
         parent[li], cumf[li], tbf[li] = tgt, cumf[tgt], -1
+        JUMP = (li, tgt)
         del near
     del lab, ring
 # minutes spent on bike cells, and on each kind of doubtful fire road (the last row: any of them), along each route:
@@ -343,12 +348,15 @@ def xy(i):
     r, c = divmod(int(i), W)
     return T * (c + 0.5, r + 0.5)
 
-def table(gdf, key):
+def table(gdf, key, cells=None):
+    """The access columns for each row of gdf; cells (a list), if given, gets each row's approach cell (-1: none)."""
     rows = []
     for k, g in zip(gdf[key], gdf.geometry):
         mins, i, med, bmed = best(g)
         o = parent[i]
         fin = np.isfinite(mins)
+        if cells is not None:
+            cells.append(int(i) if fin else -1)
         why = [lab for j, lab in enumerate(LABELS) if fin and dsum[j, i] >= CHECK_MIN]
         rows.append(dict({key: k}, approach_min=round(float(mins), 0) if fin else None,
                          bike_min=round(float(bsum[i]), 0) if fin else None,
@@ -367,14 +375,18 @@ drops = gpd.read_file(f"{OUT}/waterfall_candidates.gpkg").to_crs(CRS)
 # a drop is reachable at its top or at its pool/base: use whichever is closer
 pool = gpd.GeoSeries(gpd.points_from_xy(drops.pool_lon, drops.pool_lat), crs=4326).to_crs(CRS)
 drops["geometry"] = [MultiPoint([a, b]) for a, b in zip(drops.geometry, pool)]
-ts, td = table(streams, "sid"), table(drops, "did")
+start_cells = {"stream": [], "drop": [], "lake": []}     # approach cells, for the routes (approach_routes.py)
+start_ids = {"stream": streams.sid.values, "drop": drops.did.values, "lake": []}
+ts, td = table(streams, "sid", start_cells["stream"]), table(drops, "did", start_cells["drop"])
 # lakes: reached at the nearest point of the shore in this box, on the land side (a line 7 m out from the water)
 tl = None
 if LAKES is not None and len(LAKES):
     inner = box(XMIN + 5, YMIN + 5, XMAX - 5, YMAX - 5)
     ring = [g.buffer(7).boundary.intersection(inner) for g in LAKES.geometry]
     ok = [not r_.is_empty and r_.length > 0 for r_ in ring]
-    tl = table(gpd.GeoDataFrame({"lid": LAKES.lid[ok].values}, geometry=[r_ for r_, k in zip(ring, ok) if k], crs=CRS), "lid")
+    tl = table(gpd.GeoDataFrame({"lid": LAKES.lid[ok].values}, geometry=[r_ for r_, k in zip(ring, ok) if k], crs=CRS), "lid",
+               start_cells["lake"])
+    start_ids["lake"] = LAKES.lid[ok].values
 
 # trailheads: snap origins to a 250 m grid so neighbouring road cells collapse into one access point
 both = pd.concat([ts, td] + ([tl] if tl is not None else []), ignore_index=True)
@@ -403,3 +415,14 @@ print(f"reaches: median approach along reach {ts.approach_med_min.median():.0f} 
       f"bike leg, {ts.bike_check.notna().sum()} flagged to double-check bike access | drops: median "
       f"{td.approach_min.median():.0f} min, {(td.bike_min >= 1).mean():.0%} use a bike leg, {td.bike_check.notna().sum()} "
       f"flagged | trailheads {len(th)}")
+
+# ---- the routes, for the map pages (approach_routes.py): each start's fastest route from its trailhead, followed back
+# through the traceback (tbf; a lake cell leads to its shore, JUMP), on the lines burned in above ----
+import approach_routes
+approach_routes.build(
+    OUT, CRS, {k: (start_ids[k], start_cells[k]) for k in start_cells},
+    tbf, offs, T, bike, on_path, area, bike_lines=bl.geometry.values,
+    path_lines=pd.concat([trails.geometry, roads.geometry]).values,                      # on_path
+    road_lines=open_roads[~open_roads.highway.isin(["motorway", "motorway_link"])].geometry.values,   # source
+    jump=JUMP, creek_km2=1.0, creek_max_km2=CHANNEL_MAX_KM2,   # creek bottoms, as `speed` walks them (the cap too)
+    label=LABEL)
