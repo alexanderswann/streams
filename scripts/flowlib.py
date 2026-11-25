@@ -816,20 +816,36 @@ def channel_green(geoms, box):
         return out
     srcs = [rasterio.open(p) for p in paths]
     lines = gpd.GeoSeries(list(geoms), crs=CRS).to_crs(srcs[0].crs)
+
+    def read(s, w):
+        """s.read(1, window=w, boundless=True, fill_value=-32768): the same pixels, but a window inside the raster (all
+        but the box's edges) is read plainly; a boundless read builds a VRT each time (5.6 ms against 0.04 ms)."""
+        if w.width > 0 and w.height > 0 and w.col_off >= 0 and w.row_off >= 0 and \
+                w.col_off + w.width <= s.width and w.row_off + w.height <= s.height:
+            return s.read(1, window=w)
+        return s.read(1, window=w, boundless=True, fill_value=-32768)
+
     for i, line in enumerate(lines):
         c15, c30, ring = line.buffer(15), line.buffer(30), line.buffer(400).difference(line.buffer(100))
-        yr = []
+        yr, masks = [], {}
+
+        def inside(g, shape, tr):
+            """~geometry_mask([g], shape, tr), drawn once a reach: the summers' rasters share one grid."""
+            k = (id(g), shape, tuple(tr))
+            if k not in masks:
+                masks[k] = ~geometry_mask([g], shape, tr)
+            return masks[k]
         for s in srcs:
             w = from_bounds(*ring.bounds, s.transform).round_offsets().round_lengths()
-            a = s.read(1, window=w, boundless=True, fill_value=-32768)
+            a = read(s, w)
             if a.size == 0:
                 continue
             tr, ok = s.window_transform(w), a != -32768
-            v15 = a[~geometry_mask([c15], a.shape, tr) & ok] / 1e4
+            v15 = a[inside(c15, a.shape, tr) & ok] / 1e4
             if len(v15) < 3:
                 continue
-            v30 = a[~geometry_mask([c30], a.shape, tr) & ok] / 1e4
-            vr = a[~geometry_mask([ring], a.shape, tr) & ok] / 1e4
+            v30 = a[inside(c30, a.shape, tr) & ok] / 1e4
+            vr = a[inside(ring, a.shape, tr) & ok] / 1e4
             yr.append((np.percentile(v30, 90), (v15 < 0).mean(), np.median(vr) if len(vr) else np.nan))
         if yr:
             y = np.array(yr)
