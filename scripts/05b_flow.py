@@ -88,7 +88,8 @@ def is_buried(sid):
 
 
 s = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
-s = with_buried(s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid") if c_ in s]], REGION)
+s = with_buried(s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid", "in_lake") if c_ in s]],
+                REGION)
 # A creek cut 200 m below a lake (05_score.py cuts it for its water temperature alone; a first piece's cut_sid names
 # the rest of its line) is read here whole, as it was before the cut, and both pieces take its row: its model line and
 # flow, the dam above it, its greenness and its gauge record. Measured on its own, a piece matched another model line
@@ -160,6 +161,18 @@ if len(wb_):
         lake_name[j_.index], lake_share[j_.index] = j_.gnis_name.fillna("unnamed reservoir").values, j_.whole.values
         lake_of[j_.index] = j_.index_right.values
 in_lake = (lake_share >= 0.5).values
+# 05_score.py cuts every link exactly at the shores of these lakes and of the lakes layer's (flowlib.lake_water), so
+# whether a reach lies in one is its in_lake there, the one source for creek or lake: a reach the cut left out of the
+# water is no reservoir here. Read by half its length, a creek piece weaving along a shore, the stretches of water
+# under SLIVER_M it clips kept with the creek, read "reservoir" while the map drew it as a stream: 37 pieces of 1-64 m,
+# 0.6 mi, on the 12 maps (the Beaver River's 58 m at Nehasane Lake's outlet, 67 % of it in the water in stretches
+# under 20 m; 2026-11-24). A reach the cut put in the water still lies in a lake here only by its half (above).
+# in_lake comes with the reaches (kept above, so it reaches here); the reaches left out as buried, read back above,
+# have none and read as creeks, as they are (buried.reaches leaves out no reach in a lake).
+_cut_lake = s.in_lake.fillna(False).astype(bool).values if "in_lake" in s else np.ones(len(s), bool)
+print(f"reaches the shore cut left out of the water, half in an NHD lake: {int((in_lake & ~_cut_lake).sum())} "
+      f"({s.length.values[in_lake & ~_cut_lake].sum() / 1000:.2f} km), read as creeks")
+in_lake = in_lake & _cut_lake
 # Which of those lakes hold water: 03b_stitch.py ends paths at the outlet of every lake with 2+ ha of its outline at
 # one level in the DEM (a pit, fdir 254); one without (a marsh or meadow NHD maps as a pond, a dry basin) has none
 wet_lakes = pit_lakes(wb_, REGION)
@@ -181,8 +194,11 @@ if ll_all_ is not None:
         j_ = j_.assign(share=share).sort_values("share", ascending=False)
         j_ = j_[~j_.index.duplicated()]
         j_ = j_[j_.share >= 0.5]
-        in_layer_lake = s.index.isin(j_.index)
+        in_layer_lake = s.index.isin(j_.index) & _cut_lake          # (05_score.py's cut, above)
         layer_name[j_.index] = j_["name"].fillna("unnamed lake").values
+        _out = s.index.isin(j_.index) & ~_cut_lake
+        print(f"reaches the shore cut left out of the water, half in a lake of the lakes layer: {int(_out.sum())} "
+              f"({s.length.values[_out].sum() / 1000:.2f} km), read as creeks")
 else:
     print(f"NOTE: no lakes layer at {SHARED_DERIVED}/lakes.gpkg (05d_lakes.py): only NHD's lakes are read")
 v2_line = v2.drop_duplicates("comid").set_index("comid").geometry
