@@ -102,7 +102,7 @@ swimming: the popups' NHD flow class and the drop / plunge-pool and waterfall la
 |---|---|
 | TNC California Natural Flows (modelled monthly flow per year), scaled by the drainage without the water from above dams (`area_edge_km2`: the model is for natural flow) | NHDPlus V2's EROM mean flow for the month × a yearly index from the area's own USGS gauges (`02b_download_flow.py`), scaled by the full drainage (`area_full_km2`: EROM has the dams in it). One index per area, so small headwaters that dry faster than the gauged creeks are over-rated in droughts |
 | CAL FIRE fire history | The interagency fire perimeter history (NIFC) |
-| CPAD restricted / no public access | PAD-US holdings recorded as restricted or closed. Most eastern holdings are "unknown" there and aren't flagged |
+| CPAD restricted / no public access | PAD-US holdings recorded as restricted or closed. Most eastern holdings are "unknown" there and aren't flagged. A holding's name is printed only for public, tribal or non-profit land with a place's name (`landnames.py`): never a private individual's, so an easement shows its status alone |
 | CDFW surveys, stocking, Wild / Heritage Trout Waters | Each state's own (`troutdata.py`; the table below) |
 | CDFW natural fish-passage barriers among the known falls | none, except the Smokies, where the national park's own waterfalls layer is added; the other sources are the same everywhere (`02f_known_falls.py`) |
 | Caltrans and county road closures | Keyless feeds where they exist (step 07 below); none for NE Connecticut, southeastern Pennsylvania or the Adirondacks |
@@ -748,7 +748,7 @@ soundings; each state's lake access, rules, designations and trout lakes, New Yo
 | Depth | Measured values only, best first: published sonar surveys and state bathymetry, EPA National Lakes Assessment sonar (a natural lake's deepest spot, a reservoir's lower bound), fisheries transducer surveys, an agency's listed depth. Disagreements over 20% (and 2 m) are shown. Modelled depths (GLOBathy, HydroLAKES) are never used |
 | Inlets, outlets | NHD HR flowlines that start or end at the shore; an unnamed outlet is followed down to the first named water. Many small lakes have no mapped stream: "no mapped inlet or outlet (NHD)" |
 | Access, rules | The states' launches, fishing access sites, lake designations, special regulations and boat and motor rules (CT DEEP; Vermont; Virginia DWR; PFBC, with credit as its licence asks, and DCNR; NCWRC, TWRA, TVA and the Calderwood reciprocal licence; DEC's lake fishing list and launches from data.ny.gov). DEC's own ArcGIS layers forbid secondary distribution, so they aren't used for lakes |
-| Land | PAD-US (the public-access service); where PAD-US leaves the water out (Jackson Lake), the unit most of the shore lies in. Access is flagged only where closed, or restricted outside federal land |
+| Land | PAD-US (the public-access service); where PAD-US leaves the water out (Jackson Lake), the unit most of the shore lies in. Access is flagged only where closed, or restricted outside federal land. The holding's name only where `landnames.py` allows (never a private individual's); an easement reads "(easement)" |
 
 **Measured depths.** Connecticut DEEP's lake contours (surveys of 1959-2002; the deepest contour is a lower bound);
 Vermont ANR's sonar soundings (2020; below the survey day's level); in SE Pennsylvania DCNR / PA Geological Survey

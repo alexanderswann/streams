@@ -9,6 +9,7 @@ the agency lists none, pale blue where there's no record either way. A dashed ed
 level water (it may be dry or marsh part of the year).
 """
 import os, re, json, numpy as np, pandas as pd, geopandas as gpd, shapely, folium
+import landnames     # a holding's name only where the maps may print it: never a private individual's
 from html import escape as hesc
 from branca.element import MacroElement, Template
 from urllib.parse import quote
@@ -204,7 +205,7 @@ def popup(r, approach):
             *([("On site", hesc(r.access))] if isinstance(getattr(r, "access", None), str) else []),
             *([("Rules", hesc("; ".join(x for x in (getattr(r, "designation", None), getattr(r, "rules", None)) if isinstance(x, str))))]
               if isinstance(getattr(r, "designation", None), str) or isinstance(getattr(r, "rules", None), str) else []),
-            ("Land", hesc(getattr(r, "land", None) if isinstance(getattr(r, "land", None), str) else "private or unlisted (not in PAD-US)")
+            ("Land", hesc(landnames.lake_land(r.land) if isinstance(getattr(r, "land", None), str) else "private or unlisted (not in PAD-US)")
              + (f" <span class='warn'>· public access {hesc(r.land_access)}</span>"
                 if getattr(r, "land_access", None) in ("restricted", "closed") else ""))]
     note = [x for x in (r.conflict, r.water_note, r.private_shore,

@@ -12,7 +12,8 @@
   - August mean air temperature along each reach (PRISM 1991-2020 normal, 800 m) for the desert heat gate in
     scoring.py, and at each trout record (the gate starts above the hottest one)
   - Land status: USFS wilderness (no bikes), non-Forest-Service land inside the forests (private inholdings),
-    CPAD (California Protected Areas Database) holdings with restricted or no public access
+    CPAD (California Protected Areas Database) holdings with restricted or no public access; PAD-US's elsewhere,
+    named only where landnames.py lets a map print the name (never a private individual's)
   - Critical habitat for stream species (USFWS) and southern steelhead (NMFS), clipped to the study areas.
     Designated habitat, not closure boundaries: Forest Service closures are usually smaller
   - CDFW Heritage and Wild Trout Waters (special regulations, strong sign of wild trout)
@@ -34,6 +35,7 @@ from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir,
 from scoring import HEAT_START
 from geomatch import wilderness_path
 import troutdata
+import landnames    # which land holdings' names the maps print: never a private individual's (2026-11-24)
 import netfetch     # every download: timeouts, a breaker, and the last good copy when one fails (2026-11-22)
 
 FIRE_SINCE = 2016
@@ -201,7 +203,8 @@ if has("cpad"):
 else:   # outside California: PAD-US (USGS), holdings recorded as restricted (RA) or closed (XA) to the public.
     #     Most eastern holdings are "unknown" (UK) there: those aren't flagged
     cpad = esri("https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/PADUS_Public_Access/FeatureServer/0",
-                where="Pub_Access IN ('RA','XA')", fields="Pub_Access,Unit_Nm,MngNm_Desc", what="PAD-US")
+                where="Pub_Access IN ('RA','XA')", fields="Pub_Access,Unit_Nm,MngNm_Desc,MngTp_Desc,FeatClass,DesTp_Desc",
+                what="PAD-US")
     if len(cpad):
         # PAD-US files federal wilderness, forest and park units as "restricted" (rules on use, not on entry):
         # they are open on foot, so they aren't flagged
@@ -210,8 +213,13 @@ else:   # outside California: PAD-US (USGS), holdings recorded as restricted (RA
             | cpad.MngNm_Desc.fillna("").str.contains(r"(?i)forest service|national park service"))
         cpad = cpad[~open_fed]
     if len(cpad):
+        # PAD-US names private land after its owners ("Last, First" on an easement): a holding's name is kept only
+        # where landnames.py allows it (public, tribal or non-profit land with a place's name); otherwise the
+        # flag and the layer give the status alone
+        names = [landnames.holding_name(n, k, t, d) or "" for n, k, t, d in
+                 zip(cpad.Unit_Nm, cpad.FeatClass, cpad.MngTp_Desc, cpad.DesTp_Desc)]
         cpad = cpad.assign(ACCESS_TYP=cpad.Pub_Access.map({"RA": "Restricted Access", "XA": "No Public Access"}),
-                           UNIT_NAME=cpad.Unit_Nm, MNG_AGNCY=cpad.MngNm_Desc, geometry=cpad.geometry.buffer(0))
+                           UNIT_NAME=names, MNG_AGNCY=cpad.MngNm_Desc, geometry=cpad.geometry.buffer(0))
         cpad = cpad[["ACCESS_TYP", "UNIT_NAME", "MNG_AGNCY", "geometry"]]
 cpad = cpad[cpad.area > 2000] if len(cpad) else cpad
 cpad = netfetch.tag(cpad, "UNIT_NAME", "CPAD", "PAD-US")
@@ -718,7 +726,11 @@ def attrs(gdf, key, buf):
                                       .groupby(key).ownerclassification.first())
     if len(cpad):
         cj = gpd.sjoin(mid, cpad[["ACCESS_TYP", "UNIT_NAME", "geometry"]]).groupby(key).first()
-        out["cpad_access"] = out[key].map(cj.ACCESS_TYP + ": " + cj.UNIT_NAME.fillna(""))
+        # "No Public Access: <unit>"; the status alone where the map prints no name (landnames.py), with a saved
+        # copy's "(as of ...)" after it
+        unit = cj.UNIT_NAME.fillna("").astype(str)
+        text = cj.ACCESS_TYP + unit.map(lambda u: " " + u if u.startswith("(as of") else ": " + u if u else "")
+        out["cpad_access"] = out[key].map(text)
     h = gpd.sjoin(g, habitat[["species", "geometry"]], predicate="intersects")
     out["crit_habitat"] = out[key].map(h.groupby(key).species.agg(lambda s: ", ".join(sorted(set(s)))))
     gt = g              # the designated trout waters: every creek piece of a link reads them on the whole link (creek_lines)
