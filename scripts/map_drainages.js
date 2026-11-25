@@ -65,7 +65,6 @@ function initDrainageMap(map, ctrl) {
   // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation in m)
   const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
     return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
-  const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
   L.control.scale({metric: false}).addTo(map);
   if (window.phoneControls) phoneControls(map);     // map_phone.js: one-line credits on phones, "my location" button
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -73,7 +72,12 @@ function initDrainageMap(map, ctrl) {
   const ramp = fs => fs < LOW ? LOWCOL
     : RAMP[Math.min(RAMP.length - 1, Math.floor((fs - LOW) / (100 - LOW) * RAMP.length))];
   const zf = () => Math.max(1, Math.min(2.2, 1 + (map.getZoom() - 9) * 0.3));
-  const dim = p => focus && p.d !== focus;
+  // dimmed: streams outside the drainage picked in the legend, and those unlike the reach whose "Similar streams" is on
+  // (map_specs.js: likeTest)
+  // (likeGlow: the yellow glow under the similar streams, drawGlow below)
+  let likeTest = null, likeGlow = null;
+  const gstyle = f => ({color: "#ffd43b", weight: W[f.properties.o] * zf() + 7, opacity: 0.9, lineCap: "round", lineJoin: "round"});
+  const dim = p => (focus && p.d !== focus) || (likeTest !== null && !likeTest(p));
   // the fish score the colours show: the score itself, or, with a half-month chosen under "When", the score scaled by
   // how that half-month rates on the creek (map_calendar.js); a reach it can't rate shows as under LOW
   const fsShown = p => calH === null || !window.troutCal ? p.fs : (troutCal.fishIn(p, calH) ?? 0);
@@ -118,10 +122,11 @@ function initDrainageMap(map, ctrl) {
     const prof = pn && !p.np ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
                              : `<span class="dm">${pn ? "No creek profile here" : "Unnamed reach (no profile)"}</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>` +
-      `<table>${fsRow(p)}` +           // map_score.js: the score, and its breakdown on hover or tap
-      `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
+      // map_specs.js: flow, velocity, slope, order, drainage, lower end, and "Similar streams": above the fish score, in
+      // the popup's head, which stays clear of the open legend on a phone (map_phone.js)
+      `<table>${streamSpecs.row(p)}` +
+      fsRow(p) +                       // map_score.js: the score, and its breakdown on hover or tap
       `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
-      `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}${(window.LBL || {}).acc_asof ? `<div class="dm">${esc(window.LBL.acc_asof)}</div>` : ""}</td></tr>` +
       (window.routeRow ? routeRow(p) : "") +     // map_routes.js: the route's miles, filled in as it is drawn
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
@@ -193,6 +198,7 @@ function initDrainageMap(map, ctrl) {
   // Reaches lying in a lake (STREAMS_LAKE, 06_map.py): the Lakes layer draws that water, so they show only while Lakes
   // is off, and then like any other stream (the user, 2026-11-20: the rivers run on through the lakes when it's off)
   const SL = {type: "FeatureCollection", features: (window.STREAMS_LAKE || {}).features || []};
+  SL.features.forEach(f => { f.properties.lk = 1; });
   const lakeHalo = L.geoJSON(SL, {filter: f => f.properties.o >= 3, style: hstyle, interactive: false,
                                   renderer: halo.options.renderer});
   const lakeLines = L.geoJSON(SL, {style, renderer: r, onEachFeature: bindStream});
@@ -513,6 +519,7 @@ function initDrainageMap(map, ctrl) {
 
   function restyle() {
     lines.setStyle(style); halo.setStyle(hstyle); lakeLines.setStyle(style); lakeHalo.setStyle(hstyle);
+    if (likeGlow) likeGlow.setStyle(gstyle);
     fills.setStyle(f => ({fillOpacity: fillOp(f)}));
     divides.setStyle(f => ({opacity: dim({d: f.properties.drainage}) ? 0.25 : 0.55}));
     restylePct(); updateRoads(); updateTrails(); updateLabels(); updatePois(); renderKey();
@@ -729,6 +736,32 @@ function initDrainageMap(map, ctrl) {
         restack();
       }});
   }
+  // ---- similar streams (map_specs.js): a popup's "Similar streams" dims the streams unlike its reach and lays a yellow
+  // glow under those like it, among the streams the filters keep (in lakes too while the Lakes layer is off); its note
+  // goes under the layer button, below the filter's
+  const gp = map.createPane("likeglow");
+  gp.style.zIndex = 385;                                  // over the white casing, under the streams
+  gp.style.pointerEvents = "none";
+  const glowR = L.canvas({pane: "likeglow", padding: 0.4});
+  function drawGlow() {
+    if (likeGlow) { map.removeLayer(likeGlow); likeGlow = null; }
+    if (likeTest === null || !map.hasLayer(streams)) return;
+    const keep = window.streamFilter && streamFilter.on() ? streamFilter.pass : null;
+    const feats = S.features.concat(map.hasLayer(lakeStreams) ? SL.features : [])
+      .filter(f => likeTest(f.properties) && (!keep || keep(f.properties)));
+    likeGlow = L.geoJSON({type: "FeatureCollection", features: feats}, {style: gstyle, renderer: glowR, interactive: false})
+      .addTo(map);
+  }
+  if (window.streamSpecs) {
+    const lnote = L.control({position: "topright"});
+    lnote.onAdd = () => { const d = L.DomUtil.create("div"); L.DomEvent.disableClickPropagation(d);
+                          L.DomEvent.disableScrollPropagation(d); return d; };
+    lnote.addTo(map);
+    streamSpecs.init({features: S.features, note: lnote.getContainer(), closePopup: () => map.closePopup(),
+      apply(test) { likeTest = test; hideHover(); restyle(); drawGlow(); }});
+    document.addEventListener("streamfilter", drawGlow);
+    map.on("overlayadd overlayremove", drawGlow);
+  }
   // The 3D link opens the 3D map tilted over the current view, with the layers that are on (layer_order.js: layerLink),
   // and the 3D map's link here brings its own. What this page opened with, before a link's list: the overlays by key and
   // the base map.
@@ -760,9 +793,11 @@ function initDrainageMap(map, ctrl) {
   const to3d = box.querySelector(".to3d");
   const sync3d = () => { const c = map.getCenter();
     to3d.href = `stream_map_3d.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()},55` + layerPart() +
-      (window.streamFilter ? streamFilter.part() : ""); };          // and the stream filter (map_filter.js)
+      (window.streamFilter ? streamFilter.part() : "") +            // and the stream filter (map_filter.js)
+      (window.streamSpecs ? streamSpecs.part() : ""); };            // and the similar streams (map_specs.js)
   map.on("moveend overlayadd overlayremove baselayerchange", sync3d);
   document.addEventListener("streamfilter", sync3d);
+  document.addEventListener("streamlike", sync3d);
   to3d.addEventListener("click", sync3d);
   // "Go to": another area's map, or the map of all areas at this view
   const asel = box.querySelector(".areasel");

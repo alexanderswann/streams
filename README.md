@@ -567,12 +567,12 @@ may be overgrown or gated". Road and trail downloads are cached for a week (`REF
   on is drawn as creek, with the values of the creek it runs into where that carries about what leaves the lake,
   else those of the lake's own creek. So `06_map.py` draws lines that are not reaches, and cuts and raises some: the
   drawn map and the reach tables differ, an open item (`STATE.md` §3 and §5).
-- **Popups.** A stream reach's popup gives its fish score and standing in the area ("ahead of 93% of reaches here"),
-  stream order and drainage, the summer flow (class, typical and drought-year low flow, share of summers flowing, and
+- **Popups.** A stream reach's popup gives its specs (below), its fish score and standing in the area ("ahead of 93%
+  of reaches here"), the summer flow (class, typical and drought-year low flow, share of summers flowing, and
   what set the class: a gauge, a bare channel, a dam's releases, a diversion's gauge, a trout record, NHD's floor
   where it changed the class; outside California NHD's doubt beside "year-round" or "usually flows" where NHD
   calls the line intermittent or ephemeral or has none; a side channel or a lake's second outlet says so) or, with
-  no estimate, what like creeks read, elevation and gradient, the access line (trailhead, drive, bike and hike times,
+  no estimate, what like creeks read, the access line (trailhead, drive, bike and hike times,
   "⚠ fire road: double-check bike access", and what the times stand for: "Times for summer (mid-July) · road closures
   as of Nov 22, winter ones not counted"), sun (direct sun, terrain shade, canopy, aspect, August air and the estimated
   summer water temperature), trout waters and records, the heat gate, the latest fire and debris-flow hazard, and
@@ -580,6 +580,21 @@ may be overgrown or gated". Road and trail downloads are cached for a week (`REF
   to the creek's profile; and the route's miles ("bike 3.1 mi · hike 1.2 mi, 0.9 mi of it on trails or roads"), below
   the access line. A drop's popup gives its status and class, height and run, slopes, pool, drainage and flow,
   the access line, any full road closure within 3 km, and links to satellite imagery and the creek's profile.
+
+- **Stream specs and similar streams** (the user, 2026-11-25, after an r/bluelining thread on an ArcGIS map of NHDPlus
+  High Resolution's flowlines). The popup's first row, in its head above the fish score: "about 10 cfs mean, 1.1 ft/s ·
+  slope 2.4% · order 3 · 5.7 sq mi · lower end 1,532 ft". The mean annual flow is NHDPlus V2's gauge-adjusted mean
+  (EROM's QE_MA, 1971-2000) of the line `05b_flow.py` matched the reach to, scaled to the reach's drainage as 05b scales
+  that line's summer flows (`streamspecs.py`; every area, LA too). At 479 USGS gauges it comes to the gauge's own
+  1971-2000 mean (median ratio 1.00, 88% within 25%) and to 1.07 of its whole record. The velocity is at that flow, by
+  NHDPlus's own formula (Jobson 1996) from the reach's flow, drainage and slope (`map_specs.js`; the Firehole example of
+  the thread, 55 cfs, 33 sq mi, 2.64%, gives its 1.49 ft/s); none in a lake, and "under" on a reach the DEM reads flat.
+  The lower end is the DEM at the reach's lowest cell, where its gradient is measured to. A reach with no flow estimate
+  shows none. "Similar streams ›" after the specs dims the map's streams unlike this one and lays a yellow glow under
+  those like it: mean annual flow within x/÷ 2 (drainage where either has no flow estimate), slope within x/÷ 1.5 (at
+  least ±0.3 points) and the lower end within ±750 ft; each band a switch in a note by the layer panel, "order" (the same
+  order) off at first, "wider" x/÷ 3, x/÷ 2 (±0.5) and ±1,500 ft. Among the streams the filters keep; it rides the 2D/3D
+  link as `&like=`. The one-file phone map shows the specs only.
 
 - **Approach routes** (the user, 2026-11-24). A tap on a reach draws its fastest route from the trailhead to its
   approach point, as `08_hike.py` found it (`map_routes.js`, in both maps): the bike leg orange; the walk raspberry,

@@ -352,6 +352,31 @@ def draw_through(s_ll):
     return s_ll
 s_ll = draw_through(s_ll)
 N_DRAWN_EXTRA = s_ll.attrs.get("drawn_extra", 0)      # pieces added for drawing: not reaches of their own
+# ---- stream specs (streamspecs.py; the user, 2026-11-25): each reach's mean annual flow (cfs), NHDPlus's on the line
+# 05b_flow.py matched it to (comid), scaled to its drainage as 05b scales that line's summer flows, and the elevation of
+# its lower end (m), the DEM at its own lowest cell, where 05_score.py measures its gradient to (a piece drawn through a
+# break above: at its own last point). The popups' specs line (map_specs.js) shows them with the order, drainage and
+# gradient, and works out the velocity
+import streamspecs
+from config import raw_dir
+s_ll["q_ann_cfs"] = streamspecs.mean_flow(s_ll["comid"].to_numpy() if "comid" in s_ll else np.full(len(s_ll), np.nan),
+                                          s_ll.area_full_km2.fillna(s_ll.area_km2).to_numpy(float),
+                                          streamspecs.nhdplus_flows(f"{SHARED}/flow"))
+_sp_end = shapely.get_point(gpd.GeoSeries(s_ll.geometry.values, crs=4326).to_crs(EPSG).values, -1)
+_sp_xy = [pd.to_numeric(s_ll[c_], errors="coerce").to_numpy(float) if c_ in s_ll else np.full(len(s_ll), np.nan)
+          for c_ in ("own_x", "own_y")]
+_sp_at_end = s_ll.sid.astype(str).str.contains("+", regex=False).to_numpy() | np.isnan(_sp_xy[0]) | np.isnan(_sp_xy[1])
+_sp_x = np.where(_sp_at_end, shapely.get_x(_sp_end), _sp_xy[0])
+_sp_y = np.where(_sp_at_end, shapely.get_y(_sp_end), _sp_xy[1])
+_sp_box = s_ll.sid.astype(str).str.split(":").str[0].to_numpy()
+_sp_z = streamspecs.lower_elev({b_: (_sp_x[_sp_box == b_], _sp_y[_sp_box == b_]) for b_ in done},
+                               lambda b_: f"{raw_dir(b_)}/dem_10m.tif")
+s_ll["elev_low_m"] = np.nan
+for b_, z_ in _sp_z.items():
+    s_ll.loc[_sp_box == b_, "elev_low_m"] = np.round(z_, 0)
+print(f"stream specs: mean annual flow on {s_ll.q_ann_cfs.notna().sum():,} of {len(s_ll):,} reaches (NHDPlus V2 "
+      f"{'found' if os.path.exists(f'{SHARED}/flow/nhdplus_v2.gpkg') else 'MISSING'}), the lower end's elevation on "
+      f"{s_ll.elev_low_m.notna().sum():,}")
 s_ll[["sid", "geometry"]].to_file(f"{MAP_OUT}/streams_drawn.gpkg")      # the lines as drawn, for checking the breaks
 
 # in the area's own CRS, as 05c wrote them: two boxes' outlines then meet exactly on the edge they share
@@ -602,7 +627,7 @@ kp_ll.drop(columns="geometry").to_csv(f"{MAP_OUT}/waterfall_candidates.csv", ind
 mid = s_ll.geometry.interpolate(0.5, normalized=True)
 s_ll.assign(lat=mid.y.round(6), lon=mid.x.round(6)).sort_values("fish_score", ascending=False)[
     ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, *[c_ for c_ in ("in_lake", "len_drawn_m") if c_ in s_ll], "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "brook_size", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
-     "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["lat", "lon"]
+     "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["q_ann_cfs", "elev_low_m", "lat", "lon"]
 ].to_csv(f"{MAP_OUT}/stream_reaches_ranked.csv", index=False)
 
 # GPX for a GPS / phone (onX, Gaia, CalTopo all import GPX). The apps refuse a file that isn't valid XML, so text
@@ -1303,6 +1328,10 @@ props = pd.DataFrame({
     # drainage (km2, to 0.01 so the popups' square miles keep two places) and elevation (m): the pages show them in
     # square miles and feet
     "a": s_show.area_full_km2.fillna(s_show.area_km2).astype(float).round(2), "el": [nz(v) for v in s_show.elev_m], "gr": s_show.gradient_pct.astype(float).round(1),
+    # the specs line's mean annual flow (cfs, as the popups round a flow) and lower end (m); written only where known
+    "q": [None if np.isnan(v) else int(v) if v >= 10 else float(v)
+          for v in streamspecs.round_cfs(pd.to_numeric(s_show.q_ann_cfs, errors="coerce").to_numpy(float))],
+    "le": [nz(v) for v in s_show.elev_low_m],
     "acc": [approach(r) for r in s_show.itertuples()],
     "sun": [" · ".join(x for x in (
                 f"{h:.1f} h direct sun mid-July ({p:.0f}% shaded by terrain)" if pd.notna(h) else "",
@@ -1595,6 +1624,8 @@ _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
 # the stream filters at the top of the layer panels (map_filter.js: a fish score and a drainage under which streams leave
 # the map), on the 3D page too (below)
 m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_filter.js") + "</script>"))
+# the specs line in the stream popups and "Similar streams" (map_specs.js), on the 3D page too (below)
+m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_specs.js") + "</script>"))
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
     + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_routes.js")
@@ -1607,8 +1638,9 @@ X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
        "streams_lake": json.loads(s_feat_lake.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
        "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
 for f_ in X3D["streams"]["features"] + X3D["streams_lake"]["features"]:
-    if f_["properties"].get("np") is None:        # "np" only where set (above)
-        f_["properties"].pop("np", None)
+    for k_ in ("np", "q", "le"):                  # "np" only where set, the specs where known (above)
+        if f_["properties"].get(k_) is None:
+            f_["properties"].pop(k_, None)
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))
 
 top = s_feat[s_feat.fs >= 55][["geometry"]]
@@ -2062,7 +2094,8 @@ only3d = json.dumps({k: v for k, v in X3D.items() if k not in SHARED_3D.values()
 only3d = only3d.replace("</", "<\\/").replace("<!--", "<\\u0021--")     # nothing in it can end or upset the <script>
 page3d = open(os.path.join(os.path.dirname(__file__), "map3d.html")).read()
 assert page3d.count("</head>") == 1, "map3d.html must have one </head>"
-page3d = page3d.replace("</head>", "<script>" + _page_file("map_filter.js") + "</script>\n</head>")   # the stream filters
+page3d = page3d.replace("</head>", "<script>" + _page_file("map_filter.js") + "</script>\n<script>"   # the stream filters,
+                        + _page_file("map_specs.js") + "</script>\n</head>")          # the specs and similar streams
 tag3d = '<script src="map3d_data.js"></script>'
 assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
 assert page3d.count("<!--webapp-->") == 1, "map3d.html must hold <!--webapp--> once (weblib.head goes there)"

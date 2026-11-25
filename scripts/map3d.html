@@ -216,6 +216,8 @@
   let mode = "d", focus = null;
   let calH = null;     // the half-month the fish colours are for (the trout calendar's "When"; null: any time)
   const focusMul =() => focus ? ["case", ["==", ["get", "d"], focus], 1, 0.1] : 1;
+  // the same for the streams unlike the reach whose "Similar streams" is on (map_specs.js): x dimTo
+  const likeMul = dimTo => { const e = window.streamSpecs && streamSpecs.expr(); return e ? ["case", e, 1, dimTo] : 1; };
   // line width by zoom; `add` widens every stop (casings), since zoom curves can't be nested inside "+"
   const HOVER = (px) => ["case", ["boolean", ["feature-state", "hover"], false], px, 0];   // widen the hovered line
   const ZW = [[8, 0.9], [11, 1.5], [13, 2.4], [16, 4.5]];
@@ -246,6 +248,7 @@
   const roadCoreIds = [], trailLineIds = [];
   let ROAD = {};
   let layerPart = () => "";     // the layers for the 2D map's link (buildLayerPanel sets it, wireInteraction uses it)
+  let streamPopup = null;       // the stream popup open now (wireInteraction), which "Similar streams" closes
   map.on("load", () => {
     map.addLayer({id: "labels-ref", type: "raster", source: "labels", paint: {"raster-opacity": 0.55}});
     const src = (id, data) => map.addSource(id, {type: "geojson", data});
@@ -307,10 +310,13 @@
     map.addLayer({id: "halo", type: "line", source: "streams", filter: [">=", ["get", "o"], 3],
       layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
       paint: {"line-color": "#ffffff", "line-width": zw("wd", 2.6), "line-opacity": 0.85}});
+    map.addLayer({id: "like-glow", type: "line", source: "streams", filter: ["boolean", false],
+      layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
+      paint: {"line-color": "#ffd43b", "line-width": zw("wd", 7), "line-opacity": 0.9}});
     map.addLayer({id: "streams", type: "line", source: "streams",
       layout: {"line-cap": "round", "line-join": "round", "line-sort-key": ["get", "o"]},
       paint: {"line-color": ["get", "cd"], "line-width": zw("wd", HOVER(3)), "line-opacity": ["get", "od"]}});
-    ov.unshift(["streams", "Streams (≥0.4 sq mi; ≥0.1 if named or year-round)", "<span style='color:#1864ab'>━</span>", ["halo", "streams"], true],
+    ov.unshift(["streams", "Streams (≥0.4 sq mi; ≥0.1 if named or year-round)", "<span style='color:#1864ab'>━</span>", ["halo", "like-glow", "streams"], true],
                ["basins", "Drainage outlines &amp; names", "<span style='color:#3d4651'>▭</span>",
                 ["fork-fill", "fork-line", "divide", "dlab", "flab"], true]);
 
@@ -557,9 +563,10 @@
     const k = cal ? "m" : {d: "d", o: "o", f: "f"}[mode];
     map.setPaintProperty("streams", "line-color", ["get", "c" + k]);
     map.setPaintProperty("streams", "line-width", zw("w" + k, HOVER(3)));
-    map.setPaintProperty("streams", "line-opacity", ["*", ["get", "o" + k], focusMul()]);
+    map.setPaintProperty("streams", "line-opacity", ["*", ["get", "o" + k], focusMul(), likeMul(0.12)]);
+    map.setPaintProperty("like-glow", "line-width", zw("w" + k, 7));
     map.setPaintProperty("halo", "line-width", zw("w" + k, 2.6));
-    map.setPaintProperty("halo", "line-opacity", focus ? ["case", ["==", ["get", "d"], focus], 0.85, 0] : 0.85);
+    map.setPaintProperty("halo", "line-opacity", ["*", focus ? ["case", ["==", ["get", "d"], focus], 0.85, 0] : 0.85, likeMul(0)]);
     map.setPaintProperty("fork-fill", "fill-opacity", mode !== "d" ? 0 : focus ? ["case", ["==", ["get", "drainage"], focus], 0.1, 0.02] : 0.08);
     map.setPaintProperty("divide", "line-opacity", focus ? ["case", ["==", ["get", "drainage"], focus], 0.7, 0.2] : 0.6);
     const lf = focus ? ["==", ["get", "d"], focus] : true;
@@ -657,6 +664,8 @@
       const set = (id, f) => { if (map.getLayer(id)) map.setFilter(id, f); };
       set("streams", k);
       set("halo", ["all", [">=", ["get", "o"], 3], k]);
+      const le = window.streamSpecs && streamSpecs.expr();
+      set("like-glow", le ? ["all", k, le] : ["boolean", false]);
       set("creek-names", ["all", ["has", "n"], [">=", ["get", "o"], 3], k]);
     };
     const lakeOv = ov.find(x => x[0] === "lakes");
@@ -668,6 +677,13 @@
       streamFilter.init({features: D.streams.features.filter(f => !f.properties.lk), section: panel.querySelector(".pb"),
         note, open: () => { if (panel.classList.contains("min")) panel.querySelector(".tg").click(); },
         apply: () => lakeFilter(lakesShown)});
+    }
+    if (window.streamSpecs) {
+      const panel = document.getElementById("layers"), note = document.createElement("div");
+      (panel.querySelector(".sfnote") || panel.querySelector(".ph")).after(note);
+      streamSpecs.init({features: D.streams.features.filter(f => !f.properties.lk), note,
+        closePopup: () => { if (streamPopup) streamPopup.remove(); },
+        apply: () => { restyle(); lakeFilter(lakesShown); }});
     }
     const show = cb => {
       const o = ov.find(x => x[0] === cb.dataset.o);
@@ -733,8 +749,10 @@
     const prof = pn && !p.np ? `<a href="profiles.html#q=${encodeURIComponent(pn)}&lat=${p.y}&lon=${p.x}" target="_blank">Open ${esc(pn)} profile ↗</a>`
                              : `<span class="dm">${pn ? "No creek profile here" : "Unnamed reach (no profile)"}</span>`;
     return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div><table>` +
-      `${fsRow(p)}<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +     // fsRow: map_score.js
-      `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr><tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
+      // the specs and "Similar streams" (map_specs.js) above the fish score (fsRow: map_score.js), in the popup's head,
+      // which onScreen keeps clear of the open panels on a phone
+      `${streamSpecs.row(p)}${fsRow(p)}` +
+      `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || p.fl.replace(/^NHD /, ""))}</td></tr>` +
       `<tr><td>Access</td><td>${esc(p.acc)}${(D.lbl || {}).acc_asof ? `<div class="dm">${esc(D.lbl.acc_asof)}</div>` : ""}</td></tr>` +
       (window.routeRow ? routeRow(p) : "") +     // map_routes.js: the route's miles, filled in as it is drawn
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
@@ -926,6 +944,7 @@
       tip.remove();
       if (!narrow()) {
         const pd = new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map);
+        if (id === "streams") streamPopup = pd;
         if (routes && id === "streams") routes.show(f.id, pd);
         return;
       }
@@ -934,6 +953,7 @@
                                      anchor: e.point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
         .setLngLat(e.lngLat).setHTML(html).addTo(map);
       pop.on("close", () => { if (popped === pop) { popped = null; unfold(true); } });
+      if (id === "streams") streamPopup = pop;
       if (routes && id === "streams") routes.show(f.id, pop);
       place();
     });
@@ -941,10 +961,12 @@
     const to2d = document.getElementById("to2d");
     const sync = () => { const c = map.getCenter();
       to2d.href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}` + layerPart() +
-        (window.streamFilter ? streamFilter.part() : ""); };        // and the stream filter (map_filter.js)
+        (window.streamFilter ? streamFilter.part() : "") +          // and the stream filter (map_filter.js)
+        (window.streamSpecs ? streamSpecs.part() : ""); };          // and the similar streams (map_specs.js)
     map.on("moveend", sync); sync();
     document.getElementById("layers").addEventListener("change", sync);
     document.addEventListener("streamfilter", sync);
+    document.addEventListener("streamlike", sync);
     to2d.addEventListener("click", sync);
     // "Go to": another area's 3D map, or the map of all areas at this view
     const asel = document.getElementById("areasel");

@@ -116,7 +116,6 @@ const staleNote = a => { const s = (a.stale || []).filter(([n]) => PSTALE.has(n)
 // imperial units for everything shown (units.py; the data stay metric: drainage in km², elevation in m)
 const SQMI = km2 => { if (km2 == null) return "?"; const v = km2 * 0.386102;
   return (v >= 100 ? Math.round(v).toLocaleString("en-US") : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " sq mi"; };
-const FEET = m => m == null ? "?" : Math.round(m * 3.28084).toLocaleString("en-US") + " ft";
 const canvas = L.canvas({tolerance: 9, padding: 0.3});            // a wide touch margin for thin lines under a finger
 const map = L.map("map", {zoomSnap: 0.5, preferCanvas: true, renderer: canvas});
 map.attributionControl.addAttribution("<a href='__SITE__credits.html'>Data sources</a>");   // the website's credits page, first in the line
@@ -130,6 +129,7 @@ L.control.layers({"Light gray": gray, "USGS topo": topo, "Satellite": photo}, {"
 L.control.scale({metric: false}).addTo(map);
 __PHONE_JS__
 __SCORE_JS__
+__SPECS_JS__
 __LAYER_ORDER_JS__
 // Links to a creek's profile (in the drop, known-fall and lake popups, from 06_map.py) open it on the website: this one
 // file carries no profiles (each area's sits beside its maps there, as profiles.html)
@@ -166,10 +166,9 @@ const ROADNAME = {paved: "paved", graded: "graded dirt (car when dry)", high_cle
 function pop(p, a) {
   const where = p.d === p.k ? esc(p.d) : `${esc(p.k)} · ${esc(p.d)}`;
   return `<div class="pp"><b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where} · ${esc(a.label)}</div>` +
-    `<table>${fsRow(p)}` +          // map_score.js: the score, and its breakdown on hover or tap
-    `<tr><td>Order / drainage</td><td>${p.o} · ${SQMI(p.a)}</td></tr>` +
+    `<table>${streamSpecs.row(p, {like: false})}` +   // map_specs.js: flow, velocity, slope, order, drainage, lower end
+    fsRow(p) +                      // map_score.js: the score, and its breakdown on hover or tap
     `<tr><td>${p.dq ? "Summer flow" : "NHD flow"}</td><td>${esc(p.dq || String(p.fl || "").replace(/^NHD /, ""))}</td></tr>` +
-    `<tr><td>Elev / gradient</td><td>${FEET(p.el)} · ${p.gr}%</td></tr>` +
     `<tr><td>Access</td><td>${esc(p.acc)}${a.acc_asof ? `<div class="dw">${esc(a.acc_asof)}</div>` : ""}</td></tr>` +
     (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
     (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
@@ -360,6 +359,7 @@ sync();
 _page_file = lambda f_: open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f_)).read()
 html = HTML.replace("__PHONE_CSS__", _page_file("map_phone.css")).replace("__PHONE_JS__", _page_file("map_phone.js"))
 html = html.replace("__SCORE_JS__", _page_file("map_score.js"))      # the fish score's breakdown in the popups
+html = html.replace("__SPECS_JS__", _page_file("map_specs.js"))      # the specs line in the popups (no "Similar streams")
 html = html.replace("__LAYER_ORDER_JS__", _page_file("layer_order.js")).replace("__SITE__", SITE)   # the switches' order
 # the Copernicus credit (flowlib.SENTINEL_CREDIT) where an area in the file has the late_summer_green source
 from flowlib import SENTINEL_CREDIT
