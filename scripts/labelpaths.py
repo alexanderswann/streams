@@ -11,6 +11,7 @@ snap each segment to coarse angles and the letters would jump between them.
 A band is (zoom band, smoothing window in 100 m samples, raw half-length m, spacing m, [m/px at each zoom it
 serves, lowest zoom first]). Returns [{"z", "c": [lat, lon], "a": angle, "p": [[lon, lat], ...]}].
 """
+from bisect import bisect_left, bisect_right
 import numpy as np, shapely, shapely.ops
 from pyproj import Transformer
 from config import EPSG
@@ -22,7 +23,8 @@ MPP = {11: 65, 12: 32, 13: 16, 14: 8, 15: 4, 16: 2}
 
 def smooth(seg, win, step=100):
     n = int(seg.length // step) + 1
-    xy = np.array([seg.interpolate(t).coords[0] for t in np.linspace(0, seg.length, n)])
+    # the points GEOS interpolates one by one, in one call (the same function, the same coordinates)
+    xy = shapely.get_coordinates(shapely.line_interpolate_point(seg, np.linspace(0, seg.length, n)))
     k = np.ones(win) / win
     for _ in range(2):
         if len(xy) < win:
@@ -31,24 +33,47 @@ def smooth(seg, win, step=100):
     return xy
 
 
+def _along(ln):
+    """ln's vertices and, for each but the last, its distance along ln, summed segment by segment exactly as
+    shapely.ops.substring() sums it (Python floats, in order)."""
+    coords = list(ln.coords)
+    cum, c = [], 0
+    for p1, p2 in zip(coords, coords[1:]):
+        cum.append(c)
+        c += ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2) ** 0.5
+    return coords, cum
+
+
+def _substring(ln, along, start, end):
+    """shapely.ops.substring(ln, start, end) for 0 <= start < end (no point, no reversal, no distance from the end):
+    the same vertices, so the same line, found by bisection in _along(ln) instead of a walk over all of ln's vertices
+    for each label (on the LA map 53,767 walks over the PCT and the trails: 63 of 06_map's 147 s)."""
+    if along is None:
+        return shapely.ops.substring(ln, start, end)
+    coords, cum = along
+    lo, hi = bisect_right(cum, start), bisect_left(cum, end)     # start < distance < end, as substring() keeps them
+    return shapely.LineString([tuple(*ln.interpolate(start).coords), *coords[lo:hi], tuple(*ln.interpolate(end).coords)])
+
+
 def label_paths(ln, bands, text_px, max_gap_px=5, step=100):
     """ln: LineString in the area's UTM CRS."""
     out = []
+    along = _along(ln) if isinstance(ln, shapely.LineString) else None    # else substring() raises, as it did
     for zb, win, half_p, spacing, mpps in bands:
         mpp0 = mpps[0]
         if ln.length < 2 * half_p:
             continue
         paths, gap = {}, {}
         for d in np.arange(half_p, ln.length - half_p, spacing / 6):
-            xy = smooth(shapely.ops.substring(ln, d - half_p, d + half_p), win, step)
+            xy = smooth(_substring(ln, along, d - half_p, d + half_p), win, step)
             if xy is None or len(xy) < 2:
                 continue
             sm = shapely.LineString(xy)
             if sm.length / mpp0 < text_px + 28:
                 continue
             paths[d] = xy
-            gap[d] = max(max(sm.distance(ln.interpolate(t)) for t in np.arange(d - text_px / 2 * m, d + text_px / 2 * m, step))
-                         / m for m in mpps)
+            gap[d] = max(max(shapely.distance(sm, shapely.line_interpolate_point(
+                ln, np.arange(d - text_px / 2 * m, d + text_px / 2 * m, step))).tolist()) / m for m in mpps)
         picked = []
         for d in sorted(gap, key=gap.get):
             if gap[d] <= max_gap_px and all(abs(d - q) >= spacing for q in picked):
