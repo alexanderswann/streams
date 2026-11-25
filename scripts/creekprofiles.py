@@ -15,7 +15,7 @@ import networkx as nx
 import numpy as np
 import shapely
 from shapely.geometry import LineString
-from shapely.ops import linemerge, unary_union
+from shapely.ops import linemerge, nearest_points, unary_union
 
 MIN_KM = 2.0          # skip shorter creeks
 SNAP_FALL = 150       # a known fall within this of a profile is drawn on it (m)
@@ -68,7 +68,7 @@ class ProfileLines:
     def __init__(self, nhd):
         nhd = nhd[nhd.gnis_name.notna() & nhd.ftype.isin(FLOWLINE_FTYPES)]
         self._by_name = {n: g for n, g in nhd.groupby("gnis_name")}
-        self._stems = {}
+        self._stems, self._joined = {}, {}
 
     def stems(self, name):
         if name not in self._stems:
@@ -80,3 +80,34 @@ class ProfileLines:
         """True where a profile of the creek `name` passes within `within` metres of the point `pt` (same CRS)."""
         st = self.stems(name) if isinstance(name, str) and name else []
         return bool(st) and float(np.min(shapely.distance(pt, np.asarray(st, dtype=object)))) <= within
+
+    def down_to(self, name, pt, on=30.0, within=SNAP_FALL):
+        """Where a creek `name` that starts at `pt` (a lake's outlet) reaches a profile of its own name below: the
+        profile's point nearest `pt`, where the creek's NHD lines through `pt` (the piece of them joined end to end, as
+        main_stems joins them, with a line within `on` metres of `pt`) come within `within` metres of that profile;
+        else None. NHD can leave the first stretch below a lake unjoined to the rest of its creek, a piece under MIN_KM
+        with no profile of its own: Tooley Pond Outlet's first 1.8 km end 4 m short of the creek's profile, Cook Pond
+        Outlet's 0.5 km 44 m short (2026-11-24). A creek of the same name elsewhere is never reached this way."""
+        st = self.stems(name) if isinstance(name, str) and name else []
+        g = self._by_name.get(name)
+        if not st or g is None:
+            return None
+        if name not in self._joined:
+            u = unary_union(list(g.geometry))
+            merged = u if u.geom_type == "LineString" else linemerge(u)
+            parts = list(merged.geoms) if merged.geom_type == "MultiLineString" else [merged]
+            key = lambda c: (round(c[0], 1), round(c[1], 1))
+            G = nx.Graph()
+            for i, ln in enumerate(parts):
+                G.add_edge(("p", i), key(ln.coords[0]))
+                G.add_edge(("p", i), key(ln.coords[-1]))
+            self._joined[name] = parts, G
+        parts, G = self._joined[name]
+        d = shapely.distance(pt, np.asarray(parts, dtype=object))
+        if float(d.min()) > on:
+            return None
+        piece = unary_union([parts[n[1]] for n in nx.node_connected_component(G, ("p", int(np.argmin(d))))
+                             if n[0] == "p"])
+        ds = shapely.distance(piece, np.asarray(st, dtype=object))
+        k = int(np.argmin(ds))
+        return nearest_points(st[k], pt)[0] if float(ds[k]) <= within else None

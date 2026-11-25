@@ -1773,10 +1773,14 @@ def lake_profile(name, x, y):
     """A lake popup's link to its outlet creek's profile, or to that of the named water its unnamed outlet flows to,
     opening at the point (x, y; the lakes' CRS, metres) where the creek leaves the shore or the outlet gets to that
     water (05d_lakes.py's outlet_links): only where 12_profiles.py draws that creek's profile within SNAP_FALL of the
-    point, as for the drops and known falls (above); else None."""
+    point, as for the drops and known falls (above), or where the creek's NHD lines from the point run down to it
+    (creekprofiles.down_to: a first stretch below the lake NHD leaves unjoined to the rest of its creek), opening at
+    the profile's point nearest the lake; else None."""
     pt = shapely.Point(x, y)
     if not PROFILES.passes(name, pt):
-        return None
+        pt = PROFILES.down_to(name, pt)
+        if pt is None:
+            return None
     ll_ = gpd.GeoSeries([pt], crs=EPSG).to_crs(4326).iloc[0]
     return profile_link(name, ll_.y, ll_.x)
 
