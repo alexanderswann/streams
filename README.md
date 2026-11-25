@@ -138,7 +138,7 @@ swimming: the popups' NHD flow class and the drop / plunge-pool and waterfall la
 | Gauged diversions (`DIVERSIONS` in `flowlib.py`) and the below-a-dam water floor | none |
 | NHD "artificial paths" (river and lake centrelines) are not perennial: they cross dry washes and reservoirs | They count as perennial: in wet country they are the rivers |
 | Elevation band in `05_score.py`'s first-pass score | none |
-| "Mountain terrain" for the trail, road and parking filters: 100 m of relief within 1 km | The same, except 30 m in NE Connecticut and southeastern Pennsylvania and 50 m in the Adirondacks (`min_relief`). Road closures use 150 m everywhere |
+| "Mountain terrain" for the trail, road and parking filters: 100 m of relief within 1 km (on flatter ground the trail and road layers keep what is named, routed or official, or runs along the water: `trailrules.py`) | The same, except 30 m in NE Connecticut and southeastern Pennsylvania and 50 m in the Adirondacks (`min_relief`). Road closures use 150 m everywhere |
 | Tailwaters (`_TAILWATERS` in `scoring.py`): the West Fork San Gabriel below Cogswell Dam, Piru Creek below Pyramid Dam | North Georgia: the Chattahoochee below Buford Dam (on through Bull Sluice Lake) and the Toccoa below Blue Ridge Dam; the Smokies: the Nantahala below Nantahala Lake, whose powerhouse at Beechertown releases water from the bottom of the lake; none elsewhere |
 
 | Area | Trout sources (`troutdata.py`) |
@@ -474,13 +474,21 @@ The rules that decide what the maps show are listed with their values, code loca
 `06_map.py` (per area) merges every range into the combined map, CSVs and GPX. `02c_pct.py` (per area) downloads the
 area's **long-distance trail** from OpenStreetMap, 60 km past the area so it runs off the map edge (`pct.gpkg`).
 
-`02d_trails.py` (per area) builds the **trail layer** from **OpenStreetMap** paths, bridleways, footways and tracks
-(fire roads), the most complete source in every test area. USGS National Digital Trails (public domain) gives official
-name, trail number, agency and allowed uses to OSM ways that follow an official trail, and adds named official trails
-missing from OSM, dotted, as "agency records only; may be faint or abandoned"; the USFS layer of roads closed to the
-public marks gated fire roads. Left out: sidewalks; paths on flat ground (under the area's relief within 1 km) unless
-named, on a route or official; private fire roads unless walking is allowed. Unnamed OSM paths that follow no official
-trail or route are "possibly unofficial" (use trails, firebreaks), dotted and shown only from zoom 13. **Mountain
+`02d_trails.py` (per area) builds the **trail layer** from **OpenStreetMap** paths, bridleways, footways, steps, bike
+paths (`highway=cycleway`: paved greenways like the Rottenwood Creek Trail, mapped as the Bob Callan Trail; one OSM
+names as a road, like Old Pass Road, is a road closed to cars in the road layer) and tracks (fire roads), the most
+complete source in every test area. USGS National Digital Trails (public domain) gives official name, trail number,
+agency and allowed uses to OSM ways that follow an official trail, and adds named official trails missing from OSM,
+dotted, as "agency records only; may be faint or abandoned"; its water trails (canoe and paddle routes, such as the
+Chattooga River Canoe Trail) are no walking trails: they name no path and draw no line (their pieces stay in the data
+for the parking test). The USFS layer of roads closed to the public marks
+gated fire roads. Left out: sidewalks; sidepaths (an unnamed footway, path or bike path within 20 m of a car road for
+60 % of its length: the road's own side path, often untagged in OSM) aren't drawn, though the approach times and the
+parking test still use them; on flat ground (under the area's relief
+within 1 km), a way that is unnamed, on no route and follows no official trail, unless it runs along the water (half
+its length within 150 m of a reach the map draws or of a lake: `trailrules.py`, the user's choice of 2026-11-25); private
+fire roads unless walking is allowed. Unnamed OSM paths that follow no official trail or route are "possibly
+unofficial" (use trails, firebreaks), dotted and shown only from zoom 13; an unnamed bike path is not. **Mountain
 bikes**, first rule that applies: none in wilderness, on the PCT, where OSM says no or where the trail is closed; then
 the agencies' designations (USFS trails: no under an order in `bicycle_restricted`, yes when `allowed_terra_use`
 contains 3, "N/A" meaning no information, not a ban; State Parks routes; the NPS Santa Monica Mountains inventory);
@@ -491,15 +499,21 @@ Wikiloc and Hiking Project (their terms forbid it), and Ventura County's trail l
 trails are largely the same open sources. OSM data is ODbL: credit it, and share-alike applies if you publish the
 merged trail data itself.
 
-`02e_access.py` (per area, after `02d_trails.py`) builds **access roads, parking and trailheads**. Roads in mountain
-terrain or on USFS roads (OSM primary to unclassified, tracks, unpaved residential and service roads, and cycleways,
-since paved roads closed to cars are often mapped as cycleways) each get one class by what it takes to get up them,
+`02e_access.py` (per area, after `02d_trails.py`) builds **access roads, parking and trailheads**. Roads (OSM primary to
+unclassified, tracks, unpaved residential and service roads, and the cycleways OSM names as roads or that are USFS
+roads, since paved roads closed to cars are often mapped as cycleways): paved ones in mountain terrain or on USFS roads
+(elsewhere the basemap draws them), dirt roads and tracks anywhere, on flat ground when named or along the water as
+the trail layer's paths are (`trailrules.py`). Each gets one class by what it takes to get up it,
 from OSM tags and the USFS road layers: **paved**, **graded** dirt (car OK when dry: tracktype 1-2, gravel, USFS
 level 3+), **high clearance** (tracktype 3-4, rough; USFS level 2), **4WD** (4wd_only, tracktype 5, horrible or
 worse), **bike** (closed to cars but open to bikes; not in wilderness), **closed** (a fire closure) and **dirt** (no
 condition data); on forest roads the **USFS Motor Vehicle Use Map** decides the class, with its open dates. Private
 roads and roads closed to bikes are left out. Parking: public OSM parking in mountain terrain or within 300 m of a
-trail. Trailheads: OSM and USFS (with a link and the open / closed status), merged within 150 m, official names
+trail the trail rule kept before 2026-11-25 (in mountain terrain, on a route, official, or named like a trail; a bike
+path only where it follows an official trail, as a rail trail does), so a town lot beside a greenway or riverside path
+is no trail parking; and any lot OSM names after a trail
+("Schuylkill River Trail Parker Ford Trailhead") or a way onto the water (a boat ramp or launch, a fishing or canoe
+access). Trailheads: OSM and USFS (with a link and the open / closed status), merged within 150 m, official names
 first. Road and trail downloads are cached for a week (`REFRESH=1` forces new ones).
 
 **Map cartography** (`06_map.py` with `map_drainages.js` + `map_style.css`, inlined into the HTML; 3D:
@@ -513,8 +527,8 @@ first. Road and trail downloads are cached for a week (`REFRESH=1` forces new on
   `#lat,lon,zoom,pitch,bearing` links work, and each map links to the other at the current view.
 - The area's **long trail**: a thin dark dashed line on a soft yellow band above the streams, with its section on
   hover, and from zoom 11 labels that bend along it (`labelpaths.py`). **Trails and fire roads**: brown dashes on a
-  white edge, revealed by zoom (routes and named trails 10, named fire roads 11, unnamed trails 12, unnamed fire roads
-  and possibly unofficial paths 13); closed or private ways faded, informal ones dotted; hover for official status,
+  white edge, revealed by zoom (routes and named trails 10, named fire roads 11, unnamed trails and bike paths 12,
+  unnamed fire roads and possibly unofficial paths 13); closed or private ways faded, informal ones dotted; hover for official status,
   trail number, allowed uses, difficulty and surface. **Access roads**, a layer per class (from zoom 10; dirt of
   unknown condition from 11; paved off), cased so they read as roads. **Trailheads** (green T, zoom 11+) and
   **parking** (blue P, zoom 12+). A trail or road running beside a creek is drawn shifted to the creek's far side.
@@ -593,7 +607,7 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
 - `08_hike.py` (per range): cost-distance approach time from the nearest road a car can reach, on the 10 m DEM.
   Freeways and their ramps, and road pieces stranded behind a closure, are no places to start from.
   - **Walking** uses Tobler's hiking function on the cell's slope, capped at 15% on anything with a tread (every OSM
-    road and trail in the range), since trails switchback. Off-trail creek bottoms walk at 45% of that speed and
+    road and trail in the range, and the trail layer's steps and bike paths), since trails switchback. Off-trail creek bottoms walk at 45% of that speed and
     other ground (chaparral) at 30%; slopes over 45° are near-impassable, and so are lakes off trails.
   - **Biking** is used wherever it beats walking: 18 km/h on the flat, slowed by grade (about 10 km/h at 6%), ×0.7 on
     dirt roads and ×0.5 on singletrack, on the road's or trail's own grade along the line over 200 m (capped at 25%),

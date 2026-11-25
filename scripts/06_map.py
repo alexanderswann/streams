@@ -1396,6 +1396,8 @@ study_ll = gpd.GeoSeries([study], crs=EPSG).to_crs(4326).iloc[0]
 if os.path.exists(f"{SHARED}/trails.gpkg"):
     tr = gpd.read_file(f"{SHARED}/trails.gpkg")
     tr = areaclip.cut(tr[tr.intersects(study_ll)])
+    if "undrawn" in tr:       # sidepaths and water trails' pieces (02d_trails.py): in the layer for the routing and the
+        tr = tr[~tr.undrawn.fillna(False).astype(bool)]           # parking test, not drawn
     col_ = lambda c, d=None: tr[c] if c in tr else pd.Series(d, index=tr.index)
     def agency(s):
         s = str(s)
@@ -1419,8 +1421,12 @@ else:
     tprops = pd.DataFrame({"n": tr["name"], "k": "trail", "rk": np.where(tr["name"].notna(), 1, 3)})
 t_feat = gpd.GeoDataFrame(tprops, geometry=shapely.set_precision(tr.geometry.simplify(0.00004).values, 1e-5), crs=4326)
 t_feat = t_feat[~t_feat.geometry.is_empty].sort_values("rk", ascending=False)
-if os.path.exists(f"{SHARED}/access_roads.gpkg"):   # the road layers draw fire roads; keep the ones on hiking routes
-    t_feat = t_feat[(t_feat.k != "fire road") | t_feat.get("rt", pd.Series(None, index=t_feat.index)).notna()]
+if os.path.exists(f"{SHARED}/access_roads.gpkg") and "osm_id" in tr:
+    # the road layers draw a fire road 02e_access.py keeps (the same OSM way): the trail layer keeps the ones on hiking
+    # routes and those the road layer doesn't have (02e leaves out private roads; 02d keeps one walkers may use)
+    on_road = tr.osm_id.isin(set(gpd.read_file(f"{SHARED}/access_roads.gpkg", columns=["osm_id"]).osm_id.dropna()))
+    t_feat = t_feat[(t_feat.k != "fire road") | t_feat.get("rt", pd.Series(None, index=t_feat.index)).notna()
+                    | ~on_road.reindex(t_feat.index, fill_value=False)]
 def beside_creeks(feat, step=10.0, max_d=80.0, min_run=40.0):
     """Split trail / road lines into the runs that follow a creek of order 2+ (within max_d m and within ~50° of its
     direction), so the maps can draw those runs shifted to the creek's far side instead of on top of it. Adds sd (+1:

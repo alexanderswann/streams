@@ -1,9 +1,11 @@
 """Access roads, parking and trailheads for the maps, for all study areas. No REGION needed; run after 02d_trails.py.
 
-Roads: OSM highway = primary ... unclassified and track, cycleways (paved roads closed to cars, like the West Fork
-Road below Cogswell Dam, are often mapped as cycleways), plus residential / service ways tagged unpaved, in mountain
-terrain (at least MIN_RELIEF_M of relief within 1 km) or on USFS roads. Each goes in one class by what it takes to
-get up it, from OSM tags and the USFS road layers (maintenance level; open to the public or admin only):
+Roads: OSM highway = primary ... unclassified and track, cycleways OSM names as roads (paved roads closed to cars, like
+Old Pass Road or Mount Hollywood Drive, are often mapped as cycleways; every other cycleway is a trail, 02d_trails.py),
+plus residential / service ways tagged unpaved. Paved roads only in mountain terrain (at least MIN_RELIEF_M of relief
+within 1 km) or on USFS roads: elsewhere the basemap draws them. Dirt roads and tracks anywhere, except on flat ground
+an unnamed one that doesn't run along a creek or lake the map draws (trailrules.py). Each goes in one class by what it
+takes to get up it, from OSM tags and the USFS road layers (maintenance level; open to the public or admin only):
   paved            any car
   graded           graded dirt or gravel; a car is fine when dry (OSM tracktype grade1-2 or gravel / compacted
                    surface; USFS maintenance level 3+)
@@ -30,6 +32,7 @@ import os, re, html, json, time, numpy as np, pandas as pd, geopandas as gpd, sh
 from config import REGIONS, CRS, ROOT, SHARED, has, MIN_RELIEF_M
 from geomatch import overpass, esri, relief_at, follow, wilderness_path
 import netfetch
+import trailrules
 
 EDW = "https://apps.fs.usda.gov/arcx/rest/services/EDW"
 TAGS = ["name", "ref", "highway", "service", "surface", "tracktype", "smoothness", "4wd_only", "access",
@@ -65,19 +68,8 @@ out center tags;""")
         # (when Overpass can't be reached the older download stays, with a dated NOTE: netfetch.keep_old)
         els = netfetch.keep_old(cache_p, dl, f"OSM roads and parking ({key})")
         els = json.load(open(cache_p)) if els is None else els
-    # cycleways: a separate query (and cache) so the big one above stays cached
-    cyc_p = f"{SHARED}/cache/access_osm_cycleway_{key}.json"
-    if os.path.exists(cyc_p) and time.time() - os.path.getmtime(cyc_p) < 7 * 86400 and os.environ.get("REFRESH") != "1":
-        cyc = json.load(open(cyc_p))
-    else:
-        def dl_cyc(S=S, W=W, N=N, E=E):
-            cyc = overpass(f'[out:json][timeout:300];way["highway"="cycleway"]({S},{W},{N},{E});out geom;')
-            json.dump(cyc, open(cyc_p + ".tmp", "w"))
-            os.replace(cyc_p + ".tmp", cyc_p)
-            return cyc
-        cyc = netfetch.keep_old(cyc_p, dl_cyc, f"OSM cycleways ({key})")
-        cyc = json.load(open(cyc_p)) if cyc is None else cyc
-    els = els + cyc
+    # cycleways: a separate query (and cache) so the big one above stays cached; 02d_trails.py reads the same copy
+    els = els + trailrules.cycleway_elements(key, (W, S, E, N))
     for e in els:
         t = e.get("tags", {})
         if e["type"] == "way" and "geometry" in e and t.get("highway") in (
@@ -166,9 +158,22 @@ rd["cls"] = np.select([fire_closed, mv_car & mv_paved, mv_car, mv_hc, closed_car
                       "dirt")
 drop = private | (rd.cls.eq("bike") & (bikes_barred | in_wild)) | \
     (rd.cls.eq("paved") & rd.highway.isin({"residential", "service"}))   # town streets: the basemap has them
-rd = rd[~drop].copy()
+# a bike path is a road closed to cars only where OSM names it a road or it is a USFS road; the trail layer (02d) has
+# the others it keeps, so they aren't drawn twice
+trail_cyc = rd.highway.eq("cycleway") & ~rd["name"].fillna("").str.contains(trailrules.ROAD_NAME, case=False) & rd.fs_id.isna()
+rd = rd[~drop & ~trail_cyc].copy()
 rel = relief_at(rd.geometry.interpolate(0.5, normalized=True), REGIONS, ROOT)
-rd = rd[(rel >= MIN_RELIEF_M) | rd.fs_id.notna()].copy()
+# Paved roads only in mountain terrain or on USFS roads: the basemap draws the others. Dirt roads and tracks on flat
+# ground too, named or along the water the map draws (trailrules.py)
+flat_dirt = (rel < MIN_RELIEF_M) & rd.fs_id.isna() & rd.cls.ne("paved")
+wet = np.zeros(len(rd), bool)
+cand = (flat_dirt & rd["name"].isna()).values
+wet[cand] = trailrules.along_water(rd.geometry.values[cand])
+keep = (rel >= MIN_RELIEF_M) | rd.fs_id.notna() | (flat_dirt & (rd["name"].notna() | wet))
+km_ = rd.length / 1000
+print(f"dirt roads on flat ground: kept {round(km_[keep & flat_dirt].sum())} km (along the water "
+      f"{round(km_[wet].sum())} km), dropped {round(km_[flat_dirt & ~keep].sum())} km")
+rd = rd[keep].copy()
 rd["name"] = rd["name"].fillna(rd.fs_id.map(lambda v: f"USFS road {v}" if isinstance(v, str) else None))
 rd = rd.rename(columns={"access:conditional": "access_conditional"})
 cols = ["osm_id", "name", "ref", "highway", "cls", "surface", "tracktype", "smoothness", "fs_id", "fs_level", "seasonal",
@@ -183,12 +188,19 @@ print("access roads:", len(rd), "ways,", round(km.sum()), "km | km by class:",
 p = gpd.GeoDataFrame(list(pts.values()), crs=4326).to_crs(CRS)
 trails_p = f"{SHARED}/trails.gpkg"
 trail_lines = gpd.read_file(trails_p).to_crs(CRS) if __import__("os").path.exists(trails_p) else gpd.GeoDataFrame(geometry=[], crs=CRS)
+if "old_rule" in trail_lines:   # the trails added on flat ground since 2026-11-25 (02d_trails.py) make no town lot a trail's
+    trail_lines = trail_lines[trail_lines.old_rule.fillna(True).astype(bool)]
 near_trail = np.zeros(len(p), bool)
 if len(trail_lines):
     tt = shapely.STRtree(trail_lines.geometry.values)
     near_trail[np.unique(tt.query(p.geometry.values, predicate="dwithin", distance=300)[0])] = True
 prel = relief_at(p.geometry, REGIONS, ROOT)
-p = p[((prel >= MIN_RELIEF_M) | near_trail | (p.kind == "trailhead")) & ~p.access.isin({"private", "no", "customers"})]
+# a lot OSM names after a trail is a trail's parking wherever it is ("Schuylkill River Trail Parker Ford Trailhead",
+# "Power Line Trail Parking": the trails are bike paths, which the near-trail test doesn't count), and so is one named
+# for a way onto the water ("Boat Ramp", a fishing or canoe access)
+trail_lot = p["name"].fillna("").str.contains(r"\b(?:trails?|trailhead|greenway|boat|launch|fishing|canoe|kayak|angler\w*)\b"
+                                              r"|\b(?:river|lake|creek|water|pond)\s+access\b", case=False).values
+p = p[((prel >= MIN_RELIEF_M) | near_trail | trail_lot | (p.kind == "trailhead")) & ~p.access.isin({"private", "no", "customers"})]
 
 strip = lambda s: re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", str(s)))).strip()[:300] if s else None
 th_parts = []

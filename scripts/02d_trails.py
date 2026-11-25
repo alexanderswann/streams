@@ -1,15 +1,19 @@
 """Hiking trails and fire roads for the maps, for all study areas. No REGION needed.
 
-Base geometry is OpenStreetMap: ways tagged highway=path / bridleway / footway (trails) and highway=track (fire roads,
-truck trails), with the tags that matter for hiking and the names of the route=hiking relations they belong to.
+Base geometry is OpenStreetMap: ways tagged highway=path / bridleway / footway / steps and highway=cycleway (trails; a bike path
+is a trail unless OSM names it a road, which 02e_access.py draws as a road closed to cars) and highway=track (fire
+roads, truck trails), with the tags that matter for hiking and the names of the route=hiking relations they belong to.
 Official data enriches it (both public domain):
   - USGS National Digital Trails (USFS, NPS, State Parks and county trails in one service): official name, trail
     number, managing agency and allowed uses for OSM ways that follow an official trail; named official trails missing
     from OSM are added.
   - USFS roads closed to public vehicles (EDW RoadBasic, layer 1): fire roads gated to cars but open to walking.
-Dropped: sidewalks and other footway=* street furniture; ways on flat ground (under MIN_RELIEF_M of relief within
-1 km) unless they are named or part of a hiking route or an official trail; private or no-access fire roads unless
-walking is allowed or they are USFS roads.
+Dropped: sidewalks and other footway=* street furniture; ways on flat ground (under MIN_RELIEF_M of relief within 1 km) unless they are named,
+part of a hiking route or an official trail, or run along a creek or lake the map draws (trailrules.py); private or
+no-access fire roads unless walking is allowed or they are USFS roads. Official water trails (canoe and paddle routes)
+are not walking trails: they name no OSM way, and the pieces OSM lacks stay in the layer only for the parking test (a lot
+by a river's put-in), undrawn. A sidepath (an unnamed footway, path or bike path beside a car road: trailrules.py) stays
+in the layer for the approach times and the parking test, undrawn too (the basemap draws its road): `undrawn`.
 Unnamed OSM paths that follow no official trail or hiking route are flagged "possibly unofficial" (use trails,
 firebreaks); the maps draw them dotted and only up close.
 Each way gets a rank, used by the maps to reveal detail with zoom:
@@ -22,11 +26,12 @@ import os, re, time, requests, numpy as np, pandas as pd, geopandas as gpd, rast
 from scipy.ndimage import maximum_filter, minimum_filter
 from config import REGIONS, CRS, ROOT, SHARED, raw_dir, has, MIN_RELIEF_M
 from geomatch import wilderness_path
+import trailrules
 
 MATCH_M = 25            # an OSM way follows an official line if most of it lies within this distance
 MATCH_SHARE = 0.6
 TAGS = ["name", "ref", "highway", "footway", "sac_scale", "mtb:scale", "trail_visibility", "informal", "surface", "access", "foot",
-        "bicycle", "horse", "motor_vehicle", "operator", "tracktype"]
+        "bicycle", "horse", "motor_vehicle", "operator", "tracktype", "is_sidepath"]
 STREET = {"sidewalk", "crossing", "traffic_island", "access_aisle", "link", "alley"}
 WALK_OK = {"yes", "designated", "permissive"}
 UA = {"User-Agent": "la-stream-analysis/0.1 (personal GIS project)"}
@@ -118,7 +123,7 @@ for key, reg in REGIONS.items():
     box = gpd.GeoSeries([shapely.box(*reg["bbox"])], crs=CRS).to_crs(4326)
     W, S, E, N = boxes[key] = box.total_bounds   # all four corners, so the lon/lat box covers the whole UTM box
     els = cached(f"trails_osm_{key}.json", lambda: overpass(f"""[out:json][timeout:600];
-way["highway"~"^(path|footway|bridleway|track)$"]({S},{W},{N},{E})->.w;
+way["highway"~"^(path|footway|bridleway|track|steps)$"]({S},{W},{N},{E})->.w;
 .w out geom;
 rel(bw.w)["route"~"^(hiking|foot)$"];
 out body;"""))
@@ -134,7 +139,16 @@ out body;"""))
                 for m in e.get("members", []):
                     if m["type"] == "way":
                         route_of.setdefault(m["ref"], set()).add(nm)
-    print(f"{reg['label']}: {len(ways) - n0} OSM ways")
+    # bike paths: the download 02e_access.py reads too (one copy, trailrules.cycleway_elements). A bike path OSM names
+    # as a road (Old Pass Road, Mount Hollywood Drive: a paved road closed to cars) is left to the road layer
+    n1 = len(ways)
+    for e in trailrules.cycleway_elements(key, (W, S, E, N)):
+        t = e.get("tags", {})
+        if e["type"] == "way" and "geometry" in e and len(e["geometry"]) >= 2 and e["id"] not in ways \
+                and not re.search(trailrules.ROAD_NAME, t.get("name") or "", re.I):
+            ways[e["id"]] = dict(osm_id=e["id"], **{k: t.get(k) for k in TAGS},
+                                 geometry=shapely.LineString([(p["lon"], p["lat"]) for p in e["geometry"]]))
+    print(f"{reg['label']}: {n1 - n0} OSM ways, {len(ways) - n1} bike paths")
 
 g = gpd.GeoDataFrame(list(ways.values()), crs=4326)
 g["route"] = [", ".join(sorted(route_of.get(i, ()))) or None for i in g.osm_id]
@@ -147,7 +161,7 @@ gu["source"] = "OSM"
 off_parts, gated_parts = [], []
 for key, bb in boxes.items():
     off_parts.append(cached(f"trails_usgs_{key}.geojson", lambda: esri_lines(
-        USGS, bb, "permanentidentifier,name,trailnumber,sourceoriginator,hikerpedestrian,bicycle,packsaddle")))
+        USGS, bb, "permanentidentifier,name,trailnumber,sourceoriginator,hikerpedestrian,bicycle,packsaddle,trailtype")))
     gated_parts.append(cached(f"usfs_closed_roads_{key}.geojson", lambda: esri_lines(
         USFS_CLOSED_ROADS, bb, "objectid,id,name,openforuseto")))
 def stack(parts, key):
@@ -158,7 +172,17 @@ def stack(parts, key):
     return out.pipe(lambda d: d.drop_duplicates(key) if key in d else d[~d.geometry.to_wkb().duplicated()]).to_crs(CRS).reset_index(drop=True)
 off = stack(off_parts, "permanentidentifier")
 gated = stack(gated_parts, "objectid")
-print(f"official trail lines {len(off)}, gated USFS road lines {len(gated)}")
+# official water trails (canoe and paddle routes down a river: the Chattooga River and Toccoa canoe trails, the
+# Schuylkill River and Tidal Delaware water trails) are no walking trails: an OSM path along the bank doesn't take their
+# name, and they add no line. NDT's trail type says so; a copy saved before the type was asked for (2026-11-25) goes by
+# the name ("... canoe trail", "... water trail"; a canoe carry or portage is a trail on land and stays). They stay in
+# the list the ways are matched against, so a way between two land trails takes the one it took before
+water = np.zeros(len(off), bool)
+if len(off):
+    water = (off.get("trailtype", pd.Series(None, index=off.index)).eq("Water Trail") | off["name"].fillna("").str.contains(
+        r"\b(?:canoe|paddl\w*|kayak\w*|water)\s+(?:trail|route|way)\b|\bblueway\b", case=False)).values
+    print(f"official water trails left out: {int(water.sum())} lines, {round(off.length[water].sum() / 1000)} km")
+print(f"official trail lines {len(off) - int(water.sum())}, gated USFS road lines {len(gated)}")
 
 
 def follow(lines, ref):
@@ -188,6 +212,8 @@ yn = lambda v: str(v).upper().startswith("Y")
 uses = [", ".join(u for u, flag in (("hikers", r.hikerpedestrian), ("bikes", r.bicycle), ("horses", r.packsaddle))
                   if yn(flag)) or None for r in off.itertuples()] if len(off) else []
 m_off = follow(gu, off)
+if water.any():           # a way along a water trail takes nothing from it
+    m_off = np.where((m_off >= 0) & water[np.maximum(m_off, 0)], -1, m_off)
 m_gate = np.where(gu.kind == "fire road", follow(gu, gated), -1)
 gu["official"] = [off.sourceoriginator.iat[i] if i >= 0 else None for i in m_off]
 gu["trail_no"] = [None if i < 0 or pd.isna(off.trailnumber.iat[i]) else str(off.trailnumber.iat[i]) for i in m_off]
@@ -202,23 +228,40 @@ gu["off_bike"] = [off.bicycle.iat[i] if i >= 0 and "bicycle" in off else None fo
 add = []
 if len(off):
     otree = shapely.STRtree(gu.geometry.values)
+    # the 300 m test reads the OSM paths and tracks (as before bike paths and steps joined the layer, 2026-11-25); a piece
+    # with its median within 100 m of a bike path or stair is that one's copy (La Conchita Beach, by the coast bike path)
+    old_ways = gu.geometry.values[~gu.highway.isin(["cycleway", "steps"]).values]
+    old_tree = shapely.STRtree(old_ways)
+    new_ways = gu.geometry.values[gu.highway.isin(["cycleway", "steps"]).values]
+    new_tree = shapely.STRtree(new_ways) if len(new_ways) else None
     names_n = gu["name"].fillna("").map(norm).values
+    lengths = shapely.length(gu.geometry.values)
+    old_idx = np.flatnonzero(~gu.highway.isin(["cycleway", "steps"]).values)
     for r in off[off.name.notna()].itertuples():
-        near = otree.query(r.geometry, predicate="dwithin", distance=40)
-        rest = r.geometry.difference(shapely.union_all(shapely.buffer(gu.geometry.values[near], 40))) if len(near) \
+        wet_trail = bool(water[r.Index])   # a water trail's piece: undrawn, for the parking test only (as before 2026-11-25)
+        near = old_tree.query(r.geometry, predicate="dwithin", distance=40)      # (a bike path crossing it cuts nothing)
+        rest = r.geometry.difference(shapely.union_all(shapely.buffer(old_ways[near], 40))) if len(near) \
             else r.geometry
         for piece in shapely.get_parts(rest):
             if piece.geom_type != "LineString" or piece.length < 400:
                 continue
             sample_pts = shapely.line_interpolate_point(piece, np.linspace(0, piece.length, max(3, int(piece.length // 50))))
-            if np.median(otree.query_nearest(sample_pts, return_distance=True, all_matches=False)[1]) < 300:
+            if np.median(old_tree.query_nearest(sample_pts, return_distance=True, all_matches=False)[1]) < 300:
                 continue
-            close = otree.query(piece, predicate="dwithin", distance=150)
-            if (names_n[close] == norm(r.name)).any():
+            if not wet_trail and new_tree is not None and np.median(new_tree.query_nearest(
+                    sample_pts, return_distance=True, all_matches=False)[1]) < 100:
+                continue
+            # OSM has the trail where ways of its name lie within 150 m (the paths and tracks, as before bike paths and
+            # steps joined), a quarter of the piece's length or more: an 11 m stub that took the name at a junction left out
+            # 1.85 mi of the Browns Tract Trail (2026-11-25). A piece with no name to compare ("-") goes by any such way
+            nm_n = norm(r.name)
+            close = old_idx[old_tree.query(piece, predicate="dwithin", distance=150)]
+            same = close[names_n[close] == nm_n]
+            if len(same) and (not nm_n or lengths[same].sum() >= 0.25 * piece.length):
                 continue
             add.append(dict(name=r.name, kind="trail", official=r.sourceoriginator, source="official only",
                             trail_no=None if pd.isna(r.trailnumber) else str(r.trailnumber), uses=uses[r.Index],
-                            off_bike=getattr(r, "bicycle", None), geometry=piece))
+                            off_bike=getattr(r, "bicycle", None), water_trail=wet_trail, geometry=piece))
 if add:
     gu = gpd.GeoDataFrame(pd.concat([gu, gpd.GeoDataFrame(add, crs=CRS)], ignore_index=True), crs=CRS)
     print(f"added {len(add)} official trail pieces missing from OSM, "
@@ -246,14 +289,36 @@ for key in REGIONS:
     relief[inside] = rel[rows[inside], cols[inside]]
 
 name = gu["name"].fillna("")
-trailish = name.str.contains(r"\b(?:trail|fire road|truck trail|motorway)\b", case=False)
-keep = (pd.Series(relief, index=gu.index) >= MIN_RELIEF_M) | gu.route.notna() | trailish | gu.official.notna() \
-    | gu.gated.notna()
+mountain = pd.Series(relief, index=gu.index) >= MIN_RELIEF_M
+listed = name.ne("") | gu.route.notna() | gu.official.notna() | gu.gated.notna()   # named (any name), routed or official
+# a sidepath (trailrules.py): an unnamed footway, path or bike path beside a car road, anywhere (OSM's own sidewalk tags
+# are dropped above)
+side_c = (~listed & gu.highway.isin(["footway", "path", "cycleway"])).values
+sidepath = pd.Series(False, index=gu.index)
+sidepath[side_c] = trailrules.beside_road(gu.geometry.values[side_c]) | (gu.is_sidepath.values[side_c] == "yes")
+# flat ground: what is named, routed or official, or runs along the water the map draws (trailrules.py)
+flat_c = (~mountain & ~listed).values
+wet = pd.Series(False, index=gu.index)
+wet[flat_c] = trailrules.along_water(gu.geometry.values[flat_c])
+keep = mountain | listed | wet
+water_piece = gu.get("water_trail", pd.Series(False, index=gu.index)).fillna(False).astype(bool)
+# in the layer for the approach times and the parking test, not drawn (06_map.py): sidepaths, water trails' pieces
+gu["undrawn"] = sidepath.values | water_piece.values
+# the ways the trail rule kept before 2026-11-25 (mountain terrain, a route or an official record, a name like a trail's;
+# a bike path only where it follows an official trail, whose dotted copy the layer drew before): the parking test counts
+# only these (02e_access.py), so a town lot by a greenway is no trail parking, and a rail trail's lot stays one
+gu["old_rule"] = (mountain | gu.route.notna() | gu.official.notna() | gu.gated.notna() |
+                  name.str.contains(r"\b(?:trail|fire road|truck trail|motorway)\b", case=False)) & \
+    (gu.highway.ne("cycleway") | gu.official.notna())
 private_road = (gu.kind == "fire road") & gu.access.isin(["private", "no"]) & ~gu.foot.isin(WALK_OK) & gu.gated.isna()
+km_ = gu.length / 1000
+print(f"flat ground: kept along the water {round(km_[wet & ~sidepath].sum())} km, dropped {round(km_[~mountain & ~listed & ~wet].sum())} km"
+      f" | sidepaths kept undrawn {round(km_[sidepath & keep].sum())} km (on flat ground {round(km_[sidepath & keep & ~mountain].sum())})"
+      f" | bike paths kept {round(km_[keep & ~private_road & gu.highway.eq('cycleway')].sum())} km")
 gu = gu[keep & ~private_road].copy()
 gu["name"] = gu["name"].fillna(gu.route.str.split(", ").str[0])   # an unnamed piece of a named route takes its name
 named = gu["name"].notna()
-gu["unofficial"] = (gu.kind == "trail") & ~named & gu.official.isna() & gu.route.isna()
+gu["unofficial"] = (gu.kind == "trail") & ~named & gu.official.isna() & gu.route.isna() & gu.highway.ne("cycleway")
 gu["closed"] = gu.foot.isin(["no", "private"]) | (gu.access.isin(["no", "private"]) & ~gu.foot.isin(WALK_OK))
 # ---- agency designations and current closures (matched like the official lines: 25 m over 60 % of the way) ----
 #   USFS trails (EDW TrailNFSPublish): allowed_terra_use digits 1 hiker, 2 pack and saddle, 3 bicycle, 4+ motorized,
@@ -327,6 +392,7 @@ lt = (gu.route.fillna("") + "|" + gu["name"].fillna("")).str.contains(r"\bLong T
 nps_trail = agency.str.contains("National Park Service|NPS", case=False) & (gu.kind == "trail") & (not LA)
 mtb = gu["mtb:scale"] if "mtb:scale" in gu else pd.Series(None, index=gu.index)
 rules = [
+    (gu.get("water_trail", pd.Series(False, index=gu.index)).fillna(False).astype(bool), "no", "a water trail"),
     (in_wild, "no", "wilderness: no bikes"),
     (pct, "no", "Pacific Crest Trail: no bikes"),
     (at, "no", "Appalachian Trail: no bikes"),
@@ -337,6 +403,7 @@ rules = [
     (fs_bike.eq("N"), "no", "Forest Service: closed to bikes by order"),
     (csp_bike.eq("N"), "no", "State Parks: no bikes"),
     (nps_bike.eq("N"), "no", "NPS: hikers / horses only"),
+    (gu.highway.eq("cycleway"), "yes", "bike path"),
     (fs_bike.eq("Y"), "yes", "Forest Service: bikes allowed"),
     (csp_bike.eq("Y"), "yes", "State Parks: bikes allowed"),
     (nps_bike.eq("Y"), "yes", "NPS: multi-use trail"),
@@ -354,7 +421,8 @@ gu["mtb_scale"] = mtb
 gu["rank"] = np.select([gu.route.notna() | (named & (gu.kind == "trail")), named, (gu.kind == "trail") & ~gu.unofficial],
                        [1, 2, 3], 4)
 cols = ["osm_id", "name", "ref", "kind", "rank", "route", "official", "trail_no", "uses", "gated", "unofficial", "closed_why",
-        "closed", "bike", "bike_why", "mtb_scale", "sac_scale", "trail_visibility", "informal", "surface", "access", "foot", "source", "geometry"]
+        "closed", "bike", "bike_why", "mtb_scale", "sac_scale", "trail_visibility", "informal", "surface", "access", "foot", "source",
+        "highway", "old_rule", "undrawn", "geometry"]
 gu = gu[[c for c in cols if c in gu]]
 gu.to_crs(4326).to_file(f"{SHARED}/trails.tmp.gpkg", driver="GPKG")
 os.replace(f"{SHARED}/trails.tmp.gpkg", f"{SHARED}/trails.gpkg")   # the map build may be reading the old file

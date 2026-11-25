@@ -129,10 +129,28 @@ means it was measured on every map before it went in.
 | Approach times are for mid-July: a closure counts only if, by its own dates and words, it will still be in force on the coming 15 July (winter gates, night work and lapsed closures don't); a counted closure cuts only the road it runs along; one the router can't lay on its road cuts nothing; today's other closures are a dated note | | `scripts/07_road_closures.py:62`, `scripts/roadclosures.py:15` | `f18342c` |
 | Fire roads are ridden; a route on a doubtful one is flagged | flagged after 1 minute on it | `scripts/08_hike.py:42` | |
 | Walking: trails up to 15 % grade; along a channel and off trail at a share of trail speed | 0.45 and 0.30 | `scripts/08_hike.py:37`, `scripts/08_hike.py:38` | |
+| Walking runs on every OSM road and trail of the range and on the trail layer's steps and bike paths, which the range's own OSM download lacks (Tallulah Gorge's stairs, 550 m of them, joined no path to the river) | | `scripts/08_hike.py:78` | 2026-11-25 (trails and roads) |
 | Biking | 18 km/h (11 mph) on the flat; dirt x0.7, singletrack x0.5; up to 25 % grade | `scripts/08_hike.py:40` | |
 | Approach routes drawn on a tap (the user's request, 2026-11-24): each reach's route from 08_hike's traceback, its bike and trail-or-road runs on the lines it burned in (a cell takes a line within 7.5 m); a run under 30 m between two of one other kind takes theirs (60 m between off trail and creek bottom, which differ only in the dashes); the route stays after its popup closes until the next tap, and "See it on the map" shows it all (the user's choice) | 7.5 m, 30 m, 60 m | `scripts/approach_routes.py:39`, `scripts/approach_routes.py:43`, `scripts/map_routes.js` | |
 | Driving: speed by road class; winding roads slower; a trailhead joins a road within 400 m | winding x0.75 | `scripts/09_drive.py:19`, `scripts/09_drive.py:22` | |
 | Blue Ridge Parkway: a section closes only when the park's Status column says Closed; in an open section, the milepost ranges its notes call closed; each mile is laid on the Parkway's own OSM lines between the park's milepost points, and a closure with no milepost range closes no road | | `scripts/07_road_closures.py` (`blri_roads`) | `491aeba` |
+
+### Trails and roads (`02d_trails.py`, `02e_access.py`, `trailrules.py`)
+
+The user, 2026-11-24: "there seem to be many different trails missing across the different locations, for example the
+rottenwood creek trail in atlanta"; then "Along water + bike paths" (2026-11-25, from three options measured on the 12
+maps; numbers in the trails-and-roads notes, `trails-roads.md`).
+
+| Rule | Value | Where | Since |
+|---|---|---|---|
+| The trail layer: OSM paths, footways, bridleways, steps, bike paths (`highway=cycleway`) and tracks (fire roads); named official trails OSM lacks are added, dotted | an official piece 400 m (1,300 ft) or longer, its median 300 m (1,000 ft) from the OSM paths and tracks and 100 m (330 ft) from the bike paths and steps, with OSM ways of its name within 150 m (500 ft) under a quarter of its length | `scripts/02d_trails.py:126`, `scripts/02d_trails.py:145`, `scripts/02d_trails.py:240` | bike paths and steps: 2026-11-25 (trails and roads) |
+| Mountain terrain keeps every way. On flat ground a way is kept when it is named (any name), on a hiking route, follows an official trail, or runs along the water: half its length near a reach the map draws or a lake | relief 100 m (330 ft) within 1 km; 30 m in NE Connecticut and SE Pennsylvania, 50 m in the Adirondacks (`min_relief`); water 150 m (500 ft) | `scripts/02d_trails.py:292`, `scripts/trailrules.py:20` | 2026-11-25 (trails and roads); before, only names like a trail's |
+| A sidepath isn't drawn (an unnamed footway, path or bike path beside a car road: the basemap draws the road); it stays in the trail data, so the approach times and the parking test are as before | 60 % of it within 20 m (65 ft) | `scripts/trailrules.py:19`, `scripts/02d_trails.py:298`, `scripts/02d_trails.py:306`, `scripts/06_map.py:1399` | 2026-11-25 (trails and roads) |
+| A bike path is a trail; one OSM names as a road (Old Pass Road, Mount Hollywood Drive) or that is a USFS road is a road closed to cars, in the road layer | | `scripts/trailrules.py:26`, `scripts/02e_access.py:163` | 2026-11-25 (trails and roads) |
+| Official water trails (NDT's "Water Trail": the Chattooga River and Toccoa canoe trails) name no OSM way and draw no line; their pieces stay in the data, undrawn, for the parking test | | `scripts/02d_trails.py:175` | 2026-11-25 (trails and roads) |
+| The road layer: paved roads in mountain terrain or on USFS roads (the basemap draws the rest; town streets never); dirt roads and tracks anywhere, on flat ground when named or along the water; private roads left out | as the trail layer | `scripts/02e_access.py:168` | dirt roads on flat ground: 2026-11-25 (trails and roads) |
+| Parking: public lots in mountain terrain, within 300 m (1,000 ft) of a trail the trail rule kept before 2026-11-25 (a bike path only where it follows an official trail: a rail trail), so a town lot by a new greenway or riverside path is no trail parking, or named after a trail ("Power Line Trail Parking") or a way onto the water ("Boat Ramp", a fishing or canoe access) | | `scripts/02e_access.py:191`, `scripts/02e_access.py:201` | 2026-11-25 (trails and roads) |
+| The trail layer leaves a fire road to the road layer only where the road layer has that OSM way | | `scripts/06_map.py:1427` | 2026-11-25 (trails and roads) |
 
 ### Lakes, falls, the map, downloads
 
@@ -201,6 +219,8 @@ means it was measured on every map before it went in.
 | The smallest lake to show (with counts); hosting beyond smaller pages; national gap-fillers | general-rules | the user | | later |
 | Pieces a buried reach leaves touching no other drawn line (LA 68 mi, se_pa and north Georgia 3-4 mi each, measured on the live maps): lines just under 40 % impervious, and outfalls where a creek comes back to the surface; one that meets the same test at 25 % could go too | buried creeks | none | the user's call | open |
 | Philadelphia's combined sewers take dry-weather flow to the treatment plants: summer flow of creeks below big sewersheds (Frankford Creek below the Wingohocking) is likely too high | buried creeks | none | | open |
+| Approach times don't walk the trail layer's "official only" trails (agency records OSM lacks, drawn dotted, "may be faint or abandoned"): about 2,800 mi on the 12 maps, about 1,000 mi of them central Vermont's Vermont ANR lines numbered like highways (7, 12, 14, 22A, 100: likely snowmobile corridors) | trails and roads | none | the user's call | open |
+| Forest Service roads OSM lacks (north Georgia: 92 mi open to the public, 137 mi closed, 102 mi on the MVUM, many of them offset copies) are neither drawn nor walked | trails and roads | none | | open |
 | USGS WaterServices ends 2027-02-22 | | done: `11_context.py` and `02b` use api.waterdata.usgs.gov | | watch |
 
 ## 6. Standing checks (before every publish)

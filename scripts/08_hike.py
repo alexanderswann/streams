@@ -2,7 +2,8 @@
 (cost-distance on the DEM).
 
 Walking speed is Tobler's hiking function on the local slope, averaged uphill/downhill:
-  - trails, tracks, gated and closed roads: grade capped at 15% (trails switchback), full Tobler speed
+  - trails, tracks, gated and closed roads, and the trail layer's steps and bike paths: grade capped at 15% (trails
+    switchback), full Tobler speed
   - creek bottoms (1 km^2 of drainage up to CHANNEL_MAX_KM2, 25 sq mi) off trail: 45% of Tobler (boulder-hopping,
     wading); a bigger river is walked along its bank, at the off-trail speed below
   - other off-trail terrain: 30% of Tobler (SoCal chaparral), slopes over 45 degrees nearly impassable
@@ -12,8 +13,8 @@ Bikeable (ridden wherever it beats walking):
     bikes) and all fire roads of the trail layer (02d_trails.py). Fire roads count even where bikes may not be
     allowed (wilderness, posted no bikes, fire closures, closed or private in OSM): the bike time stays in and the
     reach / drop gets a bike_check flag (below). Other private roads (ranch roads neither layer lists) stay out.
-  - bike paths: every OSM highway=cycleway in the region, downloaded here (02e_access.py keeps only those in mountain
-    terrain; the paved West Fork Road, 2N25, is one); never in wilderness
+  - bike paths: every OSM highway=cycleway in the region, downloaded here (the trail layer, 02d_trails.py, draws them,
+    and the road layer those OSM names as roads, like Old Pass Road); walked too; never ridden in wilderness
   - singletrack only where it is clearly bike-legal (trail layer bike = "yes"); never in wilderness
 Cycling speed 18 km/h on the flat, slowed by grade (~10 km/h at 6%); x0.7 on dirt roads, x0.5 on singletrack. The grade
 is the line's own (DEM elevation along the road or trail over 200 m, capped at 25%), not the cell's slope: a road
@@ -72,6 +73,12 @@ del gy, gx
 
 roads = gpd.read_file(f"{RAW}/osm_roads.gpkg")
 trails = gpd.read_file(f"{RAW}/osm_trails.gpkg")
+# the trail layer's steps and bike paths are walked too (02d_trails.py): this range's own OSM download has neither, and
+# a stair down a gorge wall (Tallulah Gorge's 550 m of them) joined no path to the river. Bike paths are ridden below
+_tl = gpd.read_file(f"{SHARED}/trails.gpkg").to_crs(CRS) if os.path.exists(f"{SHARED}/trails.gpkg") else None
+if _tl is not None and "highway" in _tl:
+    _tl = _tl[_tl.highway.isin(["steps", "cycleway"])].cx[XMIN - 2000:XMAX + 2000, YMIN - 2000:YMAX + 2000]
+    trails = pd.concat([trails, _tl[["highway", "name", "geometry"]].to_crs(trails.crs)], ignore_index=True)
 drivable = roads[~roads.access.isin(["private", "no"]) & ~roads.motor_vehicle.isin(["no", "private"])
                  & (roads.highway != "track")]
 # The times are for mid-July: a full closure cuts its road only if 07_road_closures.py counts it as still in force then
@@ -124,7 +131,7 @@ source = burn(open_roads[~open_roads.highway.isin(["motorway", "motorway_link"])
 
 
 def cycleways():
-    """OSM highway=cycleway ways in the whole region (02e_access.py keeps only mountain ones), cached for a week under
+    """OSM highway=cycleway ways in the whole region (the map's layers keep fewer: 02d_trails.py), cached for a week under
     data/raw/_shared/cache (REFRESH=1 forces a new download); the old copy is used when Overpass can't be reached."""
     path = f"{SHARED}/cache/cycleways_{REGION}.json"
     have = os.path.exists(path)
