@@ -10,15 +10,32 @@
 #   zsh buildslot.sh status          who holds the slots and who waits
 #   zsh buildslot.sh run <command>   take a slot, run the command, let it go: for a session's own chain script (a
 #                                    project build only when the command's script is in the project's scripts folder)
+#   BUILDSLOT_PRIORITY=critical      (the overview session's runs only: the combined test a batch waits on) a scratch
+#                                    build's ticket in the critical lane, served after project builds and before every
+#                                    ordinary scratch ticket. In the environment of buildslot_acquire or of `run`.
+#   buildslot_yield [label]          for a chain that holds one slot for many maps (2026-11-24: per-map tickets let
+#                                    long tests take the critical test's slot at its map boundaries). Call it between
+#                                    two maps: it keeps the slot unless a waiting ticket outranks the chain's class (a
+#                                    project build outranks critical and scratch, critical outranks scratch); then it
+#                                    queues again first, so no ordinary waiter slips in, and lets that one go ahead:
+#                                      source /Users/mac/Fishing/scripts/buildslot.sh
+#                                      buildslot_acquire "<label>"          (BUILDSLOT_PRIORITY=critical: the overview's)
+#                                      for m in $maps; do buildslot_yield; <build $m>; done
+#                                    A `buildslot.sh run` inside such a chain runs in its slot (BUILDSLOT_HELD, which
+#                                    names no slot while the chain waits and the new one once it has it). Call it only
+#                                    with nothing of the chain running: with a background job of its own it keeps the
+#                                    slot (that step runs in it).
 # The slot is let go however the driver ends: its EXIT trap (INT, TERM and HUP end the driver, which runs it; where
 # hydrolock.sh's traps are set, they end it the same way and its lock is let go as before). A slot whose holder is
 # gone without letting go (kill -9, a crash, a restart) is cleared by the next driver that looks: each slot records
 # its holder's pid and process start time, so a reused pid isn't taken for the holder.
 # Slots are symbolic links slot.1 and slot.2 in BUILDSLOT_DIR (/private/tmp/fishing-build-slots, the same for every
 # clone; a restart empties it), made in one step with ln -s, which only one process can do; each link's text is
-# "pid|start|kind|since|label". A waiter leaves a ticket wait.<0 project, 1 scratch>.<epoch>.<pid>, and only the first
-# ticket in that order takes a free slot. buildslot.log there keeps one line per take, free and clear.
-# Tests only: BUILDSLOT_DIR (another folder), BUILDSLOT_KIND (project|scratch), BUILDSLOT_POLL (seconds between looks).
+# "pid|start|kind|since|label". A waiter leaves a ticket wait.<0 project, 0c critical, 1 scratch>.<epoch>.<pid>, and
+# only the first ticket in that order takes a free slot. buildslot.log there keeps one line per take, free, yield and
+# clear. (Copies of this file from before the critical lane read 0c tickets the same way: they sort between 0 and 1.)
+# Tests only: BUILDSLOT_DIR (another folder), BUILDSLOT_KIND (project|critical|scratch), BUILDSLOT_POLL (seconds between
+# looks).
 BUILDSLOT_DIR=${BUILDSLOT_DIR:-/private/tmp/fishing-build-slots}
 _bs_max=2
 _bs_poll=${BUILDSLOT_POLL:-5}
@@ -26,6 +43,8 @@ _bs_project=/Users/mac/Fishing/scripts
 _bs_slot=""
 _bs_ticket=""
 _bs_home=""        # run mode: the folder of the command's script (below); a sourced driver goes by its own folder
+_bs_kind=""        # the class this process queued in (project | critical | scratch), and its label: for buildslot_yield
+_bs_label=""
 
 _bs_log() { print -r -- "$(date '+%Y-%m-%d %H:%M:%S') $*" >> $BUILDSLOT_DIR/buildslot.log 2>/dev/null }
 
@@ -58,30 +77,36 @@ _bs_holders() {   # the holders, for a message
   print -r -- ${(j:; :)out:-none}
 }
 
-buildslot_acquire() {
-  local label=${1:-${ZSH_ARGZERO:t}} kind prio start k t0=$(date +%s) said=0 first
-  label=${label//|//}
-  if [[ -n ${BUILDSLOT_HELD:-} && -L $BUILDSLOT_HELD ]]; then   # started by a driver that holds a slot: run in it
-    local info=$(readlink $BUILDSLOT_HELD 2>/dev/null) parts
-    parts=("${(@s:|:)info}")
-    _bs_live $parts[1] $parts[2] && return 0
-  fi
+_bs_class() {   # the class of a new ticket: project by the driver's folder; a scratch build in the critical lane when
+  local kind     # BUILDSLOT_PRIORITY=critical; else scratch
   kind=${BUILDSLOT_KIND:-$([[ ${_bs_home:-${PWD:A}} == $_bs_project ]] && echo project || echo scratch)}
-  prio=$([[ $kind == project ]] && echo 0 || echo 1)
-  start=$(_bs_start $$)
-  mkdir -p $BUILDSLOT_DIR || return 1
-  _bs_ticket=$BUILDSLOT_DIR/wait.$prio.$(printf %011d $t0).$$
-  print -r -- "$start|$kind|$label" > $_bs_ticket
+  case ${BUILDSLOT_PRIORITY:-} in
+    "") ;;
+    critical) [[ $kind == scratch ]] && kind=critical ;;
+    *) print -u2 -r -- "buildslot: BUILDSLOT_PRIORITY=$BUILDSLOT_PRIORITY is not a lane (critical); a $kind ticket" ;;
+  esac
+  print -r -- $kind
+}
+
+_bs_prio() { case $1 in project) print 0 ;; critical) print 0c ;; *) print 1 ;; esac }   # a ticket's sort key
+
+_bs_queue() {   # leave this process's ticket, in its class
+  _bs_ticket=$BUILDSLOT_DIR/wait.$(_bs_prio $_bs_kind).$(printf %011d $(date +%s)).$$
+  print -r -- "$(_bs_start $$)|$_bs_kind|$_bs_label" > $_bs_ticket
+}
+
+_bs_wait() {    # until this process's ticket is the first and a slot is free: take that slot
+  local k said=0 first start=$(_bs_start $$) t0=$(date +%s)
   while true; do
     _bs_clean
     first=($BUILDSLOT_DIR/wait.*(N.on))
     if [[ ${first[1]:-} == $_bs_ticket ]]; then
       for k in {1..$_bs_max}; do
-        if ln -sn "$$|$start|$kind|$(date +%s)|$label" $BUILDSLOT_DIR/slot.$k 2>/dev/null; then
+        if ln -sn "$$|$start|$_bs_kind|$(date +%s)|$_bs_label" $BUILDSLOT_DIR/slot.$k 2>/dev/null; then
           rm -f $_bs_ticket; _bs_ticket=""
           _bs_slot=$BUILDSLOT_DIR/slot.$k
           export BUILDSLOT_HELD=$_bs_slot
-          _bs_log "take slot.$k: $label ($kind, pid $$) after $(( $(date +%s) - t0 )) s"
+          _bs_log "take slot.$k: $_bs_label ($_bs_kind, pid $$) after $(( $(date +%s) - t0 )) s"
           (( said )) && print -r -- "== build slot $k taken $(date +%H:%M:%S), after $(( $(date +%s) - t0 )) s of waiting"
           return 0
         fi
@@ -93,6 +118,42 @@ buildslot_acquire() {
     fi
     sleep $_bs_poll
   done
+}
+
+buildslot_acquire() {
+  local label=${1:-${ZSH_ARGZERO:t}}
+  label=${label//|//}
+  if [[ -n ${BUILDSLOT_HELD:-} && -L $BUILDSLOT_HELD ]]; then   # started by a driver that holds a slot: run in it
+    local info=$(readlink $BUILDSLOT_HELD 2>/dev/null) parts
+    parts=("${(@s:|:)info}")
+    _bs_live $parts[1] $parts[2] && return 0
+  fi
+  _bs_kind=$(_bs_class); _bs_label=$label
+  mkdir -p $BUILDSLOT_DIR || return 1
+  _bs_queue
+  _bs_wait
+}
+
+buildslot_yield() {   # between two maps of a chain that holds its own slot: see the head of this file
+  (( ZSH_SUBSHELL )) && return 0
+  [[ -n $_bs_slot ]] || return 0             # no slot of its own (none, or a parent's): nothing to give way with
+  zmodload -F zsh/parameter p:jobstates 2>/dev/null
+  (( ${#jobstates} )) && return 0            # a step of this chain still runs in the background, in this slot: not now
+  local info=$(readlink $_bs_slot 2>/dev/null) first tp who
+  [[ ${info%%|*} == $$ ]] || { _bs_slot=""; unset BUILDSLOT_HELD; return 0; }
+  _bs_clean
+  first=($BUILDSLOT_DIR/wait.*(N.on))
+  (( ${#first} )) || return 0
+  tp=${${first[1]:t}#wait.}; tp=${tp%%.*}
+  [[ $tp < $(_bs_prio $_bs_kind) ]] || return 0   # nobody waiting outranks this chain's class: it keeps its slot
+  who=$(cat -- $first[1] 2>/dev/null); who=${who#*|}; who=${who#*|}   # the ticket's label (start|kind|label)
+  [[ -n ${1:-} ]] && _bs_label=${1//|//}
+  _bs_queue                                  # its ticket first, so no ordinary waiter can take the slot in between
+  unset BUILDSLOT_HELD                       # before the slot goes: nothing this chain starts may run in it any more
+  rm -f $_bs_slot && _bs_log "yield ${_bs_slot:t}: $_bs_label ($_bs_kind, pid $$) to $who"
+  print -r -- "== build slot ${_bs_slot:e} yielded $(date +%H:%M:%S) to $who; it is taken back after that one"
+  _bs_slot=""
+  _bs_wait                                   # exports BUILDSLOT_HELD again, naming the slot it takes
 }
 
 buildslot_release() {
@@ -137,6 +198,6 @@ if [[ $ZSH_EVAL_CONTEXT == toplevel ]]; then     # run as a command, not sourced
       buildslot_release
       exit $rc
       ;;
-    *) print -r -- "usage: zsh buildslot.sh status | run <command> [args]   (drivers source it: see its head)"; exit 2 ;;
+    *) print -r -- "usage: zsh buildslot.sh status | run <command> [args]   (drivers source it: see its head; BUILDSLOT_PRIORITY=critical for the overview's runs)"; exit 2 ;;
   esac
 fi
