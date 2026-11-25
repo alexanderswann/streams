@@ -165,7 +165,11 @@ takes the lock over once that driver and its step are gone.
   every range, then `06_map.py` and `12_profiles.py`. The reaches and their ids stay; scores change only where a
   reach's flow does.
 
-**One area**, whole: `./run_base.sh <area> && ./run_mid.sh <area> && ./run_late.sh <area>` from `scripts/`, then
+**One area**, whole: `./run_area.sh <area> [from-step]` from `scripts/` (2026-11-23). It runs `run_base.sh`,
+`run_mid.sh` and `run_late.sh` in turn, in one build slot, from the step named on (`../.venv/bin/python build_stamp.py
+steps` lists them; the drivers skip the steps before it, with a line in their logs), then the checks on the new map
+(`audit/scripts/check_build.sh`, this area only), and ends with one line each: OK or what failed. A new area needs only
+a label, a home and an outline in `config.py`: `00_area.py`, run_base's first step, works out the rest. Then
 `13_overview.py`, `14_portable.py` and `phone_sync.sh` for the map of all areas and the phone copies. One step:
 `AREA=<area> REGION=<range> ../.venv/bin/python <step>.py` (`REGION` only for the per-range steps). Which step a change
 rebuilds from, and how many builds the Mac takes at once, is in `STATE.md` §7; run long builds under `caffeinate -i`.
@@ -176,6 +180,16 @@ a range's table lists other reaches or drops than its `streams_scored.gpkg` / `w
 range, add it to the area's `ranges` in `AREAS` (UTM bbox + NHD HU4 codes) and run the area's drivers. To refresh only
 the live data (closures, gauges) before a trip: `07_road_closures.py`, `08_hike.py` per range, `09_drive.py`,
 `11_context.py`, `06_map.py`.
+
+**Build stamps.** Every step stamps itself: `output/<area>/build_stamp.json` says which committed code made each file
+(`build_stamp.py show <area>`), and `publish_site.sh` refuses a publish whose changed files came from uncommitted or
+mixed code, a failed step, a step older than one before it, or a map the checks haven't passed (`build_stamp.py
+gate`). The check after a build is `audit/scripts/check_build.sh`, the same one a session runs on its scratch build
+before handing a patch on (with the patch chain as its last words): the code is the committed or patched tree, the
+standing audit tables, the golden places (`audit/golden_places.csv`), and lines, drainage, scores and lake outlets
+against the live maps, summed up in `audit/tables/<label>/PREHANDOFF.md`. `scripts/baseline.sh make|clone|list` keeps
+frozen copies of the built project for scratch builds to start from. `scripts/new_area_test.sh <area> <scratch
+folder>` builds a test place from `tests/new_areas.json` from nothing in a scratch copy and writes a report.
 
 **Downloads.** Every download goes through `scripts/netfetch.py`: 15 s to connect, the source's own read timeout, a
 hard limit on each attempt, and a breaker that stops asking a host (or the whole network) that didn't answer three

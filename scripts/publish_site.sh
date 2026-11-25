@@ -10,7 +10,8 @@
 #                              terminal)
 #   docs/index.html                     the map of all areas (13_overview.py)
 #   docs/preview.jpg                    the card shown when the link is sent in iMessage etc. (15_preview.py, run by hand)
-#   docs/<area>/                        that area's 2D map, 3D map and data, creek profiles, hillshades
+#   docs/<area>/                        that area's 2D map, 3D map and data, creek profiles, hillshades, and its build
+#                                       stamp (build_stamp.json: which committed code made each file)
 # The copy lives in publish/streams-site (ignored by this project's git). Nothing outside docs/ is added, changed or
 # removed (the site branch holds only the site), and the script stops if its commit would touch anything else. No .nojekyll either: GitHub's Jekyll step copies these
 # files as they are (none starts with front matter, none has a name starting with _ or .).
@@ -65,7 +66,7 @@ cp output/index.html $DEST/
 for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; print(' '.join(config.AREAS))"); do
   [[ -f output/$a/stream_map.html ]] || continue
   mkdir -p $DEST/$a
-  for f in stream_map.html stream_map_3d.html map3d_data.js profiles.html profiles_data.js; do
+  for f in stream_map.html stream_map_3d.html map3d_data.js profiles.html profiles_data.js build_stamp.json; do
     [[ -f output/$a/$f ]] && cp output/$a/$f $DEST/$a/$f
   done
   for d in output/$a/*/hillshade.png(N); do mkdir -p $DEST/$a/${d:h:t}; cp $d $DEST/$a/${d:h:t}/hillshade.png; done
@@ -77,6 +78,12 @@ hid=$(find $DEST \( -name '_*' -o -name '.*' \) | head -1)
 git -C $SITE add -A docs
 out=$(git -C $SITE diff --cached --name-only | grep -v '^docs/' | head -1)
 [[ -n $out ]] && { echo "STOP: the commit would touch $out, outside docs/"; exit 1; }
+# The build gate (the new-area plan's B9, 2026-11-23; the user's OK: "Yes, refuse"). It only adds refusals: every map
+# file this publish changes against the live site must come from a recorded step run on committed code, newer than
+# every step before it, with no failed step and the standing checks passed on these very maps (scripts/build_stamp.py
+# says each reason; the build stamps are written by the steps themselves)
+git -C $SITE diff --cached --name-only origin/gh-pages -- docs | $PY scripts/build_stamp.py gate ||
+  { echo "STOP: the build gate refused this publish (the REFUSED lines above); nothing was committed or pushed"; exit 1; }
 if git -C $SITE diff --cached --quiet; then
   echo "nothing new to commit in $SITE"
 else
@@ -123,6 +130,7 @@ if [[ $1 == push ]]; then
     echo "NOTE: the temporary branch is still on GitHub: git -C /Users/mac/Fishing/$SITE push origin --delete publish-upload"
   # -- end of push --
   echo "Pushed. Live in a minute or two at https://alexanderswann.github.io/streams/"
+  echo "For the other sessions, freeze this build once nothing runs: scripts/baseline.sh make <name>"
   # the phone copies follow what was just published: the one-file map, then phone/
   { $PY scripts/14_portable.py > /dev/null && zsh scripts/phone_sync.sh | tail -1; } ||
     echo "NOTE: the phone copies were not refreshed; run 14_portable.py and phone_sync.sh"

@@ -33,7 +33,9 @@ step() {   # step <range or ""> <script>   (area $a, log $LOG)
       echo "RETRY $a/${1:-all} $2 $(date +%H:%M:%S): it downloads; once more in $NET_PAUSE s" >> $LOG
       sleep $NET_PAUSE; try=2
     else
-      echo "FAILED $a/${1:-all} $2 $(date +%H:%M:%S)" >> $LOG; return 1
+      echo "FAILED $a/${1:-all} $2 $(date +%H:%M:%S)" >> $LOG
+      $PY build_stamp.py failed $a ${1:-all} $2 >> $LOG 2>&1     # the stamp says so (the publish gate reads it)
+      return 1
     fi
   done
 }

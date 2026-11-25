@@ -491,3 +491,8 @@ def out_dir(r):
 RAW, DERIVED, OUT = raw_dir(REGION), derived_dir(REGION), out_dir(REGION)
 for d in (NATIONAL, SHARED, SHARED_DERIVED, RAW, DERIVED, OUT):
     os.makedirs(d, exist_ok=True)
+
+# Every pipeline step records, when it ends, which committed code made which of the area's files (build_stamp.py:
+# output/<area>/build_stamp.json, which the publish gate reads); nothing it does changes what the step makes
+import build_stamp as _build_stamp
+_build_stamp.start(AREA, os.environ.get("REGION"))
