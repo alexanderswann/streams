@@ -161,8 +161,9 @@ function phoneControls(map) {
 // open breakdown up into view, above the controls at the bottom too. Where that is taller than the room the area map's
 // legend leaves, the legend folds while it needs the room (on a phone it stands open over the lower half at first: at
 // 320 x 568 it covered the popup's name and fish score, at 375 x 812 the breakdown's last rows, the score among them)
-// and comes back when the breakdown folds (if folded for it) or the popup closes. Not on hover: the popup would move
-// away from the pointer.
+// and comes back when the breakdown folds (if folded for it) or the popup closes. With the breakdown folded, a trout
+// calendar the user tapped (map_calendar.js, the same event) is what must be seen, the half-month's reasons under its
+// strip included: at 375 x 812 the open legend covered them. Not on hover: the popup would move away from the pointer.
 function keepPopupsClear(map) {
   let open = null, folded = [];          // the legends folded for the popup: [legend, for its head (else its breakdown)]
   // those folded for the breakdown come back when it folds, all of them when the popup closes and no other opens in its
@@ -190,10 +191,11 @@ function keepPopupsClear(map) {
       return;
     }
     // with the breakdown open it is what must be seen whole and clear of the controls (the popup's head may go under
-    // them meanwhile: on a 568 px screen the two don't fit at once); folded, the popup's head, down to its fish score
-    // (or its name)
+    // them meanwhile: on a 568 px screen the two don't fit at once); folded, a trout calendar the user tapped, else the
+    // popup's head, down to its fish score (or its name)
     const w = el.querySelector(".leaflet-popup-content-wrapper") || el;
-    const shown = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
+    const fsb = [...el.querySelectorAll(".fsb")].filter(b => getComputedStyle(b).display !== "none");
+    const shown = fsb.length ? fsb : [...el.querySelectorAll(".calc.tapped")];
     const p = union(shown.length ? shown : [w]);
     if (!p) return;
     const h = !shown.length && (w.querySelector(".fsr") || w.querySelector("b"));
