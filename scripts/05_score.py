@@ -293,7 +293,9 @@ def creek_parts(geoms, lakes):
 # creek above the lake, isn't read so.
 NAME_SHARE, NAME_NEAR_M, BESIDE_M, NAME_END_M, NAME_MIN_M = 0.5, 60.0, 30.0, 100.0, 200.0
 PERENNIAL_SHARE = 1 / 3      # NHD perennial along this share of a piece's points raises it to perennial (never lowers)
-CLASS_RANK = {"unmapped": 0, "ephemeral": 1, "intermittent": 2, "perennial": 3}    # NHD's classes, driest first
+# NHD's classes, driest first; "other" (a line NHD gives no flow class) ranks as "unmapped"
+CLASS_RANK = {"unmapped": 0, "other": 0, "ephemeral": 1, "intermittent": 2, "perennial": 3}
+MAIN_NEAR_M, MAIN_SHARE = 150.0, 0.6     # an unnamed piece takes its main stem's name where NHD's line of it runs so near
 def beside(geoms, drawn):
     """For each line, whether half its points (every 25 m) or more lie within BESIDE_M of a line of `drawn`."""
     tree = shapely.STRtree(drawn) if len(drawn) else None
@@ -851,6 +853,61 @@ for _i, _n in zip(_unn, name_by_share(_G[_unn], _fl)):
     _got.append((_i, _n))
 for _i, _n in _got:
     s.iat[_i, s.columns.get_loc("name")] = _n
+# A piece still unnamed that carries its named main stem on (the reach of most water ending at its start, named by the
+# vote or read along it) takes that name where NHD's lines of that name lie within MAIN_NEAR_M of MAIN_SHARE of its
+# points (every 25 m, as the floor reads them). The terrain's path can stray further from the creek's line than the
+# 60 m the vote and name_by_share read, and still carry the creek's water: in the Cohutta (north Georgia) the pond
+# routing cut Rock Creek's 2.6 km reach in two, and the lower 1 km, all of Rock Creek's water a median 79 m off NHD's
+# Rock Creek line (within 60 m at 25 % of its points, within 150 m at 96 %), was drawn unnamed; so were 2.1 mi of the
+# Independence River (ADK) and 0.8 mi of the Hudson. The guards above hold: not a name it shares with a stream
+# SIDE_RATIO times bigger beside it, nor one on a reach running beside it (the main stem above it and the reaches it
+# runs into excepted, which touch its ends). Down the stem in turn, so unnamed pieces one below another carry the name
+# on as far as NHD's line of it runs along them.
+_nm, _main = s["name"].to_numpy(object).copy(), []
+_flt, _fln = shapely.STRtree(_fl.geometry.values), _fl["gnis_name"].to_numpy(object)
+_starts_at = defaultdict(list)
+for k, g in enumerate(_G):
+    _starts_at[(round(g.coords[0][0], 1), round(g.coords[0][1], 1))].append(k)
+_todo = set(np.flatnonzero(pd.isna(_nm) & _creek).tolist())
+_held_main = [0, 0, 0]       # NHD's line of the name not along it, a bigger stream's name, a reach so named beside it
+while _todo:
+    _step, _done = [], []
+    for _i in sorted(_todo):
+        _ups = _ends.get((round(_G[_i].coords[0][0], 1), round(_G[_i].coords[0][1], 1)), [])
+        _m = max(_ups, key=lambda k: full_km2[k]) if _ups else -1
+        _n = _nm[_m] if _m >= 0 else None
+        if not isinstance(_n, str):       # no main stem, or one still unnamed (it may be named on a later turn)
+            if _m < 0 or _m not in _todo:
+                _done.append(_i)
+            continue
+        _done.append(_i)                  # its main stem's name is settled: decided now, once
+        _pts = shapely.line_interpolate_point(_G[_i], np.arange(0.0, _G[_i].length + 1e-6, 25.0))
+        _pi, _li = _flt.query(_pts, predicate="dwithin", distance=MAIN_NEAR_M)
+        if len(np.unique(_pi[_fln[_li] == _n])) < MAIN_SHARE * len(_pts):
+            _held_main[0] += 1
+            continue
+        _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=SIDE_NEAR_M)
+                if full_km2[k] >= SIDE_RATIO * full_km2[_i]]
+        for k in _big:
+            if k not in _bs:
+                _bs[k] = name_by_share(np.array([_G[k]], dtype=object), _fl, 0.0, 0.0, SIDE_NEAR_M)[0]
+        if any(_nm[k] == _n or _bs[k] == _n for k in _big):
+            _held_main[1] += 1
+            continue
+        _touch = set(_ups) | set(_starts_at.get((round(_G[_i].coords[-1][0], 1), round(_G[_i].coords[-1][1], 1)), []))
+        _same = np.array([k for k in np.flatnonzero(_nm == _n) if k not in _touch and k != _i], dtype=int)
+        if len(_same) and beside(np.array([_G[_i]], dtype=object), _G[_same])[0]:
+            _held_main[2] += 1
+            continue
+        _step.append((_i, _n))
+    _todo.difference_update(_done)
+    for _i, _n in _step:
+        _nm[_i] = _n
+    _main += _step
+    if not _step:
+        break
+for _i, _n in _main:
+    s.iat[_i, s.columns.get_loc("name")] = _n
 # NHD's class read along the piece the same way can raise the 3-point vote's class, never lower it: perennial where
 # NHD's perennial lines lie along PERENNIAL_SHARE or more of its points, and on a piece the vote leaves "unmapped" or
 # "ephemeral", the class on half of them. A piece that straddles the point where NHD's line turns from intermittent to
@@ -859,13 +916,23 @@ for _i, _n in _got:
 # -> usually flows, fish 43 -> 31). Not where it runs along a river of SIDE_RIVER_KM2 or more, SIDE_RATIO times its
 # size (SIDE_ON_RIVER of it within 150 m, as the floor's side channels).
 _vote_cls = s["flow"].to_numpy(object).copy()             # the 3-point class (with the cut pieces' link vote)
-_cand = np.flatnonzero(_creek & np.isin(_vote_cls, ["unmapped", "ephemeral", "intermittent"]))
+# "Other" too, as "unmapped": the vote's line has no flow class (a connector, a stream line NHD leaves unclassified, in
+# LA an artificial path), unless it is a built channel's (a canal, ditch, pipeline or conduit, or a line named after
+# one: floor_lines()), which stays as voted. Hooks Creek above Lake Arrowhead (LA) lies on NHD's Hooks Creek all
+# along, its perennial line at 40 % of its points and its connector and artificial path at the rest; re-cut, its
+# vertices read the connector, "other", and it showed seasonal for year-round (fish 44 -> 13).
+_oth = np.flatnonzero(_creek & (_vote_cls == "other"))
+_built_v = (vote(nhd.assign(built=nhd.ftype.isin(BUILT_FTYPES) | channel_word(nhd.gnis_name))[["built", "geometry"]]
+                 .reset_index(drop=True), "built", pts=vertices3(_G[_oth], s.index[_oth])).eq(True).to_numpy()
+            if len(_oth) else np.zeros(0, bool))
+_cand = np.flatnonzero(_creek & np.isin(_vote_cls, ["unmapped", "other", "ephemeral", "intermittent"]))
+_cand = np.setdiff1d(_cand, _oth[_built_v])
 _cls = _fl[_fl.fcode.isin([46006, 46003])]
 _per = name_by_share(_G[_cand], _cls[_cls.fcode.eq(46006)], col="flow", min_share=PERENNIAL_SHARE)
 _most = name_by_share(_G[_cand], _cls, col="flow")
 _fill, _held_cls = [], 0
 for _i, _p, _m in zip(_cand, _per, _most):
-    _c = _p or (_m if _vote_cls[_i] in ("unmapped", "ephemeral") else None)
+    _c = _p or (_m if _vote_cls[_i] in ("unmapped", "other", "ephemeral") else None)
     if _c is None or CLASS_RANK[_c] <= CLASS_RANK[_vote_cls[_i]]:
         continue
     _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=150)
@@ -889,7 +956,10 @@ _moves = pd.Series([f"{_vote_cls[_i]} -> {_c}" for _i, _c in _fill]).value_count
 print(f"read along the reach: names {len(_got)} of {len(_unn)} unnamed (held: {_held[0]} a bigger stream's, {_held[1]} "
       f"beside a reach so named, {_held[2]} not its main stem's above); NHD classes raised {len(_fill)} of {len(_cand)} "
       f"below perennial ({', '.join(f'{k} {v}' for k, v in _moves.items()) or 'none'}; held along a big river: "
-      f"{_held_cls})")
+      f"{_held_cls}; 'other' on a built channel, not read: {int(_built_v.sum())})")
+print(f"main stem's name carried on: {len(_main)} pieces, {sum(_G[i].length for i, _ in _main) / 1000:.1f} km (held: "
+      f"{_held_main[0]} NHD's line of it not along them, {_held_main[1]} a bigger stream's, {_held_main[2]} beside a "
+      f"reach so named)")
 osm_wp = f"{RAW}/osm_waterways.gpkg"    # OSM named rivers and streams, cached a week
 if not os.path.exists(osm_wp) or time.time() - os.path.getmtime(osm_wp) > 7 * 86400:
     from geomatch import overpass
