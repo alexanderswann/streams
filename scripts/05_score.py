@@ -1273,6 +1273,11 @@ _bur, _bur_trout = buried.reaches(s.geometry.values, s["name"].to_numpy(object),
                                   s["in_lake"].to_numpy(bool), nhd)
 print(f"reaches a city has buried (buried.py), not drawn: {int(_bur.sum())}, {s.length.values[_bur].sum() / 1000:.1f} km; "
       f"kept for a trout water or record nearby: {int(_bur_trout.sum())}, {s.length.values[_bur_trout].sum() / 1000:.1f} km")
+_bur_keep, _bur_why = buried.keep(s.geometry.values, _bur, s["area_km2"].to_numpy(float), nhd)   # its two exceptions
+print(f"of those drawn after all: {int((_bur_why == 'outlet').sum())} carrying a lake's outlet NHD maps, "
+      f"{int((_bur_why == 'short gap').sum())} in short stretches drawn above and below, "
+      f"{s.length.values[_bur_keep].sum() / 1000:.1f} km")
+_bur &= ~_bur_keep
 # The reaches left out, with their rows among the reaches before they were left out, for the steps after this one that
 # follow the water down the reaches (buried_reaches.gpkg; no file where there are none): 05b_flow.py reads them back for
 # the way down to the first modelled reach and the segment one matches, and 06_map.py doesn't draw a path below a dam

@@ -35,11 +35,11 @@ Downloads, each range, through netfetch.py (the copy already there when one fail
 MRLC's WCS, kept as served (EPSG:5070) until the range's box outgrows it, and OpenStreetMap's waterway lines with their
 tags (Overpass), kept a week.
 """
-import os, json, time
-import numpy as np, pandas as pd, geopandas as gpd, shapely, rasterio
+import os, json, time, collections
+import numpy as np, pandas as pd, geopandas as gpd, shapely, shapely.ops, rasterio
 from scipy.ndimage import uniform_filter
 from pyproj import Transformer
-from config import CRS, EPSG, RAW, MAP_OUT, REGION, XMIN, YMIN, XMAX, YMAX
+from config import CRS, EPSG, RAW, MAP_OUT, REGION, XMIN, YMIN, XMAX, YMAX, DERIVED_ROOT
 import netfetch
 
 IMP_MIN = 40.0                            # % impervious along the reach
@@ -212,3 +212,117 @@ def reaches(geoms, name, flow, in_lake, nhd):
         trout[k[near_t]] = True
         out[k[~near_t]] = True
     return out, trout
+
+
+# ---- Left-out reaches that stay drawn after all (the options of 2026-11-24; the user's choice) ----
+# Topographic maps draw a creek through a short culvert and leave out a long sewered stretch. Each exception is its own
+# switch: both on is option 1, short gaps alone option 2, outlets alone option 3, both off the rule as built.
+KEEP_LAKE_OUTLETS = True        # a reach that carries the outlet NHD maps from a lake of OUTLET_LAKE_HA or more stays
+KEEP_GAP_UNDER_M = 500.0        # a left-out stretch shorter than this, its stem drawn above and below, stays (0: off)
+OUTLET_LAKE_HA = 1.0
+LAKES = None                    # the lakes layer to read outlets from; None: the area's (05d_lakes.py writes it)
+
+
+def keep(geoms, out, area_km2, nhd):
+    """Which of the reaches `reaches` leaves out (`out`) stay drawn after all, by the switches above: (mask, reason per
+    reach: "outlet", "short gap" or ""). The outlets come first; a stretch is then measured without them."""
+    geoms, out = np.asarray(geoms, dtype=object), np.asarray(out, bool)
+    kept, why = np.zeros(len(geoms), bool), np.full(len(geoms), "", dtype=object)
+    if KEEP_LAKE_OUTLETS and out.any():
+        o = _outlets(geoms, out, nhd)
+        kept |= o
+        why[o] = "outlet"
+    if KEEP_GAP_UNDER_M > 0 and (out & ~kept).any():
+        g = _short_gaps(geoms, out & ~kept, np.asarray(area_km2, float), KEEP_GAP_UNDER_M)
+        kept |= g
+        why[g] = "short gap"
+    return kept, why
+
+
+def _outlets(geoms, cand, nhd):
+    """The reaches among `cand` that carry an outlet NHD maps: an NHD stream, connector, artificial path or ditch line
+    that begins within 20 m of a lake of OUTLET_LAKE_HA or more, followed down up to 700 m; of its first 300 m outside
+    the lakes (25 m points, 4 at least), half lie within 60 m of the reach. As the audit's outlet check finds them."""
+    res = np.zeros(len(geoms), bool)
+    p = LAKES or f"{DERIVED_ROOT}/_shared/lakes.gpkg"
+    if not os.path.exists(p) or nhd is None or not len(nhd):
+        return res
+    lk = gpd.read_file(p, columns=["ha"]).to_crs(CRS)
+    lk = lk[lk.ha >= OUTLET_LAKE_HA]
+    n_ = nhd[nhd.geometry.notna() & nhd.ftype.isin([460, 334, 558, 336])]
+    ng = np.array([q if q.geom_type == "LineString" else shapely.ops.linemerge(q) for q in n_.geometry.values],
+                  dtype=object)
+    ng = ng[shapely.get_type_id(ng) == 1] if len(ng) else ng
+    if not len(lk) or not len(ng):
+        return res
+    st, en = shapely.get_point(ng, 0), shapely.get_point(ng, -1)
+    key = lambda q: (round(q.x), round(q.y))
+    starts = collections.defaultdict(list)
+    for i, q in enumerate(st):
+        starts[key(q)].append(i)
+    lt = shapely.STRtree(lk.geometry.values)
+    k = np.flatnonzero(cand)
+    gt = shapely.STRtree(geoms[k])
+    for n in np.unique(lt.query(st, predicate="dwithin", distance=20.0)[0]):
+        cs, length, cur, used = list(ng[n].coords), ng[n].length, n, {n}
+        while length < 700:
+            nxt = [m for m in starts.get(key(en[cur]), []) if m not in used]
+            if not nxt:
+                break
+            cur = max(nxt, key=lambda m: ng[m].length)
+            used.add(cur)
+            cs += list(ng[cur].coords)[1:]
+            length += ng[cur].length
+        ch = shapely.LineString(cs)
+        pts = shapely.line_interpolate_point(ch, np.arange(25, min(ch.length, 700) + 1, 25.0))
+        if not len(pts):
+            continue
+        inl = np.zeros(len(pts), bool)
+        inl[np.unique(lt.query(pts, predicate="dwithin", distance=10.0)[0])] = True
+        if inl.all():
+            continue
+        first = int(np.argmax(~inl))
+        pts = pts[first:][~inl[first:]][:12]
+        if len(pts) < 4:
+            continue
+        pi, ri = gt.query(pts, predicate="dwithin", distance=60.0)
+        for r in np.unique(ri):
+            if len(np.unique(pi[ri == r])) >= 0.5 * len(pts):
+                res[k[r]] = True
+    return res
+
+
+def _short_gaps(geoms, out, area_km2, max_m):
+    """The reaches among `out` in a stretch of left-out reaches (joined end to start) shorter than max_m that has its
+    stem drawn above (a drawn reach ends where one of the stretch starts, with half its drainage or more) and a drawn
+    reach below (one starts where the stretch ends). Ends are matched on a 3 m grid."""
+    cell = lambda pts: [tuple(v) for v in np.round(shapely.get_coordinates(pts) / 3).astype(np.int64)]
+    s0, s1 = cell(shapely.get_point(geoms, 0)), cell(shapely.get_point(geoms, -1))
+    ends_kept, starts_kept, starts_out = (collections.defaultdict(list) for _ in range(3))
+    for i in range(len(geoms)):
+        if out[i]:
+            starts_out[s0[i]].append(i)
+        else:
+            ends_kept[s1[i]].append(i)
+            starts_kept[s0[i]].append(i)
+    par = {i: i for i in np.flatnonzero(out)}
+    def find(a):
+        while par[a] != a:
+            par[a] = par[par[a]]
+            a = par[a]
+        return a
+    for i in np.flatnonzero(out):
+        for j in starts_out.get(s1[i], []):
+            par[find(i)] = find(j)
+    length, up, down = collections.Counter(), collections.defaultdict(bool), collections.defaultdict(bool)
+    lens = shapely.length(geoms)
+    for i in np.flatnonzero(out):
+        c = find(i)
+        length[c] += lens[i]
+        up[c] |= any(area_km2[j] >= 0.5 * area_km2[i] for j in ends_kept.get(s0[i], []))
+        down[c] |= bool(starts_kept.get(s1[i]))
+    res = np.zeros(len(geoms), bool)
+    for i in np.flatnonzero(out):
+        c = find(i)
+        res[i] = up[c] and down[c] and length[c] < max_m
+    return res
