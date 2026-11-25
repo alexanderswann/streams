@@ -791,10 +791,11 @@
     // screen with its close button (375 px: 75..415; 320 px: -160..160). There a popup opens under or over the point,
     // whichever has more room, is held to the screen's width (the CSS above), and the map pans it clear of the controls
     // and panels, its head (name, fish score, close button) first where it is taller than the room; when its fish-score
-    // breakdown opens or folds (map_score.js's "fs-toggle") the map pans the breakdown whole into view. What must be
-    // seen, the popup's head down to its fish score (or its name) and the open breakdown, is never left under a panel:
-    // where it is taller than the room the controls and panels leave, the open panels across it fold while it needs the
-    // room. Desktop as before.
+    // breakdown opens or folds (map_score.js's "fs-toggle") the map pans the breakdown whole into view, and so for a
+    // trout calendar the user tapped (map_calendar.js, the same event), the half-month's reasons under its strip
+    // included. What must be seen, the popup's head down to its fish score (or its name), the open breakdown or the
+    // tapped calendar, is never left under a panel: where it is taller than the room the controls and panels leave, the
+    // open panels across it fold while it needs the room. Desktop as before.
     const narrow = () => window.innerWidth <= 640;
     let popped = null, folded = [];          // the panels folded for the popup: [panel, for its head (else its breakdown)]
     let gen = 0, pass = null;                // the placement under way, and the check waiting for the end of its pan
@@ -834,9 +835,11 @@
       const el = popped && popped.isOpen() && popped.getElement();
       if (!el) return;
       const c = el.querySelector(".maplibregl-popup-content");
-      const box = [...el.querySelectorAll(".fsb")].find(b => getComputedStyle(b).display !== "none");
+      const box = [...el.querySelectorAll(".fsb")].find(b => getComputedStyle(b).display !== "none") ||
+        el.querySelector(".calc.tapped");
       const t = (box || c).getBoundingClientRect();
-      // what must be seen whole: the open breakdown, else the popup's head, down to its fish score (or its name)
+      // what must be seen whole: the open breakdown, else a trout calendar the user tapped, else the popup's head, down
+      // to its fish score (or its name)
       const h = !box && (c.querySelector(".fsr") || c.querySelector("b"));
       const need = h ? Math.min(t.bottom, h.getBoundingClientRect().bottom) - t.top : t.height;
       const m = map.getContainer().getBoundingClientRect(), r = c.getBoundingClientRect();

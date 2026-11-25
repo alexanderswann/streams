@@ -250,7 +250,9 @@
       (worst ? `<div class="calw"><span class="calt">Worst</span> ${worst}</div>` : "") +
       `<div class="cald">${detail(cal, nowH, nowH)}</div></td></tr>`;
   };
-  // a tap on the row: the half-month under the finger, its reasons below; the pages re-place the popup ("fs-toggle")
+  // a tap on the row: the half-month under the finger, its reasons below. The calendar is marked as tapped and the
+  // pages re-place the popup ("fs-toggle"): on a phone they keep it in view whole, as they do the fish score's open
+  // breakdown, the legend folded while it is in the way (map_phone.js, map3d.html)
   window.calTap = (ev, el) => {
     const k = kept[el.dataset.k], strip = el.querySelector(".cals");
     if (!k || !strip) return;
@@ -258,6 +260,7 @@
     strip.querySelectorAll("i").forEach((c, i) => c.classList.toggle("sel", i === h));
     const box = el.parentNode.querySelector(".cald");
     if (box) box.innerHTML = detail(k.cal, h, k.nowH);
+    el.parentNode.classList.add("tapped");
     ev.stopPropagation();
     document.dispatchEvent(new CustomEvent("fs-toggle", {detail: el}));
   };
