@@ -13,7 +13,9 @@
     scoring.py, and at each trout record (the gate starts above the hottest one)
   - Land status: USFS wilderness (no bikes), non-Forest-Service land inside the forests (private inholdings),
     CPAD (California Protected Areas Database) holdings with restricted or no public access; PAD-US's elsewhere,
-    named only where landnames.py lets a map print the name (never a private individual's)
+    where restricted land open on foot (federal forests and parks, wilderness, the states' parks, forests, wildlife
+    management areas and public lakes: publicland.py) isn't flagged, each named only where landnames.py lets a map
+    print the name (never a private individual's)
   - Critical habitat for stream species (USFWS) and southern steelhead (NMFS), clipped to the study areas.
     Designated habitat, not closure boundaries: Forest Service closures are usually smaller
   - CDFW Heritage and Wild Trout Waters (special regulations, strong sign of wild trout)
@@ -35,6 +37,7 @@ from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir,
 from scoring import HEAT_START
 from geomatch import wilderness_path
 import troutdata
+import publicland     # which PAD-US "restricted" holdings are open on foot (2026-11-24)
 import landnames    # which land holdings' names the maps print: never a private individual's (2026-11-24)
 import netfetch     # every download: timeouts, a breaker, and the last good copy when one fails (2026-11-22)
 
@@ -197,6 +200,7 @@ nonfs = netfetch.tag(nonfs, "ownerclassification", "Forest Service ownership")
 nonfs.to_crs(4326).to_file(f"{CTX}/non_fs_land.gpkg")
 # California Protected Areas Database (CPAD 2026a): parks and open space with their public access. Only restricted
 # and no-public-access holdings are kept; land outside CPAD and outside the national forests is private.
+public_fee = gpd.GeoDataFrame(geometry=[], crs=CRS)    # land a public body owns and keeps open on foot (PAD-US, below)
 if has("cpad"):
     cpad = esri("https://gis.cnra.ca.gov/arcgis/rest/services/Boundaries/CPAD_AccessType/MapServer/0",
                 where="ACCESS_TYP <> 'Open Access'", fields="ACCESS_TYP,UNIT_NAME,MNG_AGNCY", what="CPAD")
@@ -206,12 +210,16 @@ else:   # outside California: PAD-US (USGS), holdings recorded as restricted (RA
                 where="Pub_Access IN ('RA','XA')", fields="Pub_Access,Unit_Nm,MngNm_Desc,MngTp_Desc,FeatClass,DesTp_Desc",
                 what="PAD-US")
     if len(cpad):
-        # PAD-US files federal wilderness, forest and park units as "restricted" (rules on use, not on entry):
-        # they are open on foot, so they aren't flagged
-        open_fed = cpad.Pub_Access.eq("RA") & (
-            cpad.Unit_Nm.fillna("").str.contains(r"(?i)wilderness|national forest|national park|parkway|national recreation")
-            | cpad.MngNm_Desc.fillna("").str.contains(r"(?i)forest service|national park service"))
-        cpad = cpad[~open_fed]
+        # PAD-US records much public land that is open on foot as "restricted", for its rules on use (a licence, a
+        # pass, seasons, zones): federal forests, parks and BLM land, wilderness, and the states' parks, forests,
+        # wildlife management areas and public lakes. Those aren't flagged; which they are comes from PAD-US's own
+        # manager and designation type (publicland.py; by unit names until 2026-11-24). Such land a public body owns
+        # outright (PAD-US's fee holdings, not a designation drawn over other land) isn't a private inholding of a
+        # national forest either (attrs: non_fs_land)
+        open_ = publicland.open_on_foot(cpad)
+        public_fee = cpad[open_ & cpad.FeatClass.eq("Fee")][["geometry"]].assign(geometry=lambda g_: g_.geometry.buffer(0))
+        public_fee = public_fee[public_fee.area > 2000]      # slivers, as below
+        cpad = cpad[~open_]
     if len(cpad):
         # PAD-US names private land after its owners ("Last, First" on an easement): a holding's name is kept only
         # where landnames.py allows it (public, tribal or non-profit land with a place's name); otherwise the
@@ -724,6 +732,8 @@ def attrs(gdf, key, buf):
     out["wilderness"] = out[key].map(gpd.sjoin(mid, wild[["wilderness", "geometry"]]).groupby(key).wilderness.first())
     out["non_fs_land"] = out[key].map(gpd.sjoin(mid, nonfs[["ownerclassification", "geometry"]])
                                       .groupby(key).ownerclassification.first())
+    if len(public_fee):     # a state's wildlife management area, the Parkway's land: public, not an inholding
+        out.loc[out[key].isin(gpd.sjoin(mid, public_fee)[key]), "non_fs_land"] = None
     if len(cpad):
         cj = gpd.sjoin(mid, cpad[["ACCESS_TYP", "UNIT_NAME", "geometry"]]).groupby(key).first()
         # "No Public Access: <unit>"; the status alone where the map prints no name (landnames.py), with a saved
