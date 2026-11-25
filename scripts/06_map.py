@@ -1297,23 +1297,28 @@ from config import raw_dir
 import creekprofiles
 _nhd = [gpd.read_file(f"{raw_dir(r_)}/nhd_flowlines.gpkg", columns=["gnis_name", "ftype"]).to_crs(EPSG).assign(range=r_)
         for r_ in done if os.path.exists(f"{raw_dir(r_)}/nhd_flowlines.gpkg")]
+# (the creeks' lines as 12_profiles.py takes them: NHD's unnamed lines along reaches the map names from OpenStreetMap
+# take their name, by the map's final names: creekprofiles.fill_names)
 PROFILES = creekprofiles.ProfileLines(pd.concat(_nhd, ignore_index=True) if _nhd else
-                                      gpd.GeoDataFrame(columns=["gnis_name", "ftype", "range"], geometry=[]))
+                                      gpd.GeoDataFrame(columns=["gnis_name", "ftype", "range"], geometry=[]),
+                                      creekprofiles.reach_lines(s_ll.drop_duplicates("sid").set_index("sid")["name"]))
 
 
-def opens_here(name, line, pt):
+def opens_here(name, line, pt, km2=0.0):
     """True where the profile a reach's link opens (of the creek `name`, the one passing closest to the link's point
-    `pt`, as profiles.html picks it) passes within SNAP_FALL of the reach's own `line` (both in metres)."""
+    `pt`, as profiles.html picks it) passes within creekprofiles.link_m(km2) of the reach's own `line` (both in metres;
+    SNAP_FALL, more on a river: braids)."""
     st = np.asarray(PROFILES.stems(name), dtype=object)
-    return len(st) > 0 and float(shapely.distance(line, st[np.argmin(shapely.distance(pt, st))])) <= creekprofiles.SNAP_FALL
+    return len(st) > 0 and float(shapely.distance(line, st[np.argmin(shapely.distance(pt, st))])) <= creekprofiles.link_m(km2)
 
 
 # "np" = 1: a named reach (a side channel by its river's name, as its link) without such a profile; written only where
 # set (below), a few bytes on a few thousand reaches instead of a key on every reach
 _mid_m = gpd.GeoSeries(gpd.points_from_xy(mid_ll.x.round(5), mid_ll.y.round(5)), crs=4326).to_crs(EPSG).values
 _line_m = gpd.GeoSeries(s_show.geometry.values, crs=4326).to_crs(EPSG).values
-no_prof = pd.Series([1 if isinstance(n_, str) and n_ and not opens_here(n_, l_, p_) else None
-                     for n_, l_, p_ in zip(s_show["name"].values, _line_m, _mid_m)], index=s_show.index, dtype=object)
+_km2 = s_show.area_full_km2.fillna(s_show.area_km2).astype(float).values
+no_prof = pd.Series([1 if isinstance(n_, str) and n_ and not opens_here(n_, l_, p_, k_) else None
+                     for n_, l_, p_, k_ in zip(s_show["name"].values, _line_m, _mid_m, _km2)], index=s_show.index, dtype=object)
 _named = sum(isinstance(n_, str) and n_ != "" for n_ in s_show["name"].values)
 print(f"stream popups' profile links: {_named - no_prof.notna().sum():,} of {_named:,} named reaches "
       f"({no_prof.notna().sum():,} with no profile of their name within {creekprofiles.SNAP_FALL} m of their line)")

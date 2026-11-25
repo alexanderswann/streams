@@ -9,17 +9,45 @@ the river that is the line, so the Delaware's profile stays): New Jersey's creek
 boxes (66 profiles, 2026-11-24) and New York's inside central Vermont's (22) had been listed on the profiles page.
 profiles.html opens a creek's profile from a map link by the creek's name and a point (#q=name&lat=&lon=): the profile
 of that name passing closest to the point.
+Since 2026-11-25 a creek's main stems come from the whole map, not range by range: each range's NHD download reaches
+past its box, so a creek near a box edge was profiled once per range, the copies sampling the edge cells of their own
+box past it (Little River in northeastern Connecticut read 87 and 111 km2 for one line; Naaman Creek was cut in two at
+the claymont box). The lines of all ranges are taken once each and the stems are cut to the map's boxes.
+A creek is also the name the map gives its reaches where NHD has none (fill_names, 2026-11-25): the map names a reach
+from OpenStreetMap where NHD's line is unnamed (05_score.py), and those creeks had no profile (1,661 reaches, 829 mi
+on the 12 maps: Death Canyon Creek, Devils Canyon, Topanga Creek). NHD's unnamed line along such reaches takes their
+name, and a short unnamed line between two lines of one name (a culvert, a pond's path, a stretch NHD left unnamed)
+takes the creek's; NHD's named Connectors count as the creek's own lines. Creeks NHD names in pieces under MIN_KM
+each had no profile either (1,752 reaches, 790 mi: Shook Branch is 5.3 km in three pieces).
 """
+import functools, os
 import areaclip
+import rasterio
 import networkx as nx
 import numpy as np
+import pandas as pd
 import shapely
+import shapely.ops
 from shapely.geometry import LineString
 from shapely.ops import linemerge, nearest_points, unary_union
+import geopandas as gpd
+from config import REGIONS, CRS, MAP_OUT, derived_dir
 
 MIN_KM = 2.0          # skip shorter creeks
+IN_MAP_KM = 0.5       # ... and the piece of a creek the map's boxes cut that is shorter than this
+SEA_M = 0.5           # m: tidewater, where a profile ends (05c_drainages.SEA_M ends a drainage there; 05_score.py
+                      # draws no reach on it)
 SNAP_FALL = 150       # a known fall within this of a profile is drawn on it (m)
-FLOWLINE_FTYPES = {460, 558}   # StreamRiver, ArtificialPath (through ponds / reservoirs)
+BRAID_KM2 = 100.0     # a reach's link to its creek's profile reaches SNAP_FALL x (drainage / this) ** 0.25 on a river
+FLOWLINE_FTYPES = {460, 558, 334}   # StreamRiver, ArtificialPath (through ponds / reservoirs), Connector
+STREAM_FTYPES = (460, 558, 334)
+GAP_FTYPES = (460, 558, 334, 336, 420, 428)   # ... and CanalDitch, UnderGroundConduit, Pipeline: a culvert
+NAME_M, NAME_SHARE = 30.0, 0.6   # an unnamed NHD line takes the name of the map's reaches within this of it, along this
+                                 # share of it ...
+NAME_NHD_M = 60.0                # ... where no NHD line of that name runs this near its middle (NHD maps the creek
+                                 # there already: a ditch beside it stays unnamed)
+GAP_M = 1000.0        # an unnamed line (or a run of them, or the creek's own ditch or pipe piece) this short between two
+                      # lines of one name is the creek's
 
 
 def main_stems(lines):
@@ -53,27 +81,190 @@ def main_stems(lines):
     return out
 
 
+def link_m(km2):
+    """How far a reach's own line may lie from its creek's profile and still link it (06_map.py): SNAP_FALL, and more
+    on a river, growing as the fourth root of its drainage past BRAID_KM2: a braided river's channels lie hundreds of
+    metres from NHD's line (the Snake in Jackson Hole 170-380 m, 418 m allowed at 6,000 km2)."""
+    return SNAP_FALL * max(1.0, (km2 / BRAID_KM2) ** 0.25) if km2 and km2 > 0 else SNAP_FALL
+
+
+@functools.lru_cache(1)
+def boxes():
+    """The map's boxes, as one polygon (config.CRS)."""
+    b = shapely.union_all([shapely.box(*v["bbox"]) for v in REGIONS.values()])
+    shapely.prepare(b)
+    return b
+
+
+def all_lines(nhd):
+    """All a map's ranges' flowlines, each line once (a range's download reaches past its box, so the same line comes
+    in two or three downloads), single lines only."""
+    nhd = nhd[nhd.geometry.notna() & ~nhd.geometry.is_empty].copy()
+    nhd["geometry"] = [shapely.line_merge(shapely.force_2d(g)) if g.geom_type == "MultiLineString" else shapely.force_2d(g)
+                       for g in nhd.geometry]
+    nhd = nhd[nhd.geometry.geom_type == "LineString"]
+    wkb = shapely.to_wkb(shapely.normalize(np.asarray(nhd.geometry.values, dtype=object)))
+    return nhd[~pd.Series(wkb).duplicated().values].reset_index(drop=True)
+
+
+def reach_lines(names):
+    """The map's reaches (each range's streams_scored.gpkg, in config.CRS) named as `names` (by sid: the map's final
+    names) has them, side channels (named after the river beside them) left out."""
+    parts = []
+    for r in REGIONS:
+        p = f"{MAP_OUT}/{r}/streams_scored.gpkg"
+        if os.path.exists(p):
+            parts.append(gpd.read_file(p, columns=["sid", "side_of", "side_lake"]).to_crs(CRS))
+    if not parts:
+        return gpd.GeoDataFrame(columns=["name", "geometry"], geometry=[], crs=CRS)
+    g = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=CRS)
+    g["name"] = g.sid.map(names)
+    side = g.side_of.notna() | g.side_lake.notna() if "side_lake" in g else g.side_of.notna()
+    g = g[g.name.notna() & (g.name != "") & ~side]
+    return g[["name", "geometry"]].reset_index(drop=True)
+
+
+def fill_names(nhd, reaches=None):
+    """nhd (all_lines) with names where NHD has none: an unnamed stream line along the map's reaches of one name (NAME_M,
+    NAME_SHARE; not where an NHD line of that name runs within NAME_NHD_M of its middle), then a short run of unnamed
+    lines (GAP_M, GAP_FTYPES) from the end of a line of one name, where no line of that name goes on, to the start of
+    another of the same name (not a side arm of a braided river, which leaves beside the named line). Column "gap":
+    named by the second rule."""
+    nhd = nhd.copy()
+    nhd["gap"] = False
+    name = nhd.gnis_name.to_numpy(object).copy()
+    geoms = nhd.geometry.values
+    ft = nhd.ftype.to_numpy()
+    if reaches is not None and len(reaches):
+        rsi = reaches.sindex
+        named = nhd[nhd.gnis_name.notna()]
+        nsi = named.sindex
+        for i in np.flatnonzero(pd.isna(name) & np.isin(ft, STREAM_FTYPES)):
+            g = geoms[i]
+            p = shapely.line_interpolate_point(g, np.r_[np.arange(10.0, g.length, 20.0), g.length / 2])
+            ip, ir = rsi.nearest(p, max_distance=NAME_M, return_all=False)
+            if not len(ir):
+                continue
+            nm = pd.Series(reaches.name.values[ir]).value_counts()
+            if nm.iloc[0] < NAME_SHARE * len(p):
+                continue
+            x = nm.index[0]
+            mid = shapely.line_interpolate_point(g, 0.5, normalized=True)
+            cand = named.iloc[nsi.query(mid.buffer(NAME_NHD_M))]
+            if (cand.gnis_name == x).any() and float(cand[cand.gnis_name == x].distance(mid).min()) <= NAME_NHD_M:
+                continue
+            name[i] = x
+    # short unnamed runs between two lines of one name
+    key = lambda c: (round(c[0], 1), round(c[1], 1))
+    starts = {}
+    for i, g in enumerate(geoms):
+        starts.setdefault(key(g.coords[0]), []).append(i)
+    gap = np.zeros(len(nhd), bool)
+    stream = np.isin(ft, STREAM_FTYPES)
+    for i in np.flatnonzero(pd.notna(name) & stream):
+        x = name[i]
+        if any(name[j] == x and stream[j] for j in starts.get(key(geoms[i].coords[-1]), [])):
+            continue        # the creek's lines go on here: an unnamed line leaving beside it is a side arm, not a gap
+        # a line the run may cross: unnamed, or the creek's own ditch, conduit or pipe piece (Horno Creek's named
+        # CanalDitch stretches cut its stream lines in eight pieces, none under its lake's outlet of 2 km)
+        walk = lambda k: ft[k] in GAP_FTYPES and (pd.isna(name[k]) or (name[k] == x and not stream[k]))
+        stack = [(j, geoms[j].length, (j,)) for j in starts.get(key(geoms[i].coords[-1]), [])
+                 if walk(j) and geoms[j].length <= GAP_M]
+        while stack:
+            j, d, path = stack.pop()
+            for k in starts.get(key(geoms[j].coords[-1]), []):
+                if name[k] == x and stream[k]:
+                    gap[list(path)] = True
+                elif walk(k) and d + geoms[k].length <= GAP_M and k not in path:
+                    stack.append((k, d + geoms[k].length, path + (k,)))
+        for q in np.flatnonzero(gap & pd.isna(name)):
+            name[q] = x
+    nhd["gnis_name"] = name
+    nhd["gap"] = gap
+    return nhd
+
+
+def unique_lines(nhd, reaches=None):
+    """The creeks' lines of all a map's ranges (all_lines, named by fill_names): NHD's named stream lines, the ones
+    named after the map's reaches, and the short runs between two lines of one name."""
+    nhd = fill_names(all_lines(nhd), reaches)
+    return nhd[nhd.gnis_name.notna() & (nhd.ftype.isin(FLOWLINE_FTYPES) | nhd.gap)]
+
+
+@functools.lru_cache(1)
+def _dems():
+    return {r: rasterio.open(f"{derived_dir(r)}/dem_filled.tif") for r in REGIONS
+            if os.path.exists(f"{derived_dir(r)}/dem_filled.tif")}
+
+
+def _ground(xs, ys):
+    """dem_filled.tif at the points, from the range each lies in (NaN outside them)."""
+    z = np.full(len(xs), np.nan)
+    for r, ds in _dems().items():
+        cc, rr = ~ds.transform * (xs, ys)
+        rr, cc = np.floor(rr), np.floor(cc)
+        # inside the raster itself (a point on a box's lower edge lies a row past it: sampled there, it read 0 m)
+        m = (rr >= 0) & (rr < ds.height) & (cc >= 0) & (cc < ds.width) & np.isnan(z)
+        if m.any():
+            v = np.array([q[0] for q in ds.sample(zip(xs[m], ys[m]))], float)
+            z[m] = np.where(v < -1000, np.nan, v)
+    return z
+
+
+def above_tide(stem):
+    """The longest stretch of the stem above tidewater (ground at or below SEA_M), or None where it has no point above
+    it: the tidal Delaware below Trenton had two profiles of 0 m, reading the flats' own trickle for the river's 21,000
+    km2."""
+    d = np.r_[np.arange(0, stem.length, 40.0), stem.length]
+    p = shapely.line_interpolate_point(stem, d)
+    z = _ground(shapely.get_x(p), shapely.get_y(p))
+    sea = np.isfinite(z) & (z <= SEA_M)
+    if not sea.any():
+        return stem
+    best, run = None, None                           # (first, last) index of the longest run of points above tide
+    for i in range(len(d)):
+        if sea[i]:
+            run = None
+            continue
+        run = (run[0], i) if run else (i, i)
+        if best is None or d[run[1]] - d[run[0]] > d[best[1]] - d[best[0]]:
+            best = run
+    if best is None or d[best[1]] - d[best[0]] < 1:
+        return None
+    return shapely.ops.substring(stem, float(d[best[0]]), float(d[best[1]]))
+
+
 def profile_stems(lines):
-    """The main stems of one creek's lines in one range (in the area's CRS) that get a profile: MIN_KM or more, inside
-    the area's state line where it has one."""
-    st = [s for s in main_stems(lines) if s.length >= MIN_KM * 1000]
+    """The main stems of one creek's lines in the map (in the area's CRS, each line once) that get a profile: those of
+    MIN_KM or more, cut to the map's boxes and at tidewater (a piece of IN_MAP_KM or more), inside the area's state
+    line where it has one."""
+    st = []
+    for s in main_stems(lines):
+        if s.length < MIN_KM * 1000:
+            continue
+        cut = s.intersection(boxes())
+        for g in getattr(cut, "geoms", [cut]):
+            if g.geom_type == "LineString" and g.length >= IN_MAP_KM * 1000:
+                g = above_tide(g)
+                if g is not None and g.length >= IN_MAP_KM * 1000:
+                    st.append(g)
     return [s for s, k in zip(st, areaclip.inside(st)) if k] if st else []
 
 
 class ProfileLines:
-    """The profiles' main stems in a map, by creek name: built from each range's NHD flowlines on their own (as
-    12_profiles.py builds them), only for the names asked about. `nhd` holds the named flowlines in the area's CRS
-    (config.CRS: the state line is tested there), with the range in column "range"."""
+    """The profiles' main stems in a map, by creek name: built from all the ranges' NHD flowlines, each line once, named
+    by fill_names from the map's reaches (reach_lines) as 12_profiles.py builds them, only for the names asked about.
+    `nhd` holds the flowlines in the area's CRS (config.CRS: the state line is tested there)."""
 
-    def __init__(self, nhd):
-        nhd = nhd[nhd.gnis_name.notna() & nhd.ftype.isin(FLOWLINE_FTYPES)]
+    def __init__(self, nhd, reaches=None):
+        nhd = unique_lines(nhd, reaches)
         self._by_name = {n: g for n, g in nhd.groupby("gnis_name")}
         self._stems, self._joined = {}, {}
 
     def stems(self, name):
         if name not in self._stems:
             g = self._by_name.get(name)
-            self._stems[name] = [] if g is None else [s for _, gr in g.groupby("range") for s in profile_stems(gr.geometry)]
+            self._stems[name] = [] if g is None else profile_stems(g.geometry)
         return self._stems[name]
 
     def passes(self, name, pt, within=SNAP_FALL):
