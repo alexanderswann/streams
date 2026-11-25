@@ -10,8 +10,13 @@
 #                              terminal)
 #   docs/index.html                     the map of all areas (13_overview.py)
 #   docs/preview.jpg                    the card shown when the link is sent in iMessage etc. (15_preview.py, run by hand)
-#   docs/<area>/                        that area's 2D map, 3D map and data, creek profiles, hillshades, and its build
-#                                       stamp (build_stamp.json: which committed code made each file)
+#   docs/<area>/                        that area's 2D map, 3D map and data, creek profiles, hillshades, its build
+#                                       stamp (build_stamp.json: which committed code made each file), and
+#                                       offline.json (its files with sizes and hashes, for "Save for offline")
+#   docs/sw.js, offline.js, manifest.webmanifest, icons/, lib/   the web app that keeps maps for use with no connection
+#                                       and the libraries the pages load (weblib.py; 13_overview.py puts them in output/)
+#   docs/offline.json                   the files at the root a saved area keeps too (the map of all areas, the credits
+#                                       page, offline.js, the manifest)
 # The copy lives in publish/streams-site (ignored by this project's git). Nothing outside docs/ is added, changed or
 # removed (the site branch holds only the site), and the script stops if its commit would touch anything else. No .nojekyll either: GitHub's Jekyll step copies these
 # files as they are (none starts with front matter, none has a name starting with _ or .).
@@ -71,6 +76,13 @@ for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; pri
   done
   for d in output/$a/*/hillshade.png(N); do mkdir -p $DEST/$a/${d:h:t}; cp $d $DEST/$a/${d:h:t}/hillshade.png; done
 done
+# the web app (weblib.py): the service worker, the offline code, the manifest, the icons and the pages' libraries; then
+# each area's list of the files its folder now holds (<area>/offline.json, read by "Save for offline"), made last so
+# that any file a step adds to an area's folder is in it, and the root's (offline.json: the files there a saved area
+# keeps too). The build gate below reads these as the web app's: their code (scripts/web/, weblib.py) committed
+for f in sw.js offline.js manifest.webmanifest; do cp output/$f $DEST/$f || exit 1; done
+cp -R output/lib output/icons $DEST/ || exit 1
+$PY scripts/weblib.py lists $DEST || exit 1
 big=$(find $DEST -type f -size +95M | head -1)
 [[ -n $big ]] && { echo "STOP: $big is over 95 MB; GitHub refuses files over 100 MB"; exit 1; }
 hid=$(find $DEST \( -name '_*' -o -name '.*' \) | head -1)

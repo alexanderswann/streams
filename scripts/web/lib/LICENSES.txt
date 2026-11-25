@@ -1,0 +1,23 @@
+Libraries the stream maps load from this folder (copied 2026-11-24 from the CDNs the pages used before, same versions;
+weblib.py maps each CDN address to its copy here). Each folder holds the library's own licence as LICENSE.txt (OFL.txt
+for the label fonts), taken from the package at that version; the minified files keep their copyright headers. All
+of them allow redistribution with their notices, which these files carry.
+
+leaflet-1.9.3/                 Leaflet: BSD 2-Clause, (c) 2010-2022 Vladimir Agafonkin, (c) 2010-2011 CloudMade
+jquery-3.7.1/                  jQuery: MIT, (c) OpenJS Foundation and other contributors
+bootstrap-5.2.2/               Bootstrap: MIT, (c) 2011-2022 Twitter, Inc. and The Bootstrap Authors
+bootstrap-3.0.0/               Bootstrap 3.0.0's glyphicons stylesheet: Apache License 2.0, (c) 2013 Twitter, Inc. The
+                                Glyphicons Halflings font comes with Bootstrap by its author's leave
+                                (https://glyphicons.com), credited here as Bootstrap asks
+fontawesome-free-6.2.0/        Font Awesome Free: icons CC BY 4.0, fonts SIL OFL 1.1 (Reserved Font Name "Font Awesome";
+                                the font files are unmodified), code MIT, (c) 2022 Fonticons, Inc.
+leaflet.awesome-markers-2.0.2/ Leaflet.awesome-markers: MIT, (c) 2013 L. Voogdt
+folium-awesome-rotate/         folium's leaflet.awesome.rotate.css: MIT, (c) 2013- Folium developers
+leaflet.fullscreen-3.0.0/      Leaflet.Control.FullScreen: MIT, (c) 2013 Bruno Bergot
+leaflet-measure-2.1.7/         leaflet-measure: MIT, (c) 2017 LJA Engineering, Inc - GIS
+maplibre-gl-5.24.1/            MapLibre GL JS: BSD 3-Clause, (c) 2023 MapLibre contributors; its LICENSE.txt also carries
+                                Mapbox's BSD 3-Clause notice (mapbox-gl-js 1.13 and earlier) and the bundled libraries'
+plotly-2.35.2/                 plotly.js: MIT, (c) 2021 Plotly, Inc. (the file's header names a plotly.min.js.LICENSE.txt
+                                that the npm package does not ship)
+glyphs/                        Noto Sans Medium and Italic as MapLibre glyph ranges (protomaps.github.io/basemaps-assets,
+                                fonts/), SIL Open Font License 1.1, (c) 2022 The Noto Project Authors: OFL.txt

@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <!-- 3D stream map: MapLibre GL + AWS terrain tiles. 06_map.py writes it to output/<area>/stream_map_3d.html with the
      layers only this map draws inline after the map3d_data.js line below; map3d_data.js holds the layers it shares
-     with the 2D map, which loads that file too. -->
+     with the 2D map, which loads that file too. MapLibre and the label fonts come from the site's lib/ (weblib.py), the
+     web app's tags from weblib.head() where the webapp marker is, below. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LA mountain streams · 3D</title>
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
-<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<link rel="stylesheet" href="../lib/maplibre-gl-5.24.1/maplibre-gl.css">
+<script src="../lib/maplibre-gl-5.24.1/maplibre-gl.js"></script>
+<!--webapp-->
 <script src="map3d_data.js"></script>
 <style>
   html, body, #map { margin: 0; height: 100%; }
@@ -106,7 +108,7 @@
     e.style.display = "block";
     e.innerHTML = !window.MAP3D
       ? "map3d_data.js is missing. Re-run <code>06_map.py</code>; keep this page next to it."
-      : "Couldn't load MapLibre from unpkg.com. The 3D map needs an internet connection.";
+      : "Couldn't load MapLibre from the site's lib/ folder: it sits next to the area's folder.";
     return;
   }
   const D = window.MAP3D;
@@ -168,7 +170,10 @@
   ];
   const style = {
     version: 8,
-    glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+    // the label fonts (Noto Sans, protomaps.github.io/basemaps-assets, SIL OFL) from the site's lib/: Latin-1, Latin
+    // Extended-A and punctuation, all the labels use; an absolute address, as MapLibre may fetch it from a worker. Their
+    // folders are named with hyphens for spaces (no spaces in the site's paths): transformRequest below
+    glyphs: new URL("../lib/glyphs/", location.href).href + "{fontstack}/{range}.pbf",
     sources: Object.fromEntries([...BASES.map(([k, , s]) => [k, s]),
       ["labels", raster(`${ESRI}/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, "Esri", 16)],
       ["dem", DEM], ["hs", {...DEM}]]),
@@ -184,9 +189,19 @@
   };
   const all = D.divides.features.flatMap(f => f.geometry.type === "MultiLineString" ? f.geometry.coordinates.flat() : f.geometry.coordinates);
   const bb = all.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)], [180, 90, -180, -90]);
+  const fontDir = url => url.replace(/\/glyphs\/([^/]+)\//, (m, f) => "/glyphs/" + decodeURIComponent(f).replace(/[ ,]+/g, "-") + "/");
   const map = new maplibregl.Map({container: "map", style, bounds: [[bb[0], bb[1]], [bb[2], bb[3]]],
-    fitBoundsOptions: {padding: 30}, pitch: 50, bearing: -12, maxPitch: 80, attributionControl: {compact: true}});
+    transformRequest: (url, kind) => ({url: kind === "Glyphs" ? fontDir(url) : url}),
+    fitBoundsOptions: {padding: 30}, pitch: 50, bearing: -12, maxPitch: 80,
+    // MapLibre's own credit link, as its default credits have it (options given here replace those defaults)
+    attributionControl: {compact: true, customAttribution: '<a href="https://maplibre.org/" target="_blank">MapLibre</a>'}});
   window.map3d = map;   // handy from the browser console
+  // MapLibre fires "load" from a frame drawn once every tile has settled, and a tile that fails asks for no frame: with
+  // no connection (every Esri tile failing) the map was left loaded without its "load", so without its layers. Until
+  // then a failed tile asks for one (and its error is still logged, as MapLibre does when nothing listens)
+  let started = false;
+  map.once("load", () => { started = true; });
+  map.on("error", e => { console.error(e && e.error ? e.error : e); if (!started) map.triggerRepaint(); });
   map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-left");
   map.addControl(new maplibregl.FullscreenControl(), "top-left");
   // "my location", as on the 2D map: a dot that follows you once the browser has a fix
@@ -509,6 +524,12 @@
     wireInteraction();
     restyle();
     go();
+    // offline use (offline.js): "Offline use" in this panel; with no connection the saved topo, no Esri layers
+    if (window.StreamsOffline) StreamsOffline.map3d(map, {host: document.querySelector("#layers .pb"),
+      setBase: k => { const r = document.querySelector(`input[name=base][value="${k}"]`);
+                      if (r && !r.checked) { r.checked = true; r.dispatchEvent(new Event("change")); } },
+      labels: on => { const c = document.getElementById("lbl");
+                      if (c) { c.checked = on; c.dispatchEvent(new Event("change")); } }});
   });
 
   // ---- colour modes + focus ----

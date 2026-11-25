@@ -17,6 +17,10 @@ for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; pri
   for d in output/$a/*/hillshade.png(N); do mkdir -p phone/$a/${d:h:t}; cp $d phone/$a/${d:h:t}/hillshade.png; done
 done
 cp output/index.html phone/index.html
+# the web app and the pages' libraries (weblib.py), as on the website, and the areas' lists for "Save for offline"
+for f in sw.js offline.js manifest.webmanifest; do [[ -f output/$f ]] && cp output/$f phone/$f; done
+for d in lib icons; do [[ -d output/$d ]] && { rm -rf phone/$d; cp -R output/$d phone/$d; }; done
+$PY scripts/weblib.py lists phone > /dev/null
 [[ -f output/stream_maps_all.html ]] && cp output/stream_maps_all.html phone/stream_maps_all.html
 # the old LA copies at the top: forwarding pages (they keep the #lat,lon,zoom part of a bookmark), and the data
 # files and hillshade folders they used are removed

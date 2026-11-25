@@ -8,9 +8,14 @@ across to the other areas.
 
 All six areas in one full-detail page would be over 200 MB (LA's alone is 67 MB), too heavy to open, on a phone
 above all; so the detail stays in the per-area maps and this page ties them together.
+
+It is also the web app's start page (2026-11-24): Leaflet comes from the site's lib/, and weblib.install() puts sw.js,
+offline.js, the manifest, the icons and lib/ into output/, where publish_site.sh takes them from. With no connection it
+shows the saved USGS topo, and the list marks the areas saved on the device.
 """
 import json, os, datetime as dt
 from config import AREAS, ROOT
+import weblib
 
 OUT = f"{ROOT}/output"
 areas = []
@@ -48,7 +53,7 @@ HTML = r"""<!doctype html>
 <meta name="description" content="Every creek in __NAREAS__ mountain areas, scored for trout and mapped with its waterfalls, plunge pools and the way in.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
-<style>
+__WEBAPP__<style>
   html, body, #map { height: 100%; margin: 0; }
   body { font: 13px/1.4 system-ui, -apple-system, sans-serif; color: #1d1d1f; }
   .panel { background: rgba(255,255,255,.96); border-radius: 10px; box-shadow: 0 1px 8px rgba(0,0,0,.25); padding: 10px 12px; max-width: 250px; }
@@ -139,6 +144,9 @@ panel.onAdd = () => {
   return d;
 };
 panel.addTo(map);
+// offline use (offline.js): saved areas marked in the list; with no connection the saved topo, no Esri layers
+if (window.StreamsOffline) StreamsOffline.overview(map, AREAS, {topo, far: [gray, shade, places],
+  buttons: [...document.querySelectorAll(".panel .a")]});
 // a click inside an area: links to its full maps at that spot
 map.on("click", e => {
   const a = areaAt(e.latlng);
@@ -161,6 +169,7 @@ window.addEventListener("hashchange", go);
 sync();
 </script></body></html>
 """
+HTML = weblib.localize(HTML.replace("__WEBAPP__", weblib.head("")), "")      # Leaflet from lib/; the web app's tags
 words = "one two three four five six seven eight nine ten eleven twelve".split()
 html = HTML.replace("__AREAS__", json.dumps(areas, separators=(",", ":"))).replace(
     "__NAREAS__", words[len(areas) - 1] if len(areas) <= len(words) else str(len(areas))).replace(
@@ -174,3 +183,7 @@ html = html.replace("__SENTINEL__", " · " + SENTINEL_CREDIT if any("late_summer
 with open(f"{OUT}/index.html", "w", encoding="utf-8") as f:
     f.write(html)
 print(f"{OUT}/index.html: {len(areas)} areas ({', '.join(a['key'] for a in areas)}), {len(html) / 1e6:.1f} MB")
+weblib.localize(html, "")            # the check again on the page as written: no script or stylesheet from elsewhere
+n_web = weblib.install(OUT)          # sw.js, offline.js, the manifest, the icons and lib/ beside it (only what changed)
+if n_web:
+    print(f"{OUT}: {n_web} web app files written (sw.js, offline.js, manifest, icons, lib/)")

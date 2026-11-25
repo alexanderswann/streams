@@ -149,6 +149,7 @@ means it was measured on every map before it went in.
 | A download times out, is retried, and falls back to the last good copy with a dated note; a failed download step is retried once, then stops its area | 15 s to connect; a host out after 3 failures in a row | `scripts/netfetch.py:45`, `scripts/netfetch.py:47` | `8321c1d` |
 | Every download falls back offline: an empty answer is kept as a last good copy too (02d's USFS closed roads and trails, missing in some box on 9 of the 12 maps; 05_score's OSM names; 05d's GBIF table); 05d's PAD-US copy, whose box follows the lakes, is kept under a name of its own and cut to the box asked; a lidar window every survey has a gap in is remembered, so no lidar tile is read twice | | `scripts/02d_trails.py:62`, `scripts/geomatch.py:17`, `scripts/lakelidar.py:121`, `scripts/netfetch.py:337` | 2026-11-23 (no rebuild needed) |
 | A layer read from a saved copy is named in the legends' one line with the copy's day ("⚠ As of Nov 23: fires, land and iNaturalist", one line on a phone; the 2D and 3D legends, and on the phone map under each area for its gauges, closures and trout records); the gauges' label says "as of" for "live". Found from the "(as of ...)" the steps write into the source wording; lakes, trails, roads and falls carry none and keep their NOTE in the log | | `scripts/06_map.py:1545` | 2026-11-24 |
+| The site is a web app that keeps maps on the phone: every library comes from the site's `lib/` (no CDN); "Save for offline" stores an area's files (by its `offline.json`, written at publish, whose version tells a saved copy it is out of date), the USGS topo tiles and AWS terrain tiles; Esri and OpenTopoMap tiles are never kept; with no connection the maps switch to the saved topo and our terrain shading | topo: the whole area to zoom 13 at most, a view to zoom 16; terrain: zoom 10 / 12 | `scripts/weblib.py`, `scripts/web/offline.js:35`, `scripts/web/sw.js` | |
 | A break below a lake is drawn with the values of the creek that carries the most water among those that end equally near its start | within 1 m | `scripts/06_map.py` (`lake_creek`) | `83e9b26` (not yet built) |
 | The map step still redraws the streams after the steps that compute them (clips at lake shores, draws through breaks, raises orders) | tables and map differ by about 5,500 mi | `scripts/06_map.py` | audit finding 6; map-step-repairs |
 
@@ -157,6 +158,10 @@ means it was measured on every map before it went in.
 | Source | Used for | Terms | Credited |
 |---|---|---|---|
 | USGS 3DEP, NHD, NHDPlus, GNIS; USGS gauges | terrain, streams, names, flows, drainage checks | public domain | |
+| USGS The National Map topo tiles (USGSTopo) | base map, and the base map saved for offline use | public domain | attribution line |
+| AWS Terrain Tiles (Mapzen terrarium) | 3D terrain, and the terrain saved for offline use | open data; sources credited | 3D credits |
+| Esri basemaps, OpenTopoMap | base maps and overlays online | not kept for offline use (their terms) | attribution line |
+| Noto Sans (protomaps basemaps-assets glyphs) | 3D map labels, served from `lib/glyphs/` | SIL OFL 1.1 | `lib/LICENSES.txt` |
 | OpenStreetMap | trails, roads, parking, falls, long trail, waterways (where a city has buried its creeks) | ODbL | attribution line |
 | NLCD 2021 impervious cover (USGS, MRLC) | where a city has buried its creeks (`scripts/buried.py`) | public domain | |
 | USGS National Digital Trails, USFS | trails, roads, trailheads | public domain | attribution line |
@@ -231,7 +236,12 @@ means it was measured on every map before it went in.
   commit per change, with this file's rows in it.
 - **Publishing:** `scripts/publish_site.sh push` (since `194bb83`) commits the maps to `gh-pages` in
   `publish/streams-site` and pushes them. It refuses while a build runs (any `06_map.py` or `12_profiles.py` process
-  counts). Never publish around it. Push `main` after each install commit, so the public code matches the maps.
+  counts). Never publish around it. Push `main` after each install commit, so the public code matches the maps. It
+  also copies the web app (`sw.js`, `offline.js`, the manifest, `icons/`, `lib/`) and writes each area's
+  `offline.json` last, from what the area's folder then holds, so a new per-area file is saved for offline use too,
+  and the root's `offline.json` (the files there a saved area keeps). The build gate wants their code committed.
+  A bad `sw.js` is fixed by publishing a new one (phones take it at their next page load with a connection); the kill
+  switch is `scripts/web/sw-passthrough.js` published as `sw.js` (README, "Offline, as an app").
 - **Learned on the move (2026-11-22):** pushing a `gh-pages` branch switched GitHub Pages on by itself, and the new
   repository's site at once took over alexanderswann.github.io/streams/, ahead of the personal site's `streams/`
   folder. Anything pushed to `gh-pages` is live.

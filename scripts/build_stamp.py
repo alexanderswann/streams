@@ -34,7 +34,9 @@ reason) when, for an area with a changed file:
      lake_bathymetry, 07_road_closures, watertemp, 11b_calendar: a NOTE in the log then);
   6. the standing checks have not passed on this map: no audit/tables/*/run_all_status.json (audit/scripts/run_all.sh
      writes it) holds this map3d_data.js's sha1 with no check script failed and no golden place broken.
-docs/index.html and docs/credits.html (13_overview.py, run by the publish itself) need 13_overview's code committed.
+docs/index.html and docs/credits.html (13_overview.py, run by the publish itself) need 13_overview's code committed,
+and the web app's files (docs/sw.js, offline.js, manifest.webmanifest, lib/, icons/ and the offline.json lists, from
+weblib.py at the publish) need scripts/web/ and weblib.py committed; lib/ and icons/ are not areas.
 It also lists, without refusing: steps whose code has changed since in the newest commit the area was built on (a
 rebuild from a later step leaves them as they were, the publisher's call), and the commit each area was built on.
 """
@@ -50,6 +52,8 @@ PUBLISHED = {"map3d_data.js": "06_map", "stream_map.html": "06_map", "stream_map
              "routes_data.js": "06_map",                         # approach_routes.pack(), beside each map
              "profiles_data.js": "12_profiles", "hillshade.png": "05_score"}    # publish_site.sh's map files: the step
 SKIP_IN_SITE = {"build_stamp.json", "profiles.html"}      # the stamp itself; the page template (scripts/profiles.html)
+WEB_TOP = {"sw.js", "offline.js", "manifest.webmanifest", "offline.json"}   # the web app at the site's root (weblib.py)
+WEB_DIRS = {"lib", "icons"}                               # the pages' libraries and the app's icons (weblib.py), not areas
 
 
 # ---- the code a step loads ----
@@ -273,10 +277,13 @@ def gate(paths):
     order = pipeline()
     rank = {s: i for i, s in enumerate(order)}
     refuse, notes = [], []
-    by_area = {}
+    by_area, web = {}, []
     for p in paths:
         parts = p.strip().split("/")
         if len(parts) < 2 or parts[0] != "docs":
+            continue
+        if parts[1] in WEB_DIRS or parts[-1] == "offline.json" or (len(parts) == 2 and parts[1] in WEB_TOP):
+            web.append("/".join(parts[1:]))                   # the web app's files and lists (weblib.py)
             continue
         if len(parts) == 2:                                   # docs/index.html, docs/credits.html, docs/preview.jpg
             if parts[1] in ("index.html", "credits.html"):    # 13_overview.py's pages (credits.html by credits.py)
@@ -285,6 +292,13 @@ def gate(paths):
                     refuse.append(f"{parts[1]}: 13_overview.py's code has uncommitted changes ({', '.join(dirty)})")
             continue
         by_area.setdefault(parts[1], []).append("/".join(parts[2:]))
+    if web:                                                   # as 13_overview's pages: their code committed
+        code = sorted({"scripts/weblib.py"} | {os.path.relpath(os.path.join(d, f), ROOT)
+                                               for d, _, fs in os.walk(f"{SCR}/web") for f in fs})
+        _, _, dirty = code_state(code)
+        if dirty:
+            refuse.append(f"the web app ({len(web)} file(s): {', '.join(web[:3])}{' ...' if len(web) > 3 else ''}): its "
+                          f"code has uncommitted changes ({', '.join(dirty[:6])}{' ...' if len(dirty) > 6 else ''})")
     statuses = _checks_status()
     for area, files in sorted(by_area.items()):
         out = f"{ROOT}/output/{area}"

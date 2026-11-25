@@ -56,7 +56,8 @@ GROUPS = [
      "and critical habitat."),
     ("base", "Base maps, terrain and place labels", "The maps under the data: light gray, topographic and satellite "
      "views, terrain shading, the 3D terrain and the place and road labels."),
-    ("software", "Software", "The code that draws the maps (not data, listed for its licences)."),
+    ("software", "Software", "The code that draws the maps (not data, listed for its licences). The site serves its "
+     "own copy of each, with its licence, so a map saved on a phone works with no connection."),
 ]
 
 
@@ -545,7 +546,8 @@ SOURCES = [
       "FEMA, Intermap, and the GIS user community.", hosts=("server.arcgisonline.com",)),
     S("usgs_topo", "base", "USGS Topo base map", "U.S. Geological Survey (The National Map)",
       "https://www.usgs.gov/programs/national-geospatial-program/national-map",
-      "The National Map's topographic base map.", "The \"USGS Topo\" base map choice.", "all", PUBLIC_USGS,
+      "The National Map's topographic base map.",
+      "The \"USGS Topo\" base map choice, and the base map a phone keeps for use with no connection.", "all", PUBLIC_USGS,
       USGS_TERMS, "USGS The National Map", hosts=("basemap.nationalmap.gov",)),
     S("opentopomap", "base", "OpenTopoMap", "OpenTopoMap", "https://opentopomap.org/about",
       "A topographic map drawn from OpenStreetMap and SRTM elevation.", "The \"OpenTopoMap\" base map choice (2D).",
@@ -555,7 +557,8 @@ SOURCES = [
     S("terrain_tiles", "base", "Terrain Tiles on AWS", "Mapzen / Tilezen, hosted by the AWS Open Data Program",
       "https://registry.opendata.aws/terrain-tiles/",
       "Elevation tiles of the world, built from the USGS 3DEP, SRTM and GMTED2010 and NOAA's ETOPO1.",
-      "The 3D maps' terrain and their terrain shading.", "all",
+      "The 3D maps' terrain and their terrain shading (a phone keeps them at a low zoom for use with no connection).",
+      "all",
       "Each source's own terms (the USGS data are public domain); the tiles ask for the credit below.",
       "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
       "United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological "
@@ -572,7 +575,18 @@ SOURCES = [
       "The JavaScript map library of the 2D maps, the map of all areas and the one-file map; folium is the Python "
       "library that builds the 2D pages with it.", "Draws the 2D maps.", "all",
       "Leaflet: BSD 2-Clause. folium: MIT.", "https://github.com/Leaflet/Leaflet/blob/main/LICENSE",
-      hosts=("cdn.jsdelivr.net/npm/leaflet@*",)),
+      hosts=("cdn.jsdelivr.net/npm/leaflet@*", "cdn.jsdelivr.net/gh/python-visualization/folium/*")),
+    S("folium_libs", "software", "jQuery, Bootstrap, Font Awesome and Leaflet plugins",
+      "OpenJS Foundation, the Bootstrap authors, Fonticons and the plugins' authors",
+      "https://python-visualization.github.io/folium/",
+      "The libraries folium's 2D pages load beside Leaflet: jQuery, Bootstrap 5 and Bootstrap 3's glyphicons, Font "
+      "Awesome Free, and the Leaflet.awesome-markers, Leaflet.fullscreen and leaflet-measure plugins.",
+      "The 2D maps' layer panel and buttons, the markers' icons, the full-screen button and the measuring tool.", "all",
+      "MIT, except Bootstrap 3's glyphicons stylesheet (Apache 2.0) and Font Awesome Free (icons CC BY 4.0, fonts SIL "
+      "OFL 1.1, code MIT).", "https://fontawesome.com/license/free",
+      hosts=("code.jquery.com", "cdn.jsdelivr.net/npm/bootstrap@*", "netdna.bootstrapcdn.com",
+             "cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@*", "cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/*",
+             "cdn.jsdelivr.net/npm/leaflet.fullscreen@*", "cdn.jsdelivr.net/gh/ljagis/leaflet-measure@*")),
     S("maplibre", "software", "MapLibre GL JS", "MapLibre contributors", "https://maplibre.org/",
       "The JavaScript library of the 3D maps.", "Draws the 3D maps and their terrain.", "all", "BSD 3-Clause.",
       "https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt", hosts=("unpkg.com/maplibre-gl@*",)),

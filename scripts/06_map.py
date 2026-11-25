@@ -42,6 +42,7 @@ from scoring import attach, score, SIDE_NHD, SIDE_BELOW, THIS_YEAR
 import crossbox
 import areaclip      # an area that stops at a state line (config clip_state) shows nothing past it
 import approach_routes   # each reach's route from its trailhead, drawn on a click (08_hike.py builds them)
+import weblib        # the pages' libraries from the site's lib/, and the offline web app (sw.js, offline.js)
 
 done = [r for r in REGIONS if os.path.exists(f"{MAP_OUT}/{r}/streams_scored.gpkg")]
 read = lambda name: pd.concat([gpd.read_file(f"{MAP_OUT}/{r}/{name}") for r in done], ignore_index=True)
@@ -1536,6 +1537,8 @@ m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
     + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_routes.js")
     + _page_file("map_drainages.js") + "</script>"))
+# the web app and its offline copy (weblib.py, web/offline.js: "Save for offline" in the layer panel)
+m.get_root().header.add_child(folium.Element(weblib.head("../")))
 
 # every layer is also exported for the 3D map: the shared ones to map3d_data.js, the rest into stream_map_3d.html
 X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
@@ -1918,12 +1921,19 @@ Fullscreen(position="topleft").add_to(m)
 class InitDrainages(MacroElement):
     _template = Template("""{% macro script(this, kwargs) %}
 initDrainageMap({{ this._parent.get_name() }}, {{ this.ctrl }});
+if (window.StreamsOffline) StreamsOffline.map2d({{ this._parent.get_name() }}, {{ this.ctrl }});
 {% endmacro %}""")
     def __init__(self, ctrl):
         super().__init__()
         self.ctrl = ctrl
 m.add_child(InitDrainages(lc.get_name()))
 m.save(f"{MAP_OUT}/stream_map.html")
+# folium's libraries from the site's lib/, not from CDNs (weblib.py): the map then needs no network once saved
+with open(f"{MAP_OUT}/stream_map.html", encoding="utf-8") as f:
+    page2d = weblib.localize(f.read(), "../")
+with open(f"{MAP_OUT}/stream_map.html", "w", encoding="utf-8") as f:
+    f.write(page2d)
+del page2d
 
 # ---- this area's part of the map of all areas (13_overview.py): drainage outlines and the main rivers ----
 def simplify_together(geoms, tol):
@@ -1982,6 +1992,8 @@ assert page3d.count("</head>") == 1, "map3d.html must have one </head>"
 page3d = page3d.replace("</head>", "<script>" + _page_file("map_filter.js") + "</script>\n</head>")   # the stream filters
 tag3d = '<script src="map3d_data.js"></script>'
 assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
+assert page3d.count("<!--webapp-->") == 1, "map3d.html must hold <!--webapp--> once (weblib.head goes there)"
+page3d = weblib.localize(page3d.replace("<!--webapp-->", weblib.head("../")), "../")
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
     f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
                            + ");</script>\n<script>" + _page_file("map_score.js") + "</script>\n<script>"

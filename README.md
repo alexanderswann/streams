@@ -44,6 +44,31 @@ carry the maps:
   runs or when `output/` was written in the last 15 minutes (`push now` skips the wait), touches nothing outside
   `docs/` and stops on a file over 95 MB; GitHub Pages refuses a site over 1 GB. Never publish around it (`STATE.md`
   §7). The maps show each map's drive-time starting point (a ZIP and town).
+- **Offline, as an app** (`scripts/weblib.py`, `scripts/web/`, 2026-11-24): the website is also a web app for use
+  with no connection. The pages load their libraries from the site's `lib/` (copies of the Leaflet, jQuery, Bootstrap,
+  folium plugin, MapLibre, label-font and Plotly versions they loaded from CDNs; licences in `lib/LICENSES.txt`), and
+  `sw.js` (the service worker), `offline.js`, `manifest.webmanifest` and `icons/` sit at the site's root:
+  `13_overview.py` puts them in `output/`, and `publish_site.sh` copies them and then writes each area's
+  `offline.json` (every file its folder holds but its build stamp, with sizes and hashes, and a version) and one at the
+  root (the map of all areas, the credits page, `offline.js` and the manifest, which a saved area keeps too; apart, as
+  the map of all areas changes with every publish). The publish gate (`build_stamp.py`) wants the web app's code
+  committed, as it does `13_overview.py`'s. On an iPhone: open the site in
+  Safari, Share → Add to Home Screen, open the app, open an area, and under **Offline use** at the foot of the layer
+  list save the area (both maps, profiles, terrain shading) and the USGS topo base map (the whole area to zoom 10–13,
+  or the view on the screen to zoom 16, with AWS terrain tiles for the 3D map; the sizes show first). The panel says
+  "update available" when the site's copy has changed (only changed files download). With no connection the maps
+  switch to the saved topo and our terrain shading, grey out Esri's and OpenTopoMap's layers (their terms don't allow
+  keeping tiles; they are never saved), enlarge a coarser saved tile where a zoom isn't saved, and the my-location
+  button reads the phone's GPS. `?offline-test` in a page's address makes the site behave as with no connection, on
+  a computer, until `?offline-test=0`. A visitor who saves nothing gets the site as before: the worker passes every
+  request to the network and nothing is kept. **Taking it back:** any change to `scripts/web/sw.js`, once published,
+  reaches every phone at its next page load with a connection and takes over at once (the browser asks the site for
+  `sw.js` each time, never its own cache: `updateViaCache: "none"`; then `skipWaiting`, `clients.claim`); bump its
+  `VERSION` to send it out unchanged. The kill switch: copy `scripts/web/sw-passthrough.js` over `scripts/web/sw.js`
+  and publish: a worker that answers nothing, so every page loads from the network; saved maps stay on the phones
+  unused (`WIPE = true` deletes them). Put the real `sw.js` back the same way. A fixed page or library reaches a phone
+  that saved its area when the user taps Update ("update available" shows on its next open with a connection);
+  `offline.js` and `index.html` refresh by themselves.
 
 ## Study areas and folders
 The pipeline handles several study **areas**, each its own map with its own UTM zone, drive-time starting point,
