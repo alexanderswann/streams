@@ -179,12 +179,16 @@ def post(url, **kw):
 
 
 def wait(seconds, url=None):
-    """The pause between a caller's tries; NetworkDown at once instead when the host (or the network) is out."""
+    """The pause between a caller's tries; NetworkDown at once instead when the host (or the network) is out. With
+    NET_FAIL=1 (a test with no network: every request fails at once, nothing is tried) there is nothing to wait for:
+    the same tries, failures and NetworkDown as ever, in the same order, without the pauses (20-40 s a step offline)."""
     why = _out(_host(url)) if url else None
     if why is None and time.time() < _net["until"]:
         why = f"the network didn't answer {_net['fails']} requests in a row"
     if why:
         raise NetworkDown(why)
+    if os.environ.get("NET_FAIL", "") == "1":
+        return
     time.sleep(seconds)
 
 
