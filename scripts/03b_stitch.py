@@ -1245,8 +1245,8 @@ def run(group):
             print("NOTE: no NHDPlus lines (02b_download_flow.py) and NO_NHDPLUS is set: lakes with several outflow lines "
                   "go by NHD's names and the terrain alone; run 03b_stitch.py again once they are there")
 
-        def box_of(r__, c__):
-            return next((b for b in group if where[b][0].start <= r__ < where[b][0].stop
+        def box_of(r__, c__):     # where two boxes overlap, the later one's (its directions are the group's there)
+            return next((b for b in reversed(group) if where[b][0].start <= r__ < where[b][0].stop
                          and where[b][1].start <= c__ < where[b][1].stop), None)
 
         # (a) every lake ends at the cell with the most water, as all of them did until 2026-11-22
@@ -1610,6 +1610,17 @@ def run(group):
             m_[-2, 1:-1] &= fp[-1, 1:-1] > 0
             m_[1:-1, 1] &= fp[1:-1, 0] > 0
             m_[1:-1, -2] &= fp[1:-1, -1] > 0
+        # Where a later box of the group overlaps this one, the group's directions there are the later box's (step 1
+        # writes the boxes in order) and the later box draws the lines (crossbox.later_overlaps): this box's lines
+        # start where its own cells do, on the first cell past the overlap, where the later box's lines end. Each
+        # box drew its own lines over the San Gabriel and Santa Monica boxes' 4 km2 overlap until 2026-11-25, every
+        # one twice, each with its own drainage. The lines laid lower along NHD's lines (lp) likewise.
+        for b_ in group[group.index(r) + 1:]:
+            bs_, bc_ = where[b_]
+            i0, i1 = max(bs_.start, R0) - R0, min(bs_.stop, R0 + h + 2) - R0
+            j0, j1 = max(bc_.start, C0) - C0, min(bc_.stop, C0 + w + 2) - C0
+            if i0 < i1 and j0 < j1 and shapely.box(*boxes[r]).intersection(shapely.box(*boxes[b_])).area > 0:
+                sp[i0:i1, j0:j1] = lp[i0:i1, j0:j1] = False
         fp[~np.isin(fp, CODES)] = 0
         Tp = T * rasterio.Affine.translation(C0, R0)
         grid = Grid(viewfinder=ViewFinder(affine=Tp, shape=fp.shape, crs=CRS, nodata=0))
@@ -1633,7 +1644,7 @@ def run(group):
     wet_ = {r: [] for r in group}
     for o, pd_ in opened:
         rr_, cc_ = divmod(o, W)
-        b_ = next((b for b in group if where[b][0].start <= rr_ < where[b][0].stop and where[b][1].start <= cc_ < where[b][1].stop), None)
+        b_ = next((b for b in reversed(group) if where[b][0].start <= rr_ < where[b][0].stop and where[b][1].start <= cc_ < where[b][1].stop), None)
         if b_ is not None:
             wet_[b_].append([rr_ - where[b_][0].start, cc_ - where[b_][1].start, int(pd_)])
     return (left, {r: [list(map(int, q[1:])) for q in tops if q[0] == r] for r in group},

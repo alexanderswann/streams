@@ -88,29 +88,76 @@ def exit_points(fdir, T, outlets):
     return np.where(leaves, np.round(ox), np.nan), np.where(leaves, np.round(oy), np.nan)
 
 
+def _sides(bbox):
+    """The four sides of a box, as lines."""
+    x0, y0, x1, y1 = bbox
+    return [shapely.LineString([(x0, y0), (x1, y0)]), shapely.LineString([(x1, y0), (x1, y1)]),
+            shapely.LineString([(x1, y1), (x0, y1)]), shapely.LineString([(x0, y1), (x0, y0)])]
+
+
 def shared_edges(regions):
     """Edges two boxes share (boxes meet edge to edge), at least 1 km long: {(a, b): MultiLineString}. A basin links
     only across such an edge: streams leaving along a border run to its lowest point, which can be a corner that
-    merely overlaps another box (the San Gabriels' south-west corner sits inside the Santa Monica box)."""
+    merely overlaps another box. Where two boxes overlap, the sides of each that lie inside the other count as edges
+    they share too, each straight piece at least 1 km long: water leaving a box by such a side goes on in the other
+    box, which has the ground there. The San Gabriels' south-west corner sits inside the Santa Monica box, and the
+    LA River leaves the Santa Monica box by its east side, 1 km inside the San Gabriel box. Until 2026-11-25 nothing
+    linked the two: the river left with its 400 km2 and started again in the San Gabriel box with 1, and was 0.6 of
+    its drainage on down to the map's edge."""
     out = {}
     for a in regions:
+        A = shapely.box(*REGIONS[a]["bbox"])
         for b in regions:
             if a != b:
-                seg = shapely.box(*REGIONS[a]["bbox"]).boundary.intersection(shapely.box(*REGIONS[b]["bbox"]).boundary)
+                B = shapely.box(*REGIONS[b]["bbox"])
+                seg = A.boundary.intersection(B.boundary)
                 lines = [g for g in getattr(seg, "geoms", [seg]) if g.geom_type == "LineString" and g.length >= 1000]
+                if A.intersection(B).area > 0:          # overlapping: a's sides inside b
+                    for e in _sides(REGIONS[a]["bbox"]):
+                        p = e.intersection(B)
+                        lines += [g for g in getattr(p, "geoms", [p]) if g.geom_type == "LineString"
+                                  and g.length >= 1000 and B.boundary.distance(g.interpolate(0.5, normalized=True)) > 0]
                 if lines:
                     out[(a, b)] = shapely.MultiLineString(lines)
     return out
 
 
+def later_overlaps(region, regions=None):
+    """The boxes listed after `region` (config order: the order 03b_stitch.py writes a group's directions in, so a later
+    box's are the group's where two overlap) whose box overlaps its box, by bbox. In such an overlap the later box
+    draws the streams, drainages and falls, and `region` draws nothing."""
+    names = list(REGIONS) if regions is None else list(regions)
+    if region not in names:
+        return []
+    a = shapely.box(*REGIONS[region]["bbox"])
+    return [REGIONS[b]["bbox"] for b in names[names.index(region) + 1:]
+            if a.intersection(shapely.box(*REGIONS[b]["bbox"])).area > 0]
+
+
+def owns(region, x, y):
+    """Whether points (x, y) lie in what `region` draws: in its box, and in no later box overlapping it."""
+    x, y = np.asarray(x, float), np.asarray(y, float)
+    b = REGIONS[region]["bbox"]
+    ok = (x >= b[0]) & (x <= b[2]) & (y >= b[1]) & (y <= b[3])
+    for o in later_overlaps(region):
+        ok &= ~((x > o[0]) & (x < o[2]) & (y > o[1]) & (y < o[3]))
+    return ok
+
+
 def neighbours(region, x, y, edges):
-    """(neighbour, outward (dx, dy)) for each box whose shared edge with `region` passes within 60 m of (x, y)."""
+    """(neighbour, outward (dx, dy)) for each box whose shared edge with `region` passes within 60 m of (x, y): out
+    across the side of `region`'s box that the edge's nearest straight piece lies on (a shared edge where two boxes
+    overlap can run along two sides)."""
     pt = shapely.Point(x, y)
+    x0, y0, x1, y1 = REGIONS[region]["bbox"]
     for (a, b), seg in edges.items():
         if a == region and seg.distance(pt) <= 60:
-            ca, cb = shapely.box(*REGIONS[a]["bbox"]).centroid, shapely.box(*REGIONS[b]["bbox"]).centroid
-            vertical = abs(seg.bounds[2] - seg.bounds[0]) < 1
-            yield b, ((np.sign(cb.x - ca.x), 0) if vertical else (0, np.sign(cb.y - ca.y)))
+            part = min(getattr(seg, "geoms", [seg]), key=lambda g: g.distance(pt))
+            px0, py0, px1, py1 = part.bounds
+            if abs(px1 - px0) < 1:                   # on the box's west or east side
+                yield b, ((1, 0) if abs(px0 - x1) < abs(px0 - x0) else (-1, 0))
+            else:                                    # on its south or north side
+                yield b, ((0, 1) if abs(py0 - y1) < abs(py0 - y0) else (0, -1))
 
 
 def downhill(fd, T, x, y, away, steps=600):

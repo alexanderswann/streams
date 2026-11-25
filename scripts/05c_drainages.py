@@ -13,7 +13,7 @@ share) and output/<region>/stream_drainage.csv (sid -> drainage, fork). Run afte
 import os, re, numpy as np, pandas as pd, geopandas as gpd, rasterio, shapely
 from rasterio import features
 from config import *
-from crossbox import graph, jump, exit_points, inflows, dam_links, shared_edges, D8
+from crossbox import graph, jump, exit_points, inflows, dam_links, shared_edges, owns, D8
 import areaclip
 
 MAJOR_KM2 = 25   # outlet basins at least this big are named drainages
@@ -674,6 +674,11 @@ with np.errstate(invalid="ignore"):
         shapely.distance(shapely.points(np.nan_to_num(ex_x, nan=-1e9), np.nan_to_num(ex_y, nan=-1e9)), seam) <= 60
 edge_minor = uo[~np.isnan(ex_x) & ((basin_km2.values >= 0.5) | on_seam) & ~np.isin(uo, list(named_root))]
 keep = np.isin(root.reshape(H, W)[::k, ::k], list(named_root) + edge_minor.tolist())
+# Where a later box overlaps this one, that box draws the drainages there (crossbox.owns): each box drew its own over
+# the San Gabriel and Santa Monica boxes' overlap until 2026-11-25
+_jj, _ii = np.meshgrid((np.arange(keep.shape[1]) + 0.5) * k, (np.arange(keep.shape[0]) + 0.5) * k)
+keep &= owns(REGION, *(T * (_jj, _ii)))
+del _jj, _ii
 rows = []
 for g, v in features.shapes(small, mask=keep, transform=T * rasterio.Affine.scale(k)):
     rows.append(dict(unit=int(v), geometry=shapely.geometry.shape(g)))

@@ -113,6 +113,7 @@ kp = pd.concat([gpd.read_file(f"{DERIVED}/knickpoints.gpkg").assign(**{"pass": 1
                 gpd.read_file(f"{DERIVED}/knickpoints_bigcreek.gpkg")], ignore_index=True)
 kp = gpd.GeoDataFrame(kp, crs=CRS)
 kp = kp[areaclip.inside(kp.geometry.values)]    # an area that stops at a state line: drops past it go (areaclip.py)
+kp = kp[crossbox.owns(REGION, kp.geometry.x.values, kp.geometry.y.values)]   # where a later box overlaps, it has them
 
 # Public roads a car can use (exclude gated/private service roads & fire roads marked no motor vehicles)
 drivable = roads[~roads.access.isin(["private", "no"]) & ~roads.motor_vehicle.isin(["no", "private"])
@@ -1458,7 +1459,8 @@ if "home_lon" in known_falls:
     if _hm.any():
         _kh[_hm] = np.array(gpd.GeoSeries(gpd.points_from_xy(known_falls.home_lon[_hm], known_falls.home_lat[_hm]),
                                           crs=4326).to_crs(CRS).values, dtype=object)
-known_falls[shapely.within(_kh, range_box) & (areaclip.inside(_kh) | areaclip.in_river(_kh))] \
+known_falls[shapely.within(_kh, range_box) & crossbox.owns(REGION, shapely.get_x(_kh), shapely.get_y(_kh))
+            & (areaclip.inside(_kh) | areaclip.in_river(_kh))] \
     .drop(columns=["home_lon", "home_lat"], errors="ignore").to_crs(4326).to_file(f"{os_}/known_falls.gpkg")
 
 # ---- hillshade overlay (warped to web mercator) ----
