@@ -3,7 +3,8 @@
 
 Walking speed is Tobler's hiking function on the local slope, averaged uphill/downhill:
   - trails, tracks, gated and closed roads: grade capped at 15% (trails switchback), full Tobler speed
-  - creek bottoms (>= 1 km^2 drainage) off trail: 45% of Tobler (boulder-hopping, wading)
+  - creek bottoms (1 km^2 of drainage up to CHANNEL_MAX_KM2, 25 sq mi) off trail: 45% of Tobler (boulder-hopping,
+    wading); a bigger river is walked along its bank, at the off-trail speed below
   - other off-trail terrain: 30% of Tobler (SoCal chaparral), slopes over 45 degrees nearly impassable
 Bikeable (ridden wherever it beats walking):
   - roads closed to cars and every fire road: closures in force in mid-July, roads cut off by them, OSM roads tagged
@@ -36,6 +37,13 @@ import roadclosures
 
 TRAIL_MAX_GRADE = 0.15
 CHANNEL_FACTOR, OFFTRAIL_FACTOR = 0.45, 0.30
+# A creek bottom is walked up to this drainage; a bigger river along its bank, off trail. Since #7 a lake's outlet river
+# carries the water of the lake above it, and its channel counted as a creek bottom however big: the Raquette below
+# Long Lake, 171 km2, made 16,000 cells around Round Lake Outlet 3+ minutes nearer on foot (adk_northwest,
+# 2026-11-24). The user: "Stop above a size", then "25 sq mi" (2026-11-24, from 10 and 25 sq mi measured on the 12
+# maps: 25 slows 427 reaches' approach by 10+ min where 10 slows 998; 10 also took creeks like Raven Fork off the
+# creek bottoms).
+CHANNEL_MAX_KM2 = 64.7      # km2: 25 sq mi
 CLIFF_SLOPE, CLIFF_KMH = 1.0, 0.05
 BIKE_FLAT_KMH, BIKE_GRADE_K, DIRT_FACTOR, SINGLETRACK_FACTOR = 18.0, 12.0, 0.7, 0.5
 BIKE_MAX_GRADE, GRADE_WINDOW_M = 0.25, 200.0
@@ -221,7 +229,7 @@ def line_grade(geoms, step=5.0):
 inv = ~T
 lg = line_grade(bl.geometry.values)
 speed = np.where(on_path, tobler(np.minimum(slope, TRAIL_MAX_GRADE)),
-                 tobler(slope) * np.where(area >= 1.0, CHANNEL_FACTOR, OFFTRAIL_FACTOR))
+                 tobler(slope) * np.where((area >= 1.0) & (area < CHANNEL_MAX_KM2), CHANNEL_FACTOR, OFFTRAIL_FACTOR))
 speed = np.where(~on_path & (slope > CLIFF_SLOPE), CLIFF_KMH, speed)
 grade = np.where(np.isfinite(lg), np.minimum(lg, BIKE_MAX_GRADE), np.minimum(slope, TRAIL_MAX_GRADE))
 print(f"{LABEL}: bike-cell grade median {np.median(grade[bike]):.3f} along the lines "
