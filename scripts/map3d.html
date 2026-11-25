@@ -623,9 +623,12 @@
     }).join("");
     // on by default: streams, drainage outlines and names, the PCT (each overlay's last entry); the rest start hidden
     ov.forEach(([, , , ids, on]) => ids.forEach(l => { if (map.getLayer(l)) map.setLayoutProperty(l, "visibility", on ? "visible" : "none"); }));
-    // the reaches lying in a lake (lk) show only while the Lakes layer is off: the lake draws that water
+    // the reaches lying in a lake (lk) show only while the Lakes layer is off: the lake draws that water; and those under
+    // the stream filters (map_filter.js) not at all, nor their names
+    let lakesShown = false;
     const lakeFilter = lakesOn => {
-      const k = lakesOn ? ["!", ["has", "lk"]] : ["all"];
+      lakesShown = lakesOn;
+      const k = ["all", lakesOn ? ["!", ["has", "lk"]] : ["all"], window.streamFilter ? streamFilter.expr() : ["all"]];
       const set = (id, f) => { if (map.getLayer(id)) map.setFilter(id, f); };
       set("streams", k);
       set("halo", ["all", [">=", ["get", "o"], 3], k]);
@@ -633,6 +636,14 @@
     };
     const lakeOv = ov.find(x => x[0] === "lakes");
     lakeFilter(!!(lakeOv && lakeOv[4]));
+    // the filters' sliders at the top of this panel, their note under its header while it is folded
+    if (window.streamFilter) {
+      const panel = document.getElementById("layers"), note = document.createElement("div");
+      panel.querySelector(".ph").after(note);
+      streamFilter.init({features: D.streams.features.filter(f => !f.properties.lk), section: panel.querySelector(".pb"),
+        note, open: () => { if (panel.classList.contains("min")) panel.querySelector(".tg").click(); },
+        apply: () => lakeFilter(lakesShown)});
+    }
     const show = cb => {
       const o = ov.find(x => x[0] === cb.dataset.o);
       o[3].forEach(l => map.setLayoutProperty(l, "visibility", cb.checked ? "visible" : "none"));
@@ -890,9 +901,11 @@
     // keep the 2D link pointed at the current view, with the layers that are on (layerPart, buildLayerPanel)
     const to2d = document.getElementById("to2d");
     const sync = () => { const c = map.getCenter();
-      to2d.href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}` + layerPart(); };
+      to2d.href = `stream_map.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${Math.round(map.getZoom()) + 1}` + layerPart() +
+        (window.streamFilter ? streamFilter.part() : ""); };        // and the stream filter (map_filter.js)
     map.on("moveend", sync); sync();
     document.getElementById("layers").addEventListener("change", sync);
+    document.addEventListener("streamfilter", sync);
     to2d.addEventListener("click", sync);
     // "Go to": another area's 3D map, or the map of all areas at this view
     const asel = document.getElementById("areasel");

@@ -691,6 +691,39 @@ function initDrainageMap(map, ctrl) {
     bindClear(key);
   }
   restyle();
+  // ---- the stream filters (map_filter.js), at the top of the layer list, its note under the layer button: the streams
+  // under them leave the map, their lines and casings (in lakes too) and their part of the best-water highlight (its
+  // pieces known by their ends among the reaches). What comes back is laid in the reaches' order again (the bigger
+  // rivers on top) with the style of the moment, under the roads, trails and the long trail (restack).
+  if (window.streamFilter) {
+    const sets = [lines, lakeLines, halo, lakeHalo].map(g => [g, g.getLayers().map(l => [l, l.feature.properties])]);
+    const ends = g => { const c = g.type === "MultiLineString" ? g.coordinates : [g.coordinates], z = c[c.length - 1];
+                        return c[0][0] + ";" + z[z.length - 1]; };
+    const best = ctrl._layers.find(o => o.overlay && keyOf(o) === "best");
+    if (best && best.layer.getLayers) {
+      const byEnds = new Map(S.features.map(f => [ends(f.geometry), f.properties]));
+      sets.push([best.layer, best.layer.getLayers().map(l => [l, l.feature && byEnds.get(ends(l.feature.geometry))])
+                                                     .filter(([, p]) => p)]);
+    }
+    const note = L.control({position: "topright"});
+    note.onAdd = () => { const d = L.DomUtil.create("div"); L.DomEvent.disableClickPropagation(d); return d; };
+    note.addTo(map);
+    streamFilter.init({features: S.features, section: ctrl._section, note: note.getContainer(), open: () => ctrl.expand(),
+      apply(pass) {
+        hideHover();
+        let back = false;
+        sets.forEach(([g, all]) => all.forEach(([l, p]) => {
+          const want = !pass || pass(p);
+          if (want === g.hasLayer(l)) return;
+          if (!want) { g.removeLayer(l); return; }
+          g.addLayer(l);
+          if (typeof g.options.style === "function") l.setStyle(g.options.style(l.feature));
+          back = true;
+        }));
+        if (back) [lines, lakeLines, halo, lakeHalo].forEach(g => { if (map.hasLayer(g)) g.eachLayer(l => l.bringToFront()); });
+        restack();
+      }});
+  }
   // The 3D link opens the 3D map tilted over the current view, with the layers that are on (layer_order.js: layerLink),
   // and the 3D map's link here brings its own. What this page opened with, before a link's list: the overlays by key and
   // the base map.
@@ -721,8 +754,10 @@ function initDrainageMap(map, ctrl) {
   };
   const to3d = box.querySelector(".to3d");
   const sync3d = () => { const c = map.getCenter();
-    to3d.href = `stream_map_3d.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()},55` + layerPart(); };
+    to3d.href = `stream_map_3d.html#${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()},55` + layerPart() +
+      (window.streamFilter ? streamFilter.part() : ""); };          // and the stream filter (map_filter.js)
   map.on("moveend overlayadd overlayremove baselayerchange", sync3d);
+  document.addEventListener("streamfilter", sync3d);
   to3d.addEventListener("click", sync3d);
   // "Go to": another area's map, or the map of all areas at this view
   const asel = box.querySelector(".areasel");

@@ -1421,6 +1421,9 @@ m.get_root().header.add_child(folium.Element(
 # map_phone.css/.js (the one-line credits on phones and the "my location" button) are shared with 13_overview.py and
 # 14_portable.py; map_score.js (the fish score's breakdown in the stream popups) with the 3D page and 14_portable.py
 _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
+# the stream filters at the top of the layer panels (map_filter.js: a fish score and a drainage under which streams leave
+# the map), on the 3D page too (below)
+m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_filter.js") + "</script>"))
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
     + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_drainages.js")
@@ -1841,6 +1844,8 @@ with open(f"{MAP_OUT}/map3d_data.js", "w") as f:
 only3d = json.dumps({k: v for k, v in X3D.items() if k not in SHARED_3D.values()}, separators=(",", ":"), default=str)
 only3d = only3d.replace("</", "<\\/").replace("<!--", "<\\u0021--")     # nothing in it can end or upset the <script>
 page3d = open(os.path.join(os.path.dirname(__file__), "map3d.html")).read()
+assert page3d.count("</head>") == 1, "map3d.html must have one </head>"
+page3d = page3d.replace("</head>", "<script>" + _page_file("map_filter.js") + "</script>\n</head>")   # the stream filters
 tag3d = '<script src="map3d_data.js"></script>'
 assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
