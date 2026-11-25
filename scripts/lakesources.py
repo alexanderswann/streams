@@ -3,23 +3,24 @@
 nla_depths(bounds_ll)   EPA National Lakes Assessment, all four cycles (2007, 2012, 2017, 2022): the sonar depth at
                         each lake's index site, which for a natural lake is the deepest spot the crew found and for a
                         reservoir a mid-lake site (a lower bound). Cached in data/raw/_national/nla/.
-extras(area, bounds_ll) The state's lake access and rules, as points or polygons with kind ("access", "rules",
-                        "designation"), text and url:
-    ne_ct         CT DEEP boat launches; lake designations of the fisheries management areas (trout management lakes
+extras(states, bounds_ll) The lake access and rules of the states given (the area's lake_states, 00_area.py), as
+                        points or polygons with kind ("access", "rules", "designation"), text and url:
+    CT            CT DEEP boat launches; lake designations of the fisheries management areas (trout management lakes
                   and the like)
-    central_vt    Vermont Fish & Wildlife fishing access areas; special-regulation and restricted lakes and ponds
-    lexington_va  Virginia DWR public fishing lakes (with the boat and motor rules and the agency page)
-    se_pa         PFBC access points at lakes (ramps, piers, motor rules; with credit to PFBC, as its licence asks), DCNR
+    VT            Vermont Fish & Wildlife fishing access areas; special-regulation and restricted lakes and ponds
+    VA            Virginia DWR public fishing lakes (with the boat and motor rules and the agency page)
+    PA            PFBC access points at lakes (ramps, piers, motor rules; with credit to PFBC, as its licence asks), DCNR
                   state park boat launches, PFBC lake special regulations (Big Bass, Panfish Enhancement) and boating
                   rules (no gasoline motors)
-    smokies       NCWRC's Public Mountain Trout Waters impoundments: the class (Hatchery Supported, Delayed Harvest...)
-agency_lakes(area, bounds_ll)  A state's own list of trout lakes as outlines, for 05d_lakes.py's step 2 (as Wyoming Game
+    NC, TN        NCWRC and TWRA access sites, TVA ramps, the reciprocal licence; NCWRC's Public Mountain Trout
+                  Waters impoundments: the class (Hatchery Supported, Delayed Harvest...)
+agency_lakes(states, bounds_ll)  A state's own list of trout lakes as outlines, for 05d_lakes.py's step 2 (as Wyoming Game
                         & Fish's guide is used there): a listed lake is kept whatever its size, and one NHD has no lake
                         for keeps the agency's outline. Columns agency, agency_id (stable: agency and name), agency_name.
-    smokies       NCWRC's Public Mountain Trout Waters impoundments (Cheoah Reservoir: NHD draws it as river; Max Patch
+    NC            NCWRC's Public Mountain Trout Waters impoundments (Cheoah Reservoir: NHD draws it as river; Max Patch
                   Pond, 0.5 ha)
-    se_pa         PFBC's stocked trout lakes (approved trout waters)
-    ne_ct         CT DEEP's stocked trout lakes (Connecticut_Stocked_Lakes; 2026-11-23: four stocked ponds under the 1 ha
+    PA            PFBC's stocked trout lakes (approved trout waters)
+    CT            CT DEEP's stocked trout lakes (Connecticut_Stocked_Lakes; 2026-11-23: four stocked ponds under the 1 ha
                   floor were missing, Lower Storrs Pumping Station, Paine, Pasture and Mansfield Training Ponds)
 Stocking and fish surveys at lakes come from 11_context.py's trout evidence (troutdata.py), read by maplakes.py.
 """
@@ -106,9 +107,9 @@ def _g(url, bb, fields, where="1=1"):
     return gpd.GeoDataFrame(g, crs=4326) if len(g) else None
 
 
-def extras(area, bounds_ll):
+def extras(states, bounds_ll):
     parts = []
-    if area == "ne_ct":
+    if "CT" in states:
         b = _g(f"{CT}/Connecticut_DEEP_Boat_Launches/FeatureServer/0", bounds_ll, "LAUNCHNAME,LAUNCHTYPE,LINK")
         if b is not None:
             parts.append(b.assign(kind="access", text="Boat launch: " + b.LAUNCHNAME.fillna("CT DEEP") +
@@ -117,7 +118,7 @@ def extras(area, bounds_ll):
         if m is not None:
             parts.append(m.assign(kind="designation", text=(m.MGMT_AREA.fillna("") + m.COMMENT.fillna("").map(
                 lambda v: f" ({v})" if v else "")).str.strip() + " (CT DEEP)", url=None))
-    elif area == "central_vt":
+    if "VT" in states:
         # Vermont's map server refuses paged queries: troutdata.fetch asks for the ids first, then the features
         import troutdata
         def _vt(key, lyr, fields):
@@ -140,12 +141,12 @@ def extras(area, bounds_ll):
         x = _vt("lake_vt_restricted", 47, "Name,Type")
         if x is not None:
             parts.append(x.assign(kind="rules", text="Restricted: " + x.Type.fillna("restricted water") + " (Vermont Fish & Wildlife)", url=None))
-    elif area == "lexington_va":
+    if "VA" in states:
         p = _g(f"{VA}/DWR_Public_Fishing_Lakes/FeatureServer/0", bounds_ll, "NAME,Boat_Motor,URL")
         if p is not None:
             parts.append(p.assign(kind="designation", text="Virginia DWR public fishing lake" + p.Boat_Motor.fillna("").map(
                 lambda v: f" ({v.lower()})" if v else ""), url=p.URL))
-    elif area == "se_pa":
+    if "PA" in states:
         PF = "https://fbweb.pa.gov/arcgis/rest/services/PFBC_Map_Services"
         # PFBC's access points at lakes (its own lake-access flag, or a lake for the water: the rest are on creeks and
         # rivers, and one by a riverside pond would be pinned to the pond). Used with credit to PFBC, as its licence asks
@@ -173,7 +174,7 @@ def extras(area, bounds_ll):
             mt = b[[c for c in b.columns if c.startswith("SPECREG_TYPE")]].fillna("").eq("MT").any(axis=1)
             if mt.any():
                 parts.append(b[mt].assign(kind="rules", text="No gasoline motors (PFBC boating rules)", url=None))
-    elif area.startswith("adk_"):
+    if "NY" in states:
         # DEC's lake fishing list (data.ny.gov, open terms): launch type, hike-in, bait and motor rules, its contour map
         gd = ny_guide(bounds_ll)
         if len(gd):
@@ -202,7 +203,7 @@ def extras(area, bounds_ll):
         if len(fa):
             parts.append(fa.assign(kind="access", text=fa.asset.str.capitalize() + ": " + fa["name"].str.title()
                                    + " (" + fa.facility.str.title() + ", NYSDEC)", url=None))
-    elif area == "smokies":
+    if "NC" in states or "TN" in states:    # one bundle: both states' sites and the reciprocal licence
         NC_ = "https://services1.arcgis.com/YfqBAUM5nWR3yhGP/arcgis/rest/services"
         b = _g(f"{NC_}/NCWRC_Boating_Access_Areas_view/FeatureServer/0", bounds_ll,
                "BAA_Name,Water_Access,Launch_Lane_No,Fishing_Pier,Site_Status,Website")
@@ -263,15 +264,15 @@ def _nc_impoundments():
                              "reach": k.Reg_Descri.fillna("").str.strip()}, geometry=k.geometry, crs=k.crs).to_crs(4326)
 
 
-def agency_lakes(area, bounds_ll):
+def agency_lakes(states, bounds_ll):
     """The state's own list of trout lakes as outlines (EPSG:4326): agency, agency_id, agency_name, geometry."""
     rows = []
-    if area == "smokies":
+    if "NC" in states:
         k = _nc_impoundments()
         if k is not None:
             rows.append(gpd.GeoDataFrame({"agency": "NCWRC", "agency_id": "NCWRC:" + k["name"], "agency_name": k["name"]},
                                          geometry=k.geometry, crs=4326))
-    elif area == "se_pa":
+    if "PA" in states:
         import troutdata
         try:
             k = troutdata.fetch("pa_stocked_lakes", f"{troutdata.PFBC}/PFBC_Stocked_Trout_Waters/MapServer/5",
@@ -284,7 +285,7 @@ def agency_lakes(area, bounds_ll):
             k, nm = k[nm.ne("")], nm[nm.ne("")]
             rows.append(gpd.GeoDataFrame({"agency": "PFBC", "agency_id": "PFBC:" + nm, "agency_name": nm},
                                          geometry=k.geometry, crs=k.crs).to_crs(4326))
-    elif area == "ne_ct":
+    if "CT" in states:
         import troutdata
         try:
             k = troutdata.fetch("ct_stocked_lakes", f"{troutdata.CT}/Connecticut_Stocked_Lakes/FeatureServer/0", fields="*")

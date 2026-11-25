@@ -13,7 +13,7 @@ figures or on request (checked 2026-11-19).
 
 Each depth record: lake (name as in lakes.gpkg / GNIS), max_m, mean_m (or None), rank (1 published sonar survey,
 2 EPA sonar, 3 fisheries transducer survey), date, method, src (short, for the map), ref (full citation / link),
-at (lon, lat or UTM 12N easting, northing of the sounding or the lake, to match it), reservoir_index (True: an EPA
+at (lon, lat of the sounding or the lake, to match it; or easting, northing with crs, the EPSG code they are in), reservoir_index (True: an EPA
 index site on a reservoir, a lower bound, not the maximum).
 """
 
@@ -45,7 +45,7 @@ DEPTHS = {"jackson": [
          ref="McGlue et al. 2023, Earth Science, Systems and Society, doi:10.3389/esss.2023.10066 ('~190 ms TWTT (~143 m) "
              "during our survey'); https://par.nsf.gov/servlets/purl/10395463"),
 ] + [dict(lake=n, max_m=round(ft * 0.3048, 1), mean_m=None, rank=3, date=d, method="portable transducer, deepest point found",
-          src="Wyoming Game & Fish / NPS alpine lake survey", at=(e, n_), ref=SG2005)
+          src="Wyoming Game & Fish / NPS alpine lake survey", at=(e, n_), crs=26912, ref=SG2005)
      for n, ft, d, e, n_ in [
          ("Amphitheater Lake", 30, "2002-08-07", 517660, 4841660), ("Arrowhead Pool", 4, "2002-09-10", 519465, 4846745),
          ("Cirque Lake", 196, "2003-08-15", 513230, 4852760), ("Coyote Lake", 15, "2002-09-18", 510500, 4831610),
@@ -108,7 +108,7 @@ DEPTHS["se_pa"] = [
 ]
 
 SURVEYS = {"jackson": [
-    dict(lake=n, date=d, fish=f, at=(e, n_), src="Wyoming Game & Fish / NPS gill nets", ref=SG2005)
+    dict(lake=n, date=d, fish=f, at=(e, n_), crs=26912, src="Wyoming Game & Fish / NPS gill nets", ref=SG2005)
     for n, d, f, e, n_ in [
         ("Amphitheater Lake", "2002-08-07", None, 517660, 4841660), ("Cirque Lake", "2003-08-15", None, 513230, 4852760),
         ("Coyote Lake", "2002-09-18", None, 510500, 4831610), ("Delta Lake", "2002-08-08", None, 518400, 4842000),
@@ -133,3 +133,9 @@ SURVEYS = {"jackson": [
                        "content/dam/copapwp-pagov/en/fishandboat/documents/fishing/where-to-fish/biologist-reports/"
                        "6x2021scottsrunlake-trapnet.pdf")],
 }
+
+
+def inside(table, keep):
+    """Every record of DEPTHS or SURVEYS that keep(record) accepts, in the order they are typed in here. The lists are
+    grouped by the map they were typed in for, but any area takes the records whose point lies in it (05d_lakes.py)."""
+    return [d for group in table.values() for d in group if keep(d)]

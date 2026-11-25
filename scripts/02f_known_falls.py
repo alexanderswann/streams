@@ -48,13 +48,10 @@ OUTF = f"{SHARED}/known_falls.gpkg"
 # Georgia catalogue is its own file; a list to keep out of the maps for a while can be renamed to .csv.held)
 CURATED = sorted(glob.glob(f"{ROOT}/data/known_falls_curated*.csv"))
 GNIS_DIR = f"{NATIONAL}/gnis"
-# states each area's boxes reach into (GNIS comes by state); the boxes are UTM rectangles and cross state lines.
-# An area missing here gets no GNIS falls (a NOTE says so)
-STATES = {"la": ("CA",), "jackson": ("WY", "ID"), "n_georgia": ("GA", "NC", "SC", "TN"), "central_vt": ("VT",),
-          "ne_ct": ("CT", "MA", "RI"), "lexington_va": ("VA", "WV"), "se_pa": ("PA", "DE", "MD", "NJ"),
-          "smokies": ("TN", "NC"),
-          # the Adirondack maps' east edges cross Lake Champlain to the Vermont shore
-          "adk_high_peaks": ("NY", "VT"), "adk_northwest": ("NY",), "adk_southwest": ("NY",), "adk_southeast": ("NY", "VT")}
+# the states the area reaches into (GNIS comes by state): worked out from its outline by 00_area.py (derive.states);
+# the 12 maps of 2026-11-22 keep the lists typed in for them (sources.HAND, until the new-area plan's B2)
+import sources
+GNIS_STATES = sources.pick("gnis_states", AREA, WORKED_OUT.get("gnis_states", AREA_STATES))
 SRC_LABEL = {"OSM": "OpenStreetMap", "NHD": "USGS NHD", "GNIS": "USGS GNIS", "Wikidata": "Wikidata",
              "CDFW": "CDFW barrier survey", "NPS": "Great Smoky Mountains NP", "Overture": "Overture Maps"}
 
@@ -337,9 +334,9 @@ def gnis_file(name, url):
         os.replace(p + ".tmp", p)
     return p
 seen_gnis = set()
-if AREA not in STATES:
-    print(f"NOTE: no states listed for {AREA} in 02f_known_falls.py's STATES: no USGS GNIS falls")
-for st in STATES.get(AREA, ()):
+if not GNIS_STATES:
+    print(f"NOTE: no states worked out for {AREA} (run 00_area.py): no USGS GNIS falls")
+for st in GNIS_STATES:
     frames = []
     try:
         z = zipfile.ZipFile(gnis_file(f"DomesticNames_{st}_Text.zip", "https://prd-tnm.s3.amazonaws.com/StagedProducts/"

@@ -26,7 +26,8 @@ import os, re, json, requests, numpy as np, pandas as pd, geopandas as gpd, shap
 import netfetch
 from rasterio import features
 from rasterio.transform import from_origin
-from config import AREA, REGIONS, CRS, SHARED, SHARED_DERIVED
+from config import AREA, REGIONS, CRS, SHARED, SHARED_DERIVED, WORKED_OUT
+import sources
 import areaclip
 from units import ft, acres  # the depth notes the map popups show are in feet and acres (units.py)
 from shapely.geometry import box
@@ -422,12 +423,15 @@ def noaa_champlain(lk, bounds_ll):
     return rows, facts
 
 
-ADAPTERS = {"ne_ct": [ct_contours], "central_vt": [vt_soundings, noaa_champlain], "la": [usgs_little_rock],
-            "se_pa": [dcnr_bands, usgs_chambers], "adk_high_peaks": [noaa_champlain], "adk_southeast": [noaa_champlain]}
+# the surveys that cover the area: sources.BATHYMETRY's coverage tests, worked out by 00_area.py (the 12 maps of
+# 2026-11-22 keep the lists typed in for them, sources.HAND, until the new-area plan's B2)
+SURVEYS = {f.__name__: f for f in (ct_contours, vt_soundings, noaa_champlain, usgs_little_rock, dcnr_bands, usgs_chambers)}
+assert set(SURVEYS) == set(sources.BATHYMETRY)
+ADAPTERS = [SURVEYS[n] for n in sources.pick("bathymetry", AREA, WORKED_OUT.get("bathymetry", ()))]
 
 
 def main():
-    if AREA not in ADAPTERS:
+    if not ADAPTERS:
         print(f"bathymetry: no published survey to read for {AREA}")
         return
     if not os.path.exists(LAKES):
@@ -447,7 +451,7 @@ def main():
     boxes = gpd.GeoSeries([box(*v["bbox"]) for v in REGIONS.values()], crs=CRS)
     bb = tuple(boxes.buffer(3000).to_crs(4326).total_bounds)
     rows, facts = [], {}
-    for f in ADAPTERS[AREA]:
+    for f in ADAPTERS:
         r_, f_ = f(lk, bb)
         rows += r_
         facts.update(f_)

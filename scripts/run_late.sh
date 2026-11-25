@@ -40,7 +40,7 @@ steps() {
   run $a "" watertemp || echo "NOTE $a: no water-temperature fit; the thermal term stays neutral" >> $LOG
   run $a "" 11b_calendar || echo "NOTE $a: no trout calendar; the popups show none" >> $LOG
   run $a "" 06_map || return 1
-  [[ -f ../output/$a/profiles.html ]] || cp ../output/la/profiles.html ../output/$a/profiles.html
+  [[ -f ../output/$a/profiles.html ]] || cp profiles.html ../output/$a/profiles.html     # the page; 12_profiles.py writes its data
   run $a "" 12_profiles || return 1
   run $a "" fish_score_diagram ../output/$a/fish_score_diagram.png
 }

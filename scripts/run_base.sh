@@ -17,7 +17,7 @@ buildslot_acquire "${0:t} $*"
 # Steps that download (netfetch.py): one that fails is run once more after NET_PAUSE s (a network drop, a server
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
-NET_STEPS=(01_download_dem 02_download_vectors 02b_download_flow 02c_pct 02d_trails 02e_access 02f_known_falls
+NET_STEPS=(00_area 01_download_dem 02_download_vectors 02b_download_flow 02c_pct 02d_trails 02e_access 02f_known_falls
            02g_greenness 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context watertemp)
 NET_PAUSE=${NET_PAUSE:-120}
 
@@ -52,6 +52,9 @@ failed=0
 for a in "$@"; do
   LOG=../data/base_$a.log
   echo "== START $a $(date '+%m-%d %H:%M:%S')" >> $LOG
+  # the area's settings worked out from its outline (crs, boxes, HU4 units, states, sources: area.json), before
+  # anything reads config.REGIONS; an area config.py gives every value for goes on with those if this can't download
+  if ! step "" 00_area; then echo "== STOPPED $a $(date '+%m-%d %H:%M:%S') at its failed step" >> $LOG; failed=1; continue; fi
   ranges=($(AREA=$a $PY -c "import config; print(' '.join(config.REGIONS))"))
   if base; then
     echo "== DONE $a $(date '+%m-%d %H:%M:%S')" >> $LOG

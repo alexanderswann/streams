@@ -54,6 +54,12 @@ STREAM_KM2 = 0.25             # channel initiation (2,500 cells at 10 m): 03b_st
 #   (watertemp.py), where that fits its own sites.
 # hidden = True: the area is built and its map stays where it is (website included), but nothing lists or links it:
 #   not the map of all areas, the "Go to" menus or the one-file map (13_overview.py, 06_map.py, 14_portable.py).
+# A new area needs only label, home and outline (2026-11-23): outline = (west, south, east, north) in degrees, or a
+#   polygon file (any GDAL format, absolute or relative to the project). 00_area.py, the first step of run_base.sh,
+#   works out what the entry leaves out and writes it to data/derived/<area>/_shared/area.json (derive.py): crs (the
+#   UTM zone holding most of the outline), ranges (for now one box around the outline, at most 3,800 km2), each box's
+#   hu4 (the WBD 4-digit units it meets), the states it reaches into, and sources (sources.py's coverage tests). A value
+#   the entry gives by hand wins; 00_area.py prints how the worked-out one differs.
 AREAS = {
     "la": dict(
         label="LA mountains", crs=26911,
@@ -384,10 +390,57 @@ AREAS = {
         }),
 }
 
+# Areas kept outside this file (2026-11-23): AREAS_FILE names a JSON file of more entries in the same form, for the
+# new-area tests (new_area_test.sh), which build a place in a scratch copy without editing anything here. An entry
+# there never replaces one here; nothing outside such a run sees it (publish_site.sh lists only the areas above).
+if os.environ.get("AREAS_FILE"):
+    import json as _json
+    with open(os.environ["AREAS_FILE"]) as _f:
+        for _k, _v in _json.load(_f).items():
+            AREAS.setdefault(_k, _v)
+
 AREA = os.environ.get("AREA", "la")
 if AREA not in AREAS:
     raise SystemExit(f"AREA={AREA!r} is not one of {', '.join(AREAS)}")
-A = AREAS[AREA]
+
+
+def _worked_out(area):
+    """What 00_area.py worked out for the area (data/derived/<area>/_shared/area.json); {} before it has run."""
+    import json
+    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "derived", area, "_shared",
+                     "area.json")
+    try:
+        with open(p) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+WORKED_OUT = _worked_out(AREA)
+A = dict(AREAS[AREA])
+for _k in ("crs", "ranges"):
+    if _k in A:
+        continue
+    if _k in WORKED_OUT:
+        A[_k] = WORKED_OUT[_k]
+    elif os.environ.get("AREA_SETUP"):      # 00_area.py itself, about to work them out: placeholders it doesn't read
+        A[_k] = None if _k == "crs" else {AREA: dict(label=A["label"], hu4=(), bbox=(0, 0, 1, 1))}
+    else:
+        raise SystemExit(f"AREA={AREA}: config.py gives no {_k} and none is worked out yet: run 00_area.py first "
+                         f"(run_base.sh does)")
+if "ranges" not in AREAS[AREA]:
+    A["ranges"] = {k: dict(label=r["label"], hu4=tuple(r.get("hu4", ())), bbox=tuple(r["bbox"]))
+                   for k, r in A["ranges"].items()}
+else:                                       # boxes laid by hand: a box without hu4 takes the worked-out one
+    _dr = WORKED_OUT.get("ranges", {})
+    if any("hu4" not in r for r in A["ranges"].values()):
+        A["ranges"] = {k: (r if "hu4" in r else dict(r, hu4=tuple(_dr.get(k, {}).get("hu4", ()))))
+                       for k, r in A["ranges"].items()}
+if "sources" not in A:
+    A["sources"] = tuple(WORKED_OUT.get("sources", ()))
+# the states the area reaches into (derive.states; only clip_state's where the area stops at a state line); () until
+# 00_area.py has run. The 12 maps of 2026-11-22 keep their own per-area tables (sources.HAND) until B2.
+AREA_STATES = tuple(WORKED_OUT.get("states", ()))
 AREA_LABEL = A["label"]
 EPSG = A["crs"]
 CRS = f"EPSG:{EPSG}"

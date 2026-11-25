@@ -153,7 +153,7 @@ takes the lock over once that driver and its step are gone.
   `02e_access.py`; `02c_pct.py` where the area has a long trail.
 - `./run_late.sh <area> ...` (`late_<area>.log`): `07_road_closures.py` (if it fails, the last closure list stays,
   with a NOTE); per range `08_hike.py` and `10_sun.py`; `09_drive.py`; `11_context.py`; `watertemp.py` (a failure is
-  a NOTE); `06_map.py`; `12_profiles.py` (a new area first gets a copy of `output/la/profiles.html`);
+  a NOTE); `06_map.py`; `12_profiles.py` (a new area first gets a copy of the page, `scripts/profiles.html`);
   `fish_score_diagram.py`.
 - `./run_rebuild_a.sh <area> ...` (`rebuild_<area>.log`, then the mid and late logs), after a change to the routing:
   `03_hydrology.py` per range, `03b_stitch.py` (fetching NHDPlus's lines first when they are missing), the drops, then
@@ -175,7 +175,7 @@ project, so never use them for a trial. Before publishing, run the checks in `ST
 a range's table lists other reaches or drops than its `streams_scored.gpkg` / `waterfall_candidates.gpkg`. To add a
 range, add it to the area's `ranges` in `AREAS` (UTM bbox + NHD HU4 codes) and run the area's drivers. To refresh only
 the live data (closures, gauges) before a trip: `07_road_closures.py`, `08_hike.py` per range, `09_drive.py`,
-`11_context.py`, `06_map.py`. (`run_la_refresh.sh` was a one-off LA refresh of 2026-11-18, before the current order.)
+`11_context.py`, `06_map.py`.
 
 **Downloads.** Every download goes through `scripts/netfetch.py`: 15 s to connect, the source's own read timeout, a
 hard limit on each attempt, and a breaker that stops asking a host (or the whole network) that didn't answer three
@@ -217,7 +217,7 @@ its words, with the imperial figure in brackets after each metric one (`units.im
 | `road_closures.csv` / `.gpkg` | Current closures on mountain roads (step 07), routed along the roads; whether the approach times count them (`in_season`, `times`) and the access-line note of those they don't (`note`). `road_closures.json`: when the feeds were read |
 | `gated_roads.gpkg` | OSM roads tagged closed to public vehicles (locked fire roads, gated forest roads) |
 | `lakes.csv` / `lakes.gpx` | The lakes layer's lakes and their facts (Lakes, below) |
-| `profiles.html` | Creek profile viewer: elevation vs. distance for every creek with 2 km or more of channel named in NHD (a link from the map to any other creek says it has no profile), with drops, falls, gauges and fish score / burn / trout-water strips. A hand-made page kept in git (no script writes it; `run_late.sh` copies LA's to a new area). Keep it next to `profiles_data.js` and the map |
+| `profiles.html` | Creek profile viewer: elevation vs. distance for every creek with 2 km or more of channel named in NHD (a link from the map to any other creek says it has no profile), with drops, falls, gauges and fish score / burn / trout-water strips. A hand-made page kept in git, its source `scripts/profiles.html` (no script writes it; `run_late.sh` copies it to a new area). Keep it next to `profiles_data.js` and the map |
 | `fish_score_diagram.png` | How the fish score is computed (`fish_score_diagram.py`, run by `run_late.sh`; not on the website). It is simpler than the score: it leaves out the channel factor, and its water panel names only the TNC flow model and the diversion gauge, in every area. `scoring.py` is the score |
 | `streams_drawn.gpkg` | The stream lines as `06_map.py` draws them, for checking the drawn map |
 | `context/` | Fire perimeters, stream gauges (USGS, and CDEC in LA; live), wilderness, land status, critical habitat, trout waters, trout evidence, springs |

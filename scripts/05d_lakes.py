@@ -34,8 +34,9 @@ import netfetch     # downloads fail fast; a refresh that fails keeps the earlie
 from rasterio import features
 from rasterio.windows import from_bounds
 from shapely.geometry import box
-from config import AREA, REGIONS, CRS, EPSG, NATIONAL, SHARED, SHARED_DERIVED, has, raw_dir, out_dir, A
+from config import AREA, REGIONS, CRS, EPSG, NATIONAL, SHARED, SHARED_DERIVED, has, raw_dir, out_dir, A, WORKED_OUT
 import areaclip
+import sources
 from units import ft        # the notes the map popups show are in feet (units.py); the columns stay metric
 
 # Areas with lakes, and the size from which an unlisted pond is kept. An area goes into BUILT once its lakes have been
@@ -47,9 +48,17 @@ BUILT = {"jackson": 0.5, "ne_ct": 1.0, "central_vt": 1.0, "lexington_va": 0.5, "
 # Smokies: mountains with few ponds (178 NHD lakes of 0.5 ha or more), as Lexington. The Adirondacks: natural ponds, as
 # central Vermont; 1 ha keeps the small brook trout ponds (2.5 acres and up)
 PLANNED = {}
+# A new area (2026-11-23): unlisted ponds from 1 ha, the size most maps use. PROVISIONAL, until the user's smallest-lake
+# decision (the new-area plan's B7), which replaces BUILT and this default alike. It reaches only areas not in BUILT
+# (the new-area tests, which need lakes to be tested at all); the 12 maps are all in BUILT and unchanged
+NEW_AREA_HA = 1.0       # provisional, until the user's smallest-lake decision (B7)
 if AREA not in BUILT and not (AREA in PLANNED and os.environ.get("LAKES_OUT")):
-    print(f"lakes: not built for {AREA} yet (areas: {', '.join(sorted(BUILT))}); nothing to do")   # not an error
-    raise SystemExit(0)
+    print(f"NOTE lakes: {AREA} is not in BUILT: unlisted ponds kept from {NEW_AREA_HA:g} ha, a provisional size for a new "
+          f"area until the user's smallest-lake decision (B7)")
+    BUILT[AREA] = NEW_AREA_HA
+# the states whose own lake lists are read (lakesources.py): worked out from the area's outline by 00_area.py; the 12
+# maps of 2026-11-22 keep theirs (sources.HAND) until the new-area plan's B2
+LAKE_STATES = sources.pick("lake_states", AREA, WORKED_OUT.get("lake_states", ()))
 
 MIN_HA = BUILT.get(AREA, PLANNED.get(AREA))   # lakes and ponds smaller than this are kept only when an agency lists them
 NAMED_MIN_HA = 0.1     # ... or when they have a name (GNIS, in NHD) and are this big: 359 named ponds were left out on the
@@ -243,7 +252,7 @@ if has("wy_trout"):
 # keeps the agency's outline (Cheoah Reservoir, 240 ha, which NHD draws as river). Their classes and rules come with
 # the state's other lake facts (step 6c) ----
 import lakesources
-_al = lakesources.agency_lakes(AREA, tuple(boxes.buffer(3000).to_crs(4326).total_bounds))
+_al = lakesources.agency_lakes(LAKE_STATES, tuple(boxes.buffer(3000).to_crs(4326).total_bounds))
 if len(_al):
     _al = _al.to_crs(CRS)
     _al["geometry"] = shapely.make_valid(_al.geometry.values)
@@ -276,7 +285,7 @@ if len(_al):
 # Each year's stocking and the fish DEC lists become lake records (lake_records.gpkg beside lakes.gpkg), which
 # maplakes.py reads with the state's other stocking and survey records ----
 lake_recs = []
-if AREA.startswith("adk_"):
+if "NY" in LAKE_STATES:
     TROUT_SP = r"(?i)trout|splake|salmon|steelhead|chinook|coho"
     _bb = tuple(boxes.buffer(3000).to_crs(4326).total_bounds)
     _ab = {"pd": "pond", "lk": "lake", "mt": "mount", "mtn": "mountain", "st": "saint", "res": "reservoir"}
@@ -365,12 +374,17 @@ nn = [pick_name(g, a) for g, a in zip(lk.gnis_name, lk.agency_name)]
 lk["name"], lk["name_src"] = [n for n, _ in nn], [s for _, s in nn]
 lk["ha"] = (lk.area / 1e4).round(2)
 import lakedata
-def _locate(at):
+def _locate(at, crs=4326):
     x, y = at
-    return gpd.GeoSeries([shapely.Point(x, y)], crs=4326 if abs(x) <= 180 else 26912).to_crs(CRS).iloc[0]
+    return gpd.GeoSeries([shapely.Point(x, y)], crs=crs).to_crs(CRS).iloc[0]
+# the records whose point lies in the area's boxes or within 3 km of them, in lakedata.py's order (any area takes what
+# lies inside it; until 2026-11-23 they were listed by area name)
+_zone = boxes.buffer(3000).union_all()
+DEPTHS_HERE = lakedata.inside(lakedata.DEPTHS, lambda d: _zone.contains(_locate(d["at"], d.get("crs", 4326))))
+SURVEYS_HERE = lakedata.inside(lakedata.SURVEYS, lambda d: _zone.contains(_locate(d["at"], d.get("crs", 4326))))
 surveyed = set()
-for d in lakedata.DEPTHS.get(AREA, []) + lakedata.SURVEYS.get(AREA, []):
-    p_ = _locate(d["at"])
+for d in DEPTHS_HERE + SURVEYS_HERE:
+    p_ = _locate(d["at"], d.get("crs", 4326))
     near_ = [i for i in lk.sindex.query(p_.buffer(1500), predicate="intersects") if key(d["lake"]) == key(lk.gnis_name.iat[i])]
     surveyed |= set(near_[:1])
 named_ = lk.gnis_name.notna() & (lk.ha >= NAMED_MIN_HA)
@@ -933,16 +947,16 @@ print("species recorded since 2000 beyond the agency's list: "
 import lakedata
 
 
-def locate(at):
+def locate(at, crs=4326):
     x, y = at
-    return gpd.GeoSeries([shapely.Point(x, y)], crs=4326 if abs(x) <= 180 else 26912).to_crs(CRS).iloc[0]
+    return gpd.GeoSeries([shapely.Point(x, y)], crs=crs).to_crs(CRS).iloc[0]
 
 
-def match(name, at, g=None):
+def match(name, at, g=None, crs=4326):
     """The lake a record is about: one of its name within 1.5 km (the 2002 survey took its coordinates from a consumer
     topo program: Timberline Lake's lie 783 m from NHD's lake), else the nearest lake within 150 m."""
     g = lk if g is None else g
-    p = locate(at)
+    p = locate(at, crs)
     near = [i for i in g.sindex.query(p.buffer(1500), predicate="intersects")]
     if not near:
         return None
@@ -973,8 +987,8 @@ for r in _nla.itertuples():
     nla_recs.append(dict(lake=lk.name.iat[i] or "", max_m=float(r.depth_m), mean_m=None, rank=2, date=r.date,
                          method=r.method, src=f"EPA National Lakes Assessment {r.cycle} (sonar)", at=(p4.x, p4.y),
                          ref=lakesources.NLA[r.cycle][0], reservoir_index=lk.ftype.iat[i] == "reservoir", _i=i))
-for d in lakedata.DEPTHS.get(AREA, []) + nla_recs:
-    i = d["_i"] if "_i" in d else match(d["lake"], d["at"])
+for d in DEPTHS_HERE + nla_recs:
+    i = d["_i"] if "_i" in d else match(d["lake"], d["at"], crs=d.get("crs", 4326))
     (miss.append(d["lake"]) if i is None else meas.setdefault(i, []).append(d))
 for i, ds in meas.items():
     full = [d for d in ds if not d.get("reservoir_index")]
@@ -1000,8 +1014,8 @@ for i, ds in meas.items():
         for d in ds:
             notes.append(f"at least {ft(d['max_m'])} at EPA's index site ({d['date']})")
     lk.loc[i, "depth_note"] = "; ".join(notes) or None
-for sv in lakedata.SURVEYS.get(AREA, []):
-    i = match(sv["lake"], sv["at"])
+for sv in SURVEYS_HERE:
+    i = match(sv["lake"], sv["at"], crs=sv.get("crs", 4326))
     if i is None:
         miss.append(sv["lake"] + " (survey)")
         continue
@@ -1021,7 +1035,7 @@ for i in meas:
 
 # ---- 6c. the state's lake access, rules and designations (lakesources.py): an outline that covers a third of a lake
 # (or of itself) belongs to it, a point within 150 m of a lake's shore to the nearest lake ----
-ex = lakesources.extras(AREA, tuple(boxes.buffer(3000).to_crs(4326).total_bounds))
+ex = lakesources.extras(LAKE_STATES, tuple(boxes.buffer(3000).to_crs(4326).total_bounds))
 for c in ("access", "rules", "designation", "links"):
     lk[c] = None
 if len(ex):
