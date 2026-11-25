@@ -33,6 +33,8 @@ a copy the step can't run offline. A partial answer, or an error page, is not.
       else '': for the source wording the map shows (closures' source, fire perimeters' source, trout records' label).
   usgs_key(url)                   {"X-Api-Key": key} for a request to the USGS Water Data APIs, else {}: the key from
       USGS_API_KEY or, when that's unset, the private file ~/.config/usgs/api_key (2026-11-24)
+  fcc_auth(url)                   {"username", "hash_value"} for a request to the FCC's Public Data API, else {}: the
+      user's FCC username and API token from FCC_BDC_USERNAME / FCC_BDC_TOKEN or the private file ~/.config/fcc/bdc_api
 
 A copy is used whatever its age: a rebuild on day-old closures with a dated note is better than no map. With the
 network up nothing here changes what a step makes (the same requests, the same answers); only the copies are written.
@@ -316,6 +318,51 @@ def usgs_key(url):
             k = ""
         _usgs["key"] = k
     return {"X-Api-Key": _usgs["key"]} if _usgs["key"] else {}
+
+
+# ---- the FCC National Broadband Map's Public Data API: a username and an API token ----
+FCC_HOSTS = ("bdc.fcc.gov", "broadbandmap.fcc.gov")
+_fcc = {}
+
+
+def fcc_auth(url):
+    """{"username": ..., "hash_value": token} for a request to the FCC's Public Data API (https, one of FCC_HOSTS, a
+    path under /api/public/), else {}. The FCC's website turns away programs (an "Access Denied" page to anything that
+    isn't a browser); its API is the FCC's way for them, and it answers only a user of an FCC account with a token made
+    in the National Broadband Map (its "Manage API Access"; the FCC's terms are agreed there). They are
+    FCC_BDC_USERNAME and FCC_BDC_TOKEN, or when those are unset the private file ~/.config/fcc/bdc_api (FCC_BDC_FILE
+    names another), two lines "username=..." and "token=...", read once per process (a value written in <> or quotes,
+    as a template shows it, is read without them). Never printed: a username or token that doesn't look like one
+    (spaces, a second line run in) is left out, with a NOTE that doesn't show it."""
+    u = urlsplit(url)
+    if u.scheme != "https" or u.hostname not in FCC_HOSTS or not u.path.startswith("/api/public/"):
+        return {}
+    if "auth" not in _fcc:
+        def bare(v):
+            v = v.strip()
+            while len(v) >= 2 and (v[0], v[-1]) in (("<", ">"), ('"', '"'), ("'", "'")):
+                v = v[1:-1].strip()
+            return v
+        who = {"username": bare(os.environ.get("FCC_BDC_USERNAME", "")),
+               "token": bare(os.environ.get("FCC_BDC_TOKEN", ""))}
+        src = "FCC_BDC_USERNAME / FCC_BDC_TOKEN"
+        if not (who["username"] and who["token"]):
+            src = os.path.expanduser(os.environ.get("FCC_BDC_FILE") or "~/.config/fcc/bdc_api")
+            who = {"username": "", "token": ""}
+            try:
+                with open(src, encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        k, sep, v = line.partition("=")
+                        if sep and k.strip().lower() in who:
+                            who[k.strip().lower()] = bare(v)
+            except OSError:                    # no file: no token
+                pass
+        ok = (re.fullmatch(r"[^\s\"'<>\\]{1,254}", who["username"] or "") and
+              re.fullmatch(r"[A-Za-z0-9+/=_.-]{16,256}", who["token"] or ""))
+        if (who["username"] or who["token"]) and not ok:
+            note(f"the FCC username or API token in {src} doesn't look like one: requests go without them")
+        _fcc["auth"] = {"username": who["username"], "hash_value": who["token"]} if ok else {}
+    return dict(_fcc["auth"])
 
 
 # ---- the last good copies ----

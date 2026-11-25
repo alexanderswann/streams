@@ -54,6 +54,8 @@ GROUPS = [
     ("fires", "Fires", "Fire perimeters, burn severity and debris-flow hazard."),
     ("land", "Land, access and protected habitat", "Who owns the land, where public access is restricted, wilderness, "
      "and critical habitat."),
+    ("cell", "Cell coverage", "Where each mobile carrier reports 4G or 5G signal outdoors, to know where to save a "
+     "map before heading out."),
     ("base", "Base maps, terrain and place labels", "The maps under the data: light gray, topographic and satellite "
      "views, terrain shading, the 3D terrain and the place and road labels."),
     ("software", "Software", "The code that draws the maps (not data, listed for its licences). The site serves its "
@@ -591,6 +593,25 @@ SOURCES = [
       "Public information that may be copied; NOAA asks for \"Courtesy: National Oceanic and Atmospheric "
       "Administration\".", "https://www.fisheries.noaa.gov/website-policies-and-disclaimers",
       "Courtesy: National Oceanic and Atmospheric Administration", hosts=("services2.arcgis.com/C8EMgrsFcRFL6LrL",)),
+
+    # ---- cell coverage ----
+    S("fcc_bdc", "cell", "National Broadband Map: mobile broadband availability (Broadband Data Collection)",
+      "Federal Communications Commission (FCC)", "https://broadbandmap.fcc.gov/",
+      "Where each facilities-based mobile carrier reports 4G LTE and 5G-NR service, by state, twice a year, as the "
+      "FCC's own hexagons (H3 resolution 9: 0.1 km2, about 1,100 ft across), a hexagon counted where its centre lies "
+      "in the carrier's coverage. The carriers model it under the FCC's rules: 4G LTE at 5/1 Mbps and 5G-NR at 7/1 "
+      "Mbps, each with a 90 % chance at the cell's edge and the cell half loaded, for a phone outdoors. A model, not a "
+      "measurement.",
+      "The Cell coverage layer: where each carrier, or any, reports 4G LTE or 5G outdoors, and each carrier's signal "
+      "at a tapped spot. Read through the FCC's Public Data API, with an FCC account's API token.",
+      "all", "The FCC's API Terms of Service: its data may be used to search, display and analyze, as is; content "
+      "changed may not be presented as the FCC's own, so the layer says it is derived from FCC data (the hexagons "
+      "outlined together, cut at the map's edge).",
+      "https://www.fcc.gov/reports-research/developers/api-terms-service",
+      "This product uses the FCC Data API but is not endorsed or certified by the FCC.",
+      note="Networks most phones can't use are left out of the layer: Southern Linc, Southern Company's network for "
+           "utilities and businesses (the FCC's data doesn't mark them, so they are named in 11e_coverage.py).",
+      hosts=("bdc.fcc.gov/api/public/map", "broadbandmap.fcc.gov"), accessed=("_national/fcc_bdc/*.json.gz",)),
 
     # ---- base maps ----
     S("esri", "base", "Esri basemaps: World Light Gray (base and labels), World Hillshade, World Imagery", "Esri",

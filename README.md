@@ -179,7 +179,8 @@ takes the lock over once that driver and its step are gone.
 - `./run_late.sh <area> ...` (`late_<area>.log`): `07_road_closures.py` (if it fails, the last closure list stays,
   with a NOTE); per range `08_hike.py` and `10_sun.py`; `09_drive.py`; `11_context.py`; `11c_land.py` and
   `11d_parcels.py` (a failure is a NOTE, and the map has no land layer, or no parcel owners, until it runs again);
-  `watertemp.py` (a failure is a NOTE); `06_map.py`; `12_profiles.py` (a new area first gets a copy of the page,
+  `watertemp.py` (a failure is a NOTE); `11e_coverage.py` (a failure is a NOTE, and the map has no cell coverage layer
+  until it runs again); `06_map.py`; `12_profiles.py` (a new area first gets a copy of the page,
   `scripts/profiles.html`);
   `fish_score_diagram.py`.
 - `./run_rebuild_a.sh <area> ...` (`rebuild_<area>.log`, then the mid and late logs), after a change to the routing:
@@ -238,7 +239,12 @@ connection (a fresh `02b` gauge download takes about 115, `11_context.py` under 
 https://api.waterdata.usgs.gov/signup/ gets 1,000 an hour of its own, not shared with the connection (its
 `X-RateLimit-Limit` on 2026-11-24): `USGS_API_KEY`, or when that's unset the private file `~/.config/usgs/api_key`
 (the key alone, `chmod 600`); `netfetch.usgs_key` sends it only to that API, in the `X-Api-Key` header, and never
-prints it.
+prints it. The FCC's mobile coverage (`11e_coverage.py`) comes through the FCC's Public Data API (`bdc.fcc.gov`; the
+National Broadband Map's website turns programs away): it answers only a user of an FCC account, with an API token made
+in the map (sign in at broadbandmap.fcc.gov, the username's menu, "Manage API Access", "Generate"; the FCC's terms are
+agreed there), at most 10 calls a minute. Both are in the private file `~/.config/fcc/bdc_api` (`chmod 600`; the
+user's since 2026-11-25), two lines `username=...` and `token=...`, or in `FCC_BDC_USERNAME` and `FCC_BDC_TOKEN`;
+`netfetch.fcc_auth` sends them only to that API and never prints them. Without them the step runs on its saved copies.
 
 ## Outputs (`output/<area>/`)
 Everything the maps, popups, creek profiles and GPX files show is in imperial units: feet, miles, square miles,
@@ -737,6 +743,22 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
   mouth reads none of the river's). A species counts only where the words name it: a record's label, a water's
   designation, and a water a source lists for wild brook trout; hybrids, steelhead and golden trout count as none of
   brook, brown, rainbow, cutthroat and lake trout. The pages carry it per reach as `sp` (`06_map.py`, `map_filter.js`).
+- `11e_coverage.py` (before `06_map.py`): the **cell coverage layer** (`coverage_data.js` beside the map pages, loaded
+  the first time the layer is turned on; `map_coverage.js` draws it on both maps). The user, 2026-11-25, from onWater:
+  where each carrier has signal, to know where to save an offline map before heading out. The FCC's National Broadband
+  Map (Broadband Data Collection), mobile broadband availability as of its latest date: each facilities-based
+  carrier's 4G LTE (5/1 Mbps) and 5G-NR (7/1 Mbps) coverage outdoors, modelled by the carrier under the FCC's rules (a
+  90 % chance at the cell's edge, the cell half loaded), as the FCC's own H3 hexagons (resolution 9: 0.1 km², about
+  1,100 ft across), by carrier and state. A file is read once for every map: its hexagons within all of config.py's
+  areas are dissolved into one outline and kept as `data/raw/_national/fcc_bdc/<the FCC's file name>.json.gz` (about
+  100 MB for the 12 maps); the download (126 files, about 7.6 GB for the 12 maps' 16 states) is deleted as it goes. A
+  file the FCC revises has a new name and is read again; a map whose boxes a copy doesn't cover reads it again; offline
+  the copies are all it needs. Each map gets every carrier the FCC lists there with at least 1 km² of it, each one's
+  share of the map, and "any carrier", outlined on the hexagons (60 m of simplification, which leaves them as they
+  are). A picker in the legend shows one at a time; with the layer on a tap on the map gives each carrier's signal
+  there, and the other popups end with the same line. The FCC's API terms ask for the notice "This product uses the FCC
+  Data API but is not endorsed or certified by the FCC", in the layer's key and on the credits page. 5G at 35/3 Mbps
+  lies inside 5G at 7/1 and isn't read; 3G isn't shown.
 - `12_profiles.py` (after `06_map.py`): long profiles for every named creek (`profiles_data.js`): the longest
   connected path through its NHD named flowlines, at the channel bottom (the lowest conditioned DEM cell within 20 m,
   only going down downstream), with drops, falls and gauges snapped on and fish score, burn, trout-water and habitat

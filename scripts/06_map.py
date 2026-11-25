@@ -2072,6 +2072,14 @@ X3D["trailheads"] = {"type": "FeatureCollection", "features": [
 folium.Marker([HOME["lat"], HOME["lon"]], tooltip=f"Start: {HOME['label']}",
               icon=folium.Icon(color="darkblue", icon="home")).add_to(m)
 
+# ---- cell coverage (11e_coverage.py): where each carrier reports 4G LTE or 5G outdoors, from the FCC's National
+# Broadband Map. Its outlines are in coverage_data.js beside the page, which map_coverage.js loads the first time the
+# layer is turned on (on the 3D page too, below); here only the entry, and LBL.cell that tells both pages it is there
+if os.path.exists(f"{MAP_OUT}/coverage_data.js"):
+    LBL["cell"] = "Cell coverage (FCC)"
+    folium.FeatureGroup(name=f"<span style='color:#f08c00'>▦</span> {LBL['cell']}", show=False).add_to(m)
+    m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_coverage.js") + "</script>"))
+
 # Legend, drainage list, colour-mode switch, labels and #lat,lon,zoom links (from the profile viewer) are built by
 # initDrainageMap in map_drainages.js, which runs once the map and layer control exist.
 lc = folium.LayerControl(collapsed=True, position="topright")
@@ -2090,6 +2098,16 @@ if (window.StreamsOffline) StreamsOffline.map2d({{ this._parent.get_name() }}, {
         super().__init__()
         self.ctrl = ctrl
 m.add_child(InitDrainages(lc.get_name()))
+# the cell coverage layer (map_coverage.js) once the map and its layer list exist
+class InitCell(MacroElement):
+    _template = Template("""{% macro script(this, kwargs) %}
+if (window.cellLeaflet) cellLeaflet({{ this._parent.get_name() }}, {{ this.ctrl }});
+{% endmacro %}""")
+    def __init__(self, ctrl):
+        super().__init__()
+        self.ctrl = ctrl
+if LBL.get("cell"):
+    m.add_child(InitCell(lc.get_name()))
 m.save(f"{MAP_OUT}/stream_map.html")
 # folium's libraries from the site's lib/, not from CDNs (weblib.py): the map then needs no network once saved
 with open(f"{MAP_OUT}/stream_map.html", encoding="utf-8") as f:
@@ -2170,3 +2188,12 @@ print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string
 
 # the trout calendar on both pages, after map_score.js (troutcal.py, map_calendar.js)
 troutcal.add_to_pages(MAP_OUT)
+# the cell coverage layer on the 3D page, before its own script reads it (map3d.html: cellMaplibre, cellSpot, cellNote)
+if LBL.get("cell"):
+    _js = _page_file("map_coverage.js")
+    assert "</script" not in _js.lower(), "map_coverage.js must not close its <script>"
+    with open(f"{MAP_OUT}/stream_map_3d.html") as f:
+        _p3 = f.read()
+    with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
+        f.write(_p3.replace(tag3d, tag3d + "\n<script>" + _js + "</script>", 1))
+    del _p3, _js

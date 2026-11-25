@@ -487,6 +487,9 @@
     map.addLayer({id: "trailheads", type: "circle", source: "trailheads", layout: {visibility: "none"},
       paint: {"circle-radius": 4.5, "circle-color": "#ffd43b", "circle-stroke-color": "#212529", "circle-stroke-width": 1}});
     ov.push(["trailheads", `Approach start points (computed)`, "<span style='color:#e0a800'>●</span>", ["trailheads"]]);
+    // cell coverage (map_coverage.js: 11e_coverage.py's coverage_data.js, loaded on first use), under the streams
+    const cell = window.cellMaplibre ? cellMaplibre(map, D) : null;
+    if (cell) ov.push(["cell", D.lbl.cell, cell.sym, cell.ids, false]);
 
     // labels: creek names along the bigger channels, then fork and drainage names (collisions handled by MapLibre)
     // trail names bend along smoothed copies of named trails (06_map.py), from z13; lowest label priority
@@ -971,7 +974,8 @@
     document.addEventListener("popup-grow", () => { if (narrow() && popped && popped.isOpen()) place(); });
     map.on("click", e => {
       let f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
-      if (!f) return;
+      // where nothing else is, with the cell coverage layer on: each carrier's signal there (map_coverage.js)
+      if (!f && !(f = window.cellSpot ? cellSpot() : null)) return;
       // a depth contour opens its lake's popup when the lakes are shown: over a deep lake the lines cover much of it
       if (f.layer.id === "lake-depth") f = map.queryRenderedFeatures(e.point, {layers: ["lakes"]})[0] || f;
       openAt(e.lngLat, e.point, f.layer.id, f.properties, f.id);
@@ -983,8 +987,10 @@
       const html = id === "streams" ? streamPop(p) : (id === "land" || id === "land-p") ? landPopup(p, lngLat.lat, lngLat.lng) : id === "parcels-f" ? landParcelPopup(p, lngLat.lat, lngLat.lng) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
+      // with the cell coverage layer on, each carrier's signal at the spot, at the popup's foot (or the whole popup)
+      const cellHtml = window.cellNote ? cellNote(lngLat, !html) : "";
       if (!narrow()) {
-        const pd = new maplibregl.Popup({maxWidth: "340px"}).setLngLat(lngLat).setHTML(html).addTo(map);
+        const pd = new maplibregl.Popup({maxWidth: "340px"}).setLngLat(lngLat).setHTML(html + cellHtml).addTo(map);
         if (id === "streams") streamPopup = pd;
         if (routes && id === "streams") routes.show(fid, pd);
         if (window.gaugeLive) gaugeLive.fill(pd.getElement());
@@ -993,7 +999,7 @@
       folded.forEach(x => { x[1] = true; });  // a popup opened in place of another keeps the panels folded for that one
       const pop = popped = new maplibregl.Popup({maxWidth: (window.innerWidth - 16) + "px",
                                      anchor: point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
-        .setLngLat(lngLat).setHTML(html).addTo(map);
+        .setLngLat(lngLat).setHTML(html + cellHtml).addTo(map);
       pop.on("close", () => { if (popped === pop) { popped = null; unfold(true); } });
       if (id === "streams") streamPopup = pop;
       if (routes && id === "streams") routes.show(fid, pop);

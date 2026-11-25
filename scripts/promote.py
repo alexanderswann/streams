@@ -30,7 +30,7 @@ The checks (all must pass):
          project build holds a build slot
   built  every map promoted was rebuilt in the clone (its map3d_data.js is newer than the clone), and no step failed in
          the clone's logs since the clone was made, other than those the drivers go on without (05d_lakes,
-         lake_bathymetry, 07_road_closures, watertemp, 11b_calendar: listed)
+         lake_bathymetry, 07_road_closures, watertemp, 11b_calendar, 11e_coverage: listed)
   stamps (with build_stamp.py in scripts/: B9) each published map file was written by a clean recorded run that names a
          commit, with no uncommitted or edited code; else publish_site.sh's build gate would refuse it. A clone tested
          without `gitlink` fails here: test again on a git-linked clone, or rebuild as before
@@ -46,9 +46,11 @@ PROJECT = "/Users/mac/Fishing"
 TOPS = ("data", "output")
 EXCLUDE = [re.compile(p) for p in (r"^data/\.hydro\.lock(/|$)", r"(^|/)__pycache__(/|$)", r"\.pyc$",
                                    r"(^|/)\.DS_Store$", r"(^|/)\.build_stamp\.lock$", r"^data/promoted\.log$")]
-TOLERATED = {"05d_lakes", "lake_bathymetry", "07_road_closures", "watertemp", "11b_calendar"}   # the drivers' NOTEs
+TOLERATED = {"05d_lakes", "lake_bathymetry", "07_road_closures", "watertemp", "11b_calendar",
+             "11e_coverage"}                                                                # the drivers' NOTEs
 STEP_PAT = r"run_[a-z_]+\.sh|[0-9][0-9][a-z]?_[a-z_]+\.py|watertemp\.py|lake_bathymetry\.py|fish_score_diagram\.py"
-PUBLISHED = {"map3d_data.js", "stream_map.html", "stream_map_3d.html", "profiles_data.js", "hillshade.png"}
+PUBLISHED = {"map3d_data.js", "stream_map.html", "stream_map_3d.html", "profiles_data.js", "hillshade.png",
+             "coverage_data.js"}
 SLOTS = os.environ.get("BUILDSLOT_DIR", "/private/tmp/fishing-build-slots")
 
 

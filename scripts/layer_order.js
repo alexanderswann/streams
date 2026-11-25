@@ -14,6 +14,8 @@ const LAYER_ORDER = [
   // falls and drops (one group): the known falls, then the drops from most to least like a fall
   "falls", "drop:matches mapped waterfall", "drop:unmapped waterfall-like step", "drop:unmapped short fall (big creek)",
   "drop:unmapped cascade", "drop:steep reach", "drop:dam / weir", "drop:likely DEM artifact",
+  // before you go: where each carrier has signal (map_coverage.js)
+  "cell",
   // getting there: drive (the roads, one group: from paved to the roughest, then closed to cars, then closed by fire,
   // then those whose state isn't known), the closures, park, then walk or ride (the trails with their bike access)
   "road-paved", "road-graded", "road-high_clearance", "road-4wd", "road-bike", "road-closed", "road-dirt",
@@ -30,6 +32,7 @@ function layerKey2d(name, LBL) {
   const text = String(name).replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim();
   const drop = text.match(/Drops: (.+)$/);
   if (drop) return "drop:" + drop[1].trim();
+  if (has(L.cell)) return "cell";
   if (has(L.falls)) return "falls";
   if (has(L.fires)) return "fires";
   if (has(L.trout_waters)) return "wild_trout_waters";

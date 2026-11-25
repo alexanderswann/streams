@@ -5,14 +5,15 @@
 # ("as of Nov 24" in popups and a legend line) for the layers that carry the wording. This brings a tested clone's late
 # layers up to date, online, before promote.py puts the clone into the project:
 #   from 11   11_context.py (fires, land, critical habitat, trout surveys and stocking, iNaturalist, gauges, debris
-#             flows), watertemp.py, 11b_calendar.py, 06_map.py, 12_profiles.py, fish_score_diagram.py
+#             flows), watertemp.py, 11b_calendar.py, 11e_coverage.py (cell coverage: it reads the FCC's files again
+#             only where the FCC has revised them), 06_map.py, 12_profiles.py, fish_score_diagram.py
 #   from 07   07_road_closures.py first (the closures and their "as of"); 08_hike.py, 10_sun.py and 09_drive.py again
 #             only where the closures came back different (they read road_closures.gpkg and nothing else of 07's;
 #             with the same features their outputs would be the same), then the steps of "from 11"
 # The steps and their order are run_late.sh's, in the clone's own scripts/ (never the project's), each failure handled
-# as run_late.sh does (a download step tried once more after NET_PAUSE; 07, watertemp and 11b_calendar may fail with a
-# NOTE; any other failure stops that map). The Adirondack maps run last and adk_northwest last of all: its water-
-# temperature fit reads the other three maps' sites (watertemp.py's group fit). Logs: <clone>/data/late_<map>.log.
+# as run_late.sh does (a download step tried once more after NET_PAUSE; 07, watertemp, 11b_calendar and 11e_coverage may
+# fail with a NOTE; any other failure stops that map). The Adirondack maps run last and adk_northwest last of all: its
+# water-temperature fit reads the other three maps' sites (watertemp.py's group fit). Logs: <clone>/data/late_<map>.log.
 # One build slot for the whole run, in the critical lane where buildslot.sh has one, given up between maps only to a
 # waiting project build (buildslot_yield). Start it by its literal path (the publish guard reads command lines).
 # Steps before 07 (02*, 05*, lakes, falls, trails, access roads, OSM names) keep the baseline's copies: promote.py's
@@ -26,7 +27,7 @@ cd $clone/scripts || exit 1
 PY=../.venv/bin/python
 unset NET_FAIL http_proxy https_proxy HTTP_PROXY HTTPS_PROXY GDAL_HTTP_PROXY      # online: the point of the refresh
 export PYTHONDONTWRITEBYTECODE=1
-NET_STEPS=(07_road_closures 08_hike 09_drive 11_context watertemp)
+NET_STEPS=(07_road_closures 08_hike 09_drive 11_context watertemp 11e_coverage)
 NET_PAUSE=${NET_PAUSE:-120}
 maps=(${(@)@:#adk_*} ${(@M)@:#adk_*})                               # the Adirondack maps last,
 (( ${maps[(Ie)adk_northwest]} )) && maps=(${maps:#adk_northwest} adk_northwest)   # adk_northwest last of all
@@ -83,6 +84,9 @@ steps() {
   run $a "" watertemp || echo "NOTE $a: no water-temperature fit; the thermal term stays neutral" >> $LOG
   if grep -q 11b_calendar run_late.sh; then
     run $a "" 11b_calendar || echo "NOTE $a: no trout calendar; the popups show none" >> $LOG
+  fi
+  if grep -q 11e_coverage run_late.sh; then
+    run $a "" 11e_coverage || echo "NOTE $a: no cell coverage layer this build (11e_coverage.py failed; it left no old one)" >> $LOG
   fi
   run $a "" 06_map || return 1
   [[ -f ../output/$a/profiles.html ]] || cp ../output/la/profiles.html ../output/$a/profiles.html

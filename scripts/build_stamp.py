@@ -31,7 +31,8 @@ reason) when, for an area with a changed file:
      a reach step run again after the map was drawn);
   4. one step ran on different code in two of the area's boxes;
   5. the latest run of a step failed, other than those the drivers let a map be made without (05d_lakes,
-     lake_bathymetry, 07_road_closures, watertemp, 11b_calendar, 11c_land, 11d_parcels: a NOTE in the log then);
+     lake_bathymetry, 07_road_closures, watertemp, 11b_calendar, 11c_land, 11d_parcels, 11e_coverage: a NOTE in the
+     log then);
   6. the standing checks have not passed on this map: no audit/tables/*/run_all_status.json (audit/scripts/run_all.sh
      writes it) holds this map3d_data.js's sha1 with no check script failed and no golden place broken.
 docs/index.html and docs/credits.html (13_overview.py, run by the publish itself) need 13_overview's code committed,
@@ -47,11 +48,12 @@ SCR = f"{ROOT}/scripts"
 STEP_RE = re.compile(r"^([0-9]{2}[a-z]?_[a-z0-9_]+|watertemp|lake_bathymetry|fish_score_diagram)\.py$")
 SITE_STEPS = {"13_overview", "14_portable", "15_preview"}       # the site's pages, not an area's step
 TOLERATED = {"05d_lakes", "lake_bathymetry", "07_road_closures", "watertemp",
-             "11b_calendar", "11c_land", "11d_parcels"}              # the drivers go on without them
+             "11b_calendar", "11c_land", "11d_parcels", "11e_coverage"}   # the drivers go on without them
 PUBLISHED = {"map3d_data.js": "06_map", "stream_map.html": "06_map", "stream_map_3d.html": "06_map",
              "routes_data.js": "06_map",                         # approach_routes.pack(), beside each map
              "profiles_data.js": "12_profiles", "hillshade.png": "05_score",
-             "land_data.js": "11c_land", "parcels_data.js": "11d_parcels"}    # publish_site.sh's map files: the step
+             "land_data.js": "11c_land", "parcels_data.js": "11d_parcels",
+             "coverage_data.js": "11e_coverage"}       # publish_site.sh's map files: the step
 SKIP_IN_SITE = {"build_stamp.json", "profiles.html"}      # the stamp itself; the page template (scripts/profiles.html)
 WEB_TOP = {"sw.js", "offline.js", "manifest.webmanifest", "offline.json"}   # the web app at the site's root (weblib.py)
 WEB_DIRS = {"lib", "icons"}                               # the pages' libraries and the app's icons (weblib.py), not areas
