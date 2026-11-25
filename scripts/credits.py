@@ -73,12 +73,25 @@ def _years(years):
 
 
 def S(key, group, name, by, url, what, use, maps, terms, terms_url=None, credit=None, note=None, hosts=(), also=(),
-      accessed=()):
+      accessed=(), odbl=False):
+    """odbl: the source is under the ODbL, so what the maps make from it is offered under the ODbL too (_odbl())."""
     return dict(key=key, group=group, name=name, by=by, url=url, what=what, use=use, maps=maps, terms=terms,
                 terms_url=terms_url, credit=credit, note=note, hosts=tuple(hosts), also=tuple(also),
-                accessed=tuple(accessed))
+                accessed=tuple(accessed), odbl=odbl)
 
 
+# The user's decisions on sources' terms, so that no later session asks again:
+# - 2026-11-25 (relayed word for word by the overview session):
+#   - Esri's base maps: "Keep as is" (licensed under Esri's Master License Agreement; drawn with no account or key).
+#   - ODbL: "Add the ODbL notice". The data the maps make from OpenStreetMap, and LA's flow figures made from TNC's
+#     California Natural Flows Database, are offered under the ODbL (_odbl(): the page's "Data shared under the ODbL").
+#   - Trail Finder, The Outbound, komoot and freearenas.com (Lareau Swim Hole, Darby Wind Cave Falls, Wigwam Falls, the
+#     Jennings Creek swimming holes): "Keep them", credited and linked as before.
+#   - California State Parks: "Keep + credit": named in LA's one-line map credits (06_map.py's LBL["credits"]).
+#   - StreamNet: "Keep, and email IDFG": kept and credited; the user writes to Idaho Fish and Game and StreamNet.
+#   - NYSDEC (the hidden Adirondack maps): unchanged while the user's own request to DEC is pending.
+# - 2026-11-22: the World Waterfall Database and nnywaterfalls.com consented; gawaterfalls.com and the guide sites with
+#   no terms on record "Keep as is"; Google and Apple Maps places may be used, looked up by hand and named in each popup.
 SOURCES = [
     # ---- streams ----
     S("3dep", "streams", "3D Elevation Program (3DEP), 1/3 arc-second elevation", "U.S. Geological Survey",
@@ -152,7 +165,7 @@ SOURCES = [
       "Zimmerman, J.K.H., D.M. Carlisle, J.T. May, K.R. Klausmeyer, T.E. Grantham, L.R. Brown and J.K. Howard. "
       "California Unimpaired Flows Database v2.1.2, 2023. The Nature Conservancy, San Francisco, CA. "
       "https://rivers.codefornature.org/",
-      hosts=("flow-api.codefornature.org",), accessed=("la/_shared/flow/natural_flows.csv",)),
+      hosts=("flow-api.codefornature.org",), accessed=("la/_shared/flow/natural_flows.csv",), odbl=True),
     S("usgs_water", "flow", "Stream gauges (USGS Water Data APIs)", "U.S. Geological Survey",
       "https://waterdata.usgs.gov/",
       "Daily and current streamflow at USGS gauges.",
@@ -431,7 +444,7 @@ SOURCES = [
       "Open Database License (ODbL): free to use with credit; a database made from it and shared publicly is to be "
       "offered under the ODbL too.", "https://www.openstreetmap.org/copyright", "© OpenStreetMap contributors",
       hosts=("overpass-api.de", "overpass.openstreetmap.fr", "www.openstreetmap.org"),
-      also=("streams", "lakes", "falls", "closures")),
+      also=("streams", "lakes", "falls", "closures"), odbl=True),
     S("usgs_trails", "trails", "National Digital Trails", "U.S. Geological Survey (The National Map)",
       "https://www.usgs.gov/national-digital-trails",
       "Official trails of the Forest Service, Park Service, state parks and counties in one layer.",
@@ -452,7 +465,7 @@ SOURCES = [
       "© California State Parks, all rights reserved: for free personal or public-sector use, credited to California "
       "State Parks, not to be sold or altered; commercial use needs its approval.",
       "https://www.parks.ca.gov/?page_id=29682", "California State Parks",
-      hosts=("services2.arcgis.com/AhxrK3F6WM8ECvDi",)),
+      note="Named in the LA map's credits line too.", hosts=("services2.arcgis.com/AhxrK3F6WM8ECvDi",)),
 
     # ---- closures and approach times ----
     S("caltrans", "closures", "Caltrans Lane Closure System", "California Department of Transportation",
@@ -686,6 +699,8 @@ GUIDES = {
     "RiverBrain": dict(url="https://riverbrain.com/", terms=NONE_STATED),
     "ncwaterfalls.com": dict(url="https://ncwaterfalls.com/", terms=NONE_STATED),
     "Waterfall Hero": dict(url="https://waterfallhero.blogspot.com/", terms=NONE_STATED),
+    # these four: their sites' terms restrict reuse or couldn't be read; kept, credited and linked ("Keep them", the
+    # user, 2026-11-25)
     "Trail Finder": dict(url="https://www.trailfinder.info/", by="Upper Valley Trails Alliance",
                          terms_url="https://www.trailfinder.info/terms"),
     "The Outbound": dict(url="https://theoutbound.com/", terms_url="https://theoutbound.com/terms"),
@@ -840,6 +855,9 @@ def _card(s, keys):
         rows.append(("Credit", _text(credit or "") + (f" (downloaded {_day(when)})" if when else "")))
     if s["note"]:
         rows.append(("Note", _text(s["note"])))
+    if s["odbl"]:
+        rows.append(("Note", 'What the maps make from it is offered under the ODbL too: '
+                             '<a href="#odbl">Data shared under the ODbL</a>.'))
     sub = s["by"] if s["group"] == "software" else f'{s["by"]} · {_short_maps(keys)}'
     return _entry(s["key"], s["name"], sub, rows)
 
@@ -902,6 +920,8 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .guides { padding-left: 30px !important; font-size: 14px; }
 .guides li { margin: 4px 0; overflow-wrap: anywhere; }
 .also { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; }
+.notice { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+          font-size: 14px; margin: 6px 0; overflow-wrap: anywhere; }
 footer { color: var(--muted); font-size: 13px; margin-top: 28px; }
 """
 
@@ -913,6 +933,34 @@ const go = () => { const t = location.hash && document.getElementById(decodeURIC
   if (t && t.tagName === "DETAILS") { t.open = true; t.scrollIntoView(); } };
 addEventListener("hashchange", go); go();
 """
+
+
+def _odbl():
+    """The page's ODbL notice (the user's "Add the ODbL notice", 2026-11-25): the data the maps make from a source under
+    the ODbL (OpenStreetMap; LA's flows from TNC's database) are offered under the ODbL too, as its share-alike asks. They
+    are in the data file each map loads, map3d_data.js beside the map. "" when no map shown uses such a source."""
+    used = {s["key"]: s for s in SOURCES if s["odbl"] and areas_of(s)}
+    if not used:
+        return ""
+    made = []
+    if "osm" in used:
+        made.append("the trails, roads and parking on these maps, and the other features they take from OpenStreetMap "
+                    "(the long trails, gated roads, some lakes, falls, swimming holes and creek names), are made from "
+                    "OpenStreetMap")
+    if "tnc_flows" in used:
+        maps = " and ".join(AREAS[k]["label"] for k in areas_of(used["tnc_flows"]))
+        made.append(f"the summer flow figures on the {html.escape(maps)} map are made from The Nature Conservancy's "
+                    "California Natural Flows Database")
+    for k, s in used.items():
+        if k not in ("osm", "tnc_flows"):
+            made.append(f"the data the maps make from {html.escape(s['name'])} ({html.escape(s['by'])})")
+    first = _visible()[0]
+    text = "; ".join(made)
+    return ('<h2 id="odbl">Data shared under the ODbL</h2><p class="notice">' + text[0].upper() + text[1:]
+            + f'. Those sources are under the <a href="{ODBL}">Open Database License (ODbL) 1.0</a>, so these maps offer '
+            "the data they made from them under the ODbL too: free to copy, share and adapt under that licence, with "
+            "credit to their sources. The data are in the file each map loads, map3d_data.js in the map's folder (for "
+            f'example <a href="{first}/map3d_data.js">{first}/map3d_data.js</a>).</p>')
 
 
 def page():
@@ -929,6 +977,10 @@ def page():
             continue
         toc.append(f'<a href="#{g}">{html.escape(title)}</a>')
         groups.append(f'<h2 id="{g}">{html.escape(title)}</h2><p class="gi">{html.escape(intro)}</p>' + "".join(body))
+    odbl = _odbl()
+    if odbl:
+        toc.append('<a href="#odbl">Data shared under the ODbL</a>')
+        groups.append(odbl)
     n = len(_visible())
     n = "one two three four five six seven eight nine ten eleven twelve".split()[n - 1] if 0 < n <= 12 else n
     return f"""<!doctype html>

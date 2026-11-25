@@ -34,7 +34,8 @@ LBL = dict(
     access="Restricted or no public access (" + ("CPAD" if has("cpad") else "PAD-US") + ")",
     gauges="Stream gauges, USGS" + (" + CDEC" if has("cdec") else ""),
     trout_ev="Trout evidence: " + ("CDFW" if CA else "state") + " surveys (red = none found), stocking, iNaturalist",
-    credits="USGS National Digital Trails · USFS · " + ("CDFW · " if CA else "") + "iNaturalist · "
+    credits="USGS National Digital Trails · USFS · " + ("California State Parks · " if has("la_trail_layers") else "")
+            + ("CDFW · " if CA else "") + "iNaturalist · "
             + ("CAL FIRE · " if has("cal_fire") else "NIFC fire history · ") + "NIFC WFIGS · USGS gauges &amp; debris-flow hazard · "
             + ("CDEC · " if has("cdec") else "") + ("TNC Natural Flows" if has("tnc_flows") else "NHDPlus V2 (EROM)")
             + " · PRISM Group, Oregon State University · known falls: OSM, USGS GNIS, Wikidata and the guides named in each")
