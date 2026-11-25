@@ -12,7 +12,7 @@ buildslot_acquire "${0:t} $*"
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
 NET_STEPS=(01_download_dem 02_download_vectors 02b_download_flow 02c_pct 02d_trails 02e_access 02f_known_falls
-           02g_greenness 02h_buried_inputs 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context watertemp)
+           02g_greenness 02h_buried_inputs 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context 11c_land 11d_parcels watertemp)
 NET_PAUSE=${NET_PAUSE:-120}
 
 # FROM=<step> (run_area.sh's second word): the build starts at that step and leaves the steps before it as they are,
@@ -54,6 +54,8 @@ steps() {
   for r in $ranges; do run $a $r 08_hike || return 1; run $a $r 10_sun || return 1; done
   run $a "" 09_drive || return 1
   run $a "" 11_context || return 1
+  run $a "" 11c_land || echo "NOTE $a: no land-ownership layer this build (11c_land.py failed; it left no old one)" >> $LOG
+  run $a "" 11d_parcels || echo "NOTE $a: no parcel owners this build (11d_parcels.py failed; it left no old file)" >> $LOG
   run $a "" watertemp || echo "NOTE $a: no water-temperature fit; the thermal term stays neutral" >> $LOG
   run $a "" 11b_calendar || echo "NOTE $a: no trout calendar; the popups show none" >> $LOG
   run $a "" 06_map || return 1

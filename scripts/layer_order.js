@@ -18,8 +18,8 @@ const LAYER_ORDER = [
   // then those whose state isn't known), the closures, park, then walk or ride (the trails with their bike access)
   "road-paved", "road-graded", "road-high_clearance", "road-4wd", "road-bike", "road-closed", "road-dirt",
   "closures", "closures-fire", "poi-pk", "poi-th", "trailheads", "trails", "bike",
-  // land and fire
-  "cpad_restricted", "non_fs_land", "wilderness", "critical_habitat", "fires",
+  // land and fire: who owns the land (map_land.js) first
+  "land", "cpad_restricted", "non_fs_land", "wilderness", "critical_habitat", "fires",
 ];
 const layerRank = key => { const i = LAYER_ORDER.indexOf(key); return i < 0 ? LAYER_ORDER.length : i; };
 
@@ -34,6 +34,7 @@ function layerKey2d(name, LBL) {
   if (has(L.fires)) return "fires";
   if (has(L.trout_waters)) return "wild_trout_waters";
   if (has(L.access)) return "cpad_restricted";
+  if (has(L.land)) return "land";
   if (has(L.gauges)) return "gauges";
   if (has(L.trout_ev)) return "trout";
   const fixed = [["hillshade", /^Terrain shading/], ["labels", /^Place & road labels/], ["relief", /^DEM color relief/],

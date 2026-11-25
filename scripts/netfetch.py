@@ -373,6 +373,19 @@ def rate_wait(seconds, url):
     time.sleep(seconds)
 
 
+def fresh_copy(name, days):
+    """The last good copy of `name` when it was fetched within `days` days, else None: for slow sources (the counties'
+    parcel rolls, 11d_parcels.py) that a rebuild needn't fetch again each time."""
+    try:
+        with gzip.open(f"{_dir()}/{name}.json.gz", "rt") as f:
+            old = json.load(f)
+        if dt.datetime.now() - dt.datetime.fromisoformat(old["fetched"]) <= dt.timedelta(days=days):
+            return old["data"]
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
+
+
 def last_good(name, fetch, what, also=()):
     """fetch()'s result, saved as `name`'s last good copy; when fetch() fails, that copy (see the module's docstring),
     or else the first there of the copies under the older names `also`. A Partial answer is used and not saved."""

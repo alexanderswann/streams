@@ -177,8 +177,10 @@ takes the lock over once that driver and its step are gone.
   `02g_greenness.py`; `05c_drainages.py` for every range, then `05b_flow.py` for every range; `02d_trails.py`;
   `02e_access.py`; `02c_pct.py` where the area has a long trail.
 - `./run_late.sh <area> ...` (`late_<area>.log`): `07_road_closures.py` (if it fails, the last closure list stays,
-  with a NOTE); per range `08_hike.py` and `10_sun.py`; `09_drive.py`; `11_context.py`; `watertemp.py` (a failure is
-  a NOTE); `06_map.py`; `12_profiles.py` (a new area first gets a copy of the page, `scripts/profiles.html`);
+  with a NOTE); per range `08_hike.py` and `10_sun.py`; `09_drive.py`; `11_context.py`; `11c_land.py` and
+  `11d_parcels.py` (a failure is a NOTE, and the map has no land layer, or no parcel owners, until it runs again);
+  `watertemp.py` (a failure is a NOTE); `06_map.py`; `12_profiles.py` (a new area first gets a copy of the page,
+  `scripts/profiles.html`);
   `fish_score_diagram.py`.
 - `./run_rebuild_a.sh <area> ...` (`rebuild_<area>.log`, then the mid and late logs), after a change to the routing:
   `03_hydrology.py` per range, `03b_stitch.py` (fetching NHDPlus's lines first when they are missing), the drops, then
@@ -628,6 +630,31 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
   each reach and at each trout record (PRISM 1991–2020 normal, 800 m, clipped per area from the national file to
   `data/raw/<area>/_shared/prism_tmean_aug.tif`), and holdings with restricted or no public access (CPAD in LA,
   PAD-US elsewhere), flagged ("⚠ No Public Access") and drawn as their own layer.
+- `11c_land.py` (after `11_context.py`): the **land-ownership layer** (`land_data.js` beside the map pages, loaded the
+  first time the layer is turned on; `map_land.js` draws it on both maps). PAD-US 4.1's fee holdings, easements and
+  tribal and military boundaries, cut against each other, the reaches' access flags (`context/cpad_restricted.gpkg`)
+  and the counties (TIGERweb), and sorted by PAD-US's own owner type (its manager's where it records no owner) and
+  public access into public land, conservation or open private land (land trusts and other non-profits, private land
+  open to the public, easements with access), tribal land and private land (everything else, and all land PAD-US
+  doesn't list). A piece inside a flagged holding says what the creeks' popups there say, so the two never disagree.
+  Every name PAD-US gives is shown, easements and private holdings included (the user, 2026-11-25: "i want names of
+  owners, clearly private land, clearly public land"), and the popups say where each comes from. Organizations get
+  their own website and office phone (`scripts/land_contacts.csv`, by organization); a private person never gets a
+  phone, e-mail or address. Private land links instead to its county's official parcel viewer
+  (`scripts/county_viewers.csv`, at the spot where the viewer allows it). The step's NOTEs list the biggest
+  organizations with no contact and the counties with no viewer. The look is the user's pick of three iPhone mockups:
+  public land solid green, conservation land teal, tribal land violet, private land red stripes, with a key in plain
+  words and names written on the land once zoomed in.
+- `11d_parcels.py` (after `11c_land.py`): **owners' names for the private parcels beside the water**
+  (`parcels_data.js`, loaded by `map_land.js` once zoomed in to 13 with the land layer on). It takes every parcel on
+  the land layer's private land that touches a drawn stream or a lake's shore within 30 m, from the official parcel
+  layers in `scripts/parcel_sources.csv`: layers whose terms allow reuse, and official layers that publish owner names
+  openly with no reuse terms stated (the user's choice, 2026-11-25). Never one whose terms restrict or forbid reuse,
+  never a data broker. The servers are asked only for parcels near the water (an ArcGIS distance query along the
+  streams and lake shores, a cell at a time) and only for the owner fields. A name a source withholds by law shows as
+  withheld. Each popup gives the owner, the source and its date, and the county's official record; never a mailing
+  address. A source that can't be read leaves its counties without names (a NOTE), and its last good copy is used
+  offline. Each layer is on the credits page with its licence.
 - **Trout evidence** (`context/trout_evidence.gpkg`): in LA CDFW Heritage & Wild Trout Program surveys (trout found
   or not), CDFW stocking in the last 12 months and iNaturalist research-grade rainbow and brown trout sightings with
   an exact location; elsewhere each state's records (Study areas, above). A survey or stocking point counts for the

@@ -134,10 +134,12 @@ SOURCES = [
       hosts=("www2.census.gov",)),
     S("tigerweb", "lakes", "TIGERweb counties and towns", "U.S. Census Bureau", "https://tigerweb.geo.census.gov/",
       "The Census Bureau's map service of counties and towns.",
-      "New York's lake stocking lists name a town, not a place: a record goes to the lake of its name in that town.",
-      ["adk_*"], "No licence stated; the Census Bureau asks to be cited as the source.",
+      "The county of each piece of private land on the land-ownership layer, whose popup links to that county's parcel "
+      "viewer; and New York's lake stocking lists, which name a town, not a place: a record goes to the lake of its "
+      "name in that town.",
+      "all", "No licence stated; the Census Bureau asks to be cited as the source.",
       "https://www.census.gov/about/policies/citation.html", "U.S. Census Bureau, TIGERweb",
-      hosts=("tigerweb.geo.census.gov",)),
+      hosts=("tigerweb.geo.census.gov",), also=("land",)),
 
     # ---- summer flow ----
     S("tnc_flows", "flow", "California Natural Flows Database", "The Nature Conservancy",
@@ -526,12 +528,32 @@ SOURCES = [
       "U.S. Geological Survey", hosts=("services.arcgis.com/v01gqwM5QqNysAAi",)),
 
     # ---- land ----
-    S("padus", "land", "Protected Areas Database of the United States (PAD-US), public access",
+    S("padus", "land", "Protected Areas Database of the United States (PAD-US) 4.1",
       "U.S. Geological Survey Gap Analysis Project", "https://www.usgs.gov/programs/gap-analysis-project/science/pad-us-data-overview",
-      "Public lands and their owners, managers and public access.",
-      "Land with restricted or no public access (outside California), and the land and access around each lake.",
-      "all", PUBLIC_USGS, USGS_TERMS, "U.S. Geological Survey, PAD-US",
+      "Public lands, tribal land, land trusts' and other non-profits' land and conservation easements, with their "
+      "owners, managers, designations and public access. Its easements come mostly from the National Conservation "
+      "Easement Database (conservationeasement.us), which holds no landowner information and is kept in PAD-US since "
+      "2025.",
+      "The land-ownership layer (public, conservation or open, tribal and private land, with each holding's owner and "
+      "manager); land with restricted or no public access (outside California); and the land and access around each "
+      "lake.",
+      "all", PUBLIC_USGS, USGS_TERMS, "U.S. Geological Survey (USGS) Gap Analysis Project (GAP), Protected Areas "
+      "Database of the United States (PAD-US) 4.1, https://doi.org/10.5066/P96WBCHS",
+      note="The land-ownership layer shows the names PAD-US gives, private owners' and easements' included.",
       hosts=("services.arcgis.com/v01gqwM5QqNysAAi",), also=("lakes",)),
+    S("land_contacts", "land", "Land managers' and land trusts' own web pages", "Each agency, tribe and non-profit named",
+      "", "The website and main office phone each organization publishes on its own pages, read there by hand "
+      "(scripts/land_contacts.csv, with the day each was read).",
+      "Whom to ask about a piece of public, tribal or conservation land, in the land-ownership layer's popups.",
+      "all", "Each organization's own public contact details, linked to its own pages; nothing is copied from them "
+      "but a name, a web address and a phone number.", None, None, hosts=()),
+    S("parcel_viewers", "land", "County and state parcel viewers (links only)", "Each county's assessor or GIS office, "
+      "or its state", "", "The official online maps where a parcel's owner can be looked up "
+      "(scripts/county_viewers.csv).",
+      "The popups for private land link to the official parcel viewer of its county, at the spot where the viewer "
+      "allows it: the owner's full record is there. The maps read nothing from these viewers.",
+      "all", "Links only. Each viewer has its own terms; some restrict copying their data, which the maps don't do.",
+      None, None, hosts=()),
     S("cpad", "land", "California Protected Areas Database (CPAD)",
       "CPAD (www.calands.org), served by the California Natural Resources Agency",
       "https://www.calands.org/", "California's parks and open space, with their public access.",
@@ -617,6 +639,29 @@ SOURCES = [
       "https://github.com/plotly/plotly.js/blob/master/LICENSE",
       hosts=("cdn.jsdelivr.net/npm/plotly.js-dist-min@*", "cdn.jsdelivr.net/npm/pako@*")),
 ]
+
+
+def _parcel_layers():
+    """One entry per official parcel layer 11d_parcels.py reads for owners' names (scripts/parcel_sources.csv)."""
+    import csv
+    path = os.path.join(HERE, "parcel_sources.csv")
+    if not os.path.exists(path):
+        return []
+    with open(path, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(ln for ln in f if not ln.startswith("#")))
+    where = lambda u: re.sub(r"^https?://", "", u).split("/rest/")[0] if u else ""       # host and service folder
+    return [S("parcels_" + r["key"], "land", f"{r['name']} (owners' names)", r["publisher"], r["terms"] or r["url"],
+              "Parcel outlines with their owners' names, as the publisher gives them" +
+              (f", as of {r['as_of']}" if r["as_of"] else "") + ".",
+              "The owners' names of the private parcels beside the map's streams and lakes, in the land-ownership "
+              "layer, where each popup names this source and its date. Never a mailing address, phone or e-mail.",
+              tuple(m for m in r["maps"].split(";") if m), r["licence"][:1].upper() + r["licence"][1:] + ".",
+              r["terms"] or None, f"{r['publisher']}, {r['name']}",
+              hosts=tuple(h for h in (where(r["url"]), where(r["table"])) if h))
+            for r in rows]
+
+
+SOURCES += _parcel_layers()
 
 # The waterfall guides of data/known_falls_curated*.csv, by the name their `source` column gives (several joined by
 # " · "). card: a source with its own entry above, not repeated in the guides' list.
@@ -783,8 +828,8 @@ def _entry(key, name, sub, rows):
 
 def _card(s, keys):
     host = re.sub(r"^https?://(www\.)?", "", s["url"]).split("/")[0]
-    rows = [("Web", f'<a href="{html.escape(s["url"])}">{html.escape(host)}</a>'),
-            ("What it is", _text(s["what"])), ("On the maps", _text(s["use"]))]
+    rows = ([("Web", f'<a href="{html.escape(s["url"])}">{html.escape(host)}</a>')] if s["url"] else []) + [
+        ("What it is", _text(s["what"])), ("On the maps", _text(s["use"]))]     # (no single address: each its own)
     if s["group"] != "software":
         rows.append(("Maps", _maps(keys)))
     terms = _text(s["terms"]) + (f' <a href="{html.escape(s["terms_url"])}">Terms</a>' if s["terms_url"] else "")

@@ -11,7 +11,7 @@ $PY scripts/13_overview.py || exit 1
 for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; print(' '.join(config.AREAS))"); do
   [[ -f output/$a/stream_map.html ]] || continue
   mkdir -p phone/$a
-  for f in stream_map.html stream_map_3d.html map3d_data.js routes_data.js profiles.html profiles_data.js; do
+  for f in stream_map.html stream_map_3d.html map3d_data.js routes_data.js land_data.js parcels_data.js profiles.html profiles_data.js; do
     [[ -f output/$a/$f ]] && cp output/$a/$f phone/$a/$f
   done
   for d in output/$a/*/hillshade.png(N); do mkdir -p phone/$a/${d:h:t}; cp $d phone/$a/${d:h:t}/hillshade.png; done

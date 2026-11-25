@@ -1564,7 +1564,7 @@ m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_filter
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
     + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_routes.js")
-    + _page_file("map_drainages.js") + "</script>"))
+    + _page_file("map_drainages.js") + _page_file("map_land.js") + "</script>"))
 # the web app and its offline copy (weblib.py, web/offline.js: "Save for offline" in the layer panel)
 m.get_root().header.add_child(folium.Element(weblib.head("../")))
 
@@ -1854,6 +1854,12 @@ for name, label, style, fields in [
                        tooltip=folium.GeoJsonTooltip(fields[0], aliases=fields[1])).add_to(m)
         X3D[name] = gj(g.assign(tip=[" · ".join(str(v) for v in row if isinstance(v, str) and v)
                                      for row in g[fields[0]].itertuples(index=False)])[["tip", "geometry"]])
+# ---- land ownership (11c_land.py, 11d_parcels.py): public, conservation, tribal and private land, with owners'
+# names. Its pieces are in land_data.js and its parcels in parcels_data.js beside the page, which loads them when the
+# layer is turned on (map_land.js); here only the entry, and LBL.land that tells both pages the files are there
+if os.path.exists(f"{MAP_OUT}/land_data.js"):
+    LBL["land"] = "Land ownership"
+    folium.FeatureGroup(name=f"<span style='color:#e03131'>▨</span> {LBL['land']}", show=False).add_to(m)
 gauges = ctx("gauges")
 if gauges is not None and len(gauges):
     gcol = {"much below normal": "#c92a2a", "below normal": "#f76707", "normal": "#2b8a3e", "above normal": "#1c7ed6",
@@ -1953,6 +1959,7 @@ Fullscreen(position="topleft").add_to(m)
 class InitDrainages(MacroElement):
     _template = Template("""{% macro script(this, kwargs) %}
 initDrainageMap({{ this._parent.get_name() }}, {{ this.ctrl }});
+if (window.landLeaflet) landLeaflet({{ this._parent.get_name() }}, {{ this.ctrl }});
 if (window.StreamsOffline) StreamsOffline.map2d({{ this._parent.get_name() }}, {{ this.ctrl }});
 {% endmacro %}""")
     def __init__(self, ctrl):
@@ -2029,7 +2036,8 @@ page3d = weblib.localize(page3d.replace("<!--webapp-->", weblib.head("../")), ".
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
     f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
                            + ");</script>\n<script>" + _page_file("map_score.js") + "</script>\n<script>"
-                           + _page_file("layer_order.js") + "</script>\n<script>" + _page_file("map_routes.js") + "</script>"))
+                           + _page_file("layer_order.js") + "</script>\n<script>" + _page_file("map_routes.js") + "</script>\n<script>"
+                           + _page_file("map_land.js") + "</script>"))
 
 print("streams", len(s_ll), "| drops", len(kp_ll))
 print(kp_ll.groupby(["region", "status"]).size().unstack(fill_value=0).to_string())

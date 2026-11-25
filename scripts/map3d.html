@@ -261,7 +261,11 @@
       paint: {"line-color": "#3d4651", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1, 13, 2], "line-opacity": 0.6}});
 
     // overlays that sit under the streams
-    const ov = [];   // [id, label, symbol, layer ids, visible]
+    const ov = [];   // [id, label, symbol, layer ids, visible, called with on / off when switched]
+    // land ownership under the other land layers (map_land.js: 11c_land.py's land_data.js and 11d_parcels.py's
+    // parcels_data.js, loaded on first use)
+    const land = window.landMaplibre ? landMaplibre(map, D) : null;
+    if (land) ov.push(["land", D.lbl.land, "<span style='color:#e03131'>▨</span>", land.ids, false, land.shown]);
     if (D.fires) {
       src("fires", D.fires);
       map.addLayer({id: "fires", type: "fill", source: "fires", layout: {visibility: "none"},
@@ -670,6 +674,7 @@
       o[3].forEach(l => map.setLayoutProperty(l, "visibility", cb.checked ? "visible" : "none"));
       if (o[0] === "streams") map.setLayoutProperty("creek-names", "visibility", cb.checked ? "visible" : "none");
       if (o[0] === "lakes") lakeFilter(cb.checked);
+      if (o[5]) o[5](cb.checked);
     };
     const members = gb => [...gb.closest(".grp").querySelectorAll("input[data-o]")];
     const syncGroups = () => document.querySelectorAll("input[data-g]").forEach(gb => {
@@ -742,7 +747,7 @@
     const routes = window.routesMaplibre ? routesMaplibre(map, D) : null;   // a reach's route (map_routes.js)
     const tip = new maplibregl.Popup({closeButton: false, closeOnClick: false, className: "tip", offset: 12, maxWidth: "300px"});
     const hoverIds = ["poi-trailhead", "poi-parking", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "lakes", "lake-depth", "wild_trout_waters", "wilderness",
-                      "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i)]
+                      "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i), "land", "land-p", "parcels-f"]
       .filter(id => map.getLayer(id));
     const tipHtml = (id, p) => {
       if (id === "streams") return `<b>${esc(p.n || "Unnamed creek")}</b><div class="dw">${where(p)}</div>Order ${p.o} · ${SQMI(p.a)} · ${esc(p.fl)} · fish ${p.fs}`;
@@ -787,6 +792,8 @@
              (why && why.toLowerCase() !== lab.toLowerCase() && p.b !== "unknown" ? ` <span class="dm">(${esc(why)})</span>` : "") +
              (p.mtb ? ` · MTB difficulty S${esc(p.mtb)}` : "");
          })()].filter(Boolean).join("<br>");
+      if (id === "land" || id === "land-p") return window.landTip ? landTip(p) : "";
+      if (id === "parcels-f") return window.landParcelTip ? landParcelTip(p) : "";
       if (id === "pct-core") return `<b>${esc((D.lbl || {}).long_trail || "Pacific Crest Trail")}</b><div class="dw">${esc(p.label)}</div>`;
       return esc(p.tip);
     };
@@ -913,7 +920,7 @@
       if (f.layer.id === "lake-depth") f = map.queryRenderedFeatures(e.point, {layers: ["lakes"]})[0] || f;
       const p = f.properties, id = f.layer.id;
       // drop and gauge popups are HTML built by 06_map.py from our own data
-      const html = id === "streams" ? streamPop(p) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
+      const html = id === "streams" ? streamPop(p) : (id === "land" || id === "land-p") ? landPopup(p, e.lngLat.lat, e.lngLat.lng) : id === "parcels-f" ? landParcelPopup(p, e.lngLat.lat, e.lngLat.lng) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
       if (!narrow()) {
