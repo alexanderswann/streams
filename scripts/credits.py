@@ -104,6 +104,15 @@ SOURCES = [
       "and outside California the summer flow estimate (EROM's mean flow, scaled by this area's gauges).",
       "all", "Public domain (USGS and EPA data); USGS asks to be credited.", USGS_TERMS,
       hosts=("api.water.usgs.gov",), also=("flow",)),
+    S("wbd", "streams", "Watershed Boundary Dataset (WBD)",
+      "U.S. Geological Survey and USDA Natural Resources Conservation Service",
+      "https://www.usgs.gov/national-hydrography/watershed-boundary-dataset",
+      "The national map of hydrologic units, the land that drains to each part of the stream network, nested from "
+      "large regions down to small watersheds.",
+      "Which of NHD's downloads each map reads: NHD comes in 4-digit hydrologic units, and a map reads those whose "
+      "outlines meet its boxes.",
+      "all", PUBLIC_USGS, USGS_TERMS, "U.S. Geological Survey, Watershed Boundary Dataset",
+      hosts=("hydro.nationalmap.gov/arcgis/rest/services/wbd",)),
     S("tiger", "streams", "TIGER/Line state outlines (2024)", "U.S. Census Bureau",
       "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
       "The Census Bureau's boundaries of the states.",
