@@ -1084,9 +1084,12 @@ if not os.path.exists(osm_wp) or time.time() - os.path.getmtime(osm_wp) > 7 * 86
                          ).to_crs(CRS).to_file(osm_wp + ".tmp.gpkg", driver="GPKG")
         os.replace(osm_wp + ".tmp.gpkg", osm_wp)
     netfetch.keep_old(osm_wp, osm_names, f"OSM stream names ({REGION})")
+osm_vote = np.full(len(s), None, dtype=object)    # OSM's name at each reach (the vote), whatever names it on the map
 if os.path.exists(osm_wp):
     nhd_named = s["name"].notna().sum()
-    s["name"] = s["name"].fillna(vote(gpd.read_file(osm_wp).to_crs(CRS), "name"))
+    _ov = vote(gpd.read_file(osm_wp).to_crs(CRS), "name").reindex(s.index)
+    osm_vote = _ov.to_numpy(object)
+    s["name"] = s["name"].fillna(_ov)
     print(f"names: NHD {nhd_named}, OpenStreetMap {s['name'].notna().sum() - nhd_named} more, of {len(s)} links")
 
 # A reach between two reaches of one river (its largest upstream reach and the reach below, passing over unnamed reaches)
@@ -1170,6 +1173,15 @@ print(f"names along rivers: {len(renamed)} reaches take the river's name "
 #   reach's drainage in river_km2): 05b_flow.py gives it the river's flow evidence, scoring.py the river's size, and
 #   the maps call it a side channel;
 # - else it is the lower end of a creek with no name, and has none.
+# The river is found by the name OSM gives it as well: a reach named after a stream SIDE_RATIO times bigger beside it,
+# whose own reaches NHD names another way, where OSM's name for those reaches (its vote there) is this reach's name.
+# Big Tujunga Creek in NHD is "Big Tujunga River" in OSM, and a 0.8 km2 creek end beside it took OSM's name once the
+# river's reach had NHD's (2026-11-25). Such a reach is judged as one of the river's, by the river's name, and a side
+# channel takes that name. Not where NHD itself gives a line near the reach its name: that is the creek's own name
+# (Peachtree Creek in the Smokies lies on NHD's Peachtree Creek all along, beside a river reach OSM's vote calls
+# Peachtree Creek too). And found this way, it is a side channel only where it lies on NHD's lines of the river
+# (SIDE_ON_RIVER of it within SIDE_ON_M), not where only its stem runs within 150 m of them: a 2 km2 creek end in Big
+# Tujunga Creek's wash read the river's size and flow, mostly dry at fish 2 -> year-round at 79.
 # Decided on the names as they stand here, so nothing is renamed back and forth.
 names0 = s["name"].to_numpy(object)
 is_named = np.array([isinstance(n, str) for n in names0])
@@ -1192,54 +1204,79 @@ def river_zone(river, d=150.0):
     return _zone[river, d]
 SIDE_ON_M = 30.0        # a reach this near NHD's lines of a river lies on the river's own channel (11_context.py reads
                         # a designated stream's line within 30 m of a reach, too)
-new_name, side, by_line = {}, {}, []
+new_name, side, by_line, side_name, by_osm, osm_lost = {}, {}, [], {}, [], {}
+_nk_tree, _nk_name = shapely.STRtree(nhd_k.geometry.values), nhd_k.gnis_name.to_numpy(object)
+def _nhd_named_near(n, g):
+    """Whether NHD gives a line within SIDE_NEAR_M of g the name n."""
+    k_ = _nk_tree.query(g, predicate="dwithin", distance=SIDE_NEAR_M)
+    return bool((_nk_name[k_] == n).any())
 for i in (np.flatnonzero(is_named & ~in_water) if big_tree is not None else []):
     near = big[big_tree.query(geoms[i].buffer(SIDE_NEAR_M))]
-    sib = near[(names0[near] == names0[i]) & (full_km2[near] >= SIDE_RATIO * full_km2[i])]
-    if not len(sib):
-        continue
+    ni = names0[i]                                        # the river's name, as its own reaches carry it
+    sib = near[(names0[near] == ni) & (full_km2[near] >= SIDE_RATIO * full_km2[i])]
+    if not len(sib):                                      # ... or OSM's spelling of it (above)
+        if _nhd_named_near(ni, geoms[i]):                 # a name NHD gives a line near it is the creek's own
+            continue
+        alt = near[(osm_vote[near] == ni) & (names0[near] != ni) & (full_km2[near] >= SIDE_RATIO * full_km2[i])]
+        if not len(alt):
+            continue
+        ni = names0[alt[int(np.argmax(full_km2[alt]))]]
+        sib = alt[names0[alt] == ni]
     beside = shapely.union_all(shapely.buffer(geoms[sib], SIDE_NEAR_M))
     if geoms[i].intersection(beside).length < SIDE_ALONG * geoms[i].length:
         continue
+    osm_i = ni != names0[i]
+    if osm_i:
+        by_osm.append(i)
     j, other = stem_up[i], None
     for _ in range(6):
-        if j < 0 or (names0[j] == names0[i] and full_km2[j] >= SIDE_RATIO * full_km2[i]):
+        if j < 0 or (names0[j] in (ni, names0[i]) and full_km2[j] >= SIDE_RATIO * full_km2[i]):
             break                                 # the head, or the river itself comes in above
-        if isinstance(names0[j], str) and names0[j] != names0[i]:
+        if isinstance(names0[j], str) and names0[j] not in (ni, names0[i]):
             other = j
             break
         j = stem_up[j]
     if other is not None and full_km2[i] <= 3 * full_km2[other]:
         new_name[i] = names0[other]
         continue
-    zone, tot, inn, j = river_zone(names0[i]), 0.0, 0.0, i
+    zone, tot, inn, j = river_zone(ni), 0.0, 0.0, i
     for _ in range(30):
         if j < 0:
             break
         tot += geoms[j].length
         inn += geoms[j].intersection(zone).length if zone is not None else 0.0
         j = stem_up[j]
-    on = river_zone(names0[i], SIDE_ON_M)                 # NHD maps this channel itself as the river
+    on = river_zone(ni, SIDE_ON_M)                        # NHD maps this channel itself as the river
     on_line = on is not None and geoms[i].intersection(on).length >= SIDE_ON_RIVER * geoms[i].length
-    if on_line or inn >= SIDE_ON_RIVER * tot:
-        side[i] = sib[int(np.argmax(full_km2[sib]))]
+    if on_line or (inn >= SIDE_ON_RIVER * tot and not osm_i):     # by OSM's spelling: on the river's own line only
+        side[i], side_name[i] = sib[int(np.argmax(full_km2[sib]))], ni
+        if ni != names0[i]:
+            new_name[i] = ni                              # a side channel takes the river's own name
         if inn < SIDE_ON_RIVER * tot:
             by_line.append(i)
     else:
         new_name[i] = None
+        if osm_i:
+            osm_lost[i] = ni                              # a lake's second outlet may take it back (below)
 s["name"] = [new_name.get(i, n) for i, n in enumerate(names0)]
-s["side_of"] = [names0[i] if i in side else None for i in range(len(s))]
+s["side_of"] = [side_name[i] if i in side else None for i in range(len(s))]
 s["side_row"] = [side.get(i, -1) for i in range(len(s))]        # the river reach beside it (its row; a sid below)
 s["river_km2"] = [round(float(full_km2[side[i]]), 2) if i in side else np.nan for i in range(len(s))]
 s["cut_row"] = np.where(_first, np.arange(len(s)) + 1, -1)      # a first stretch below a lake: the rest of its line
-print(f"small reaches named after the river beside them: {sum(v is not None for v in new_name.values())} take the name of "
+print(f"small reaches named after the river beside them: "
+      f"{sum(v is not None and i not in side for i, v in new_name.items())} take the name of "
       f"the creek they end, {sum(v is None for v in new_name.values())} end an unnamed creek and lose the name, "
       f"{len(side)} are side channels of the river ({len(by_line)} on NHD's own lines of the river though the stem up "
-      f"leaves it, {sum(geoms[i].length for i in by_line) / 1000:.2f} km)")
+      f"leaves it, {sum(geoms[i].length for i in by_line) / 1000:.2f} km); {len(by_osm)} by OSM's name for the river")
 # A lake's second outlet (kept above: side_n) is a side channel of the creek its lake's outlet starts, the first creek
 # piece on the D8 way from the first cell below the outlet ("main"): like a river's side channel it takes that reach's
 # flow evidence (05b_flow.py) and size (scoring.py, river_km2), and its lake share for the water temperature
 # (watertemp.py). side_lake names the lake for the maps. A piece of its way lying in a lake is lake water.
+# A second outlet that OSM names after that creek in its own spelling (osm_lost above: the river-beside rule found the
+# creek by OSM's name and, the piece lying off the creek's own line, took the name away) is the creek's side channel
+# and takes the creek's NHD name, as a river's side channel does: Ballouville Pond's second outlet beside the
+# Fivemile River, "Five Mile River" in OSM, lost the name and with it the river's stocking and survey records, fish
+# 82 -> 69 (2026-11-25).
 side_lake = np.full(len(s), None, object)
 if sides:
     cell_piece = {}
@@ -1254,6 +1291,7 @@ if sides:
     sn_ = s["side_n"].to_numpy(int)
     side_of_, side_row_ = s["side_of"].to_numpy(object).copy(), s["side_row"].to_numpy(int).copy()
     river_ = s["river_km2"].to_numpy(float).copy()
+    nm2_ = s["name"].to_numpy(object).copy()
     told = []
     for n_, e in enumerate(sides):
         rows = np.flatnonzero((sn_ == n_) & ~in_water)
@@ -1279,10 +1317,14 @@ if sides:
                 other = float(src_.read(1, window=rasterio.windows.Window(c_, r_, 1, 1))[0, 0])
                 other += float(crossbox.carried_km2(e["main_box"])[r_ * src_.width + c_])
         side_lake[rows], side_of_[rows], side_row_[rows] = e["lake"], None, main
+        if main >= 0:
+            for r_ in rows:
+                if osm_lost.get(r_) is not None and osm_lost[r_] == nm2_[main]:
+                    nm2_[r_] = nm2_[main]
         river_[rows] = round(float(full_km2[main]), 2) if main >= 0 else round(other, 2)
         told.append(f"{e['lake']} ({s.length.values[rows].sum():.0f} m, beside "
                     + (f"{full_km2[main]:.1f} km2" if main >= 0 else f"{other:.1f} km2 in {e.get('main_box')}") + ")")
-    s["side_of"], s["side_row"], s["river_km2"] = side_of_, side_row_, river_
+    s["side_of"], s["side_row"], s["river_km2"], s["name"] = side_of_, side_row_, river_, nm2_
     print(f"second outlets drawn as side channels of their lake's outlet creek: {len(told)}: " + ", ".join(told))
 s["side_lake"] = side_lake
 s = s.drop(columns="side_n")
