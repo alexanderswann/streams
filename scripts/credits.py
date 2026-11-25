@@ -168,9 +168,13 @@ SOURCES = [
       hosts=("flow-api.codefornature.org",), accessed=("la/_shared/flow/natural_flows.csv",), odbl=True),
     S("usgs_water", "flow", "Stream gauges (USGS Water Data APIs)", "U.S. Geological Survey",
       "https://waterdata.usgs.gov/",
-      "Daily and current streamflow at USGS gauges.",
+      "Daily and current streamflow, gauge height and water temperature at USGS gauges, with the daily statistics "
+      "for each date.",
       "Checks and scales the summer flow (outside California a year's gauge records scale NHDPlus's mean flows), "
-      "marks creeks whose own gauge runs dry, and the gauges layer: today's reading against the usual for the date.",
+      "marks creeks whose own gauge runs dry, and the gauges layer: today's reading against the usual for the date. "
+      "A tap on a gauge asks USGS from your own browser for its latest flow, gauge height and water temperature "
+      "(provisional data, subject to revision), for the popup, the trout calendar's \"now\" and My Waters, the "
+      "gauges you follow (kept on your device only).",
       "all", "Public domain for the most part (USGS); USGS asks to be credited.", USGS_TERMS,
       "U.S. Geological Survey, Water Data for the Nation",
       hosts=("api.waterdata.usgs.gov", "waterdata.usgs.gov")),

@@ -198,11 +198,15 @@
     : c.T <= 9 ? "fish late morning into the afternoon, when it is warmest"
     : c.e >= 0.45 ? "best in low light: early, late or on a cloudy day" : "good all day";
 
-  function detail(cal, h, nowH) {
+  // g: the USGS gauge on the reach's creek (06_map.py: p.g); under "now" its latest reading, beside the flow's note
+  // (map_gauges.js fills the line when the popup opens)
+  function detail(cal, h, nowH, g) {
     const c = cal[h], [, w] = why(c), [lab] = cls(c);
     const line = xs => { const s = xs.filter(Boolean).map(esc).join(" · "); return s && s[0].toUpperCase() + s.slice(1); };
     return `<b>${h === nowH ? "Now, " : ""}${hName(h)}</b>: ${lab} (${c.score})` + (w ? ` · ${w}` : "") +
-      `<div>${line([water(c), flowWords(c)])}</div><div>${line([clarWords(c), oxyWords(c), hatchWords(c)])}</div>` +
+      `<div>${line([water(c), flowWords(c)])}</div>` +
+      (h === nowH && g && window.gaugeLive ? `<div class="glc" data-gauge-now="${esc(g)}"></div>` : "") +
+      `<div>${line([clarWords(c), oxyWords(c), hatchWords(c)])}</div>` +
       `<div>${esc(sunWords(c))} · <i>${esc(todWords(c))}</i></div>` +
       `<div class="cdm calk">Darker = better · tap a half-month · conditions only, not legal seasons</div>`;
   }
@@ -240,7 +244,7 @@
     const cal = calendar(p);
     if (!cal) return "";
     const key = ++seq, nowH = now();
-    kept[key] = {cal, nowH};
+    kept[key] = {cal, nowH, g: p.g};
     const cells = cal.map(c => { const [lab, q] = cls(c);
       return `<i class="${q}${c.h === nowH ? " now sel" : ""}" title="${hName(c.h)}: ${lab} ${c.score}"></i>`; }).join("");
     const [best, worst] = summary(cal);
@@ -248,7 +252,7 @@
       `<div class="cal" data-k="${key}" onclick="calTap(event,this)"><div class="cals">${cells}</div>` +
       `<div class="calm">${MON.map(m => `<span>${m[0]}</span>`).join("")}</div></div>` +
       (worst ? `<div class="calw"><span class="calt">Worst</span> ${worst}</div>` : "") +
-      `<div class="cald">${detail(cal, nowH, nowH)}</div></td></tr>`;
+      `<div class="cald">${detail(cal, nowH, nowH, p.g)}</div></td></tr>`;
   };
   // a tap on the row: the half-month under the finger, its reasons below. The calendar is marked as tapped and the
   // pages re-place the popup ("fs-toggle"): on a phone they keep it in view whole, as they do the fish score's open
@@ -259,7 +263,7 @@
     const r = strip.getBoundingClientRect(), h = Math.min(23, Math.max(0, Math.floor((ev.clientX - r.left) / r.width * 24)));
     strip.querySelectorAll("i").forEach((c, i) => c.classList.toggle("sel", i === h));
     const box = el.parentNode.querySelector(".cald");
-    if (box) box.innerHTML = detail(k.cal, h, k.nowH);
+    if (box) { box.innerHTML = detail(k.cal, h, k.nowH, k.g); if (window.gaugeLive) gaugeLive.fill(box); }
     el.parentNode.classList.add("tapped");
     ev.stopPropagation();
     document.dispatchEvent(new CustomEvent("fs-toggle", {detail: el}));

@@ -214,6 +214,7 @@
   map.addControl(new maplibregl.ScaleControl({unit: "imperial"}), "bottom-right");
 
   let mode = "d", focus = null;
+  let openAt = null;   // opens a feature's popup (wireInteraction)
   let calH = null;     // the half-month the fish colours are for (the trout calendar's "When"; null: any time)
   const focusMul =() => focus ? ["case", ["==", ["get", "d"], focus], 1, 0.1] : 1;
   // the same for the streams unlike the reach whose "Similar streams" is on (map_specs.js): x dimTo
@@ -534,6 +535,39 @@
     wireInteraction();
     restyle();
     go();
+    // live gauge readings and My Waters (map_gauges.js): the ★ button under "my location"; a gauge of this map shown by
+    // its popup; its dot takes the colour of the newest reading the phone has
+    if (window.gaugeLive) {
+      const gIdx = new Map();
+      ((D.gauges || {}).features || []).forEach(f => { const m = /data-gauge=['"](\d+)/.exec(f.properties.html || ""); if (m) gIdx.set(m[1], f); });
+      let gFrame = 0;
+      gaugeLive.mount({kind: "3d", host: map.getContainer(),
+        place: btn => {
+          const box = document.createElement("div");
+          box.className = "maplibregl-ctrl maplibregl-ctrl-group";
+          box.appendChild(btn);
+          map.addControl({onAdd: () => box, onRemove: () => box.remove()}, "top-left");
+          return box;
+        },
+        show: s => {
+          const f = gIdx.get(s), cb = document.querySelector('input[data-o="gauges"]');
+          if (!f) return;
+          if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event("change", {bubbles: true})); }
+          const ll = f.geometry.coordinates;
+          let done = false;
+          const pop = () => { if (done) return; done = true; if (openAt) openAt(new maplibregl.LngLat(ll[0], ll[1]), map.project(ll), "gauges", f.properties); };
+          map.once("moveend", pop);
+          setTimeout(pop, 1500);
+          map.easeTo({center: ll, zoom: Math.max(map.getZoom(), 12), duration: 700});
+        },
+        recolor: (s, c) => {
+          const f = gIdx.get(s);
+          if (!f || f.properties.c === c) return;
+          f.properties.c = c;
+          cancelAnimationFrame(gFrame);
+          gFrame = requestAnimationFrame(() => { const src = map.getSource("gauges"); if (src) src.setData(D.gauges); });
+        }});
+    }
     // offline use (offline.js): "Offline use" in this panel; with no connection the saved topo, no Esri layers
     if (window.StreamsOffline) StreamsOffline.map3d(map, {host: document.querySelector("#layers .pb"),
       setBase: k => { const r = document.querySelector(`input[name=base][value="${k}"]`);
@@ -933,31 +967,39 @@
       if (!popped.getElement().querySelector(".fsr.open")) unfold(false);
       place();
     });
+    // a popup whose content grew after it opened (map_gauges.js: a gauge's reading came in): placed again on a phone
+    document.addEventListener("popup-grow", () => { if (narrow() && popped && popped.isOpen()) place(); });
     map.on("click", e => {
       let f = map.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], {layers: hoverIds})[0];
       if (!f) return;
       // a depth contour opens its lake's popup when the lakes are shown: over a deep lake the lines cover much of it
       if (f.layer.id === "lake-depth") f = map.queryRenderedFeatures(e.point, {layers: ["lakes"]})[0] || f;
-      const p = f.properties, id = f.layer.id;
+      openAt(e.lngLat, e.point, f.layer.id, f.properties, f.id);
+    });
+    // a feature's popup at a point of the map (point: where it is on the screen); live gauge readings and the trout
+    // calendar's gauge line are filled in as it opens (map_gauges.js)
+    openAt = (lngLat, point, id, p, fid) => {
       // drop and gauge popups are HTML built by 06_map.py from our own data
-      const html = id === "streams" ? streamPop(p) : (id === "land" || id === "land-p") ? landPopup(p, e.lngLat.lat, e.lngLat.lng) : id === "parcels-f" ? landParcelPopup(p, e.lngLat.lat, e.lngLat.lng) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
+      const html = id === "streams" ? streamPop(p) : (id === "land" || id === "land-p") ? landPopup(p, lngLat.lat, lngLat.lng) : id === "parcels-f" ? landParcelPopup(p, lngLat.lat, lngLat.lng) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
         : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
       tip.remove();
       if (!narrow()) {
-        const pd = new maplibregl.Popup({maxWidth: "340px"}).setLngLat(e.lngLat).setHTML(html).addTo(map);
+        const pd = new maplibregl.Popup({maxWidth: "340px"}).setLngLat(lngLat).setHTML(html).addTo(map);
         if (id === "streams") streamPopup = pd;
-        if (routes && id === "streams") routes.show(f.id, pd);
+        if (routes && id === "streams") routes.show(fid, pd);
+        if (window.gaugeLive) gaugeLive.fill(pd.getElement());
         return;
       }
       folded.forEach(x => { x[1] = true; });  // a popup opened in place of another keeps the panels folded for that one
       const pop = popped = new maplibregl.Popup({maxWidth: (window.innerWidth - 16) + "px",
-                                     anchor: e.point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
-        .setLngLat(e.lngLat).setHTML(html).addTo(map);
+                                     anchor: point.y < map.getContainer().clientHeight / 2 ? "top" : "bottom"})
+        .setLngLat(lngLat).setHTML(html).addTo(map);
       pop.on("close", () => { if (popped === pop) { popped = null; unfold(true); } });
       if (id === "streams") streamPopup = pop;
-      if (routes && id === "streams") routes.show(f.id, pop);
+      if (routes && id === "streams") routes.show(fid, pop);
+      if (window.gaugeLive) gaugeLive.fill(pop.getElement());
       place();
-    });
+    };
     // keep the 2D link pointed at the current view, with the layers that are on (layerPart, buildLayerPanel)
     const to2d = document.getElementById("to2d");
     const sync = () => { const c = map.getCenter();

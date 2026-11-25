@@ -179,4 +179,11 @@ function keepPopupsClear(map) {
     if (el && !el.querySelector(".fsr.open")) unfold(false);
     clear();
   });
+  // a popup whose content changed after it opened (map_gauges.js: a gauge's reading came in): Leaflet lays it out and
+  // pans it into view again (its own update() would put back the content it opened with), then it is kept clear
+  document.addEventListener("popup-grow", () => {
+    if (!open || !open.isOpen()) return;
+    if (open._updateLayout) { open._updateLayout(); open._updatePosition(); open._adjustPan(); }
+    clear();
+  });
 }

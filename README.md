@@ -604,6 +604,24 @@ may be overgrown or gated". Road and trail downloads are cached for a week (`REF
   2026-11-24). The routes of a map are in `routes_data.js`, loaded on the first tap. A reach drawn in pieces (cut at a
   pond) or a stretch drawn for another reach shows its reach's route, and a reach in a lake is reached at the shore.
 
+- **Live gauge readings and My Waters** (the user, 2026-11-25, from onWater's "My Waters"; `map_gauges.js`, in both
+  maps). A tap on a USGS gauge shows its latest flow (cfs), gauge height (ft) and water temperature (°F), as far as the
+  gauge reports them, with the reading's time and how the flow compares with the usual for the date: the visitor's own
+  browser asks the USGS Water Data API (`latest-continuous`, and once a day per gauge the Statistics API's percentiles,
+  read as `11_context.py` reads them). Both answer any web site (CORS); no key is sent (keyless requests count against
+  the visitor's own connection; the project's key is for builds only and never goes in a page). The phone keeps every
+  reading it gets (localStorage): with no connection, or when USGS doesn't answer, a popup shows the newer of the last
+  reading the phone saw and the build's (`LBL.gauge_list`), and says which and from when; a value the gauge didn't send
+  shows USGS's reason (ice, equipment...). A saved area (Offline, as an app) keeps its gauges' readings: fetched as it
+  is saved, and again when it is opened with a connection and they are over 30 minutes old. A gauge's icon takes the
+  colour of the newest reading the phone has. **My Waters:** "☆ Add to My Waters" in a gauge's popup; a name, an ideal
+  flow range and, if wanted, a gauge-height range; green inside, red outside, grey with no range or no reading; kept on
+  the device only, no account, one list for all maps; the ★ button under the map's buttons (there once the list has a
+  gauge) opens it, and "Show on map" goes to the gauge (`#lat,lon,zoom&on=gauges&gauge=<site>` opens its popup). The
+  trout calendar's "now" on a reach with a USGS gauge on its creek (`05b_flow.py`'s `gauge_site`, stream property `g`)
+  shows the gauge's reading under the flow note. LA's two CDEC gauges keep the build's reading (CDEC answers no other
+  site). In an iPhone's Home Screen app the list is the app's own, apart from Safari's.
+
 `07_road_closures.py` (per area) fetches **current road closures**: active now or starting in the next 7 days, in
 mountain terrain (≥150 m of relief within 1 km; park roads wherever they are). Run it, then `06_map.py`, for fresh
 closures; the layer name shows when they were fetched. Sources, all keyless:

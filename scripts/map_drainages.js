@@ -868,4 +868,41 @@ function initDrainageMap(map, ctrl) {
   if (!go()) map.fitBounds(L.geoJSON(window.DIVIDES).getBounds(), {padding: [10, 10], animate: false});
   window.addEventListener("hashchange", go);
   sync3d();
+
+  // ---- live gauge readings and My Waters (map_gauges.js): every popup that opens is filled (a gauge's reading, the
+  // trout calendar's "now" at a reach's gauge); the ★ button sits under "my location"; a gauge is found by its marker,
+  // whose icon takes the colour of the newest reading the phone has
+  if (window.gaugeLive) {
+    map.on("popupopen", e => gaugeLive.fill(e.popup.getElement()));
+    const gEntry = () => ctrl._layers.find(o => o.overlay && keyOf(o) === "gauges");
+    const gMarks = new Map();
+    const ge = gEntry();
+    if (ge && ge.layer.getLayers) ge.layer.getLayers().forEach(mk => {
+      const pc = mk.getPopup && mk.getPopup() && mk.getPopup().getContent();
+      const mm = /data-gauge=['"](\d+)/.exec(typeof pc === "string" ? pc : pc && pc.innerHTML || "");
+      if (mm) gMarks.set(mm[1], mk);
+    });
+    gaugeLive.mount({kind: "2d", host: map.getContainer(),
+      shield: el => { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); },
+      place: btn => {
+        const c = L.control({position: "topleft"});
+        c.onAdd = () => { const b = L.DomUtil.create("div", "leaflet-bar leaflet-control"); b.appendChild(btn);
+                          L.DomEvent.disableClickPropagation(b); return b; };
+        c.addTo(map);
+        return c.getContainer();
+      },
+      show: s => {
+        const mk = gMarks.get(s), g = gEntry();
+        if (!mk) return;
+        if (g && !map.hasLayer(g.layer)) map.addLayer(g.layer);
+        map.setView(mk.getLatLng(), Math.max(map.getZoom(), 13), {animate: false});
+        mk.openPopup();
+      },
+      recolor: (s, c) => {
+        const mk = gMarks.get(s), ic = mk && mk.options.icon;
+        if (!ic || !ic.options || typeof ic.options.html !== "string") return;
+        const html = ic.options.html.replace(/fill="#[0-9a-fA-F]{3,8}"/, `fill="${c}"`);
+        if (html !== ic.options.html) mk.setIcon(L.divIcon(Object.assign({}, ic.options, {html})));
+      }});
+  }
 }

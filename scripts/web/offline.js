@@ -174,6 +174,8 @@
     await putMeta("area", key, {area: key, label: label || L.label || key, version: L.version, saved: new Date().toISOString(),
                                 bytes, files: Object.fromEntries(wanted(key, L).map(([u, , h]) => [u, h]))});
     await sweep();
+    // the area's gauges' latest readings are kept with it (map_gauges.js fetches them on this)
+    document.dispatchEvent(new CustomEvent("streams-saved", {detail: {area: key}}));
     return {bytes, fetched: total};
   }
   // drop saved files no saved area lists any more (an area removed, or a library a newer site no longer uses)
@@ -736,5 +738,6 @@
   }
 
   window.StreamsOffline = {map2d, map3d, overview, page, check, onNet, test: setTest, root: ROOT, area: areaKey,
-                           net: () => net.on, canSave: CAN};
+                           net: () => net.on, canSave: CAN,
+                           saved: async key => !!(CAN && await getMeta("area", key || areaKey))};   // (map_gauges.js)
 })();

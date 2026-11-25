@@ -1375,6 +1375,19 @@ props = pd.DataFrame({
     "y": mid_ll.y.round(5), "x": mid_ll.x.round(5),
     "np": no_prof})                               # no long profile here: the popup gives no profile link (above)
 props["_lk"] = s_show.lk_.values
+# A reach with a USGS gauge on its creek (05b_flow.py's gauge_site: the nearest gauge on its own creek's line within 4
+# km, of about its drainage), where that gauge is on this map's gauges layer, carries its site: the trout calendar's
+# "now" shows that gauge's latest reading (map_gauges.js). Read as text: attach() reads the tables as numbers, which
+# drops the site numbers' leading zeros.
+_glive = set() if ctx("gauges") is None else {str(s_) for s_ in ctx("gauges").site if not str(s_).startswith("CDEC")}
+_gsite = {}
+for d_ in dirs:
+    if os.path.exists(f"{d_}/flow_streams.csv"):
+        _t = pd.read_csv(f"{d_}/flow_streams.csv", usecols=lambda c_: c_ in ("sid", "gauge_site"), dtype={"gauge_site": str})
+        if "gauge_site" in _t:
+            _gsite.update(zip(_t.sid, _t.gauge_site))
+props["g"] = [g_ if isinstance(g_, str) and g_ in _glive else None for g_ in map(_gsite.get, s_show.sid.values)]
+print(f"reaches with a live gauge on their creek: {props.g.notna().sum():,} ({len({g_ for g_ in props.g if g_}):,} gauges)")
 # The trout calendar (troutcal.py; 11b_calendar.py makes its files): each reach's horizon and, where it isn't the map's,
 # its time zone (cz), and the area's tables in LBL["cal"]; map_calendar.js works it out in the popups
 import troutcal
@@ -1647,6 +1660,8 @@ _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
 m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_filter.js") + "</script>"))
 # the specs line in the stream popups and "Similar streams" (map_specs.js), on the 3D page too (below)
 m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_specs.js") + "</script>"))
+# live gauge readings and My Waters (map_gauges.js), on the 3D page too (below)
+m.get_root().header.add_child(folium.Element("<script>" + _page_file("map_gauges.js") + "</script>"))
 m.get_root().header.add_child(folium.Element(
     "<style>" + _page_file("map_style.css") + _page_file("map_phone.css") + "</style>\n<script>"
     + _page_file("map_phone.js") + _page_file("map_score.js") + _page_file("layer_order.js") + _page_file("map_routes.js")
@@ -1659,7 +1674,7 @@ X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
        "streams_lake": json.loads(s_feat_lake.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
        "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
 for f_ in X3D["streams"]["features"] + X3D["streams_lake"]["features"]:
-    for k_ in ("np", "q", "le", "sp"):            # "np" and "sp" only where set, the specs where known (above)
+    for k_ in ("np", "q", "le", "sp", "g"):       # "np", "sp" and "g" only where set, the specs where known (above)
         if f_["properties"].get(k_) is None:
             f_["properties"].pop(k_, None)
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))
@@ -1955,22 +1970,44 @@ if gauges is not None and len(gauges):
     g3 = []
     if "asof" in gauges:        # 11_context.py since 2026-11-24: " (as of Nov 23)" when the snapshot is a saved copy
         note_stale("gauges", gauges["asof"])         # (gauges.asof would be the DataFrame's asof method)
-    if "gauges" in STALE:
-        LBL["gauges_when"] = f"as of {STALE['gauges'][1]}"
-    gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> {LBL['gauges']} "
-                                  f"({LBL.get('gauges_when') or 'live, ' + gauges.time.max()[:10]})", show=False)
+    # A USGS gauge's popup shows its latest reading, fetched by the visitor's browser when it opens (map_gauges.js: live
+    # readings and My Waters, the user's pick of 2026-11-25); the build's reading below is what it shows until then, and
+    # with no connection when the phone has seen none newer. Its colour is the build's until the phone has a newer one.
+    # (CDEC's server answers no other site, so LA's two CDEC gauges keep the build's reading.)
+    LBL["gauges_when"] = (f"as of {STALE['gauges'][1]}; " if "gauges" in STALE else "") + "live on tap"
+    gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> {LBL['gauges']} ({LBL['gauges_when']})", show=False)
     for r in gauges.itertuples():
-        html = (f"<b>{r.name}</b><br>{r.cfs:g} cfs at {r.time}<br>{r.status}"
+        usgs = not str(r.site).startswith("CDEC")
+        now_ = (f"{r.cfs:g} cfs at {r.time}<br>{r.status}"
                 + (f" · {r.pct_of_median:.0f}% of median for today" if pd.notna(r.pct_of_median) else "")
-                + (f"<br>Median for this date {r.p50:g} cfs" if pd.notna(r.p50) else "")
-                + f"<br><a href='{r.url}' target='_blank'>{'CDEC' if str(r.site).startswith('CDEC') else 'USGS'} station page</a>")
+                + (f"<br>Median for this date {r.p50:g} cfs" if pd.notna(r.p50) else ""))
+        link_ = f"<a href='{r.url}' target='_blank'>{'USGS' if usgs else 'CDEC'} station page</a>"
+        html = (f"<div class='gpop' data-gauge='{r.site}'><b>{r.name}</b><div class='gnow'>{now_}</div>"
+                f"<div class='gact'>{link_}</div></div>") if usgs else f"<b>{r.name}</b><br>{now_}<br>{link_}"
+        # (a USGS gauge's tooltip names it only: on a phone Leaflet shows it beside the popup at a tap, and the build's
+        # reading there would stand beside a newer one)
+        tip_ = f"{r.name} (USGS gauge)" if usgs else f"{r.name}: {r.cfs:g} cfs ({r.status})"
         folium.Marker([r.geometry.y, r.geometry.x], icon=svg_icon(GAUGE_SVG.format(c=gcol.get(r.status, "#868e96")), 18, 16),
-                      popup=folium.Popup(html, max_width=280), tooltip=f"{r.name}: {r.cfs:g} cfs ({r.status})").add_to(gg)
+                      popup=folium.Popup(html, max_width=280), tooltip=tip_).add_to(gg)
         g3.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [r.geometry.x, r.geometry.y]},
-                   "properties": {"c": gcol.get(r.status, "#868e96"), "html": html,
-                                  "tip": f"{r.name}: {r.cfs:g} cfs ({r.status})"}})
+                   "properties": {"c": gcol.get(r.status, "#868e96"), "html": html, "tip": tip_}})
     X3D["gauges"] = {"type": "FeatureCollection", "features": g3}
     gg.add_to(m)
+
+    def _utc(t_):
+        """11_context.py writes a reading's time as Pacific clock time on every map (its latest()): as UTC, for the pages
+        to show in the phone's own time. None in the hour the clocks go back, which could be either."""
+        try:
+            return (pd.Timestamp(t_).tz_localize("America/Los_Angeles", ambiguous="NaT", nonexistent="NaT")
+                    .tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"))
+        except (ValueError, TypeError):
+            return None
+    # the USGS gauges for map_gauges.js: site, name, where, and the build's reading with its words (shown offline when the
+    # phone has seen none newer): [site, name, lat, lon, cfs, time (UTC), status, % of median, median (cfs)]
+    LBL["gauge_list"] = [[str(r.site), r.name, round(r.geometry.y, 5), round(r.geometry.x, 5), float(r.cfs), _utc(r.time),
+                          r.status, None if pd.isna(r.pct_of_median) else int(r.pct_of_median),
+                          None if pd.isna(r.p50) else float(r.p50)]
+                         for r in gauges.itertuples() if not str(r.site).startswith("CDEC")]
 
 # trout evidence and springs (11_context.py)
 tev = ctx("trout_evidence")
@@ -2117,6 +2154,7 @@ page3d = open(os.path.join(os.path.dirname(__file__), "map3d.html")).read()
 assert page3d.count("</head>") == 1, "map3d.html must have one </head>"
 page3d = page3d.replace("</head>", "<script>" + _page_file("map_filter.js") + "</script>\n<script>"   # the stream filters,
                         + _page_file("map_specs.js") + "</script>\n</head>")          # the specs and similar streams
+page3d = page3d.replace("</head>", "<script>" + _page_file("map_gauges.js") + "</script>\n</head>")   # live gauges
 tag3d = '<script src="map3d_data.js"></script>'
 assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
 assert page3d.count("<!--webapp-->") == 1, "map3d.html must hold <!--webapp--> once (weblib.head goes there)"
