@@ -24,7 +24,8 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
              open water or fire since GREEN_BURN_SINCE. A creek whose reaches all pass, or are read mostly dry by the
              model already, and none of which shows water (a trout record, a dam or tailwater, NHD perennial, open
              water, a channel GREEN_WET or greener: every flowing gauged creek in the test read 0.67-0.86), reads
-             "seasonal" (GREEN_SEASONAL), never lower. (2) A USGS gauge on the reach's own creek (5+
+             "seasonal" (GREEN_SEASONAL), never lower. A creek with a stretch 05_score.py left out as buried isn't
+             read bare: its channel there can't be seen (06_map.py passes those reaches, left_out). (2) A USGS gauge on the reach's own creek (5+
              summers since 2011, within flowlib.GAUGE_KM on its model line, 2/3-1.5 x its drainage; not a canal):
              0.05 + 0.95 x its share of summers flowing. It raises a reach anywhere (Piru Creek below Pyramid Dam flows
              every summer on its releases), and lowers one only at or below the gauge and where no trout are known on
@@ -379,20 +380,27 @@ def heat_factor(s):
     return np.where(trout_signs(s)[0] | s.trout_water.notna() | below | air.isna(), 1.0, f)
 
 
-def creeks(s):
+def creeks(s, extra=None):
     """Each reach's creek between confluences (an id): reaches joined end to end where the smaller carries at least
     CREEK_RATIO of the larger's drainage, so no tributary of a quarter or more of it joins between them (the pairs the
     audit's test of sudden changes along a creek looks at). A reach lying in a lake joins none. The reach below
     another is the one whose first point is its last (the confluence cell belongs to the reach below); at a box edge,
-    the nearest other reach within 15 m of its end that doesn't end there itself."""
+    the nearest other reach within 15 m of its end that doesn't end there itself.
+    `extra`: reaches the map doesn't draw (those 05_score.py left out as buried: geometry, area_km2). They join the
+    creeks as they did while drawn; then (the ids, the length of them in each creek, by id)."""
     import shapely
     from config import CRS
     g = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(CRS).values
-    first, last = shapely.get_point(g, 0), shapely.get_point(g, -1)
-    t_first, t_line = shapely.STRtree(first), shapely.STRtree(g)
     km2 = num(s, "area_full_km2").fillna(s.area_km2).to_numpy(float)
     lake = (s["water_class"].astype(str).eq("reservoir") if "water_class" in s else pd.Series(False, index=s.index)).to_numpy()
-    parent = np.arange(len(s))
+    n = len(s)
+    if extra is not None and len(extra):
+        g = np.concatenate([g, gpd.GeoSeries(extra.geometry.values, crs=extra.crs).to_crs(CRS).values])
+        km2 = np.concatenate([km2, num(extra, "area_full_km2").fillna(extra["area_km2"]).to_numpy(float)])
+        lake = np.concatenate([lake, np.zeros(len(extra), bool)])
+    first, last = shapely.get_point(g, 0), shapely.get_point(g, -1)
+    t_first, t_line = shapely.STRtree(first), shapely.STRtree(g)
+    parent = np.arange(len(g))
 
     def root(i):
         while parent[i] != i:
@@ -400,7 +408,7 @@ def creeks(s):
             i = parent[i]
         return i
 
-    for i in range(len(s)):
+    for i in range(len(g)):
         c = [j for j in t_first.query(last[i], predicate="dwithin", distance=1.0) if j != i]
         if not c:
             c = [j for j in t_line.query(last[i], predicate="dwithin", distance=15.0)
@@ -414,7 +422,10 @@ def creeks(s):
             a, b = root(i), root(j)
             if a != b:
                 parent[a] = b
-    return pd.Series([root(i) for i in range(len(s))], index=s.index)
+    ids = pd.Series([root(i) for i in range(n)], index=s.index)
+    if len(g) == n:
+        return ids
+    return ids, pd.Series(shapely.length(g[n:]), index=[root(i) for i in range(n, len(g))]).groupby(level=0).sum()
 
 
 TYPICAL_SIGMA = np.log(2)     # typical_water: a peer's weight falls to 0.61 at twice or half the reach's drainage
@@ -476,7 +487,8 @@ def borrowed(s, cls):
     return pd.Series(out, index=s.index) & cls.isin(WATER_CLASSES)
 
 
-def score(s):
+def score(s, left_out=None):
+    # left_out: the reaches 05_score.py left out as buried (06_map.py reads buried_reaches.gpkg), for (1)'s creeks
     nhd_water = s.flow.map({"perennial": 1.0, "intermittent": 0.35, "unmapped": 0.15, "ephemeral": 0.05}).fillna(0.3)
     cls = s["water_class"].fillna("no data") if "water_class" in s else pd.Series("no data", index=s.index)
     water = num(s, "water")
@@ -572,11 +584,15 @@ def score(s):
               & ~(num(s, "burn_year") >= GREEN_BURN_SINCE) & src.isin(["model", "scaled"])
               & cls.isin(["year-round", "usually flows", "seasonal"]))
     if green.notna().any():
-        ck = creeks(s)
+        # the creeks join through the reaches left out as buried, as while they were drawn; their length counts and
+        # never passes, so a creek with a buried stretch isn't read bare (its channel there can't be seen)
+        ck, hid = creeks(s, left_out) if left_out is not None and len(left_out) else (creeks(s), None)
         creek = cls.ne("reservoir")
         L = gpd.GeoSeries(s.geometry.values, crs=s.crs).to_crs(__import__("config").CRS).length.to_numpy()
         dry_len = pd.Series(L * (passes | cls.eq("mostly dry")).to_numpy() * creek.to_numpy(), index=s.index).groupby(ck).sum()
         all_len = pd.Series(L * creek.to_numpy(), index=s.index).groupby(ck).sum()
+        if hid is not None:
+            all_len = all_len.add(hid.reindex(all_len.index).fillna(0.0))
         shows = (pos | dam_tw | s.flow.eq("perennial") | (num(s, "green_water").fillna(0) >= 0.05) | (green >= GREEN_WET))
         veto = (shows & creek).groupby(ck).any()
         bare = (ck.map(dry_len / all_len.where(all_len > 0)) >= BARE_SHARE - 1e-6) & ~ck.map(veto).astype(bool) & creek

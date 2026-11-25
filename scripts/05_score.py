@@ -1286,7 +1286,8 @@ _bur &= ~_bur_keep
 # dams ran on down the buried lines to the next drawn reach (1.6 mi drawn again on 4 paths).
 _bp = f"{OUT}/buried_reaches.gpkg"
 if _bur.any():
-    s.loc[_bur, ["area_km2", "geometry"]].assign(row=np.flatnonzero(_bur)).to_crs(4326).to_file(_bp)
+    s.loc[_bur, ["area_km2"] + [c_ for c_ in ("own_x", "own_y") if c_ in s] + ["geometry"]].assign(
+        row=np.flatnonzero(_bur)).to_crs(4326).to_file(_bp)
 elif os.path.exists(_bp):
     os.remove(_bp)
 if _bur.any():

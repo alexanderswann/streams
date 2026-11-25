@@ -586,6 +586,21 @@ same = np.isclose((a - extra_edge)[own], streams.area_km2, atol=0.02).mean()
 streams["area_edge_km2"] = (streams.area_km2 + extra_edge[own]).round(2)
 # (full: also the water behind lakes' outlets, which 05_score.py's area_km2 leaves out as it always did)
 streams["area_full_km2"] = (streams.area_km2 + extra_full[own] + held_all[own]).round(2)
+# The same for the reaches 05_score.py left out as buried (buried_reaches.gpkg; buried_areas.csv by their row there):
+# 05b_flow.py reads them back for the way down and the segment each matches, and the bare-channel test joins creeks
+# through them (06_map.py), with the drainage they had while drawn.
+_bp = f"{OUT}/buried_reaches.gpkg"
+if os.path.exists(_bp):
+    _b = gpd.read_file(_bp).to_crs(CRS)
+    _e = (_b[["own_x", "own_y"]].to_numpy(float) if {"own_x", "own_y"} <= set(_b.columns)
+          else np.array([g_.coords[-2] if len(g_.coords) >= 2 else g_.coords[0] for g_ in _b.geometry]))
+    _c, _r = ~T * tuple(np.round(_e / RES).T * RES)
+    _o = np.clip(np.rint(_r).astype(int), 0, H - 1) * W + np.clip(np.rint(_c).astype(int), 0, W - 1)
+    pd.DataFrame({"row": _b["row"].to_numpy(int), "area_edge_km2": (_b.area_km2 + extra_edge[_o]).round(2),
+                  "area_full_km2": (_b.area_km2 + extra_full[_o] + held_all[_o]).round(2)}).to_csv(
+        f"{OUT}/buried_areas.csv", index=False)
+elif os.path.exists(f"{OUT}/buried_areas.csv"):
+    os.remove(f"{OUT}/buried_areas.csv")
 # Stream order where water comes in that the routing doesn't see (a river from outside the map, a lake whose water
 # crossbox.py still carries past its dam): the order counted on the routing starts again at 1 there, and the river drew
 # as a thread until its side creeks built it back up, and dropped off the map of all areas (order 4 and up): the Maury

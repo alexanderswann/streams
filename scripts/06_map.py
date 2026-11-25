@@ -88,7 +88,17 @@ print("regions:", done)
 
 # access (08/09), sun (10) and context (11) attributes, then the final fish score (scoring.py)
 dirs = [f"{MAP_OUT}/{r}" for r in done]
-s_ll = score(attach(s_ll.drop(columns="fish_score"), "sid", dirs, "streams"))
+# (the reaches 05_score.py left out as buried, buried_reaches.gpkg, with their drainage, buried_areas.csv: the
+# bare-channel test reads its creeks with them, and a lake's creek below a dam is looked for among them too)
+def left_out(d_):
+    lo_ = gpd.read_file(f"{d_}/buried_reaches.gpkg")
+    if os.path.exists(f"{d_}/buried_areas.csv"):
+        lo_["area_full_km2"] = pd.read_csv(f"{d_}/buried_areas.csv").set_index("row").area_full_km2.reindex(
+            lo_["row"]).to_numpy(float)
+    return lo_
+_lo = [left_out(d_) for d_ in dirs if os.path.exists(f"{d_}/buried_reaches.gpkg")]
+s_ll = score(attach(s_ll.drop(columns="fish_score"), "sid", dirs, "streams"),
+             left_out=pd.concat(_lo, ignore_index=True) if _lo else None)
 # the share of this area's reaches that score lower: the score was tuned on LA's mostly dry channels and runs high
 # everywhere else, so the standing within the area says more than the number
 s_ll["area_rank_pct"] = ((s_ll.fish_score.rank(method="min") - 1) / max(len(s_ll) - 1, 1) * 100).round(0)
@@ -214,17 +224,32 @@ def draw_through(s_ll):
     ends_at = {}
     for i in pos:
         ends_at.setdefault(k1(sm[i].coords[-1]), []).append(i)
+    # the ends of the reaches 05_score.py left out as buried, every box: a lake's creek is looked for among them too, as
+    # while they were drawn, and a path whose creek is one of them goes with it (lake_creek() gives -1; not drawn)
+    lo_g = [left_out(f"{MAP_OUT}/{r_}").to_crs(EPSG) for r_ in done
+            if os.path.exists(f"{MAP_OUT}/{r_}/buried_reaches.gpkg")]
+    lo_g = pd.concat(lo_g, ignore_index=True) if lo_g else None
+    lo_end = shapely.points([g_.coords[-1][:2] for g_ in lo_g.geometry.values]) if lo_g is not None else None
+    lo_km2 = ((lo_g.area_full_km2 if "area_full_km2" in lo_g else lo_g.area_km2).fillna(lo_g.area_km2).to_numpy(float)
+              if lo_g is not None else None)
+    lo_t = shapely.STRtree(lo_end) if lo_g is not None and len(lo_g) else None
     def lake_creek(r):
         p0 = shapely.Point(r["pts"][0])
         cand = [pos[j] for j in ends.query(p0, predicate="dwithin", distance=80) if pos[j] != r["hit"]]
-        if not cand:
+        cand_lo = list(lo_t.query(p0, predicate="dwithin", distance=80)) if lo_t is not None else []
+        if not cand and not cand_lo:
             return None
         # the nearest end, and among ends as near (within 1 m: one confluence) the reach carrying the most water. The
         # nearest alone fell to the spatial index's order, which a reach added anywhere on the map could flip: 25 m of
         # the Champlain Canal below a lock pool (1,085 km2) took a 0.8 km2 creek's "mostly dry" when a lead-in was laid
         # in another box (2026-11-23; on the published maps 3 pieces, 62 m, change, all year-round either way)
         d_ = {i: shapely.Point(sm[i].coords[-1][:2]).distance(p0) for i in cand}
-        i = max((i for i in cand if d_[i] <= min(d_.values()) + 1.0), key=lambda i: (km2_[i], -d_[i]))
+        dl_ = {k: lo_end[k].distance(p0) for k in cand_lo}
+        near = min(list(d_.values()) + list(dl_.values()))
+        pool = [(False, i) for i in cand if d_[i] <= near + 1.0] + [(True, k) for k in cand_lo if dl_[k] <= near + 1.0]
+        lo_, i = max(pool, key=lambda t: (lo_km2[t[1]], -dl_[t[1]]) if t[0] else (km2_[t[1]], -d_[t[1]]))
+        if lo_:
+            return -1
         for _ in range(30):
             donors = ends_at.get(k1(sm[i].coords[0]), [])
             if not bd_[i].startswith("in:") or not donors:
@@ -260,6 +285,9 @@ def draw_through(s_ll):
             # pond's values: 530 m between Spencer Pond and Big Pond in NE Connecticut, fish 15 for 57)
             own = lake_creek(r) if r["kind"] in ("dam", "pond") and (km2_[r["hit"]] > 1.5 * r["km2"]
                                                                      or bd_[r["hit"]].startswith("in:")) else None
+            if own is not None and own == -1:              # its creek is a reach left out as buried: not drawn
+                n_bur, m_bur = n_bur + 1, m_bur + shapely.LineString(new).length
+                continue
             if own is not None and bd_[own].startswith("in:"):
                 own = None                                 # no creek found above the lake: as before
             if own is None and bd_[r["hit"]].startswith("in:"):

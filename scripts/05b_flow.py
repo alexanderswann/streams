@@ -79,6 +79,11 @@ def with_buried(g, b):
     add["sid"], add["area_km2"] = [f"{b}:buried{i}" for i in range(len(t))], t.area_km2.to_numpy(float)
     if "flow" in g:
         add["flow"] = "unmapped"
+    pa = f"{out_dir(b)}/buried_areas.csv"           # their drainage as 05c_drainages.py measures it, where it has
+    if os.path.exists(pa):
+        ar = pd.read_csv(pa).set_index("row")
+        add["_bur_edge_km2"] = ar.area_edge_km2.reindex(row_t).to_numpy(float)
+        add["_bur_full_km2"] = ar.area_full_km2.reindex(row_t).to_numpy(float)
     out = pd.concat([g.assign(_row=row_k), add.assign(_row=row_t)], ignore_index=True)
     return out.sort_values("_row", kind="stable").drop(columns="_row").reset_index(drop=True)
 
@@ -123,6 +128,9 @@ if os.path.exists(f"{OUT}/area_streams.csv"):
     # full area, with the water from above reservoirs, is the one that matches its segments)
     col_ = "area_edge_km2" if has("tnc_flows") else "area_full_km2"
     more = s.sid.map(pd.read_csv(f"{OUT}/area_streams.csv").set_index("sid")[col_]) - area_box
+    bcol_ = "_bur_edge_km2" if col_ == "area_edge_km2" else "_bur_full_km2"
+    if bcol_ in s:                                         # the reaches left out as buried, read back (with_buried)
+        more = more.fillna(s[bcol_] - area_box)
     area_edge = area_box + more.where(more >= 0.01, 0.0)       # (the CSV is rounded: no inflow keeps the exact area)
 mid = s.geometry.interpolate(0.5, normalized=True)
 
@@ -336,6 +344,9 @@ def walk_of(b):
         t = pd.read_csv(p) if os.path.exists(p) else None
         if t is not None and set(t.sid) == set(g.sid[~is_buried(g.sid)]):    # written for these reaches
             more = g.sid.map(t.set_index("sid")["area_edge_km2" if has("tnc_flows") else "area_full_km2"]) - g.area_km2
+            bcol_ = "_bur_edge_km2" if has("tnc_flows") else "_bur_full_km2"
+            if bcol_ in g:                                 # the reaches left out as buried, read back (with_buried)
+                more = more.fillna(g[bcol_] - g.area_km2)
             w.area[True] = g.area_km2 + more.where(more >= 0.01, 0.0)
         else:
             STALE.add(b)
@@ -727,7 +738,8 @@ extra = channel_green(s.geometry.values, REGION)
 extra.index = s.index
 area_full_ = area_box.copy()
 if os.path.exists(f"{OUT}/area_streams.csv"):
-    area_full_ = s.sid.map(pd.read_csv(f"{OUT}/area_streams.csv").set_index("sid")["area_full_km2"]).fillna(area_box)
+    area_full_ = s.sid.map(pd.read_csv(f"{OUT}/area_streams.csv").set_index("sid")["area_full_km2"])
+    area_full_ = area_full_.fillna(s["_bur_full_km2"] if "_bur_full_km2" in s else area_box).fillna(area_box)
 cg_ = creek_gauges(v2)
 comid_ = ev.comid.astype(float).values
 near_ = gauge_reach_comids(cg_, s.geometry.values, area_full_.values, comid_)
