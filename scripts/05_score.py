@@ -866,11 +866,39 @@ for _i, _n in _got:
 # on as far as NHD's line of it runs along them.
 _nm, _main = s["name"].to_numpy(object).copy(), []
 _flt, _fln = shapely.STRtree(_fl.geometry.values), _fl["gnis_name"].to_numpy(object)
+# A point counts only where NHD's line of the name goes on past it. A tributary's line ends where it joins, and at a
+# confluence it lies within MAIN_NEAR_M of the piece below, though the piece runs on another line: near Manker Flat
+# (LA) the 111 m below San Antonio Creek's junction with Big Butch Wash, nearest NHD's unnamed perennial main channel
+# at every point, took "Big Butch Wash" (the routing's bigger donor there, 5.0 km2 to 2.9), whose NHD line ends 10 m
+# from it. (OSM, which names the main channel San Antonio Creek, fills names only after this.) Whether the line goes on
+# is read on all of NHD's lines of that name, canals, connectors and artificial paths included: NHD draws Horno Creek
+# (LA) as a stream, a ditch and a connector by turns, and on the floor's lines alone it seemed to end at every ditch.
+_merged = {}
+_nht, _nhn = shapely.STRtree(nhd.geometry.values), nhd["gnis_name"].to_numpy(object)
+def _along_main(geom, pts, n):
+    """How many of the points lie within MAIN_NEAR_M of NHD's lines of name n where the nearest place on those lines
+    is not where they end: all of NHD's lines of that name within 4 MAIN_NEAR_M of the piece, merged into continuous
+    lines (drawn downstream), so a line that goes on further off than MAIN_NEAR_M, or as a ditch, still goes on."""
+    pi, li = _flt.query(pts, predicate="dwithin", distance=MAIN_NEAR_M)
+    pi = np.unique(pi[_fln[li] == n])
+    if not len(pi):
+        return 0
+    lj = _nht.query(geom, predicate="dwithin", distance=4 * MAIN_NEAR_M)
+    key = (n, tuple(np.sort(lj[_nhn[lj] == n]).tolist()))
+    if key not in _merged:
+        m = shapely.line_merge(shapely.union_all(nhd.geometry.values[list(key[1])]), directed=True)
+        _merged[key] = [g for g in getattr(m, "geoms", [m]) if g.geom_type == "LineString"]
+    ok = 0
+    for k in pi:
+        L = min(_merged[key], key=lambda g: g.distance(pts[k]))
+        ok += bool(L.project(pts[k]) < L.length - 1.0)
+    return ok
 _starts_at = defaultdict(list)
 for k, g in enumerate(_G):
     _starts_at[(round(g.coords[0][0], 1), round(g.coords[0][1], 1))].append(k)
 _todo = set(np.flatnonzero(pd.isna(_nm) & _creek).tolist())
-_held_main = [0, 0, 0]       # NHD's line of the name not along it, a bigger stream's name, a reach so named beside it
+_held_main = [0, 0, 0, 0]    # NHD's line of the name not along it, a bigger stream's name, a reach so named beside it,
+                             # NHD's line of the name ending at it (a tributary at its confluence)
 while _todo:
     _step, _done = [], []
     for _i in sorted(_todo):
@@ -886,6 +914,9 @@ while _todo:
         _pi, _li = _flt.query(_pts, predicate="dwithin", distance=MAIN_NEAR_M)
         if len(np.unique(_pi[_fln[_li] == _n])) < MAIN_SHARE * len(_pts):
             _held_main[0] += 1
+            continue
+        if _along_main(_G[_i], _pts, _n) < MAIN_SHARE * len(_pts):
+            _held_main[3] += 1
             continue
         _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=SIDE_NEAR_M)
                 if full_km2[k] >= SIDE_RATIO * full_km2[_i]]
@@ -960,7 +991,7 @@ print(f"read along the reach: names {len(_got)} of {len(_unn)} unnamed (held: {_
       f"{_held_cls}; 'other' on a built channel, not read: {int(_built_v.sum())})")
 print(f"main stem's name carried on: {len(_main)} pieces, {sum(_G[i].length for i, _ in _main) / 1000:.1f} km (held: "
       f"{_held_main[0]} NHD's line of it not along them, {_held_main[1]} a bigger stream's, {_held_main[2]} beside a "
-      f"reach so named)")
+      f"reach so named, {_held_main[3]} NHD's line of it ending at them)")
 osm_wp = f"{RAW}/osm_waterways.gpkg"    # OSM named rivers and streams, cached a week
 if not os.path.exists(osm_wp) or time.time() - os.path.getmtime(osm_wp) > 7 * 86400:
     from geomatch import overpass
