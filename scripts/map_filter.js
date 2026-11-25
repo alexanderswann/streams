@@ -10,6 +10,14 @@
 // read when the page opens, as the layers are. While it is on, a note by the layer panel says so ("Streams filtered:
 // fish score 60+, drainage 5–25 sq mi" and the miles still shown, with a × that shows them all again), so a filtered map
 // isn't taken for a sparse one.
+// The trout species (the user, 2026-11-25, after onWater's species layers): a choice of the species this map's data
+// names (any, brook, brown, rainbow, cutthroat, lake trout: only those some stream here has), which keeps the streams
+// with evidence of it: a trout record naming it (a survey, a stocking, an iNaturalist sighting) or a designated water
+// naming it (a wild brook trout patch, a state's brook trout or cutthroat waters, a stream listed with it). "Recorded
+// only" leaves out the streams only designated for it. Each reach carries its species as "sp" (06_map.py, from
+// 11_context.py and troutspecies.py: B brook, N brown, R rainbow, C cutthroat, L lake trout; a capital where a record
+// names it, with the latest year, "B2018", the small letter where a designation does); the popups' "Species" line
+// says which, for each ("brook trout: recorded 2018, designated"). In the link: "&trout=brook", "&trout=brook-recorded".
 // Shared by map_drainages.js (2D) and map3d.html (3D), inlined by 06_map.py: each page says where the sliders and the
 // note go and how it hides a stream (init below). Its styles are its own (the end of this file).
 window.streamFilter = (function () {
@@ -18,31 +26,42 @@ window.streamFilter = (function () {
   const TOP = SQMI.length;                               // and its last place, past 100: no most
   const KM2 = 2.589988;                                  // km² in a sq mi: the reaches carry km² (06_map.py "a")
   const THUMB = 26;                                      // the sliders' thumb, px (the tick labels sit under its centre)
-  const st = {fish: 0, sqmi: 0, sqmax: 0};               // 0: no limit
-  let o = null, el = null, note = null, miles = null, timer = 0, applied = "0|0|0";
+  // the trout species, in the order shown (troutspecies.py): the reaches' code letter, the name, the button's word
+  const SPECIES = [["brook", "B", "brook trout", "Brook"], ["brown", "N", "brown trout", "Brown"],
+                   ["rainbow", "R", "rainbow trout", "Rainbow"], ["cutthroat", "C", "cutthroat trout", "Cutthroat"],
+                   ["lake", "L", "lake trout", "Lake trout"]];
+  const SPC = Object.fromEntries(SPECIES.map(([k, c]) => [k, c])), SPN = Object.fromEntries(SPECIES.map(([k, , n]) => [k, n]));
+  const st = {fish: 0, sqmi: 0, sqmax: 0, sp: "", rec: false};   // 0 or "": no limit
+  let o = null, el = null, note = null, miles = null, timer = 0, applied = "0|0|0||false", have = [];
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
-  const on = () => !!(st.fish || st.sqmi || st.sqmax);
+  const on = () => !!(st.fish || st.sqmi || st.sqmax || st.sp);
+  // a reach has the chosen species: a record names it (the capital) or, unless "recorded only", a designation (small)
+  const recorded = (p, k) => (p.sp || "").includes(SPC[k]);
+  const hasSp = (p, k) => recorded(p, k) || (p.sp || "").includes(SPC[k].toLowerCase());
   // A reach passes "at least t sq mi" when its popup shows t or more, and "at most t sq mi" when it shows t or less: the
   // popups round to 0.01 sq mi under 1, to 0.1 from 1 and to 1 from 100 (map_drainages.js and map3d.html: SQMI), so the
   // least drainage kept is half a rounding step below t, and the most half a step above it
   const minKm2 = t => t ? (t - (t <= 1 ? 0.005 : 0.05)) * KM2 : 0;
   const maxKm2 = t => (t + (t < 1 ? 0.005 : t < 100 ? 0.05 : 0.5)) * KM2;
   const pass = p => (!st.fish || p.fs >= st.fish) && (!st.sqmi || (p.a || 0) >= minKm2(st.sqmi)) &&
-                    (!st.sqmax || (p.a || 0) < maxKm2(st.sqmax));
+                    (!st.sqmax || (p.a || 0) < maxKm2(st.sqmax)) &&
+                    (!st.sp || (st.rec ? recorded(p, st.sp) : hasSp(p, st.sp)));
   // (a number keeps its unit on its line: \u00a0, a space no line breaks at)
   const sizeWords = () => st.sqmi && st.sqmax ? `${st.sqmi}–${st.sqmax}\u00a0sq\u00a0mi` : st.sqmi ? `${st.sqmi}+\u00a0sq\u00a0mi`
                           : st.sqmax ? `up to ${st.sqmax}\u00a0sq\u00a0mi` : "";
-  const words = () => [st.fish ? `fish score ${st.fish}+` : "", sizeWords() && `drainage ${sizeWords()}`]
+  const spWords = () => st.sp ? SPN[st.sp] + (st.rec ? " (recorded)" : "") : "";
+  const words = () => [st.fish ? `fish score ${st.fish}+` : "", sizeWords() && `drainage ${sizeWords()}`, spWords()]
     .filter(Boolean).join(", ");
   // the drainage slider's thumbs as places on its track: the least (0: none) and the most (TOP: none)
   const places = () => [SQMI.indexOf(st.sqmi), st.sqmax ? SQMI.indexOf(st.sqmax) : TOP];
   const at = (i, max) => `calc(${THUMB / 2}px + (100% - ${THUMB}px) * ${i / max})`;      // a place on a slider's track
 
-  // "#view&on=..&fish=60&sqmi=5-25" -> the filter. A value off the sliders' steps takes the step that shows more: a
-  // least the step at or under it, a most the step at or over it (none past 100); a most not over the least is left out
+  // "#view&on=..&fish=60&sqmi=5-25&trout=brook-recorded" -> the filter. A value off the sliders' steps takes the step
+  // that shows more: a least the step at or under it, a most the step at or over it (none past 100); a most not over the
+  // least is left out; a species this map has no stream with is left out too (init)
   function parse(hash) {
-    const r = {fish: 0, sqmi: 0, sqmax: 0};
+    const r = {fish: 0, sqmi: 0, sqmax: 0, sp: "", rec: false};
     String(hash || "").replace(/^#/, "").split("&").slice(1).forEach(p => {
       const i = p.indexOf("="), k = p.slice(0, i), v = p.slice(i + 1);
       if (k === "fish") {
@@ -52,14 +71,19 @@ window.streamFilter = (function () {
         const [lo, hi] = v.split("-").map(x => parseFloat(x));
         if (lo > 0) r.sqmi = SQMI.filter(s => s <= lo).pop();
         if (hi > 0) r.sqmax = SQMI.find(s => s >= hi) || 0;
+      } else if (k === "trout") {
+        let w = v;
+        try { w = decodeURIComponent(v); } catch (_) {}      // a broken %-escape: the value as it is
+        const [sp, how] = w.toLowerCase().split("-");
+        if (SPC[sp]) { r.sp = sp; r.rec = how === "recorded"; }
       }
     });
     if (r.sqmax && r.sqmax <= r.sqmi) r.sqmax = 0;
     return r;
   }
 
-  // the miles of the streams the filter keeps, and of all of them (each reach's length worked out once, when first
-  // needed: a fresh, unfiltered open never does it)
+  // the miles of the streams the filter keeps, of all of them, and of those kept a record names the chosen species on
+  // (each reach's length worked out once, when first needed: a fresh, unfiltered open never does it)
   function count() {
     const F = o.features || [];
     if (!miles) miles = F.map(f => {
@@ -71,11 +95,14 @@ window.streamFilter = (function () {
       } });
       return s;
     });
-    let all = 0, kept = 0;
-    F.forEach((f, i) => { all += miles[i]; if (pass(f.properties)) kept += miles[i]; });
-    return [kept, all];
+    let all = 0, kept = 0, rec = 0;
+    F.forEach((f, i) => {
+      all += miles[i];
+      if (pass(f.properties)) { kept += miles[i]; if (st.sp && recorded(f.properties, st.sp)) rec += miles[i]; }
+    });
+    return [kept, all, rec];
   }
-  const mi = v => v >= 10 ? Math.round(v).toLocaleString("en-US") : v.toFixed(1);
+  const mi = v => !v ? "0" : v >= 10 ? Math.round(v).toLocaleString("en-US") : v.toFixed(1);
 
   // the sliders, their values and ticks, the line under them, and the note by the panel
   function render() {
@@ -100,21 +127,33 @@ window.streamFilter = (function () {
     lo.setAttribute("aria-valuetext", st.sqmi ? `at least ${st.sqmi} sq mi` : "any");
     hi.setAttribute("aria-valuetext", st.sqmax ? `at most ${st.sqmax} sq mi` : "any");
     dr.querySelectorAll(".sft button").forEach(t => t.classList.toggle("on", +t.dataset.i === a || +t.dataset.i === b));
+    // the species: its buttons, "recorded only" (while one is chosen) and what the two words mean
+    const sr = el.querySelector(".sfr[data-k=sp]");
+    if (sr) {
+      sr.querySelectorAll(".sfc button").forEach(t => t.setAttribute("aria-pressed", String(t.dataset.s === st.sp)));
+      const sv = sr.querySelector(".sfv");
+      sv.textContent = st.sp ? SPN[st.sp] + (st.rec ? ", recorded" : "") : "any";
+      sv.classList.toggle("any", !st.sp);
+      sr.querySelector(".sfrec").hidden = !st.sp;
+      sr.querySelector(".sfrec input").checked = st.rec;
+    }
     el.querySelector(".sfclr").hidden = !on();
     const n = el.querySelector(".sfn");
     if (!on()) { n.textContent = "All streams shown"; note.hidden = true; return; }
-    const [kept, all] = count();
-    n.innerHTML = `Showing <b>${mi(kept)}</b> of ${mi(all)} mi of streams`;
+    const [kept, all, rec] = count();
+    n.innerHTML = `Showing <b>${mi(kept)}</b> of ${mi(all)} mi of streams` + (st.sp && !st.rec && kept ?
+      `<br>${esc(SPN[st.sp])}: recorded on ${mi(rec)} mi, designated only on ${mi(Math.max(0, kept - rec))}` :
+      st.sp && st.rec && !kept ? `<br>no trout record names ${esc(SPN[st.sp])} on these streams` : "");
     note.querySelector(".sfnt").innerHTML = `<b>Streams filtered:</b> ${esc(words())}<br><span>${mi(kept)} of ${mi(all)} mi shown</span>`;
     note.hidden = false;
   }
   // hide and show the streams (the page's own way), then tell the page (its links to the other map: "streamfilter")
   function apply() {
     clearTimeout(timer); timer = 0;
-    const key = st.fish + "|" + st.sqmi + "|" + st.sqmax;
+    const key = [st.fish, st.sqmi, st.sqmax, st.sp, st.rec].join("|");
     if (key !== applied) { applied = key; o.apply(on() ? pass : null); }
     render();
-    document.dispatchEvent(new CustomEvent("streamfilter", {detail: {fish: st.fish, sqmi: st.sqmi, sqmax: st.sqmax}}));
+    document.dispatchEvent(new CustomEvent("streamfilter", {detail: Object.assign({}, st)}));
   }
   function set(change, now) {
     Object.assign(st, change);
@@ -129,6 +168,12 @@ window.streamFilter = (function () {
   function init(opts) {
     o = opts;
     Object.assign(st, parse(location.hash));
+    // the species some stream on this map has (a record or a designation naming it): only those are offered, and one in
+    // the link that none has is left out
+    const seen = new Set();
+    (o.features || []).forEach(f => { for (const ch of (f.properties || {}).sp || "") seen.add(ch.toUpperCase()); });
+    have = SPECIES.filter(([, c]) => seen.has(c)).map(([k]) => k);
+    if (!have.includes(st.sp)) { st.sp = ""; st.rec = false; }
     el = document.createElement("div");
     el.className = "sf";
     const ticks = (vals, max, lab) => vals.map(i => `<button type="button" data-i="${i}" tabindex="-1" style="left:` +
@@ -143,7 +188,14 @@ window.streamFilter = (function () {
       `<input type="range" class="lo" min="0" max="${TOP}" step="1" value="0" aria-label="Drainage: the least shown">` +
       `<input type="range" class="hi" min="0" max="${TOP}" step="1" value="${TOP}" aria-label="Drainage: the most shown">` +
       `</div><div class="sft">${ticks([...SQMI.keys(), TOP], TOP, i => i % TOP ? String(SQMI[i]).replace(/^0\./, ".") : "any")}` +
-      `</div></div><div class="sfn"></div>`;
+      `</div></div>` +
+      // the trout species: a button for each this map's streams have, and "recorded only" while one is chosen
+      (have.length ? `<div class="sfr" data-k="sp">${head("Trout species")}<div class="sfc" role="group" ` +
+        `aria-label="Trout species"><button type="button" data-s="">Any</button>` +
+        have.map(k => `<button type="button" data-s="${k}">${SPECIES.find(x => x[0] === k)[3]}</button>`).join("") +
+        `</div><label class="sfrec" hidden><input type="checkbox"><span>Recorded only<small>a survey, a stocking or a ` +
+        `sighting names it here, not only a designated water</small></span></label></div>` : "") +
+      `<div class="sfn"></div>`;
     o.section.insertBefore(el, o.section.firstChild);
     const fr = el.querySelector(".sfr[data-k=fish]"), fi = fr.querySelector("input");
     fi.addEventListener("input", () => set({fish: +fi.value}, false));
@@ -196,7 +248,14 @@ window.streamFilter = (function () {
     };
     ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => w.addEventListener(ev, end));
 
-    const clear = () => { st.fish = st.sqmi = st.sqmax = 0; apply(); };
+    const sr = el.querySelector(".sfr[data-k=sp]");
+    if (sr) {
+      sr.querySelectorAll(".sfc button").forEach(t => t.addEventListener("click", () =>
+        set(t.dataset.s ? {sp: t.dataset.s} : {sp: "", rec: false}, true)));
+      sr.querySelector(".sfrec input").addEventListener("change", e => set({rec: e.target.checked}, true));
+    }
+
+    const clear = () => { Object.assign(st, {fish: 0, sqmi: 0, sqmax: 0, sp: "", rec: false}); apply(); };
     el.querySelector(".sfclr").addEventListener("click", clear);
     note = o.note;
     note.classList.add("sfnote");
@@ -248,6 +307,16 @@ window.streamFilter = (function () {
       "font:inherit;font-size:10.5px;line-height:15px;color:#7a828c;cursor:pointer;white-space:nowrap}" +
       ".sf .sft button.on{color:#1864ab;font-weight:600}" +
       ".sf .sfn{margin-top:2px;color:#7a828c}.sf .sfn b{color:#1d1d1f}" +
+      // the species: buttons a fingertip can take, the chosen one filled; "recorded only" a box with its words
+      ".sf .sfc{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px}" +
+      ".sf .sfc button{min-height:32px;padding:0 11px;border:1px solid #ced4da;border-radius:16px;background:#fff;" +
+      "font:inherit;font-size:12px;color:#343a40;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+      ".sf .sfc button[aria-pressed=true]{background:#1864ab;border-color:#1864ab;color:#fff;font-weight:600}" +
+      ".sf .sfrec{display:flex;align-items:flex-start;gap:7px;padding:5px 0 1px;cursor:pointer}.sf .sfrec[hidden]{display:none}" +
+      ".sf .sfrec input{flex:none;width:18px;height:18px;margin:0;accent-color:#1864ab}" +
+      ".sf .sfrec small{display:block;font-size:10.5px;color:#7a828c}" +
+      // a popup's "Species" line: the species the filter has chosen in bold
+      ".sfsp{font-weight:600}" +
       // the note: under the 2D map's layer button (hidden while its list is open: the list shows the same), at the head
       // of the 3D map's panel while it is folded
       ".sfnote{display:flex;align-items:center;gap:2px;max-width:240px;box-sizing:border-box;background:#e7f0fb;" +
@@ -260,14 +329,34 @@ window.streamFilter = (function () {
       ".panel>.sfnote{max-width:none;margin:7px -3px 0;box-shadow:none}.panel:not(.min)>.sfnote{display:none}";
     document.head.appendChild(s);
   }
-  return {init, pass, parse, on,
-          // "&fish=60&sqmi=5-25" for the link to the other map ("" unfiltered; "&sqmi=5" without a most, "&sqmi=0-25"
-          // without a least)
+  // a stream popup's "Species" line (map_drainages.js, map3d.html): for each species, "recorded <the latest year>" where
+  // a trout record names it and "designated" where a designated water does ("" for a reach with none)
+  function speciesRow(p) {
+    const s = (p && p.sp) || "";
+    const parts = SPECIES.map(([k, c, name]) => {
+      const m = s.match(new RegExp(c + "(\\d{4})?")), d = s.includes(c.toLowerCase());
+      if (!m && !d) return "";
+      const how = [m ? "recorded" + (m[1] ? " " + m[1] : "") : "", d ? "designated" : ""].filter(Boolean).join(", ");
+      return `<span${k === st.sp ? ' class="sfsp"' : ""}>${name}: ${how}</span>`;
+    }).filter(Boolean);
+    return parts.length ? `<tr><td>Species</td><td>${parts.join(" · ")}</td></tr>` : "";
+  }
+  // the species test as a MapLibre expression: the reach's "sp" holds the capital (recorded) or the small letter
+  const spExpr = () => {
+    const v = ["coalesce", ["get", "sp"], ""], c = SPC[st.sp];
+    return st.rec ? ["in", c, v] : ["any", ["in", c, v], ["in", c.toLowerCase(), v]];
+  };
+
+  return {init, pass, parse, on, speciesRow,
+          // "&fish=60&sqmi=5-25&trout=brook" for the link to the other map ("" unfiltered; "&sqmi=5" without a most,
+          // "&sqmi=0-25" without a least; "&trout=brook-recorded": recorded only)
           part: () => (st.fish ? "&fish=" + st.fish : "") +
-                      (st.sqmi || st.sqmax ? "&sqmi=" + st.sqmi + (st.sqmax ? "-" + st.sqmax : "") : ""),
+                      (st.sqmi || st.sqmax ? "&sqmi=" + st.sqmi + (st.sqmax ? "-" + st.sqmax : "") : "") +
+                      (st.sp ? "&trout=" + st.sp + (st.rec ? "-recorded" : "") : ""),
           // the filter as a MapLibre expression (map3d.html): ["all"] unfiltered
           expr: () => ["all", ...(st.fish ? [[">=", ["to-number", ["get", "fs"], 0], st.fish]] : []),
                               ...(st.sqmi ? [[">=", ["to-number", ["get", "a"], 0], minKm2(st.sqmi)]] : []),
-                              ...(st.sqmax ? [["<", ["to-number", ["get", "a"], 0], maxKm2(st.sqmax)]] : [])],
-          state: () => ({fish: st.fish, sqmi: st.sqmi, sqmax: st.sqmax})};
+                              ...(st.sqmax ? [["<", ["to-number", ["get", "a"], 0], maxKm2(st.sqmax)]] : []),
+                              ...(st.sp ? [spExpr()] : [])],
+          state: () => Object.assign({}, st)};
 })();

@@ -131,6 +131,7 @@ function initDrainageMap(map, ctrl) {
       (window.routeRow ? routeRow(p) : "") +     // map_routes.js: the route's miles, filled in as it is drawn
       (p.sun ? `<tr><td>Sun</td><td>${esc(p.sun)}</td></tr>` : "") +
       (p.tr ? `<tr><td>Trout</td><td>${esc(p.tr)}</td></tr>` : "") +
+      (window.streamFilter ? streamFilter.speciesRow(p) : "") +    // map_filter.js: the trout species, recorded or designated
       (p.ht ? `<tr><td>Heat</td><td class="warn">${esc(p.ht)}</td></tr>` : "") +
       (p.burn ? `<tr><td>Fire</td><td class="warn">${esc(p.burn)}</td></tr>` : "") +
       (p.flags ? `<tr><td>Notes</td><td>${esc(p.flags)}</td></tr>` : "") +

@@ -614,7 +614,7 @@ ACCESS = ["drive_min", "drive_km", "th_road", "th_lat", "th_lon", "bike_min", "b
           "approach_min", "th_closed"]
 CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn_fire", "burn_year", "burn_sev", "debris_flow",
            "trout_water", "trout_found", "trout_absent", "trout_ev", "brook_water", "brook_found", "crit_habitat",
-           "wilderness", "non_fs_land", "cpad_access"]
+           "wilderness", "non_fs_land", "cpad_access", "spp_found", "spp_water"]
 FLOWC = ["water_class", "dry_cfs", "dry_cfs_drought", "flow_years", "flow_src", "below_dam",   # 05b_flow.py
          "below_div", "div_share", "div_years", "gauge_name", "gauge_share", "gauge_years", "green_p90",
          "model_class", "water_floor", "borrowed_via", "water_by_gauge", "water_rule"]       # (the last two: scoring.py)
@@ -1378,6 +1378,22 @@ if _cal:
     LBL["cal"] = _cal
 print(f"trout calendar: {props.cz.notna().sum():,} of {len(props):,} drawn reaches"
       + ("" if _cal else " (11b_calendar.py not run: no calendar)"))
+# The trout species on each reach, for the species filter and the popups' "Species" line (map_filter.js): per species
+# (troutspecies.CODE: B brook, N brown, R rainbow, C cutthroat, L lake trout) a capital where a trout record names it,
+# with the latest year one did ("B2018"), and the small letter where the reach's own designated waters name it ("b");
+# 11_context.py's spp_found and spp_water. Written only where a reach has one
+import re, troutspecies
+def species_code(found, water):
+    rec = {m.group(1): m.group(2) or "" for m in re.finditer(r"(brook|brown|rainbow|cutthroat|lake)(?: (\d{4}))?",
+                                                             found if isinstance(found, str) else "")}
+    des = set(re.findall(r"brook|brown|rainbow|cutthroat|lake", water if isinstance(water, str) else ""))
+    c = "".join((troutspecies.CODE[x] + rec[x] if x in rec else "") + (troutspecies.CODE[x].lower() if x in des else "")
+                for x in troutspecies.SPECIES)
+    return c or None
+props["sp"] = [species_code(f, w) for f, w in zip(s_show.spp_found, s_show.spp_water)]
+print(f"trout species: {props.sp.notna().sum():,} of {len(props):,} drawn reaches; recorded / designated: " + ", ".join(
+    f"{x} {props.sp.str.contains(c, regex=False).sum():,}/{props.sp.str.contains(c.lower(), regex=False).sum():,}"
+    for x, c in troutspecies.CODE.items()))
 s_feat = gpd.GeoDataFrame(props, geometry=s_show.geometry.values, crs=4326).sort_values(["o", "fs"])
 s_feat_lake = s_feat[s_feat._lk.values].drop(columns="_lk")      # the whole reaches lying in a lake (above)
 s_feat = s_feat[~s_feat._lk.values].drop(columns="_lk")
@@ -1638,7 +1654,7 @@ X3D = {"streams": json.loads(s_feat.to_json(na="null", drop_id=True)),
        "streams_lake": json.loads(s_feat_lake.to_json(na="null", drop_id=True)), "forks": f_json, "divides": d_json,
        "drains": drains, "home": HOME, "pct": pct_json, "pct_labels": pct_labels, "lbl": LBL}
 for f_ in X3D["streams"]["features"] + X3D["streams_lake"]["features"]:
-    for k_ in ("np", "q", "le"):                  # "np" only where set, the specs where known (above)
+    for k_ in ("np", "q", "le", "sp"):            # "np" and "sp" only where set, the specs where known (above)
         if f_["properties"].get(k_) is None:
             f_["properties"].pop(k_, None)
 gj = lambda g: json.loads(g.to_json(na="null", drop_id=True))

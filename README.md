@@ -713,6 +713,12 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
   creek of the same name within 5 km; a sighting for its reach (within 150 m) and the same creek within 1.5 km. Lakes
   are left out of the score (their trout are stocked): stocked lakes, and sightings at a lake or within 400 m of a
   stocked one. `scoring.py` merges all of these onto the reaches and drops and computes the final fish score.
+- **Trout species** (`troutspecies.py`), for the maps' species filter: `11_context.py` gives each reach the species its
+  trout records name, with the latest year of each (`spp_found`: "brook 2018, brown 2024"), and those its own designated
+  waters name (`spp_water`), read as its own trout water is (a tributary that only touches a designated river at its
+  mouth reads none of the river's). A species counts only where the words name it: a record's label, a water's
+  designation, and a water a source lists for wild brook trout; hybrids, steelhead and golden trout count as none of
+  brook, brown, rainbow, cutthroat and lake trout. The pages carry it per reach as `sp` (`06_map.py`, `map_filter.js`).
 - `12_profiles.py` (after `06_map.py`): long profiles for every named creek (`profiles_data.js`): the longest
   connected path through its NHD named flowlines, at the channel bottom (the lowest conditioned DEM cell within 20 m,
   only going down downstream), with drops, falls and gauges snapped on and fish score, burn, trout-water and habitat

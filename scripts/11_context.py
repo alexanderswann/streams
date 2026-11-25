@@ -22,6 +22,9 @@
   - Wild brook trout water (outside California, troutdata.py's wild_brook): brook_water, a designation of wild brook
     trout covering the reach (any of them, where trout_water names only the first), and brook_found, the latest year a
     survey found wild brook trout on the creek. scoring.py sizes that water for brook trout
+  - Trout species, for the maps' species filter (troutspecies.py; nothing here changes a score): spp_found, the species
+    the reach's trout records name with the latest year of each ("brook 2018, brown 2024"), and spp_water, the species
+    its own designated waters name ("brook, cutthroat")
 Writes output/context/*.gpkg and output/<region>/context_streams.csv, context_drops.csv.
 A download that fails (no network, a server that doesn't answer) is read from its last good copy (netfetch.py), with a
 dated NOTE in the log and "(as of <date>)" in the source wording the map shows: the fire perimeters' source, the trout
@@ -37,6 +40,7 @@ from config import REGIONS, CRS, EPSG, MAP_OUT, SHARED, NATIONAL, ROOT, raw_dir,
 from scoring import HEAT_START
 from geomatch import wilderness_path
 import troutdata
+import troutspecies   # the trout species a record or a designated water names, for the maps' species filter (2026-11-25)
 import publicland     # which PAD-US "restricted" holdings are open on foot (2026-11-24)
 import landnames    # which land holdings' names the maps print: never a private individual's (2026-11-24)
 import netfetch     # every download: timeouts, a breaker, and the last good copy when one fails (2026-11-22)
@@ -273,6 +277,10 @@ if "wild_brook" not in trout:   # CDFW's waters are for rainbow and golden trout
     trout["wild_brook"] = False
 trout.to_crs(4326).to_file(f"{CTX}/wild_trout_waters.gpkg")
 print("wild trout waters", list(trout.Name))
+# the trout species each designated water names (troutspecies.py; a water a source lists for wild brook trout names
+# brook trout), by its row: attrs reads them as spp_water
+trout_spp = {j_: troutspecies.named(d_) | ({"brook"} if b_ else set())
+             for j_, d_, b_ in zip(trout.index, trout.Designation, trout.wild_brook.fillna(False).astype(bool))}
 
 # ---- August mean air temperature (PRISM 1991-2020 normal, 800 m) ----
 from watertemp import air_tif     # the PRISM normal clipped to this area (downloaded when missing)
@@ -518,6 +526,15 @@ def trout_attrs(s):
                          f"latest {nat_.year.max():.0f}")
         return " · ".join(parts)
     out["trout_ev"] = out.sid.map({k: summary(g) for k, g in h.groupby("sid")})
+    # the species the records that found trout name (troutspecies.py; a survey's wild brook trout find names brook
+    # trout), each with the latest year a record named it: "brook 2018, brown 2024" (06_map.py: the pages' "sp")
+    sp_ = pos.assign(sp=[sorted(troutspecies.named(l_) | ({"brook"} if b_ else set())) for l_, b_ in zip(pos.label, pos.brook)])
+    sp_ = sp_.explode("sp").dropna(subset=["sp"])
+    found = {}
+    for (k_, x_), y_ in sp_.groupby(["sid", "sp"]).year.max().items():
+        found.setdefault(k_, {})[x_] = y_
+    out["spp_found"] = out.sid.map({k_: ", ".join(x_ + (f" {int(v[x_])}" if pd.notna(v[x_]) else "")
+                                                  for x_ in troutspecies.ordered(v)) for k_, v in found.items()})
     return out
 
 # ---- USFS tree canopy cover (NLCD TCC), latest year, 30 m ----
@@ -821,6 +838,17 @@ def attrs(gdf, key, buf):
             own_ = (out[key].map(pd.Series(along_, dtype=float)).ge(OWN_SHARE - 1e-9)
                     | out[key].map(t.groupby(key).own.any()).eq(True))
         out["trout_water_own"] = own_.to_numpy(bool)
+        # the species the reach's own designated waters name (trout_spp), read as its own trout water is, species by
+        # species: the waters naming one along OWN_SHARE of the reach's own line, or one of them naming its own creek.
+        # A tributary whose 30 m touches a river's designated line at its mouth reads none of the river's species
+        water = {}
+        if len(t):
+            ts_ = t[[key, "index_right", "own"]].assign(sp=[sorted(trout_spp[j_]) for j_ in t.index_right])
+            for (k_, x_), g_ in ts_.explode("sp").dropna(subset=["sp"]).groupby([key, "sp"]):
+                if g_.own.any() or (line_[k_].intersection(shapely.union_all(zone_.loc[g_.index_right.unique()].values))
+                                    .length / max(line_[k_].length, 1e-9)) >= OWN_SHARE - 1e-9:
+                    water.setdefault(k_, set()).add(x_)
+        out["spp_water"] = out[key].map({k_: ", ".join(troutspecies.ordered(v)) for k_, v in water.items()})
     if len(baer):   # area-weighted soil burn severity of the reach's latest fire, where BAER mapped it (>= 30 % cover)
         x = gpd.overlay(g, baer, how="intersection", keep_geom_type=True)
         if len(x):
@@ -850,6 +878,9 @@ for r in REGIONS:
     cs = cs.merge(trout_attrs(s), on="sid", how="left")
     cs.to_csv(f"{MAP_OUT}/{r}/context_streams.csv", index=False)
     cd.to_csv(f"{MAP_OUT}/{r}/context_drops.csv", index=False)
+    print(f"{REGIONS[r]['label']}: reaches with each trout species, recorded / designated: " + ", ".join(
+        f"{x_} {cs.get('spp_found', pd.Series(dtype=object)).fillna('').str.contains(x_).sum()}"
+        f"/{cs.get('spp_water', pd.Series(dtype=object)).fillna('').str.contains(x_).sum()}" for x_ in troutspecies.SPECIES))
     print(f"{REGIONS[r]['label']}: reaches burned since {FIRE_SINCE}: {cs.burn_year.notna().mean():.0%} | wilderness "
           f"{cs.wilderness.notna().mean():.0%} | non-FS land {cs.non_fs_land.notna().mean():.0%} | crit. habitat "
           f"{cs.crit_habitat.notna().mean():.0%} | wild trout {cs.trout_water.notna().sum()} (brook trout "

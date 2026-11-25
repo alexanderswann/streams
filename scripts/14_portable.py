@@ -53,10 +53,12 @@ for key in AREAS:
              closures_fetched=d.get("closures_fetched"), credits=lbl.get("credits"), acc_asof=lbl.get("acc_asof"),
              **({"stale": lbl["stale"]} if lbl.get("stale") else {}))    # layers read from a saved copy (06_map.py)
     # the trout calendar's per-reach terrain horizon and time zone (cz, 06_map.py since 2026-11-24) stay out: this map
-    # has no calendar (map_calendar.js is the area pages' only), and they would add about 1.5 MB packed over 8 maps
+    # has no calendar (map_calendar.js is the area pages' only), and they would add about 1.5 MB packed over 8 maps; so
+    # do the reaches' trout species (sp, 2026-11-25), which only the area pages' species filter reads (map_filter.js)
     for k_ in ("streams", "streams_lake"):
         for f_ in (d.get(k_) or {}).get("features", []):
             f_["properties"].pop("cz", None)
+            f_["properties"].pop("sp", None)
     core, extra = pack({k: d.get(k) for k in CORE}), pack({k: d.get(k) for k in EXTRA})
     blobs.append(f'<script type="text/plain" id="core-{key}">{core}</script>\n<script type="text/plain" id="extra-{key}">{extra}</script>')
     sizes.append((key, len(core) / 1e6, len(extra) / 1e6))
