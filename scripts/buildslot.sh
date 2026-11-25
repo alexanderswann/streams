@@ -8,7 +8,8 @@
 #                                    the same slot (run_rebuild_a.sh starts run_mid.sh and run_late.sh)
 #   buildslot_release                let it go early (it goes anyway when the driver ends)
 #   zsh buildslot.sh status          who holds the slots and who waits
-#   zsh buildslot.sh run <command>   take a slot, run the command, let it go: for a session's own chain script
+#   zsh buildslot.sh run <command>   take a slot, run the command, let it go: for a session's own chain script (a
+#                                    project build only when the command's script is in the project's scripts folder)
 # The slot is let go however the driver ends: its EXIT trap (INT, TERM and HUP end the driver, which runs it; where
 # hydrolock.sh's traps are set, they end it the same way and its lock is let go as before). A slot whose holder is
 # gone without letting go (kill -9, a crash, a restart) is cleared by the next driver that looks: each slot records
@@ -24,6 +25,7 @@ _bs_poll=${BUILDSLOT_POLL:-5}
 _bs_project=/Users/mac/Fishing/scripts
 _bs_slot=""
 _bs_ticket=""
+_bs_home=""        # run mode: the folder of the command's script (below); a sourced driver goes by its own folder
 
 _bs_log() { print -r -- "$(date '+%Y-%m-%d %H:%M:%S') $*" >> $BUILDSLOT_DIR/buildslot.log 2>/dev/null }
 
@@ -64,7 +66,7 @@ buildslot_acquire() {
     parts=("${(@s:|:)info}")
     _bs_live $parts[1] $parts[2] && return 0
   fi
-  kind=${BUILDSLOT_KIND:-$([[ ${PWD:A} == $_bs_project ]] && echo project || echo scratch)}
+  kind=${BUILDSLOT_KIND:-$([[ ${_bs_home:-${PWD:A}} == $_bs_project ]] && echo project || echo scratch)}
   prio=$([[ $kind == project ]] && echo 0 || echo 1)
   start=$(_bs_start $$)
   mkdir -p $BUILDSLOT_DIR || return 1
@@ -124,6 +126,12 @@ if [[ $ZSH_EVAL_CONTEXT == toplevel ]]; then     # run as a command, not sourced
       ;;
     run)
       shift; (( $# )) || { print -r -- "usage: buildslot.sh run <command> [args]"; exit 2; }
+      # a project build or not by where the command's script is, not by the folder it was started from (a session's
+      # chain started while its shell sat in the project's scripts folder took a project slot, 2026-11-24): the first
+      # argument that is a file (zsh chain.zsh, python 05_score.py), else the command itself when it is a path
+      for f in ${@:2} $1; do
+        [[ -f $f && ( $f == */* || $f != $1 ) ]] && { _bs_home=${f:A:h}; break; }
+      done
       buildslot_acquire "$*"
       "$@"; rc=$?
       buildslot_release
