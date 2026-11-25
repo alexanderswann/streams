@@ -84,6 +84,7 @@ means it was measured on every map before it went in.
 | A creek is cut 200 m (650 ft) below a lake, along the channel the lake's water takes, so the outlet's warmth is in that stretch's own score. The cut is for water temperature only: both pieces keep the line's gradient, NHD class, flow evidence, gauge record, trout records and designations (the user's choice, 2026-11-22) | where the lake term there is 0.5 or more and neither piece is under 50 m | `scripts/flowlib.py:431` | `ee00f41` |
 | A lake's second outlet is kept from the lake down to the first link the map keeps on its own, as a side channel of the creek the lake's main outlet starts, and takes that creek's drainage | within 5 km (3.1 mi) | `scripts/05_score.py:246` | `6e0898c` |
 | Water carried across an edge two boxes share starts its line where it comes in, as a river from outside does, where the box it enters has no line at that cell | edge links of 0.25 km² or more | `scripts/crossbox.py:852` | `3b97251` |
+| A reach a city has buried isn't drawn: no name and no NHD class once the reaches are named, NLCD 2021 impervious cover along it (3 x 3 cells every 20 m) at the value or more, an open OpenStreetMap waterway (not tagged as a tunnel, culvert, covered or underground) within 60 m of under 20 % of it, no NHD line but a pipeline or conduit within 60 m of half of it, no designated trout water within 30 m and no trout record within 300 m whose nearest reach it is; a drop candidate on it goes too, and the steps after it go on along it as before (buried_reaches.gpkg: 05b_flow.py reads it back for the way down to the first modelled reach and the segment it matches, and a path below a dam that runs into it isn't drawn) (the user's choice, "Option A", 2026-11-24) | 40 % | `scripts/buried.py:45`, `scripts/05_score.py:1200`, `scripts/05b_flow.py:63`, `scripts/06_map.py:162`; downloads `scripts/02h_buried_inputs.py` (`run_mid.sh`, before 05_score) | (this commit) |
 
 ### Summer flow (`02b_download_flow.py`, `05b_flow.py`, `flowlib.py`)
 
@@ -155,7 +156,8 @@ means it was measured on every map before it went in.
 | Source | Used for | Terms | Credited |
 |---|---|---|---|
 | USGS 3DEP, NHD, NHDPlus, GNIS; USGS gauges | terrain, streams, names, flows, drainage checks | public domain | |
-| OpenStreetMap | trails, roads, parking, falls, long trail | ODbL | attribution line |
+| OpenStreetMap | trails, roads, parking, falls, long trail, waterways (where a city has buried its creeks) | ODbL | attribution line |
+| NLCD 2021 impervious cover (USGS, MRLC) | where a city has buried its creeks (`scripts/buried.py`) | public domain | |
 | USGS National Digital Trails, USFS | trails, roads, trailheads | public domain | attribution line |
 | The Nature Conservancy flow model | LA summer flow | | |
 | PRISM | August air temperature | | |
@@ -191,7 +193,8 @@ means it was measured on every map before it went in.
 | The cfs figure runs about 3x high on small Vermont creeks and 7x in Tallulah Gorge | audit finding 2 | none | | open |
 | NYSDEC permission for its layers on the four Adirondack maps (hidden; pages stay up) | audit finding 11 | the overview drafts, the user sends | | open |
 | The smallest lake to show (with counts); hosting beyond smaller pages; national gap-fillers | general-rules | the user | | later |
-| Lines over buried creeks in the cities: the terrain draws creeks that now run in sewers, as "NHD unmapped" with fish scores around 30 (about 32 mi in West and Southwest Philadelphia on the map before 2026-11-23; more in North and Northeast Philadelphia since `se_pa` reaches the Delaware) | se_pa expansion | none | the user's call: a general rule for every map | open |
+| Pieces a buried reach leaves touching no other drawn line (LA 68 mi, se_pa and north Georgia 3-4 mi each, measured on the live maps): lines just under 40 % impervious, and outfalls where a creek comes back to the surface; one that meets the same test at 25 % could go too | buried creeks | none | the user's call | open |
+| Philadelphia's combined sewers take dry-weather flow to the treatment plants: summer flow of creeks below big sewersheds (Frankford Creek below the Wingohocking) is likely too high | buried creeks | none | | open |
 | USGS WaterServices ends 2027-02-22 | | done: `11_context.py` and `02b` use api.waterdata.usgs.gov | | watch |
 
 ## 6. Standing checks (before every publish)

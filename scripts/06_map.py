@@ -115,17 +115,23 @@ def draw_through(s_ll):
     heads = shapely.STRtree(shapely.points([sm[i].coords[0][:2] for i in pos]))
     ends = shapely.STRtree(shapely.points([sm[i].coords[-1][:2] for i in pos]))
     all_lines = shapely.STRtree(sm[pos])
-    ras, recs = {}, []
+    ras, recs, bur, n_bur, m_bur = {}, [], {}, 0, 0.0
     # 1. each break: the path below it, the reach it runs into (if any) and the reach that ends above it (if any)
     for src, ex, ey, b, row, col, km2, kind in cross:
         if b not in ras:
             with rasterio.open(crossbox.fdir_path(b)) as f_:
                 fd_, T_ = f_.read(1), f_.transform
             # the cells this box's drawn reaches run through (not every stream cell of 03 has a reach: short stubs
-            # are dropped), so the line is carried down to one that is drawn
+            # are dropped), so the line is carried down to one that is drawn; and those of the reaches 05_score.py
+            # left out as buried (buried_reaches.gpkg), where it stops as it did while they were drawn
+            bp_ = f"{MAP_OUT}/{b}/buried_reaches.gpkg"
+            bg_ = gpd.read_file(bp_).to_crs(EPSG).geometry.values if os.path.exists(bp_) else np.array([], dtype=object)
+            bur[b] = (bg_, shapely.STRtree(bg_) if len(bg_) else None)
             ras[b] = (fd_, T_, rfeatures.rasterize([(g, 1) for g in sm[pos[rk[pos] == b]]], out_shape=fd_.shape,
-                                                   transform=T_, all_touched=True, dtype="uint8"))
-        fd_, T_, on_ = ras[b]
+                                                   transform=T_, all_touched=True, dtype="uint8"),
+                      rfeatures.rasterize([(g, 1) for g in bg_], out_shape=fd_.shape, transform=T_, all_touched=True,
+                                          dtype="uint8") if len(bg_) else np.zeros(fd_.shape, dtype="uint8"))
+        fd_, T_, on_, bon_ = ras[b]
         H_, W_ = fd_.shape
         if kind == "outside" and any(rk[pos[j]] == b for j in heads.query(shapely.Point(T_ * (int(col), int(row))),
                                                                           predicate="dwithin", distance=1.0)):
@@ -133,7 +139,7 @@ def draw_through(s_ll):
         r_, c_, pts = int(row), int(col), []
         for _ in range(800):                               # 8 km at most
             pts.append(T_ * (c_ + 0.5, r_ + 0.5))
-            if on_[r_, c_]:
+            if on_[r_, c_] or bon_[r_, c_]:
                 break
             d_ = crossbox.D8.get(int(fd_[r_, c_]))
             if d_ is None or not (0 <= r_ + d_[0] < H_ and 0 <= c_ + d_[1] < W_):
@@ -150,9 +156,19 @@ def draw_through(s_ll):
             cand = [pos[j] for j in ends.query(pt, predicate="dwithin", distance=45) if rk[pos[j]] == src]
             up = min(cand, key=lambda i: shapely.Point(sm[i].coords[-1][:2]).distance(pt)) if cand else None
         hit = None
-        if on_[r_, c_]:                                    # the reach it runs into, and the exact spot on it
+        if on_[r_, c_] or bon_[r_, c_]:                    # the reach it runs into, and the exact spot on it
             pt = shapely.Point(pts[-1])
             cand = [pos[j] for j in all_lines.query(pt, predicate="dwithin", distance=25) if rk[pos[j]] == b and pos[j] != up]
+            # where the nearest is a reach 05_score.py left out as buried, the path runs into a creek a city has
+            # buried and goes with it, as it was drawn on that reach or with its values (on the 12 maps' test of
+            # 2026-11-24 such paths ran on down the buried line to the next drawn reach: 1.6 mi on 4 paths, two of
+            # them with that reach's name)
+            bg_, bt_ = bur[b]
+            d_bur = min((bg_[j].distance(pt) for j in bt_.query(pt, predicate="dwithin", distance=25)),
+                        default=np.inf) if bt_ is not None else np.inf
+            if d_bur < min((sm[i].distance(pt) for i in cand), default=np.inf):
+                n_bur, m_bur = n_bur + 1, m_bur + (shapely.LineString(pts).length if len(pts) > 1 else 0.0)
+                continue
             if cand:
                 hit = min(cand, key=lambda i: sm[i].distance(pt))
                 q = sm[hit].interpolate(sm[hit].project(pt))
@@ -287,7 +303,8 @@ def draw_through(s_ll):
     s_ll.attrs["redrawn"] = redrawn_                       # reaches drawn longer than 05_score.py made them
     print(f"creeks drawn through {n_head + n_own + n_up + n_creek} breaks below dams and at the outer boundary "
           f"({metres / 1000:.1f} km of line; {n_creek} as a lake's own creek joining a bigger stream; "
-          f"{len(left)} met no drawn reach)")
+          f"{len(left)} met no drawn reach; {n_bur} ran into a reach a city has buried and aren't drawn, "
+          f"{m_bur / 1000:.1f} km)")
     return s_ll
 s_ll = draw_through(s_ll)
 N_DRAWN_EXTRA = s_ll.attrs.get("drawn_extra", 0)      # pieces added for drawing: not reaches of their own

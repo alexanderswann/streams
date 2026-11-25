@@ -1190,6 +1190,40 @@ kp["status"] = np.select(
 kp = kp[(kp["pass"] == 1) | (kp.flow == "perennial")]
 kp = kp.sort_values("drop_m", ascending=False)
 
+# A reach a city has buried isn't drawn (buried.py; the user's choice, "Option A", 2026-11-24): no name and no NHD class
+# once the reaches are named, a city's impervious cover and no open water in OpenStreetMap along it, no NHD line along
+# half of it, and no trout water or trout record near it. On the 12 maps of 2026-11-24, 568 mi of lines down streets
+# where the creek runs in a sewer, or never had a channel (LA's urban fans: 477). Decided here, on the names the map
+# shows (a creek named only by the rules above, like a piece of Tacony Creek off NHD's line, stays), so the floor and
+# the naming run as before, and the routing still carries the water. A drop candidate whose top lies on such a reach
+# goes with it; the rows the reaches and pieces point to are renumbered.
+import buried
+_bur, _bur_trout = buried.reaches(s.geometry.values, s["name"].to_numpy(object), s["flow"].to_numpy(object),
+                                  s["in_lake"].to_numpy(bool), nhd)
+print(f"reaches a city has buried (buried.py), not drawn: {int(_bur.sum())}, {s.length.values[_bur].sum() / 1000:.1f} km; "
+      f"kept for a trout water or record nearby: {int(_bur_trout.sum())}, {s.length.values[_bur_trout].sum() / 1000:.1f} km")
+# The reaches left out, with their rows among the reaches before they were left out, for the steps after this one that
+# follow the water down the reaches (buried_reaches.gpkg; no file where there are none): 05b_flow.py reads them back for
+# the way down to the first modelled reach and the segment one matches, and 06_map.py doesn't draw a path below a dam
+# that runs into one. Without them (the 12 maps' test, 2026-11-24) creeks above a buried one lost the estimate they
+# take from below (65 mi of LA's lines fell back to NHD's class, 6 mi of them 10+ lower in fish score), and paths below
+# dams ran on down the buried lines to the next drawn reach (1.6 mi drawn again on 4 paths).
+_bp = f"{OUT}/buried_reaches.gpkg"
+if _bur.any():
+    s.loc[_bur, ["area_km2", "geometry"]].assign(row=np.flatnonzero(_bur)).to_crs(4326).to_file(_bp)
+elif os.path.exists(_bp):
+    os.remove(_bp)
+if _bur.any():
+    _pos = np.full(len(s), -1)
+    _pos[~_bur] = np.arange(int((~_bur).sum()))
+    _on = np.array([reach_at.get(int(t), -1) for t in kp.top_idx.astype(int)], int)
+    kp = kp[~((_on >= 0) & _bur[np.maximum(_on, 0)])]
+    _dk = [j for j, r_ in enumerate(np.asarray(_dsrc, int)) if not _bur[r_]]
+    _dpieces, _dwet, _dsrc = [_dpieces[j] for j in _dk], np.asarray(_dwet, bool)[_dk], _pos[np.asarray(_dsrc, int)[_dk]]
+    s = s[~_bur].copy()
+    s["side_row"] = [int(_pos[j]) if j >= 0 else -1 for j in s["side_row"]]
+    s["cut_row"] = [int(_pos[j]) if j >= 0 else -1 for j in s["cut_row"]]
+
 ll = lambda g: g.to_crs(4326)
 os_ = OUT
 s_ll, kp_ll = ll(s), ll(kp)

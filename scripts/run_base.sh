@@ -18,7 +18,7 @@ buildslot_acquire "${0:t} $*"
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
 NET_STEPS=(00_area 01_download_dem 02_download_vectors 02b_download_flow 02c_pct 02d_trails 02e_access 02f_known_falls
-           02g_greenness 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context watertemp)
+           02g_greenness 02h_buried_inputs 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context watertemp)
 NET_PAUSE=${NET_PAUSE:-120}
 
 # FROM=<step> (run_area.sh's second word): the build starts at that step and leaves the steps before it as they are,

@@ -11,7 +11,7 @@ buildslot_acquire "${0:t} $*"
 # down for a minute) before it counts as failed. With the network down they finish on their last good copies, so a
 # failure here means a source with no copy at all (or a fault in the step).
 NET_STEPS=(01_download_dem 02_download_vectors 02b_download_flow 02c_pct 02d_trails 02e_access 02f_known_falls
-           02g_greenness 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context watertemp)
+           02g_greenness 02h_buried_inputs 05_score 05d_lakes lake_bathymetry 07_road_closures 08_hike 09_drive 11_context watertemp)
 NET_PAUSE=${NET_PAUSE:-120}
 
 # FROM=<step> (run_area.sh's second word): the build starts at that step and leaves the steps before it as they are,
@@ -63,6 +63,9 @@ steps() {
   else
     echo "NOTE $a: lakes not rebuilt; the last lakes.gpkg stays" >> $LOG
   fi
+  # what 05_score.py reads to leave out the reaches a city has buried (buried.py): NLCD impervious cover and
+  # OpenStreetMap's waterway lines with their tags, per range (02h_buried_inputs.py; 2026-11-24)
+  for r in $ranges; do run $a $r 02h_buried_inputs || return 1; done
   for r in $ranges; do run $a $r 05_score || return 1; done
   # late-summer greenness of the channels (Sentinel-2), which 05b_flow.py reads for creeks the flow model rates flowing
   # that are dry; only for areas with the late_summer_green source (it says so and does nothing elsewhere); kept once made

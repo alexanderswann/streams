@@ -59,8 +59,36 @@ div = below_diversion_comids(v2)
 div_gauge = gauge_summers([g for _, _, g in DIVERSIONS.values()]).reindex([g for _, _, g in DIVERSIONS.values()])
 div_gauge.index = list(DIVERSIONS)                                   # by diversion name
 
+
+def with_buried(g, b):
+    """Box b's reaches g with those 05_score.py left out as buried (buried_reaches.gpkg) read back in among them, in
+    the order the reaches had before (sid "<box>:buried<i>", NHD class unmapped, no area from other boxes). The way
+    down from a creek to the first modelled reach, and the segment a reach matches, are then as they were while the
+    buried reaches were drawn: without them a creek above one lost the estimate it takes from below (65 mi of LA's
+    lines fell back to NHD's class on the 12 maps' test, 2026-11-24). They get no row in flow_streams.csv."""
+    p = f"{out_dir(b)}/buried_reaches.gpkg"
+    if not os.path.exists(p):
+        return g
+    t = gpd.read_file(p).to_crs(CRS)
+    row_t = t["row"].to_numpy(int)
+    row_k = np.setdiff1d(np.arange(len(g) + len(t)), row_t)
+    if len(row_k) != len(g):
+        raise SystemExit(f"{p} doesn't belong to {b}'s streams_scored.gpkg: run 05_score.py for {b} again")
+    add = gpd.GeoDataFrame({c_: [None] * len(t) for c_ in g.columns if c_ != "geometry"}, geometry=t.geometry.values,
+                           crs=g.crs)
+    add["sid"], add["area_km2"] = [f"{b}:buried{i}" for i in range(len(t))], t.area_km2.to_numpy(float)
+    if "flow" in g:
+        add["flow"] = "unmapped"
+    out = pd.concat([g.assign(_row=row_k), add.assign(_row=row_t)], ignore_index=True)
+    return out.sort_values("_row", kind="stable").drop(columns="_row").reset_index(drop=True)
+
+
+def is_buried(sid):
+    return sid.astype(str).str.contains(":buried", regex=False).to_numpy()
+
+
 s = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
-s = s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid") if c_ in s]]
+s = with_buried(s[["sid", "area_km2", "flow", "geometry"] + [c_ for c_ in ("side_sid", "cut_sid") if c_ in s]], REGION)
 # A creek cut 200 m below a lake (05_score.py cuts it for its water temperature alone; a first piece's cut_sid names
 # the rest of its line) is read here whole, as it was before the cut, and both pieces take its row: its model line and
 # flow, the dam above it, its greenness and its gauge record. Measured on its own, a piece matched another model line
@@ -284,12 +312,13 @@ def walk_of(b):
     own box's, and with the water from other boxes where its area_streams.csv was written for these reaches."""
     if b not in _WALK:
         g = gpd.read_file(f"{out_dir(b)}/streams_scored.gpkg")[["sid", "area_km2", "geometry"]].to_crs(CRS)
+        g = with_buried(g, b)
         with rasterio.open(f"{derived_dir(b)}/flowdir.tif") as src:
             w = Walk(g.geometry.values, src.read(1), src.transform, b)
         w.mid, w.area = g.geometry.interpolate(0.5, normalized=True), {False: g.area_km2, True: g.area_km2}
         p = f"{out_dir(b)}/area_streams.csv"
         t = pd.read_csv(p) if os.path.exists(p) else None
-        if t is not None and set(t.sid) == set(g.sid):      # written for these reaches (the test scoring.attach makes)
+        if t is not None and set(t.sid) == set(g.sid[~is_buried(g.sid)]):    # written for these reaches
             more = g.sid.map(t.set_index("sid")["area_edge_km2" if has("tnc_flows") else "area_full_km2"]) - g.area_km2
             w.area[True] = g.area_km2 + more.where(more >= 0.01, 0.0)
         else:
@@ -696,6 +725,7 @@ extra = extra.join(gr_)
 print(f"late-summer channel greenness for {int(extra.green_p90.notna().sum())} of {len(s)} reaches; the record of a gauge "
       f"on their creek for {int(extra.gauge_share.notna().sum())} ({extra.gauge_name.dropna().nunique()} gauges)")
 fs_ = pd.concat([s[["sid"]], ev, extra], axis=1)
+fs_ = fs_[~is_buried(fs_.sid)]                     # the reaches left out as buried, read back above: no row
 if cut_of:      # the first piece of a creek cut below a lake: its line's row (above)
     fs_ = pd.concat([fs_, fs_.set_index("sid").loc[list(cut_of.values())].reset_index().assign(sid=list(cut_of))],
                     ignore_index=True)
@@ -716,7 +746,8 @@ if miss.any():      # drops on channels below the 1 km2 map floor: match the mod
     kpe.loc[miss, cols] = evidence(m, box_div).reindex(columns=cols).values
 pd.concat([kp[["did"]], kpe], axis=1).to_csv(f"{OUT}/flow_drops.csv", index=False)
 
-print(LABEL, "| reaches", len(s), "| source", ev.flow_src.value_counts().to_dict())
+print(LABEL, "| reaches", int((~is_buried(s.sid)).sum()), f"(and {int(is_buried(s.sid).sum())} left out as buried, read "
+      "back for the way down) | source", ev[~is_buried(s.sid)].flow_src.value_counts().to_dict())
 print(ev.water_class.value_counts().to_string())
 print("years", list(low.columns))
 if ev.below_div.notna().any():
