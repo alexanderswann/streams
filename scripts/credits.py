@@ -32,6 +32,7 @@ NPS_TERMS = "https://www.nps.gov/aboutus/disclaimer.htm"
 USFS_TERMS = "https://data.fs.usda.gov/geodata/edw/datasets.php"
 ODBL = "https://opendatacommons.org/licenses/odbl/1-0/"
 CC_BY = "https://creativecommons.org/licenses/by/4.0/"
+CC_BY_SA = "https://creativecommons.org/licenses/by-sa/4.0/"
 PUBLIC_USGS = "Public domain: USGS data may be used freely, and USGS asks to be credited."
 GOV_NO_TERMS = "Published by a federal agency; its pages state no licence, only a disclaimer."
 NPS_PUBLIC = "Generally public domain (NPS); a citation of the Park Service as the source is appreciated."
@@ -77,11 +78,12 @@ def _years(years):
 
 
 def S(key, group, name, by, url, what, use, maps, terms, terms_url=None, credit=None, note=None, hosts=(), also=(),
-      accessed=(), odbl=False):
-    """odbl: the source is under the ODbL, so what the maps make from it is offered under the ODbL too (_odbl())."""
+      accessed=(), odbl=False, bysa=False):
+    """odbl: the source is under the ODbL, so what the maps make from it is offered under the ODbL too (_odbl()).
+    bysa: the same for a source under CC BY-SA 4.0 (_ccbysa())."""
     return dict(key=key, group=group, name=name, by=by, url=url, what=what, use=use, maps=maps, terms=terms,
                 terms_url=terms_url, credit=credit, note=note, hosts=tuple(hosts), also=tuple(also),
-                accessed=tuple(accessed), odbl=odbl)
+                accessed=tuple(accessed), odbl=odbl, bysa=bysa)
 
 
 # The user's decisions on sources' terms, so that no later session asks again:
@@ -94,6 +96,12 @@ def S(key, group, name, by, url, what, use, maps, terms, terms_url=None, credit=
 #   - California State Parks: "Keep + credit": named in LA's one-line map credits (06_map.py's LBL["credits"]).
 #   - StreamNet: "Keep, and email IDFG": kept and credited; the user writes to Idaho Fish and Game and StreamNet.
 #   - NYSDEC (the hidden Adirondack maps): unchanged while the user's own request to DEC is pending.
+# - 2026-11-26, the fishing access layer's sources (relayed word for word by the overview session):
+#   - Virginia DWR ("available by permission", cited as DWR asks): "Keep and credit".
+#   - MassGIS (Office of Fishing and Boating Access sites): "Keep and credit (Recommended)".
+#   - Vermont Fish & Wildlife's fishing access areas (CC BY-SA 4.0): "Keep, add the CC BY-SA notice (Recommended)".
+#     The access layer's Vermont points and the access lines in Vermont lake popups are offered under CC BY-SA 4.0
+#     (_ccbysa(): the page's "Data shared under CC BY-SA 4.0", like the ODbL one). accesspoints.LEFT_OUT stays empty.
 # - 2026-11-22: the World Waterfall Database and nnywaterfalls.com consented; gawaterfalls.com and the guide sites with
 #   no terms on record "Keep as is"; Google and Apple Maps places may be used, looked up by hand and named in each popup.
 SOURCES = [
@@ -255,11 +263,11 @@ SOURCES = [
       "access areas as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where "
       "routes may start)") + ".",
       ["src:vt_trout"] + ([] if "vtfw" in _ACC_OUT else ["adk_high_peaks", "adk_southeast"]),
-      _acc("vtfw", "Fishing access areas: Creative Commons Attribution-ShareAlike 4.0 (Vermont Open Geodata Portal): free "
-           "to use with credit, and the access points drawn from them are shared under the same licence. ") +
-      "No licence stated on the other layers.", None if "vtfw" in _ACC_OUT else "https://creativecommons.org/licenses/by-sa/4.0/",
+      "Fishing access areas: Creative Commons Attribution-ShareAlike 4.0 (Vermont Open Geodata Portal): free to use "
+      "with credit, and what the maps make from them (the access lines in Vermont lake popups" + _acc("vtfw", " and the "
+      "access points") + ") is shared under the same licence. No licence stated on the other layers.", CC_BY_SA,
       "Vermont Agency of Natural Resources, Fish & Wildlife Department",
-      hosts=("anrmaps.vermont.gov", "vtfishandwildlife.com"), also=("lakes", "trails")),
+      hosts=("anrmaps.vermont.gov", "vtfishandwildlife.com"), also=("lakes", "trails"), bysa=True),
     S("va_dwr", "trout", "Virginia Department of Wildlife Resources", "Virginia Department of Wildlife Resources",
       "https://dwr.virginia.gov/",
       "The cold-water stream survey (wild trout streams, classes I–IV), stocked trout reaches and lakes, public "
@@ -951,6 +959,9 @@ def _card(s, keys):
     if s["odbl"]:
         rows.append(("Note", 'What the maps make from it is offered under the ODbL too: '
                              '<a href="#odbl">Data shared under the ODbL</a>.'))
+    if s["bysa"]:
+        rows.append(("Note", 'What the maps make from it is offered under CC BY-SA 4.0 too: '
+                             '<a href="#ccbysa">Data shared under CC BY-SA 4.0</a>.'))
     sub = s["by"] if s["group"] == "software" else f'{s["by"]} · {_short_maps(keys)}'
     return _entry(s["key"], s["name"], sub, rows)
 
@@ -1056,6 +1067,40 @@ def _odbl():
             f'example <a href="{first}/map3d_data.js">{first}/map3d_data.js</a>).</p>')
 
 
+def _ccbysa():
+    """The page's CC BY-SA notice (the user's "Keep, add the CC BY-SA notice", 2026-11-26), like _odbl(): what the maps
+    make from a source under CC BY-SA 4.0 (Vermont Fish & Wildlife's fishing access areas: the "Fishing access & boat
+    ramps" layer's Vermont points, unless accesspoints.LEFT_OUT holds "vtfw", and the access lines in Vermont lake
+    popups) is offered under CC BY-SA 4.0 too, as its share-alike asks. The access points are in map3d_data.js, the lake
+    popups in the map pages. "" when no map shown uses such a source."""
+    used = {s["key"]: s for s in SOURCES if s["bysa"] and areas_of(s)}
+    if not used:
+        return ""
+    made, files = [], {}
+    for k, s in used.items():
+        if k == "vt_anr":
+            what = (["the Vermont points of the \"Fishing access & boat ramps\" layer"] if "vtfw" not in _ACC_OUT else [])
+            what.append("the \"Fishing access area\" lines in the popups of Vermont lakes")
+            made.append(" and ".join(what) + " are made from Vermont Fish & Wildlife's fishing access areas (Vermont "
+                        "Agency of Natural Resources)")
+            if "vtfw" not in _ACC_OUT:
+                files["map3d_data.js"] = "the access points"
+            files["stream_map.html and stream_map_3d.html"] = "the lake popups"
+        else:
+            made.append(f"the data the maps make from {s['name']} ({s['by']})")
+            files.setdefault("map3d_data.js", "the map's layers")
+    first = areas_of(next(iter(used.values())))[0]
+    text = html.escape("; ".join(made))
+    where = "; ".join(f"{html.escape(v)} in {html.escape(f)}" for f, v in files.items())
+    eg = next(iter(files)).split(" ")[0]
+    return ('<h2 id="ccbysa">Data shared under CC BY-SA 4.0</h2><p class="notice">' + text[0].upper() + text[1:]
+            + f'. That source is under the <a href="{CC_BY_SA}">Creative Commons Attribution-ShareAlike 4.0 licence '
+            "(CC BY-SA 4.0)</a>, so these maps offer what they made from it under CC BY-SA 4.0 too: free to copy, share "
+            "and adapt, with credit to the source (its card on this page gives the credit line), as long as what you make from it is shared "
+            f"under the same licence. The data are in the files each map loads, in the map's folder ({where}; for "
+            f'example <a href="{first}/{eg}">{first}/{eg}</a>).</p>')
+
+
 def page():
     groups, toc = [], []
     for g, title, intro in GROUPS:
@@ -1074,6 +1119,10 @@ def page():
     if odbl:
         toc.append('<a href="#odbl">Data shared under the ODbL</a>')
         groups.append(odbl)
+    bysa = _ccbysa()
+    if bysa:
+        toc.append('<a href="#ccbysa">Data shared under CC BY-SA 4.0</a>')
+        groups.append(bysa)
     n = len(_visible())
     n = "one two three four five six seven eight nine ten eleven twelve".split()[n - 1] if 0 < n <= 12 else n
     return f"""<!doctype html>
