@@ -1637,7 +1637,8 @@ if os.path.exists(f"{SHARED}/parking_trailheads.gpkg"):
     park_json = json.loads(gpd.GeoDataFrame(
         {"k": pk.kind, "n": pk["name"], "u": pk.url, "no": pk.note, "fee": pk.fee, "cap": pk.capacity,
          "p": pk.parking.fillna(False).astype(int), "src": pk.source,
-         "st": pk["status"] if "status" in pk else None},
+         "st": pk["status"] if "status" in pk else None,
+         "t": pk["atype"] if "atype" in pk else None, "w": pk["water"] if "water" in pk else None},   # access sites
         geometry=pk.geometry, crs=4326).to_json(na="null", drop_id=True))
     print("parking / trailheads", len(pk), "|", pk.kind.value_counts().to_dict())
 print("trails", len(t_feat), "ways |", t_feat.groupby("rk").size().to_dict(), "| labels per zoom band:",

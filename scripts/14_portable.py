@@ -246,9 +246,11 @@ async function load(a) {
         (f.properties.note ? `<br>${esc(f.properties.note)}` : "") + "</div>")})] : []), 11, "drops"];
     const pts = [], acc = [];
     if (d.drops) pts.push(L.geoJSON(d.drops, {pointToLayer: pt(f => f.properties.c || "#e87ba4", {radius: 4.5}), onEachFeature: (f, l) => l.bindPopup(`<div class="pp">${onSite(f.properties.html, a)}</div>`)}));
-    if (d.parking) acc.push(L.geoJSON(d.parking, {pointToLayer: pt(f => f.properties.k === "trailhead" ? "#2b8a3e" : "#1c7ed6", {radius: 4.5}),
-      onEachFeature: (f, l) => { const p = f.properties; l.bindPopup(`<div class="pp"><b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b> · ${esc(p.k)}` +
-        (p.no ? `<br>${esc(p.no)}` : "") + (p.u ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "") + "</div>"); }}));
+    if (d.parking) acc.push(L.geoJSON(d.parking, {pointToLayer: pt(f => f.properties.k === "trailhead" ? "#2b8a3e" : f.properties.k === "access" ? "#0c8599" : "#1c7ed6", {radius: 4.5}),
+      onEachFeature: (f, l) => { const p = f.properties, ac = p.k === "access";
+        l.bindPopup(`<div class="pp"><b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : ac ? p.t || "Fishing access" : "Parking"))}</b> · ${esc(ac ? (p.t || "fishing access") + (p.w ? ", " + p.w : "") : p.k)}` +
+        (p.no ? `<br>${esc(p.no)}` : "") + (ac ? `<br>Official access: ${esc(p.src)}` : "") +
+        (p.u ? `<br><a href="${esc(p.u)}" target="_blank">${ac ? esc(String(p.src).split(", ")[0]) : "Forest Service"} page ↗</a>` : "") + "</div>"); }}));
     g.drops = [L.layerGroup(pts), 12, "drops"];
     g.access = [L.layerGroup(acc), 12, "access"];
     // lakes (05d_lakes.py, where built) under the streams on the one canvas; measured depth contours over them
@@ -320,7 +322,7 @@ panel.onAdd = () => {
     `<button class="a" data-i="-1"><b>All areas</b></button>` +
     `<div class="seg"><button data-m="drainage" class="on">Drainage</button><button data-m="fish">Fish score</button></div>` +
     `<div class="key"></div>` +
-    `<div class="sw"><label data-k="falls"><input type="checkbox" data-o="drops"> Drops and waterfalls</label><label data-k="poi-pk"><input type="checkbox" data-o="access"> Trailheads and parking</label>` +
+    `<div class="sw"><label data-k="falls"><input type="checkbox" data-o="drops"> Drops and waterfalls</label><label data-k="poi-pk"><input type="checkbox" data-o="access"> Trailheads, parking and fishing access</label>` +
     `<label data-k="road-graded"><input type="checkbox" id="xt"> Trails and dirt roads</label><label data-k="gauges"><input type="checkbox" data-o="live"> Gauges and road closures</label>` +
     `<label data-k="trout"><input type="checkbox" data-o="trout"> Trout records</label><label data-k="lakes"><input type="checkbox" data-o="lakes" checked> Lakes: fish, access, depth</label></div>` +
     `<p>Zoom into an area for every creek, and tap one for its details. The switches above add the rest once you are zoomed in. Scores rank creeks within an area; they aren't comparable between areas.</p></div>`;

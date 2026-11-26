@@ -29,13 +29,16 @@ road, and bike_check_min is how long it rides on them. Reaches also get approach
 reach, and bike_med_min, the minutes of it ridden (the fish score counts ridden minutes double, scoring.py).
 Sources are cells on open public drivable roads a car can reach, minus the full closures still in force in mid-July,
 the season the map scores (07_road_closures.py: a winter gate or a night's road work doesn't cut its road; 09_drive.py
-names today's closures on the access line instead).
+names today's closures on the access line instead), and the official fishing access sites and boat ramps with parking
+(02e_access.py; the user, 2026-11-25) within ACCESS_ROAD_M of such a road, where 09_drive.py drives to them: a site at
+the end of a lane OSM marks private or doesn't map is a start too. A route that starts at one is named after it ("park
+at Johnson Ferry North Boat Launch").
 Each reach also gets the trailhead (the road cell its fastest route starts from). Run with REGION=<name>.
 Last, the routes themselves, for the map pages to draw on a click: each reach's, drop's and lake's fastest route from
 its trailhead to its approach point, one network of segments the routes share (approach_routes.py: hike_routes.gpkg,
 hike_route_starts.csv). They are read from the traceback after everything above is written, which they don't change.
 """
-import numpy as np, pandas as pd, geopandas as gpd, rasterio, os, json, time, shapely
+import numpy as np, pandas as pd, geopandas as gpd, rasterio, os, re, json, time, shapely
 from rasterio import features
 from skimage.graph import MCP_Geometric
 from scipy.ndimage import map_coordinates
@@ -58,6 +61,7 @@ CHANNEL_MAX_KM2 = 64.7      # km2: 25 sq mi
 CLIFF_SLOPE, CLIFF_KMH = 1.0, 0.05
 BIKE_FLAT_KMH, BIKE_GRADE_K, DIRT_FACTOR, SINGLETRACK_FACTOR = 18.0, 12.0, 0.7, 0.5
 BIKE_MAX_GRADE, GRADE_WINDOW_M = 0.25, 200.0
+ACCESS_ROAD_M = 400.0  # an access site starts routes within this of an open road (09_drive.py's SNAP_M)
 CHECK_MIN = 1.0       # minutes on a doubtful fire road before a route is flagged (a crossing takes a few seconds)
 PAVED = {"paved", "asphalt", "concrete", "concrete:plates", "chipseal", "paving_stones", "sett", "metal", "wood"}
 NO_BIKES = {"Pacific Crest Trail: no bikes", "posted no bikes", "agency: no bikes",
@@ -150,6 +154,19 @@ print(f"{LABEL}: faint trails (agency records only) {len(faint_lines)} lines, {i
 # A freeway is no place to leave a car: its lanes and ramps aren't trailheads (476 reaches used to start from I-5, the
 # 210 and others). The exits' surface roads and the roads beside it still are; freeways stay in the network test above.
 source = burn(open_roads[~open_roads.highway.isin(["motorway", "motorway_link"])].geometry)
+# official fishing access sites and boat ramps with parking (02e_access.py) near an open road: starts too (above)
+acc_pts = gpd.GeoDataFrame(geometry=[], crs=CRS)
+if os.path.exists(f"{SHARED}/parking_trailheads.gpkg"):
+    _pk = gpd.read_file(f"{SHARED}/parking_trailheads.gpkg").to_crs(CRS)
+    if "atype" in _pk:
+        acc_pts = _pk[_pk.kind.eq("access") & _pk.parking.fillna(False).astype(bool)].cx[XMIN:XMAX, YMIN:YMAX]
+        if len(acc_pts):
+            _near = shapely.STRtree(open_roads.geometry.values).query(acc_pts.geometry.values, predicate="dwithin",
+                                                                       distance=ACCESS_ROAD_M)[0]
+            acc_pts = acc_pts.iloc[np.unique(_near)]
+            _new = burn(acc_pts.geometry.buffer(RES * 1.5)) & ~source
+            source |= burn(acc_pts.geometry.buffer(RES * 1.5))
+            print(f"{LABEL}: {len(acc_pts)} official access sites with parking start routes ({int(_new.sum())} cells off the roads)")
 
 
 def cycleways():
@@ -489,6 +506,12 @@ th = gpd.GeoDataFrame(th, geometry=gpd.points_from_xy(th.x, th.y), crs=CRS)
 named = drivable[drivable.name.notna() & ~drivable.highway.isin(["motorway", "motorway_link"])]
 th["road"] = gpd.sjoin_nearest(th[["geometry"]], named[["name", "geometry"]], how="left",
                                max_distance=300).groupby(level=0).first().name
+# a start at an official access site (02e_access.py) is named after it, with its type where the name doesn't say it
+if len(acc_pts):
+    _a = acc_pts.assign(label=[n if re.search(r"(?i)ramp|launch|access|parking|pier|landing|marina", str(n)) else f"{n} ({t})"
+                               for n, t in zip(acc_pts["name"].fillna(acc_pts.atype), acc_pts.atype)])
+    _j = gpd.sjoin_nearest(th[["geometry"]], _a[["label", "geometry"]], how="left", max_distance=150).groupby(level=0).first()
+    th["road"] = _j.label.where(_j.label.notna(), th["road"])
 ts = ts.merge(both[["th_x", "th_y", "th_id"]].drop_duplicates(["th_x", "th_y"]), on=["th_x", "th_y"])
 td = td.merge(both[["th_x", "th_y", "th_id"]].drop_duplicates(["th_x", "th_y"]), on=["th_x", "th_y"])
 ts.drop(columns=["th_x", "th_y"]).to_csv(f"{OUT}/hike_streams.csv", index=False)

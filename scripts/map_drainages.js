@@ -404,9 +404,15 @@ function initDrainageMap(map, ctrl) {
   }
 
   // ---- trailheads and parking (02e_access.py): trailheads from z11, parking from z12, only those near the view ----
-  const thGroup = L.layerGroup(), pkGroup = L.layerGroup(), pois = [];
+  const thGroup = L.layerGroup(), pkGroup = L.layerGroup(), acGroup = L.layerGroup(), pois = [];
   const poiClosed = p => /closed/i.test(p.st || "");
-  const poiTip = p => `<b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b>` +
+  // official fishing access sites and boat ramps (02e_access.py, accesspoints.py): type, water, agency, parking, link
+  const acType = p => (p.t || "fishing access").replace(/^./, c => c.toUpperCase());
+  const acTip = p => `<b>${esc(p.n || acType(p))}</b>` + (p.st ? `<div class="warn">${esc(p.st[0].toUpperCase() + p.st.slice(1))}</div>` : "") +
+    `<div class="dw">${esc(acType(p))}${p.w ? " · " + esc(p.w) : ""}</div>` +
+    [p.p ? "Parking" : "", p.no ? `<span class="dm">${esc(p.no)}</span>` : "", `<span class="dm">Official access: ${esc(p.src)}</span>`]
+      .filter(Boolean).join("<br>");
+  const poiTip = p => p.k === "access" ? acTip(p) : `<b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b>` +
     (poiClosed(p) ? `<div class="warn">${esc(p.st[0].toUpperCase() + p.st.slice(1))} (Forest Service status)</div>` : "") +
     `<div class="dw">${p.k === "trailhead" ? "Trailhead" + (p.p ? " with parking" : "") : "Parking"}` +
     `${p.src === "USFS" ? " · Forest Service" : ""}</div>` +
@@ -414,22 +420,22 @@ function initDrainageMap(map, ctrl) {
      p.no ? `<span class="dm">${esc(p.no)}</span>` : ""].filter(Boolean).join("<br>");
   if (window.PARKING) {
     window.PARKING.features.forEach(f => {
-      const p = f.properties, th = p.k === "trailhead";
+      const p = f.properties, th = p.k === "trailhead", ac = p.k === "access";
       const html = th ? `<div class="poi th${poiClosed(p) ? " closed" : ""}">T${p.p ? '<span class="pb">P</span>' : ""}</div>`
-                      : `<div class="poi pk">P</div>`;
+                 : ac ? `<div class="poi ac${poiClosed(p) ? " closed" : ""}">A</div>` : `<div class="poi pk">P</div>`;
       const mk = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {keyboard: false,
         icon: L.divIcon({className: "", html, iconSize: [18, 18], iconAnchor: [9, 9]})});
       mk.bindTooltip(() => poiTip(p), {direction: "top", offset: [0, -10], className: "stip"});
-      if (p.u) mk.bindPopup(() => poiTip(p) + `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>`,
+      if (p.u) mk.bindPopup(() => poiTip(p) + `<br><a href="${esc(p.u)}" target="_blank">${ac ? esc(p.src.split(", ")[0]) : "Forest Service"} page ↗</a>`,
                             {maxWidth: 300});
-      pois.push({mk, th, ll: mk.getLatLng(), on: false});
+      pois.push({mk, th, ac, ll: mk.getLatLng(), on: false});
     });
   }
   function updatePois() {
     const z = map.getZoom(), view = map.getBounds().pad(0.3);
     pois.forEach(o => {
-      const g = o.th ? thGroup : pkGroup;
-      const want = map.hasLayer(g) && z >= (o.th ? 11 : 12) && view.contains(o.ll);
+      const g = o.th ? thGroup : o.ac ? acGroup : pkGroup;
+      const want = map.hasLayer(g) && z >= (o.th || o.ac ? 11 : 12) && view.contains(o.ll);
       if (want && !o.on) { g.addLayer(o.mk); o.on = true; }
       else if (!want && o.on) { g.removeLayer(o.mk); o.on = false; }
     });
@@ -552,6 +558,8 @@ function initDrainageMap(map, ctrl) {
   if (window.PARKING) {
     ctrl.addOverlay(thGroup, "<span class='poi th mini'>T</span> Trailheads");
     ctrl.addOverlay(pkGroup, "<span class='poi pk mini'>P</span> Parking");
+    if (window.PARKING.features.some(f => f.properties.k === "access"))
+      ctrl.addOverlay(acGroup, "<span class='poi ac mini'>A</span> Fishing access &amp; boat ramps");
   }
   roadOverlays.forEach(([g, label]) => ctrl.addOverlay(g, "Roads: " + label));
 
@@ -570,7 +578,7 @@ function initDrainageMap(map, ctrl) {
   lyc.insertBefore(lyh, ctrl._section);
   L.DomEvent.on(lyh.querySelector(".lx"), "click", e => { L.DomEvent.stop(e); ctrl.collapse(); });
   const KEYED = new Map([[streams, "streams"], [basinLayer, "basins"], [pctGroup, "pct"], [trailGroup, "trails"],
-                         [bikeView, "bike"], [thGroup, "poi-th"], [pkGroup, "poi-pk"],
+                         [bikeView, "bike"], [thGroup, "poi-th"], [pkGroup, "poi-pk"], [acGroup, "poi-ac"],
                          ...Object.entries(roadGroups).map(([c, g]) => [g, "road-" + c])]);
   const keyOf = o => o._key !== undefined ? o._key : (o._key = KEYED.get(o.layer) || layerKey2d(o.name, window.LBL));
   const LGROUPS = [["All drops &amp; waterfalls", k => k === "falls" || /^drop:/.test(k)],

@@ -19,7 +19,7 @@ const LAYER_ORDER = [
   // getting there: drive (the roads, one group: from paved to the roughest, then closed to cars, then closed by fire,
   // then those whose state isn't known), the closures, park, then walk or ride (the trails with their bike access)
   "road-paved", "road-graded", "road-high_clearance", "road-4wd", "road-bike", "road-closed", "road-dirt",
-  "closures", "closures-fire", "poi-pk", "poi-th", "trailheads", "trails", "bike",
+  "closures", "closures-fire", "poi-ac", "poi-pk", "poi-th", "trailheads", "trails", "bike",
   // land and fire: who owns the land (map_land.js) first
   "land", "cpad_restricted", "non_fs_land", "wilderness", "critical_habitat", "fires",
 ];

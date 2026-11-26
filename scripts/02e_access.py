@@ -25,6 +25,9 @@ like a fire road, flagged.
 Parking: OSM amenity=parking that is public, in mountain terrain or within 300 m of a trail.
 Trailheads: OSM highway=trailhead, USFS recreation sites of type trailhead, and USFS recreation opportunities marked
 "Trailhead" (with the forest's page link); points within 150 m of each other are merged, official names first.
+Official fishing access sites and boat ramps (the user, 2026-11-25; accesspoints.py: the states' fish and wildlife
+agencies, USFS, NPS, TVA), kind "access" with their type (atype) and water: inside the map's boxes and within 1 km of
+the water the map draws; an OSM lot within 150 m of one is its parking (one point, not two).
 
 Where a road is on the USFS Motor Vehicle Use Map, its official designation decides the class (open to passenger
 vehicles: paved or graded; high-clearance only: high_clearance) and its open dates are kept.
@@ -36,7 +39,7 @@ import os, re, html, json, time, numpy as np, pandas as pd, geopandas as gpd, sh
 from config import REGIONS, CRS, ROOT, SHARED, SHARED_DERIVED, has, MIN_RELIEF_M
 from geomatch import overpass, esri, relief_at, follow, wilderness_path
 import netfetch
-import trailrules
+import trailrules, accesspoints
 
 EDW = "https://apps.fs.usda.gov/arcx/rest/services/EDW"
 TAGS = ["name", "ref", "highway", "service", "surface", "tracktype", "smoothness", "4wd_only", "access",
@@ -250,18 +253,33 @@ for bb in boxes.values():
                                               source="USFS", rank_=1), geometry=b.geometry, crs=4326))
 fs_th = gpd.GeoDataFrame(pd.concat(th_parts, ignore_index=True), crs=4326).to_crs(CRS) if th_parts else \
     gpd.GeoDataFrame(geometry=[], crs=CRS)
+# official fishing access sites and boat ramps (the user, 2026-11-25; accesspoints.py): inside the map's boxes and by the
+# water the map draws; an OSM lot within 150 m is theirs (below), so no site is drawn twice
+acc = accesspoints.official(accesspoints.area_states(), accesspoints.area_bounds()).to_crs(CRS)
+box_union = shapely.union_all([shapely.box(*r["bbox"]) for r in REGIONS.values()])
+n0 = len(acc)
+acc = acc[acc.within(box_union).values]
+acc = acc[accesspoints.near_water(acc.geometry.values)].reset_index(drop=True)
+print(f"official access points: {len(acc)} kept of {n0} ({n0 - len(acc)} outside the boxes or away from the map's water)"
+      f" | {acc.atype.value_counts().to_dict()}")
+acc = gpd.GeoDataFrame(dict(kind="access", name=acc["name"], url=acc.url, note=acc.note, source=acc.source,
+                            status=acc.status, atype=acc.atype, water=acc.water, parking_=acc.parking, rank_=0),
+                       geometry=acc.geometry, crs=CRS)
 # merge: official trailheads first (recreation pages before the sites list), then OSM trailheads, then parking; a
 # point within 150 m of one already kept adds its name / url / note if those are missing and is otherwise dropped
-allp = pd.concat([fs_th.sort_values("rank_") if len(fs_th) else fs_th,
+allp = pd.concat([fs_th.sort_values("rank_") if len(fs_th) else fs_th, acc,
                   p[p.kind == "trailhead"], p[p.kind == "parking"]], ignore_index=True)
 kept = []
 for r in allp.itertuples():
     hit = next((k for k in kept if k["geometry"].distance(r.geometry) < 150 and (k["kind"] == r.kind or r.kind == "parking")), None)
     if hit is None:
+        pk_ = getattr(r, "parking_", None)
         kept.append(dict(kind=r.kind, name=r.name if isinstance(r.name, str) else None, url=r.url, note=r.note,
                          fee=getattr(r, "fee", None), capacity=getattr(r, "capacity", None), source=r.source,
                          status=getattr(r, "status", None) if isinstance(getattr(r, "status", None), str) else None,
-                         parking=r.kind == "parking", geometry=r.geometry))
+                         parking=r.kind == "parking" or (r.kind == "access" and pk_ is True),
+                         atype=getattr(r, "atype", None) if r.kind == "access" else None,
+                         water=getattr(r, "water", None) if r.kind == "access" else None, geometry=r.geometry))
     else:
         hit["name"] = hit["name"] or (r.name if isinstance(r.name, str) else None)
         hit["url"] = hit["url"] or r.url
@@ -272,7 +290,11 @@ for r in allp.itertuples():
             hit["parking"] = True
             hit["fee"] = hit.get("fee") or getattr(r, "fee", None)
             hit["capacity"] = hit.get("capacity") or getattr(r, "capacity", None)
+            for k in kept:            # an OSM lot by an official access site is that site's parking too
+                if k["kind"] == "access" and k is not hit and k["geometry"].distance(r.geometry) < 150:
+                    k["parking"] = True
 pt = gpd.GeoDataFrame(kept, crs=CRS)
 pt.to_crs(4326).to_file(f"{SHARED}/parking_trailheads.gpkg")
 print("trailheads:", int((pt.kind == "trailhead").sum()), "(with parking", int(((pt.kind == "trailhead") & pt.parking).sum()),
-      ") | parking lots:", int((pt.kind == "parking").sum()))
+      ") | parking lots:", int((pt.kind == "parking").sum()), "| official access sites:", int((pt.kind == "access").sum()),
+      "(with parking", int(((pt.kind == "access") & pt.parking).sum()), ")")

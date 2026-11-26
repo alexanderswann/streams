@@ -20,6 +20,8 @@ import datetime as dt, fnmatch, glob, html, os, re
 import pandas as pd
 from config import AREAS, ROOT
 from flowlib import GREEN_YEARS     # the late summers of Sentinel-2 greenness (02g_greenness.py)
+from accesspoints import LEFT_OUT as _ACC_OUT     # access sources left out for their terms (accesspoints.py)
+_acc = lambda key, text: "" if key in _ACC_OUT else text
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TERMS_READ = dt.date(2026, 11, 24)      # when the publishers' terms pages were read for the entries below
@@ -48,8 +50,8 @@ GROUPS = [
     ("lakes", "Lakes, depths and lake access", "Lake outlines, levels, depth contours, fish and the ways onto them."),
     ("falls", "Waterfalls and swimming holes", "The known falls and swimming holes; the drops the terrain shows are "
      "under Streams."),
-    ("trails", "Trails, roads and parking", "Trails and fire roads, mountain bike access, the long trail, roads and "
-     "parking."),
+    ("trails", "Trails, roads, parking and fishing access", "Trails and fire roads, mountain bike access, the long trail, "
+     "roads and parking, and the agencies' fishing access sites and boat ramps."),
     ("closures", "Road closures and approach times", "Closed roads, and the drive and walk times to each creek."),
     ("fires", "Fires", "Fire perimeters, burn severity and debris-flow hazard."),
     ("land", "Land, access and protected habitat", "Who owns the land, where public access is restricted, wilderness, "
@@ -229,50 +231,65 @@ SOURCES = [
       "Designated Heritage and Wild Trout Waters, the Heritage and Wild Trout Program's surveys, and trout planting "
       "(stocking) locations.",
       "Trout waters on the map, the surveys (trout found or not) and the last year's stocking in the popups and the "
-      "fish score.",
+      "fish score; the public boat launches of its fishing guide (California's boating facility survey) as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).",
       "src:cdfw_trout", "CC BY 4.0: free to use with credit; BIOS's citation satisfies it.", CC_BY,
       "California Department of Fish and Wildlife, Biogeographic Information and Observation System (BIOS): "
       "Designated Heritage and Wild Trout Waters [ds1356], Planting Location [ds2897], Heritage and Wild Trout "
       "Program data. https://wildlife.ca.gov/Data/BIOS",
-      hosts=("services2.arcgis.com/Uq9r85Potqm3MfRV",)),
+      hosts=("services2.arcgis.com/Uq9r85Potqm3MfRV", "wildlife.ca.gov"), also=("trails",)),
     S("ct_deep", "trout", "Connecticut DEEP fisheries data",
       "Connecticut Department of Energy and Environmental Protection",
       "https://portal.ct.gov/deep/fishing",
       "Fish community samples (wild and stocked trout told apart), stocked streams and lakes, fisheries management "
       "areas (Wild Trout and Trout Management Areas), boat launches, and lake depth contours (1959–2002 surveys).",
-      "Trout waters and records, the stocked trout lakes, lake access and lake depths.",
+      "Trout waters and records, the stocked trout lakes, lake access and lake depths; its boat launches as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).",
       "src:ct_trout",
       "CC0 (no rights reserved) for the management areas, boat launches and depth contours; no licence stated on "
       "the fish samples and stocking layers.", "https://creativecommons.org/publicdomain/zero/1.0/", "CT DEEP",
-      hosts=("services1.arcgis.com/FjPcSmEFuDYlIdKC",), also=("lakes",)),
+      hosts=("services1.arcgis.com/FjPcSmEFuDYlIdKC", "portal.ct.gov", "www.ct.gov"), also=("lakes", "trails")),
     S("vt_anr", "trout", "Vermont Fish & Wildlife and Agency of Natural Resources",
       "Vermont Agency of Natural Resources", "https://vtfishandwildlife.com/",
       "Brook trout waters (catchments with wild brook trout), the 2021 stocking list, fishing access areas, "
       "special-regulation lakes, and lake soundings (bathymetry, compiled 2020).",
-      "Trout waters and stocking records, lake access and rules, and lake depth contours.",
-      "src:vt_trout", NONE_STATED, None, "Vermont Agency of Natural Resources, Fish & Wildlife Department",
-      hosts=("anrmaps.vermont.gov", "vtfishandwildlife.com"), also=("lakes",)),
+      "Trout waters and stocking records, lake access and rules, and lake depth contours" + _acc("vtfw", "; its fishing "
+      "access areas as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where "
+      "routes may start)") + ".",
+      ["src:vt_trout"] + ([] if "vtfw" in _ACC_OUT else ["adk_high_peaks", "adk_southeast"]),
+      _acc("vtfw", "Fishing access areas: Creative Commons Attribution-ShareAlike 4.0 (Vermont Open Geodata Portal): free "
+           "to use with credit, and the access points drawn from them are shared under the same licence. ") +
+      "No licence stated on the other layers.", None if "vtfw" in _ACC_OUT else "https://creativecommons.org/licenses/by-sa/4.0/",
+      "Vermont Agency of Natural Resources, Fish & Wildlife Department",
+      hosts=("anrmaps.vermont.gov", "vtfishandwildlife.com"), also=("lakes", "trails")),
     S("va_dwr", "trout", "Virginia Department of Wildlife Resources", "Virginia Department of Wildlife Resources",
       "https://dwr.virginia.gov/",
       "The cold-water stream survey (wild trout streams, classes I–IV), stocked trout reaches and lakes, public "
       "fishing lakes, and the Lake Robertson depth map.",
-      "Trout waters and stocking records, lake access and boat rules, Lake Robertson's depth.",
+      "Trout waters and stocking records, lake access and boat rules, Lake Robertson's depth" + _acc("vadwr", "; its "
+      "boating access locations as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" "
+      "layer, where routes may start)") + ".",
       "src:va_trout",
-      "No licence stated; the stocked-streams layer asks to be cited as below.", None,
-      "Trout Stocked Streams. 2017. Virginia Department of Game and Inland Fisheries.",
-      hosts=("services.dwr.virginia.gov",), also=("lakes",)),
+      "DWR's GIS data disclaimer: its data \"are available by permission of the Virginia Department of Wildlife "
+      "Resources\" and are to be cited as below; no licence stated.", "https://dwr.virginia.gov/gis/gis-data-disclaimer/",
+      "Trout Stocked Streams. 2017. Virginia Department of Game and Inland Fisheries." + _acc("vadwr", " Boating Access "
+      "Locations. 2026. Virginia Department of Wildlife Resources."),
+      hosts=("services.dwr.virginia.gov", "dwr.virginia.gov"), also=("lakes", "trails")),
     S("ga_dnr", "trout", "Georgia DNR Wildlife Resources trout data", "Georgia Department of Natural Resources",
       "https://georgiawildlife.com/fishing/trout",
-      "Designated trout streams, recently stocked streams and this year's standardized trout sampling.",
-      "Trout waters and trout records.", "src:ga_trout", NONE_STATED,
-      hosts=("services6.arcgis.com/9QlSLDqa0P1cHLhu",)),
+      "Designated trout streams, recently stocked streams and this year's standardized trout sampling, and the "
+      "Wildlife Resources Division's water access points (boat ramps, bank fishing, canoe access).",
+      "Trout waters and trout records; the water access points as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", "src:ga_trout",
+      NONE_STATED, "Georgia Department of Natural Resources, Wildlife Resources Division",
+      hosts=("services6.arcgis.com/9QlSLDqa0P1cHLhu", "georgiawildlife.com", "gadnrwrd.maps.arcgis.com"), also=("trails",)),
     S("wgfd", "trout", "Wyoming Game and Fish fishing guides", "Wyoming Game and Fish Department",
       "https://wgfd.wyo.gov/fishing-boating",
       "The fishing guide's streams (ribbon classes and game fish) and lakes (game fish, class, depths), and the "
       "native cutthroat waters of the Cutt-Slam.",
-      "Trout waters, wild brook trout water, and the fish, depths and access of Jackson's lakes.",
-      "src:wy_trout", NONE_STATED, hosts=("services6.arcgis.com/cWzdqIyxbijuhPLw", "wgfd.wyo.gov"),
-      also=("lakes",)),
+      "Trout waters, wild brook trout water, and the fish, depths and access of Jackson's lakes; the fishing guide's "
+      "boat ramps, the Public Access Areas and the float-fishing river access points as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).",
+      "src:wy_trout", "No licence stated; WGFD's geospatial data page gives a disclaimer only.",
+      "https://wgfd.wyo.gov/geospatial-data", "Wyoming Game and Fish Department",
+      hosts=("services6.arcgis.com/cWzdqIyxbijuhPLw", "wgfd.wyo.gov"), also=("lakes", "trails")),
     S("streamnet", "trout", "StreamNet fish distribution",
       "Pacific States Marine Fisheries Commission (StreamNet); data from Idaho Department of Fish and Game",
       "https://www.streamnet.org/",
@@ -288,32 +305,42 @@ SOURCES = [
       "stocked trout sections and lakes, lake access points, lake regulations and boating rules, and its lake "
       "survey reports.",
       "Trout waters and stocking records, the stocked trout lakes, lake access, rules and some lake depths and fish.",
-      "src:pa_trout", "No licence stated on PFBC's map services.", None, "Pennsylvania Fish and Boat Commission",
-      hosts=("fbweb.pa.gov", "conservationexplorer.dcnr.pa.gov", "www.pa.gov"), also=("lakes",)),
+      "src:pa_trout",
+      "No licence stated on PFBC's map services. Its fishing and boating access areas (PASDA): free to use with credit "
+      "to PFBC; a changed copy is to say how it was changed (the map keeps each site's name, water, kind, parking and "
+      "page) and not suggest PFBC approved it.", "https://www.pasda.psu.edu/uci/DataSummary.aspx?dataset=984",
+      "Pennsylvania Fish and Boat Commission (access areas reduced to the fields the map shows; not reviewed by PFBC)",
+      hosts=("fbweb.pa.gov", "conservationexplorer.dcnr.pa.gov", "www.pa.gov", "www.pasda.psu.edu"), also=("lakes", "trails")),
     S("de_dnrec", "trout", "Delaware fishing access (FirstMap)",
       "Delaware Department of Natural Resources and Environmental Control",
       "https://firstmap.delaware.gov/",
-      "Delaware's designated trout streams in New Castle County and their fly-fishing-only sections.",
-      "Trout waters on the Delaware side of the southeastern Pennsylvania map.", "src:de_trout", NONE_STATED,
-      hosts=("enterprise.firstmap.delaware.gov",)),
+      "Delaware's designated trout streams in New Castle County and their fly-fishing-only sections, and its fishing "
+      "access sites (boat ramps, piers, canoe launches).",
+      "Trout waters on the Delaware side of the southeastern Pennsylvania map; the fishing access sites as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", "src:de_trout",
+      "No licence stated; the fishing access item gives an as-is disclaimer only.", None,
+      "Delaware Department of Natural Resources and Environmental Control",
+      hosts=("enterprise.firstmap.delaware.gov", "dnrec.delaware.gov"), also=("trails",)),
     S("ncwrc", "trout", "North Carolina Wildlife Resources Commission", "North Carolina Wildlife Resources Commission",
       "https://www.ncwildlife.gov/fishing/where-fish/public-mountain-trout-waters",
       "Public Mountain Trout Waters (streams and impoundments, by class), boating access areas and public fishing "
       "areas.",
-      "Trout waters and their classes, trout lakes NHD lacks, and lake access.",
-      "src:nc_trout",
+      "Trout waters and their classes, trout lakes NHD lacks, and lake access; the boating access and public fishing "
+      "areas as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).",
+      ["src:nc_trout", "n_georgia"],
       "Boating and fishing areas: free and unrestricted use. Products from the trout waters should cite NCWRC as "
       "below.", None,
       "The source of the North Carolina Wildlife Resources Commission Public Mountain Trout Waters data is North "
       "Carolina Wildlife Resources Commission.",
-      hosts=("services1.arcgis.com/YfqBAUM5nWR3yhGP", "www.ncwildlife.gov"), also=("lakes",)),
+      hosts=("services1.arcgis.com/YfqBAUM5nWR3yhGP", "www.ncwildlife.gov"), also=("lakes", "trails")),
     S("twra", "trout", "Tennessee Wildlife Resources Agency", "Tennessee Wildlife Resources Agency",
       "https://www.tn.gov/twra.html",
       "Trout stocking sites, wadeable-stream fish samples (1996–2022), brook trout genetics (2016), access sites "
       "and the Calderwood reciprocal fishing area.",
-      "Trout records and lake access on the Tennessee side of the Smokies.", "src:tn_trout",
+      "Trout records and lake access on the Tennessee side of the Smokies; its boat launches and fishing sites as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", "src:tn_trout",
       "Called \"a public resource of general information\" in TWRA's disclaimer; no licence stated.",
-      hosts=("services3.arcgis.com/PWXNAH2YKmZY7lBq",), also=("lakes",)),
+      hosts=("services3.arcgis.com/PWXNAH2YKmZY7lBq", "www.tn.gov"), also=("lakes", "trails")),
     S("grsm", "trout", "Great Smoky Mountains National Park GIS", "National Park Service",
       "https://www.nps.gov/grsm/",
       "The park's trout distribution by stream segment, its waterfalls and its roads.",
@@ -337,10 +364,12 @@ SOURCES = [
       hosts=("services6.arcgis.com/DZHaqZm9cxOD4CWM",), also=("land",)),
     S("nydata", "trout", "data.ny.gov (Open NY)", "New York State; datasets by the Department of Environmental Conservation",
       "https://data.ny.gov/",
-      "DEC's fish stocking lists since 2011, its recommended fishing lakes and ponds, and points of interest on DEC "
-      "lands.", "Lake stocking records, the lake fishing list and launches.", ["adk_*"],
+      "DEC's fish stocking lists since 2011, its recommended fishing lakes and ponds, points of interest on DEC "
+      "lands, its boat launch list and the Public Fishing Rights parking areas.",
+      "Lake stocking records, the lake fishing list and launches; the boat launches, fishing access sites, piers and "
+      "fishing rights parking as official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", ["adk_*"],
       "Open NY Terms of Use.", "https://data.ny.gov/dataset/OPEN-NY-Terms-Of-Use/77gx-ii52",
-      hosts=("data.ny.gov",), also=("lakes",)),
+      hosts=("data.ny.gov", "dec.ny.gov"), also=("lakes", "trails")),
     S("tu_ebtjv", "trout", "Brook trout portfolio (wild brook trout patches)",
       "Trout Unlimited and the Eastern Brook Trout Joint Venture", "https://easternbrooktrout.org/",
       "The latest assessment of wild brook trout patches across the eastern range, Connecticut to Georgia.",
@@ -390,8 +419,9 @@ SOURCES = [
       "Hopewell, Scotts Run).", "Lake access and depth contours.", ["se_pa"], NONE_STATED,
       hosts=("www.gis.dcnr.pa.gov", "maps.dcnr.pa.gov")),
     S("tva", "lakes", "TVA recreation sites", "Tennessee Valley Authority", "https://www.tva.com/",
-      "The Tennessee Valley Authority's boat ramps and recreation areas.", "Boat ramps on the Smokies' reservoirs.",
-      ["smokies"], NONE_STATED, hosts=("services.arcgis.com/w8auYAijfGK1Mydj",)),
+      "The Tennessee Valley Authority's boat ramps and recreation areas.",
+      "Boat ramps on the Smokies' and north Georgia's TVA reservoirs: lake access, and official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).",
+      ["smokies", "n_georgia"], NONE_STATED, hosts=("services.arcgis.com/w8auYAijfGK1Mydj", "www.tva.com"), also=("trails",)),
     S("lake_reports", "lakes", "Lake depths and fish surveys from reports",
       "National Park Service, Bureau of Reclamation, Virginia DWR, PA DCNR and PFBC, and published studies",
       "https://irma.nps.gov/DataStore/",
@@ -461,8 +491,8 @@ SOURCES = [
       "https://data.fs.usda.gov/geodata/edw/datasets.php",
       "National Forest System roads (open and closed to the public), Motor Vehicle Use Maps, system trails, "
       "trailheads and recreation sites, wilderness areas and land ownership.",
-      "Gated fire roads open to walking, road classes and open dates, which trails allow bikes, trailheads, no "
-      "bikes in wilderness, and private land inside the forests.", "all", GOV_NO_TERMS, USFS_TERMS,
+      "Gated fire roads open to walking, road classes and open dates, which trails allow bikes, trailheads, fishing "
+      "and boating sites, no bikes in wilderness, and private land inside the forests.", "all", GOV_NO_TERMS, USFS_TERMS,
       "USDA Forest Service", hosts=("apps.fs.usda.gov", "www.fs.usda.gov"), also=("closures", "land")),
     S("csp", "trails", "California State Parks recreational routes", "California State Parks",
       "https://www.parks.ca.gov/?page_id=29682",
@@ -472,6 +502,44 @@ SOURCES = [
       "State Parks, not to be sold or altered; commercial use needs its approval.",
       "https://www.parks.ca.gov/?page_id=29682", "California State Parks",
       note="Named in the LA map's credits line too.", hosts=("services2.arcgis.com/AhxrK3F6WM8ECvDi",)),
+    S("nps_poi", "trails", "National Park Service points of interest", "National Park Service",
+      "https://www.nps.gov/subjects/digital/nps-data-api.htm",
+      "The parks' mapped points of interest, among them boat launches, canoe and kayak access and water access.",
+      "The boat launches and water access of the Chattahoochee River National Recreation Area and Grand Teton as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", ["jackson", "n_georgia"], NPS_PUBLIC, NPS_TERMS,
+      "National Park Service", hosts=("mapservices.nps.gov", "www.nps.gov")),
+    S("idfg", "trails", "Idaho Fish and Game fishing and boating access sites", "Idaho Department of Fish and Game",
+      "https://data-idfggis.opendata.arcgis.com/",
+      "IDFG's public fishing and boating access sites, with ramps and docks.",
+      "The access sites on the Idaho side of the Jackson map (Teton Valley, the Palisades) as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", ["jackson"],
+      "No licence stated; a disclaimer leaves it to users to judge the data's fitness and releases IDFG from liability.",
+      None, "Idaho Department of Fish and Game, IFWIS", hosts=("gisportal-idfg.idaho.gov", "idfg.idaho.gov")),
+    S("scdnr", "trails", "South Carolina public water access", "South Carolina Department of Natural Resources",
+      "https://data-scdnr.opendata.arcgis.com/",
+      "SCDNR's public water access sites: boat ramps, paddle launches, piers and bank fishing.",
+      "The access sites on the South Carolina side of the north Georgia map (the Chattooga, Tugaloo and Hartwell) as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", ["n_georgia"],
+      "No licence stated; published \"to promote outdoor recreation\" with an as-is disclaimer.", None,
+      "South Carolina Department of Natural Resources", hosts=("services.arcgis.com/acgZYxoN5Oj8pDLa", "www.dnr.sc.gov")),
+    S("ma_ofba", "trails", "Massachusetts fishing and boating access sites (MassGIS)",
+      "Massachusetts Office of Fishing and Boating Access; MassGIS",
+      "https://www.mass.gov/orgs/office-of-fishing-and-boating-access",
+      "The state's public fishing and boating access sites.",
+      "The access sites on the Massachusetts side of the northeastern Connecticut map as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).",
+      [] if "maofba" in _ACC_OUT else ["ne_ct"],
+      "No licence stated on the item; MassGIS describes its data as public records.", None,
+      "MassGIS (Bureau of Geographic Information), Commonwealth of Massachusetts; Office of Fishing and Boating Access",
+      hosts=("services1.arcgis.com/hGdibHYSPO59RG1h", "www.mass.gov")),
+    S("rigis", "trails", "Rhode Island fishing and boating access (RIGIS)",
+      "Rhode Island Department of Environmental Management; RIGIS", "https://www.rigis.org/",
+      "Freshwater and saltwater fishing access, small-craft launches and trailer ramps.",
+      "The freshwater sites on the Rhode Island side of the northeastern Connecticut map as "
+      "official fishing access sites and boat ramps (the \"Fishing access & boat ramps\" layer, where routes may start).", ["ne_ct"],
+      "Provided as is; RIGIS asks that both RIGIS and the producer be acknowledged.", None,
+      "RIGIS and the Rhode Island Department of Environmental Management",
+      hosts=("services2.arcgis.com/S8zZg9pg23JUEexQ", "dem.ri.gov", "www.rigis.org")),
 
     # ---- closures and approach times ----
     S("caltrans", "closures", "Caltrans Lane Closure System", "California Department of Transportation",

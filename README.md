@@ -540,7 +540,18 @@ the USFS road lines (open and closed to the public) more than 40 m from every wa
 not an offset copy of an OSM way (half the piece within 100 m of one, or within 300 m with 60 % of it running beside
 one within 30° of its direction: `trailrules.usfs_only`). They are classed like the others by their USFS layer, level
 and MVUM designation, named from the USFS record, and say "From Forest Service records only; not in OpenStreetMap,
-may be overgrown or gated". Road and trail downloads are cached for a week (`REFRESH=1` forces new ones).
+may be overgrown or gated". **Official fishing access sites and boat ramps** (the user, 2026-11-25; `accesspoints.py`)
+come from the agencies that publish them for the states each map's boxes reach into: CDFW's fishing guide launches,
+WGFD's ramps, Public Access Areas and river access, IDFG's access sites, Georgia DNR's water access points, SCDNR's
+public water access, NCWRC's boating access and public fishing areas, TWRA's access sites, Virginia DWR's boating
+access, PFBC's access areas, DNREC's fishing access, CT DEEP's boat launches, Massachusetts' and Rhode Island's access
+sites, Vermont Fish & Wildlife's fishing access areas, and DEC's launches, access sites, piers and Public Fishing Rights
+parking (data.ny.gov), with USFS fishing and boating sites, the Park Service's boat launches and water access, and
+TVA's ramps everywhere. Each keeps its name, type (boat ramp, hand launch, walk-in access, fishing pier, parking),
+water, agency and page; sites within 75 m are one, an OSM lot within 150 m is its parking, and only sites inside the
+boxes and within 1 km of water the map draws are kept (not the tidal Delaware's or the ocean's). Sources whose terms
+forbid passing the data on, or ask to be contacted first, are left out (DEC's own ArcGIS layers, MassWildlife's,
+West Virginia DNR's). Road and trail downloads are cached for a week (`REFRESH=1` forces new ones).
 
 **Map cartography** (`06_map.py` with `map_drainages.js` + `map_style.css`, inlined into the HTML; 3D:
 `scripts/map3d.html`):
@@ -556,15 +567,16 @@ may be overgrown or gated". Road and trail downloads are cached for a week (`REF
   white edge, revealed by zoom (routes and named trails 10, named fire roads 11, unnamed trails and bike paths 12,
   unnamed fire roads and possibly unofficial paths 13); closed or private ways faded, informal ones dotted; hover for official status,
   trail number, allowed uses, difficulty and surface. **Access roads**, a layer per class (from zoom 10; dirt of
-  unknown condition from 11; paved off), cased so they read as roads. **Trailheads** (green T, zoom 11+) and
-  **parking** (blue P, zoom 12+). A trail or road running beside a creek is drawn shifted to the creek's far side.
+  unknown condition from 11; paved off), cased so they read as roads. **Trailheads** (green T, zoom 11+),
+  **parking** (blue P, zoom 12+) and **fishing access & boat ramps** (teal A, zoom 11+: type, water, parking, the
+  agency and its page). A trail or road running beside a creek is drawn shifted to the creek's far side.
   In the 2D map every vector layer draws on the streams' canvas (Leaflet canvases don't pass mouse events to canvases
   beneath them): area overlays under the streams, points and lines on top.
 - **At start** every area map (2D, 3D and the one-file map) shows only streams, drainage outlines and names, the
   long trail, terrain shading, place / road labels and lakes (3D: terrain ×1.6 on a light gray basemap; each overlay's
   start is the last entry of its `ov` row in `map3d.html`); the map of all areas draws no lakes. The rest waits in the
-  layer list, each named with its map symbol: drops (a layer per status), waterfalls, trails, trailheads, access
-  roads, gauges, closures, fire closure areas, trout waters, trout evidence, springs, lake depth contours.
+  layer list, each named with its map symbol: drops (a layer per status), waterfalls, trails, trailheads, parking,
+  fishing access and boat ramps, access roads, gauges, closures, fire closure areas, trout waters, trout evidence, springs, lake depth contours.
 - **Streams in lakes.** A reach lying at least half in a lake the Lakes layer draws is drawn as the lake while Lakes
   is on, and as a stream when it is off (`STREAMS_LAKE` in `map3d_data.js`); its stretch outside the lake stays, so a
   river reaches the shore. Reaches at lake edges, where the two outlines differ, stay with the other streams.
@@ -692,6 +704,9 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
     kind (bike, on a trail or road, off trail, creek bottom; a run under 30 m between two of one other kind takes
     theirs, under 60 m between off trail and creek bottom). A bike run or a trail-or-road run is drawn on the line `08_hike.py` burned in, not on the 10 m cells.
     Read after everything above is written: the times don't change.
+  - **Official access sites start routes too**: a fishing access site or boat ramp with parking (`02e_access.py`) within
+    400 m of an open road is a start, so a site at the end of a lane OSM marks private or doesn't map counts, and a route
+    that starts at one says so ("park at Johnson Ferry North Boat Launch").
 - `09_drive.py`: free-flow drive time and distance from the area's drive-time starting point (`home` in `AREAS`) to
   each trailhead, over regional OSM highways plus local roads, without the closures counted for mid-July and with
   winding mountain roads at ×0.75 speed; no traffic. A road reaching the network only through streets outside every

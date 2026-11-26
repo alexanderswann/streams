@@ -6,6 +6,8 @@
 .flab span { font: italic 600 11.5px/1 Georgia, "Times New Roman", serif; letter-spacing: .02em; opacity: .9; }
 .stip { padding: 5px 8px; border-radius: 6px; border: 0; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 .stip b, .pp b { font-size: 13px; }
+/* a tooltip's gray notes wrap (Leaflet tooltips don't): on a 375 px phone a long one ran off both edges */
+.stip .dm { white-space: normal; display: inline-block; max-width: 260px; }
 .dw { color: #444; margin: 1px 0 3px; }
 .dm { color: #7a828c; }
 .warn { color: #a61e4d; }
@@ -70,6 +72,8 @@
   font: 700 11px/1 system-ui, sans-serif; color: #fff; box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(0,0,0,.45); }
 .poi.th { background: #2b8a3e; border-radius: 50%; }
 .poi.pk { background: #1c7ed6; border-radius: 3px; }
+.poi.ac { background: #0c8599; border-radius: 3px 50% 50% 50%; }
+.poi.ac.closed { background: #868e96; text-decoration: line-through; }
 .poi .pb { position: absolute; right: -6px; bottom: -5px; width: 11px; height: 11px; border-radius: 2px; background: #1c7ed6;
   font-size: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1px #fff; }
 .poi.mini { display: inline-flex; width: 13px; height: 13px; font-size: 9px; vertical-align: -2px; box-shadow: none; }

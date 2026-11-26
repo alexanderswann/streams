@@ -32,6 +32,7 @@
   .poi { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; color: #fff;
     font: 700 9px/1 system-ui, sans-serif; vertical-align: -2px; }
   .poi.th { background: #2b8a3e; border-radius: 50%; } .poi.pk { background: #1c7ed6; border-radius: 3px; }
+  .poi.ac { background: #0c8599; border-radius: 3px 50% 50% 50%; }
   .bksym { display: inline-block; width: 16px; height: 6px; border-radius: 3px; vertical-align: 1px;
     background: linear-gradient(90deg, #37b24d 0 33%, #a9e34b 33% 66%, #f03e3e 66%); }
   .seg { display: flex; margin: 7px 0 6px; border: 1px solid #ced4da; border-radius: 6px; overflow: hidden; }
@@ -475,13 +476,24 @@
       map.addLayer({id: "poi-trailhead", type: "circle", source: "pois", minzoom: 11, filter: ["==", ["get", "k"], "trailhead"],
         paint: {"circle-radius": 8.5, "circle-stroke-color": "#fff", "circle-stroke-width": 1.5,
                 "circle-color": ["case", ["in", "closed", ["downcase", ["coalesce", ["get", "st"], ""]]], "#868e96", "#2b8a3e"]}});
+      // official fishing access sites and boat ramps (z11+), a layer of their own
+      map.addLayer({id: "poi-access", type: "circle", source: "pois", minzoom: 11, filter: ["==", ["get", "k"], "access"],
+        layout: {visibility: "none"},
+        paint: {"circle-radius": 8, "circle-stroke-color": "#fff", "circle-stroke-width": 1.5,
+                "circle-color": ["case", ["in", "closed", ["downcase", ["coalesce", ["get", "st"], ""]]], "#868e96", "#0c8599"]}});
+      map.addLayer({id: "poi-ac-text", type: "symbol", source: "pois", minzoom: 11, filter: ["==", ["get", "k"], "access"],
+        layout: {"text-field": "A", "text-font": ["Noto Sans Medium"], "text-size": 11, "text-allow-overlap": true,
+                 "text-ignore-placement": true, visibility: "none"},
+        paint: {"text-color": "#ffffff"}});
       map.addLayer({id: "poi-text", type: "symbol", source: "pois", minzoom: 11,
-        filter: ["any", ["==", ["get", "k"], "trailhead"], [">=", ["zoom"], 12]],
+        filter: ["all", ["!=", ["get", "k"], "access"], ["any", ["==", ["get", "k"], "trailhead"], [">=", ["zoom"], 12]]],
         layout: {"text-field": ["case", ["==", ["get", "k"], "trailhead"], "T", "P"], "text-font": ["Noto Sans Medium"],
                  "text-size": 11, "text-allow-overlap": true, "text-ignore-placement": true},
         paint: {"text-color": "#ffffff"}});
       ov.push(["poi-th", "Trailheads", "<span class='poi th mini'>T</span>", ["poi-trailhead", "poi-text"], false]);
       ov.push(["poi-pk", "Parking", "<span class='poi pk mini'>P</span>", ["poi-parking"], false]);
+      if (D.parking.features.some(f => f.properties.k === "access"))
+        ov.push(["poi-ac", "Fishing access &amp; boat ramps", "<span class='poi ac mini'>A</span>", ["poi-access", "poi-ac-text"], false]);
     }
     src("trailheads", D.trailheads);
     map.addLayer({id: "trailheads", type: "circle", source: "trailheads", layout: {visibility: "none"},
@@ -802,7 +814,7 @@
   function wireInteraction() {
     const routes = window.routesMaplibre ? routesMaplibre(map, D) : null;   // a reach's route (map_routes.js)
     const tip = new maplibregl.Popup({closeButton: false, closeOnClick: false, className: "tip", offset: 12, maxWidth: "300px"});
-    const hoverIds = ["poi-trailhead", "poi-parking", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "lakes", "lake-depth", "wild_trout_waters", "wilderness",
+    const hoverIds = ["poi-trailhead", "poi-parking", "poi-access", "pct-core", ...trailLineIds, ...roadCoreIds, "streams", "falls", "gauges", "trout", "springs", "trailheads", "closures", "fires", "lakes", "lake-depth", "wild_trout_waters", "wilderness",
                       "critical_habitat", "non_fs_land", ...Object.keys(D.drop_colors).map((_, i) => "drop" + i), "land", "land-p", "parcels-f"]
       .filter(id => map.getLayer(id));
     const tipHtml = (id, p) => {
@@ -813,6 +825,13 @@
       if (id === "closures") return `<b>${esc(p.road)}</b> · ${esc(p.severity)}<br>${esc(p.when)} ${esc(p.reason)}` +
                                     (p.times ? `<br><span class="dm">Approach times: ${esc(p.times)}</span>` : "");
       if (id === "fires") return `${esc(p.fire)} fire, ${p.year} · ${Math.round(p.acres).toLocaleString()} acres`;
+      if (id === "poi-access") {
+        const ty = (p.t || "fishing access").replace(/^./, c => c.toUpperCase());
+        return `<b>${esc(p.n || ty)}</b>` + (p.st ? `<div class="warn">${esc(p.st)}</div>` : "") +
+          `<div class="dw">${esc(ty)}${p.w ? " · " + esc(p.w) : ""}</div>` +
+          [p.p ? "Parking" : "", p.no ? `<span class="dm">${esc(p.no)}</span>` : "", `<span class="dm">Official access: ${esc(p.src)}</span>`]
+            .filter(Boolean).join("<br>");
+      }
       if (id === "poi-trailhead" || id === "poi-parking") return `<b>${esc(p.n || (p.k === "trailhead" ? "Trailhead" : "Parking"))}</b>` +
         (/closed/i.test(p.st || "") ? `<div class="warn">${esc(p.st)} (Forest Service status)</div>` : "") +
         `<div class="dw">${p.k === "trailhead" ? "Trailhead" + (p.p ? " with parking" : "") : "Parking"}${p.src === "USFS" ? " · Forest Service" : ""}</div>` +
@@ -985,7 +1004,8 @@
     openAt = (lngLat, point, id, p, fid) => {
       // drop and gauge popups are HTML built by 06_map.py from our own data
       const html = id === "streams" ? streamPop(p) : (id === "land" || id === "land-p") ? landPopup(p, lngLat.lat, lngLat.lng) : id === "parcels-f" ? landParcelPopup(p, lngLat.lat, lngLat.lng) : (id.startsWith("drop") || id === "gauges" || id === "trout" || id === "lakes" || (id === "falls" && p.html)) ? p.html
-        : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">Forest Service page ↗</a>` : "");
+        : tipHtml(id, p) + (p.u && id.startsWith("poi") ? `<br><a href="${esc(p.u)}" target="_blank">${id === "poi-access" ?
+            esc(String(p.src).split(", ")[0]) : "Forest Service"} page ↗</a>` : "");
       tip.remove();
       // with the cell coverage layer on, each carrier's signal at the spot, at the popup's foot (or the whole popup)
       const cellHtml = window.cellNote ? cellNote(lngLat, !html) : "";
