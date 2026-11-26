@@ -7,22 +7,22 @@
    "code": {
     "scripts/02b_download_flow.py": "b2fdff8f618c97673db677daa0460d07c5342add",
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589200.445065,
-   "ended_at": "2026-11-25 01:46:40",
-   "pid": 2447,
-   "started": 1795589194.15801,
-   "started_at": "2026-11-25 01:46:34",
+   "ended": 1795651768.28083,
+   "ended_at": "2026-11-25 19:09:28",
+   "pid": 34199,
+   "started": 1795651762.061802,
+   "started_at": "2026-11-25 19:09:22",
    "status": "ended",
    "step": "02b_download_flow",
    "uncommitted": [],
@@ -33,20 +33,20 @@
    "changed_data": true,
    "code": {
     "scripts/02c_pct.py": "c47c9a0bc291b8a0f07837c5f38f343e36e61a0b",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610346.2541282,
-   "ended_at": "2026-11-25 07:39:06",
-   "pid": 40398,
-   "started": 1795610340.0777102,
-   "started_at": "2026-11-25 07:39:00",
+   "ended": 1795652038.573177,
+   "ended_at": "2026-11-25 19:13:58",
+   "pid": 36900,
+   "started": 1795652032.408726,
+   "started_at": "2026-11-25 19:13:52",
    "status": "ended",
    "step": "02c_pct",
    "uncommitted": [],
@@ -56,22 +56,23 @@
    "box": "all",
    "changed_data": true,
    "code": {
-    "scripts/02d_trails.py": "1b6944d888004331ee567d69e16fafc4b94526b3",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/02d_trails.py": "08e06fb270e2ff450696bb10fd9915204b3617be",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/trailrules.py": "9713e0c8d41096c6523132d1f7596105e405321a",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610310.13654,
-   "ended_at": "2026-11-25 07:38:30",
-   "pid": 38927,
-   "started": 1795610291.8699362,
-   "started_at": "2026-11-25 07:38:11",
+   "ended": 1795651998.3980641,
+   "ended_at": "2026-11-25 19:13:18",
+   "pid": 36382,
+   "started": 1795651978.537598,
+   "started_at": "2026-11-25 19:12:58",
    "status": "ended",
    "step": "02d_trails",
    "uncommitted": [],
@@ -81,22 +82,23 @@
    "box": "all",
    "changed_data": true,
    "code": {
-    "scripts/02e_access.py": "dab67754d2121c5c81e29312a517ba12bae1de4f",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/02e_access.py": "bc78b9315c15e9b6a6f834956c3991eb124b2937",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/trailrules.py": "9713e0c8d41096c6523132d1f7596105e405321a",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610339.5547671,
-   "ended_at": "2026-11-25 07:38:59",
-   "pid": 39547,
-   "started": 1795610310.4950862,
-   "started_at": "2026-11-25 07:38:30",
+   "ended": 1795652031.85951,
+   "ended_at": "2026-11-25 19:13:51",
+   "pid": 36582,
+   "started": 1795651998.835408,
+   "started_at": "2026-11-25 19:13:18",
    "status": "ended",
    "step": "02e_access",
    "uncommitted": [],
@@ -108,22 +110,22 @@
    "code": {
     "scripts/02f_known_falls.py": "3aa8254334b0a26cd919d4da7a6ccd3821f6f97e",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/sources.py": "92948a5b33a24576037b89812fe95964385730c2",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589193.742559,
-   "ended_at": "2026-11-25 01:46:33",
-   "pid": 2418,
-   "started": 1795589191.975513,
-   "started_at": "2026-11-25 01:46:31",
+   "ended": 1795651761.4085991,
+   "ended_at": "2026-11-25 19:09:21",
+   "pid": 34188,
+   "started": 1795651759.664106,
+   "started_at": "2026-11-25 19:09:19",
    "status": "ended",
    "step": "02f_known_falls",
    "uncommitted": [],
@@ -134,22 +136,22 @@
    "changed_data": false,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610243.830763,
-   "ended_at": "2026-11-25 07:37:23",
-   "pid": 37336,
-   "started": 1795610243.476139,
-   "started_at": "2026-11-25 07:37:23",
+   "ended": 1795651926.0535018,
+   "ended_at": "2026-11-25 19:12:06",
+   "pid": 35770,
+   "started": 1795651925.672662,
+   "started_at": "2026-11-25 19:12:05",
    "status": "ended",
    "step": "02g_greenness",
    "uncommitted": [],
@@ -157,25 +159,25 @@
   },
   "02h_buried_inputs/cades_cove": {
    "box": "cades_cove",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589243.064801,
-   "ended_at": "2026-11-25 01:47:23",
-   "pid": 2638,
-   "started": 1795589237.093343,
-   "started_at": "2026-11-25 01:47:17",
+   "ended": 1795651802.8107378,
+   "ended_at": "2026-11-25 19:10:02",
+   "pid": 34559,
+   "started": 1795651802.65794,
+   "started_at": "2026-11-25 19:10:02",
    "status": "ended",
    "step": "02h_buried_inputs",
    "uncommitted": [],
@@ -183,25 +185,25 @@
   },
   "02h_buried_inputs/cataloochee": {
    "box": "cataloochee",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589254.547791,
-   "ended_at": "2026-11-25 01:47:34",
-   "pid": 2704,
-   "started": 1795589250.270645,
-   "started_at": "2026-11-25 01:47:30",
+   "ended": 1795651804.045038,
+   "ended_at": "2026-11-25 19:10:04",
+   "pid": 34607,
+   "started": 1795651803.894424,
+   "started_at": "2026-11-25 19:10:03",
    "status": "ended",
    "step": "02h_buried_inputs",
    "uncommitted": [],
@@ -209,25 +211,25 @@
   },
   "02h_buried_inputs/le_conte": {
    "box": "le_conte",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589249.797123,
-   "ended_at": "2026-11-25 01:47:29",
-   "pid": 2679,
-   "started": 1795589243.5425081,
-   "started_at": "2026-11-25 01:47:23",
+   "ended": 1795651803.427479,
+   "ended_at": "2026-11-25 19:10:03",
+   "pid": 34602,
+   "started": 1795651803.279419,
+   "started_at": "2026-11-25 19:10:03",
    "status": "ended",
    "step": "02h_buried_inputs",
    "uncommitted": [],
@@ -235,25 +237,25 @@
   },
   "02h_buried_inputs/nantahala": {
    "box": "nantahala",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589269.4750268,
-   "ended_at": "2026-11-25 01:47:49",
-   "pid": 2790,
-   "started": 1795589264.498517,
-   "started_at": "2026-11-25 01:47:44",
+   "ended": 1795651805.8665102,
+   "ended_at": "2026-11-25 19:10:05",
+   "pid": 34622,
+   "started": 1795651805.724589,
+   "started_at": "2026-11-25 19:10:05",
    "status": "ended",
    "step": "02h_buried_inputs",
    "uncommitted": [],
@@ -261,25 +263,25 @@
   },
   "02h_buried_inputs/snowbird": {
    "box": "snowbird",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589264.029844,
-   "ended_at": "2026-11-25 01:47:44",
-   "pid": 2767,
-   "started": 1795589259.4099772,
-   "started_at": "2026-11-25 01:47:39",
+   "ended": 1795651805.2673159,
+   "ended_at": "2026-11-25 19:10:05",
+   "pid": 34617,
+   "started": 1795651805.1228569,
+   "started_at": "2026-11-25 19:10:05",
    "status": "ended",
    "step": "02h_buried_inputs",
    "uncommitted": [],
@@ -287,25 +289,25 @@
   },
   "02h_buried_inputs/tellico": {
    "box": "tellico",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589258.944514,
-   "ended_at": "2026-11-25 01:47:38",
-   "pid": 2745,
-   "started": 1795589255.0137348,
-   "started_at": "2026-11-25 01:47:35",
+   "ended": 1795651804.656214,
+   "ended_at": "2026-11-25 19:10:04",
+   "pid": 34612,
+   "started": 1795651804.511909,
+   "started_at": "2026-11-25 19:10:04",
    "status": "ended",
    "step": "02h_buried_inputs",
    "uncommitted": [],
@@ -313,27 +315,440 @@
   },
   "02h_buried_inputs/tuckasegee": {
    "box": "tuckasegee",
-   "changed_data": true,
+   "changed_data": false,
    "code": {
     "scripts/02h_buried_inputs.py": "e76a6513aa62d953be0609d89cbf41727c7b2fb0",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589273.7708302,
-   "ended_at": "2026-11-25 01:47:53",
-   "pid": 2812,
-   "started": 1795589269.931363,
-   "started_at": "2026-11-25 01:47:49",
+   "ended": 1795651806.47572,
+   "ended_at": "2026-11-25 19:10:06",
+   "pid": 34627,
+   "started": 1795651806.3289301,
+   "started_at": "2026-11-25 19:10:06",
    "status": "ended",
    "step": "02h_buried_inputs",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "03b_stitch/all": {
+   "box": "all",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/03b_stitch.py": "c88e33a043d17af33dbbbf0f0005a604ec71baba",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flatlines.py": "0d64d9401216c8487e46f9efdea54f8d6f61dc3e",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651714.538932,
+   "ended_at": "2026-11-25 19:08:34",
+   "pid": 33233,
+   "started": 1795651661.3508952,
+   "started_at": "2026-11-25 19:07:41",
+   "status": "ended",
+   "step": "03b_stitch",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/cades_cove": {
+   "box": "cades_cove",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651727.235927,
+   "ended_at": "2026-11-25 19:08:47",
+   "pid": 33727,
+   "started": 1795651715.214547,
+   "started_at": "2026-11-25 19:08:35",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/cataloochee": {
+   "box": "cataloochee",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651740.945241,
+   "ended_at": "2026-11-25 19:09:00",
+   "pid": 33957,
+   "started": 1795651738.587082,
+   "started_at": "2026-11-25 19:08:58",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/le_conte": {
+   "box": "le_conte",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651734.4967208,
+   "ended_at": "2026-11-25 19:08:54",
+   "pid": 33859,
+   "started": 1795651731.062978,
+   "started_at": "2026-11-25 19:08:51",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/nantahala": {
+   "box": "nantahala",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651753.137441,
+   "ended_at": "2026-11-25 19:09:13",
+   "pid": 34068,
+   "started": 1795651751.604264,
+   "started_at": "2026-11-25 19:09:11",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/snowbird": {
+   "box": "snowbird",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651749.840995,
+   "ended_at": "2026-11-25 19:09:09",
+   "pid": 34056,
+   "started": 1795651748.829298,
+   "started_at": "2026-11-25 19:09:08",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/tellico": {
+   "box": "tellico",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651746.038826,
+   "ended_at": "2026-11-25 19:09:06",
+   "pid": 34008,
+   "started": 1795651743.993435,
+   "started_at": "2026-11-25 19:09:03",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04_knickpoints/tuckasegee": {
+   "box": "tuckasegee",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04_knickpoints.py": "bc32cf5e86a1601449b293bdc2f67a711b5fdeae",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651757.139559,
+   "ended_at": "2026-11-25 19:09:17",
+   "pid": 34128,
+   "started": 1795651755.412624,
+   "started_at": "2026-11-25 19:09:15",
+   "status": "ended",
+   "step": "04_knickpoints",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/cades_cove": {
+   "box": "cades_cove",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651730.668428,
+   "ended_at": "2026-11-25 19:08:50",
+   "pid": 33854,
+   "started": 1795651727.7002869,
+   "started_at": "2026-11-25 19:08:47",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/cataloochee": {
+   "box": "cataloochee",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651743.613237,
+   "ended_at": "2026-11-25 19:09:03",
+   "pid": 33965,
+   "started": 1795651741.340352,
+   "started_at": "2026-11-25 19:09:01",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/le_conte": {
+   "box": "le_conte",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651738.2018912,
+   "ended_at": "2026-11-25 19:08:58",
+   "pid": 33914,
+   "started": 1795651734.905896,
+   "started_at": "2026-11-25 19:08:54",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/nantahala": {
+   "box": "nantahala",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651755.012922,
+   "ended_at": "2026-11-25 19:09:15",
+   "pid": 34111,
+   "started": 1795651753.5178082,
+   "started_at": "2026-11-25 19:09:13",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/snowbird": {
+   "box": "snowbird",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651751.227275,
+   "ended_at": "2026-11-25 19:09:11",
+   "pid": 34063,
+   "started": 1795651750.218792,
+   "started_at": "2026-11-25 19:09:10",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/tellico": {
+   "box": "tellico",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651748.451763,
+   "ended_at": "2026-11-25 19:09:08",
+   "pid": 34013,
+   "started": 1795651746.43226,
+   "started_at": "2026-11-25 19:09:06",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
+   "uncommitted": [],
+   "wrote": {}
+  },
+  "04b_bigcreek_steps/tuckasegee": {
+   "box": "tuckasegee",
+   "changed_data": true,
+   "code": {
+    "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
+    "scripts/04b_bigcreek_steps.py": "8514c868904ad71a949bc95e061ea0bc6b6f4bfa",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795651759.2636049,
+   "ended_at": "2026-11-25 19:09:19",
+   "pid": 34154,
+   "started": 1795651757.530619,
+   "started_at": "2026-11-25 19:09:17",
+   "status": "ended",
+   "step": "04b_bigcreek_steps",
    "uncommitted": [],
    "wrote": {}
   },
@@ -342,70 +757,70 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610169.7085052,
-   "ended_at": "2026-11-25 07:36:09",
-   "pid": 34295,
-   "started": 1795610147.799228,
-   "started_at": "2026-11-25 07:35:47",
+   "ended": 1795651833.382047,
+   "ended_at": "2026-11-25 19:10:33",
+   "pid": 34632,
+   "started": 1795651806.897333,
+   "started_at": "2026-11-25 19:10:06",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "cades_cove/buried_reaches.gpkg": [
-     1795610168003281835,
+     1795651831546569997,
      98304
     ],
     "cades_cove/drawn_pieces.gpkg": [
-     1795610168276547227,
-     4374528
+     1795651831904833320,
+     6795264
     ],
     "cades_cove/hillshade.png": [
-     1795610169697796573,
+     1795651833372804010,
      915224
     ],
     "cades_cove/hillshade_bounds.json": [
-     1795610169703302683,
+     1795651833375312331,
      112
     ],
     "cades_cove/known_falls.gpkg": [
-     1795610168341902329,
+     1795651831970903102,
      110592
     ],
     "cades_cove/stream_reaches_ranked.csv": [
-     1795610168096286573,
-     507255
+     1795651831670273807,
+     917806
     ],
     "cades_cove/streams_scored.gpkg": [
-     1795610168180203531,
-     5058560
+     1795651831787573814,
+     7991296
     ],
     "cades_cove/trails.gpkg": [
-     1795610168333456183,
+     1795651831962625307,
      397312
     ],
     "cades_cove/waterfall_candidates.csv": [
-     1795610168039510868,
+     1795651831600458626,
      57579
     ],
     "cades_cove/waterfall_candidates.gpkg": [
-     1795610168286922522,
+     1795651831918654882,
      184320
     ]
    }
@@ -415,66 +830,70 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610200.287812,
-   "ended_at": "2026-11-25 07:36:40",
-   "pid": 35573,
-   "started": 1795610188.786586,
-   "started_at": "2026-11-25 07:36:28",
+   "ended": 1795651872.258543,
+   "ended_at": "2026-11-25 19:11:12",
+   "pid": 35115,
+   "started": 1795651856.781217,
+   "started_at": "2026-11-25 19:10:56",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
+    "cataloochee/buried_reaches.gpkg": [
+     1795651870911317575,
+     98304
+    ],
     "cataloochee/drawn_pieces.gpkg": [
-     1795610199234819878,
-     3354624
+     1795651871176044983,
+     4972544
     ],
     "cataloochee/hillshade.png": [
-     1795610200276537139,
+     1795651872248418511,
      869528
     ],
     "cataloochee/hillshade_bounds.json": [
-     1795610200281775287,
+     1795651872251962329,
      112
     ],
     "cataloochee/known_falls.gpkg": [
-     1795610199284149573,
+     1795651871225425472,
      106496
     ],
     "cataloochee/stream_reaches_ranked.csv": [
-     1795610199104025171,
-     393219
+     1795651871013130998,
+     668053
     ],
     "cataloochee/streams_scored.gpkg": [
-     1795610199166561780,
-     3903488
+     1795651871093233517,
+     5865472
     ],
     "cataloochee/trails.gpkg": [
-     1795610199275935346,
+     1795651871217286550,
      253952
     ],
     "cataloochee/waterfall_candidates.csv": [
-     1795610199050043668,
+     1795651870952666183,
      111030
     ],
     "cataloochee/waterfall_candidates.gpkg": [
-     1795610199247684079,
+     1795651871188525511,
      266240
     ]
    }
@@ -484,66 +903,66 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610188.177013,
-   "ended_at": "2026-11-25 07:36:28",
-   "pid": 35038,
-   "started": 1795610170.3109162,
-   "started_at": "2026-11-25 07:36:10",
+   "ended": 1795651856.15473,
+   "ended_at": "2026-11-25 19:10:56",
+   "pid": 34917,
+   "started": 1795651834.019121,
+   "started_at": "2026-11-25 19:10:34",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "le_conte/drawn_pieces.gpkg": [
-     1795610186458648700,
-     4968448
+     1795651854417247274,
+     7118848
     ],
     "le_conte/hillshade.png": [
-     1795610188164883708,
+     1795651856144719026,
      1199702
     ],
     "le_conte/hillshade_bounds.json": [
-     1795610188169940396,
+     1795651856147617472,
      113
     ],
     "le_conte/known_falls.gpkg": [
-     1795610186563388167,
+     1795651854505190506,
      114688
     ],
     "le_conte/stream_reaches_ranked.csv": [
-     1795610186259831316,
-     578204
+     1795651854149431510,
+     942789
     ],
     "le_conte/streams_scored.gpkg": [
-     1795610186354831453,
-     5734400
+     1795651854288105058,
+     8392704
     ],
     "le_conte/trails.gpkg": [
-     1795610186555193440,
+     1795651854495627549,
      593920
     ],
     "le_conte/waterfall_candidates.csv": [
-     1795610186202047724,
+     1795651854056988965,
      107804
     ],
     "le_conte/waterfall_candidates.gpkg": [
-     1795610186472022783,
+     1795651854431495085,
      262144
     ]
    }
@@ -553,66 +972,66 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610234.498424,
-   "ended_at": "2026-11-25 07:37:14",
-   "pid": 36638,
-   "started": 1795610221.835456,
-   "started_at": "2026-11-25 07:37:01",
+   "ended": 1795651914.965504,
+   "ended_at": "2026-11-25 19:11:54",
+   "pid": 35527,
+   "started": 1795651899.653598,
+   "started_at": "2026-11-25 19:11:39",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "nantahala/drawn_pieces.gpkg": [
-     1795610233816995960,
-     2011136
+     1795651914246225786,
+     2699264
     ],
     "nantahala/hillshade.png": [
-     1795610234491581373,
+     1795651914957757298,
      552970
     ],
     "nantahala/hillshade_bounds.json": [
-     1795610234493592190,
+     1795651914960029788,
      112
     ],
     "nantahala/known_falls.gpkg": [
-     1795610233856971456,
+     1795651914284500741,
      106496
     ],
     "nantahala/stream_reaches_ranked.csv": [
-     1795610233742102530,
-     209927
+     1795651914143402283,
+     325338
     ],
     "nantahala/streams_scored.gpkg": [
-     1795610233779810707,
-     2297856
+     1795651914199839283,
+     3125248
     ],
     "nantahala/trails.gpkg": [
-     1795610233847265919,
+     1795651914276594609,
      180224
     ],
     "nantahala/waterfall_candidates.csv": [
-     1795610233695660662,
+     1795651914083995046,
      43046
     ],
     "nantahala/waterfall_candidates.gpkg": [
-     1795610233827295504,
+     1795651914255897034,
      167936
     ]
    }
@@ -622,66 +1041,66 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610221.3593442,
-   "ended_at": "2026-11-25 07:37:01",
-   "pid": 36319,
-   "started": 1795610212.126751,
-   "started_at": "2026-11-25 07:36:52",
+   "ended": 1795651899.082647,
+   "ended_at": "2026-11-25 19:11:39",
+   "pid": 35385,
+   "started": 1795651887.717092,
+   "started_at": "2026-11-25 19:11:27",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "snowbird/drawn_pieces.gpkg": [
-     1795610220890630585,
-     1343488
+     1795651898635979319,
+     2072576
     ],
     "snowbird/hillshade.png": [
-     1795610221351448387,
+     1795651899076553866,
      345562
     ],
     "snowbird/hillshade_bounds.json": [
-     1795610221353227201,
+     1795651899078054484,
      114
     ],
     "snowbird/known_falls.gpkg": [
-     1795610220922638857,
+     1795651898666355310,
      98304
     ],
     "snowbird/stream_reaches_ranked.csv": [
-     1795610220838874609,
-     130787
+     1795651898564009263,
+     260404
     ],
     "snowbird/streams_scored.gpkg": [
-     1795610220862830490,
-     1499136
+     1795651898600912600,
+     2392064
     ],
     "snowbird/trails.gpkg": [
-     1795610220914796010,
+     1795651898659243716,
      143360
     ],
     "snowbird/waterfall_candidates.csv": [
-     1795610220795888368,
+     1795651898517312262,
      20492
     ],
     "snowbird/waterfall_candidates.gpkg": [
-     1795610220900310580,
+     1795651898644862530,
      135168
     ]
    }
@@ -691,66 +1110,66 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610211.559883,
-   "ended_at": "2026-11-25 07:36:51",
-   "pid": 35992,
-   "started": 1795610200.794327,
-   "started_at": "2026-11-25 07:36:40",
+   "ended": 1795651887.0831842,
+   "ended_at": "2026-11-25 19:11:27",
+   "pid": 35249,
+   "started": 1795651872.8883069,
+   "started_at": "2026-11-25 19:11:12",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "tellico/drawn_pieces.gpkg": [
-     1795610210637707013,
-     2801664
+     1795651886017694151,
+     3543040
     ],
     "tellico/hillshade.png": [
-     1795610211550028543,
+     1795651887072096098,
      628093
     ],
     "tellico/hillshade_bounds.json": [
-     1795610211555021563,
+     1795651887075732583,
      112
     ],
     "tellico/known_falls.gpkg": [
-     1795610210666123324,
+     1795651886050523380,
      98304
     ],
     "tellico/stream_reaches_ranked.csv": [
-     1795610210527269850,
-     293529
+     1795651885892088416,
+     437951
     ],
     "tellico/streams_scored.gpkg": [
-     1795610210579505749,
-     3133440
+     1795651885951851026,
+     4067328
     ],
     "tellico/trails.gpkg": [
-     1795610210659476741,
+     1795651886042597290,
      139264
     ],
     "tellico/waterfall_candidates.csv": [
-     1795610210479107628,
+     1795651885817271998,
      29074
     ],
     "tellico/waterfall_candidates.gpkg": [
-     1795610210646827376,
+     1795651886028108521,
      147456
     ]
    }
@@ -760,66 +1179,66 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05_score.py": "8fed72c18b84099d3a00a0d704e52017b2073a47",
+    "scripts/05_score.py": "32922d1d15c9ea810f248438dbc8f5725e694d76",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
-    "scripts/buried.py": "36b40d22f2efa2b1b343022b1f9fdb0133b242fb",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/buried.py": "4f368cd1f33d69fdac40898adc821a2e46c94164",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610243.1511428,
-   "ended_at": "2026-11-25 07:37:23",
-   "pid": 37116,
-   "started": 1795610235.059765,
-   "started_at": "2026-11-25 07:37:15",
+   "ended": 1795651925.331732,
+   "ended_at": "2026-11-25 19:12:05",
+   "pid": 35667,
+   "started": 1795651915.547817,
+   "started_at": "2026-11-25 19:11:55",
    "status": "ended",
    "step": "05_score",
    "uncommitted": [],
    "wrote": {
     "tuckasegee/drawn_pieces.gpkg": [
-     1795610242389827390,
-     2232320
+     1795651924465020452,
+     3031040
     ],
     "tuckasegee/hillshade.png": [
-     1795610243144469089,
+     1795651925323528938,
      588289
     ],
     "tuckasegee/hillshade_bounds.json": [
-     1795610243146416321,
+     1795651925325629970,
      112
     ],
     "tuckasegee/known_falls.gpkg": [
-     1795610242431499741,
+     1795651924513744944,
      98304
     ],
     "tuckasegee/stream_reaches_ranked.csv": [
-     1795610242300958913,
-     221656
+     1795651924360370416,
+     346798
     ],
     "tuckasegee/streams_scored.gpkg": [
-     1795610242343451482,
-     2506752
+     1795651924414363385,
+     3432448
     ],
     "tuckasegee/trails.gpkg": [
-     1795610242424684615,
+     1795651924505490772,
      356352
     ],
     "tuckasegee/waterfall_candidates.csv": [
-     1795610242254653921,
+     1795651924306382530,
      54362
     ],
     "tuckasegee/waterfall_candidates.gpkg": [
-     1795610242399300841,
+     1795651924477357314,
      184320
     ]
    }
@@ -829,35 +1248,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610272.840352,
-   "ended_at": "2026-11-25 07:37:52",
-   "pid": 38220,
-   "started": 1795610269.954221,
-   "started_at": "2026-11-25 07:37:49",
+   "ended": 1795651957.2990289,
+   "ended_at": "2026-11-25 19:12:37",
+   "pid": 36055,
+   "started": 1795651953.737152,
+   "started_at": "2026-11-25 19:12:33",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "cades_cove/flow_drops.csv": [
-     1795610272838185505,
+     1795651957295905852,
      16866
     ],
     "cades_cove/flow_streams.csv": [
-     1795610272826163064,
-     318368
+     1795651957283115908,
+     628938
     ]
    }
   },
@@ -866,35 +1285,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610279.0807319,
-   "ended_at": "2026-11-25 07:37:59",
-   "pid": 38433,
-   "started": 1795610276.5528588,
-   "started_at": "2026-11-25 07:37:56",
+   "ended": 1795651964.3991868,
+   "ended_at": "2026-11-25 19:12:44",
+   "pid": 36173,
+   "started": 1795651961.552583,
+   "started_at": "2026-11-25 19:12:41",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "cataloochee/flow_drops.csv": [
-     1795610279078904494,
+     1795651964396722255,
      32680
     ],
     "cataloochee/flow_streams.csv": [
-     1795610279062108202,
-     231913
+     1795651964378799542,
+     429334
     ]
    }
   },
@@ -903,35 +1322,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610276.1931741,
-   "ended_at": "2026-11-25 07:37:56",
-   "pid": 38273,
-   "started": 1795610273.2154188,
-   "started_at": "2026-11-25 07:37:53",
+   "ended": 1795651961.161396,
+   "ended_at": "2026-11-25 19:12:41",
+   "pid": 36120,
+   "started": 1795651957.6952791,
+   "started_at": "2026-11-25 19:12:37",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "le_conte/flow_drops.csv": [
-     1795610276191547995,
+     1795651961158818647,
      29936
     ],
     "le_conte/flow_streams.csv": [
-     1795610276175880051,
-     325754
+     1795651961140935976,
+     572376
     ]
    }
   },
@@ -940,35 +1359,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610288.543895,
-   "ended_at": "2026-11-25 07:38:08",
-   "pid": 38756,
-   "started": 1795610285.678838,
-   "started_at": "2026-11-25 07:38:05",
+   "ended": 1795651975.07332,
+   "ended_at": "2026-11-25 19:12:55",
+   "pid": 36296,
+   "started": 1795651971.7315998,
+   "started_at": "2026-11-25 19:12:51",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "nantahala/flow_drops.csv": [
-     1795610288542620147,
+     1795651975071566691,
      14188
     ],
     "nantahala/flow_streams.csv": [
-     1795610288531518676,
-     149999
+     1795651975059531620,
+     251102
     ]
    }
   },
@@ -977,35 +1396,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610285.313171,
-   "ended_at": "2026-11-25 07:38:05",
-   "pid": 38595,
-   "started": 1795610282.661264,
-   "started_at": "2026-11-25 07:38:02",
+   "ended": 1795651971.360406,
+   "ended_at": "2026-11-25 19:12:51",
+   "pid": 36246,
+   "started": 1795651968.381036,
+   "started_at": "2026-11-25 19:12:48",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "snowbird/flow_drops.csv": [
-     1795610285311489091,
+     1795651971359062979,
      6396
     ],
     "snowbird/flow_streams.csv": [
-     1795610285302417353,
-     87071
+     1795651971349619896,
+     192817
     ]
    }
   },
@@ -1014,35 +1433,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610282.302186,
-   "ended_at": "2026-11-25 07:38:02",
-   "pid": 38496,
-   "started": 1795610279.451509,
-   "started_at": "2026-11-25 07:37:59",
+   "ended": 1795651968.003812,
+   "ended_at": "2026-11-25 19:12:48",
+   "pid": 36229,
+   "started": 1795651964.771981,
+   "started_at": "2026-11-25 19:12:44",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "tellico/flow_drops.csv": [
-     1795610282300712310,
+     1795651968001110529,
      8694
     ],
     "tellico/flow_streams.csv": [
-     1795610282290599393,
-     197567
+     1795651967990724117,
+     315517
     ]
    }
   },
@@ -1051,35 +1470,35 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610291.331579,
-   "ended_at": "2026-11-25 07:38:11",
-   "pid": 38819,
-   "started": 1795610288.9184918,
-   "started_at": "2026-11-25 07:38:08",
+   "ended": 1795651978.0553799,
+   "ended_at": "2026-11-25 19:12:58",
+   "pid": 36359,
+   "started": 1795651975.4397042,
+   "started_at": "2026-11-25 19:12:55",
    "status": "ended",
    "step": "05b_flow",
    "uncommitted": [],
    "wrote": {
     "tuckasegee/flow_drops.csv": [
-     1795610291330312659,
+     1795651978053440975,
      17609
     ],
     "tuckasegee/flow_streams.csv": [
-     1795610291318359094,
-     162380
+     1795651978040846823,
+     274498
     ]
    }
   },
@@ -1088,43 +1507,43 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610248.397832,
-   "ended_at": "2026-11-25 07:37:28",
-   "pid": 37344,
-   "started": 1795610244.205248,
-   "started_at": "2026-11-25 07:37:24",
+   "ended": 1795651930.924284,
+   "ended_at": "2026-11-25 19:12:10",
+   "pid": 35778,
+   "started": 1795651926.4652858,
+   "started_at": "2026-11-25 19:12:06",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "cades_cove/area_streams.csv": [
-     1795610248234098543,
-     90083
+     1795651930750187926,
+     165255
     ],
     "cades_cove/buried_areas.csv": [
-     1795610248201399512,
+     1795651930712625843,
      46
     ],
     "cades_cove/drainages.gpkg": [
-     1795610248395727257,
+     1795651930921647541,
      442368
     ],
     "cades_cove/stream_drainage.csv": [
-     1795610248231060338,
-     228320
+     1795651930745046741,
+     424210
     ]
    }
   },
@@ -1133,39 +1552,43 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610257.175654,
-   "ended_at": "2026-11-25 07:37:37",
-   "pid": 37679,
-   "started": 1795610253.856443,
-   "started_at": "2026-11-25 07:37:33",
+   "ended": 1795651940.29274,
+   "ended_at": "2026-11-25 19:12:20",
+   "pid": 35884,
+   "started": 1795651936.6661131,
+   "started_at": "2026-11-25 19:12:16",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "cataloochee/area_streams.csv": [
-     1795610257003868126,
-     68791
+     1795651940116588786,
+     118539
+    ],
+    "cataloochee/buried_areas.csv": [
+     1795651940085468799,
+     59
     ],
     "cataloochee/drainages.gpkg": [
-     1795610257172596428,
+     1795651940290072184,
      466944
     ],
     "cataloochee/stream_drainage.csv": [
-     1795610257001385178,
-     165290
+     1795651940112296805,
+     291558
     ]
    }
   },
@@ -1174,39 +1597,39 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610253.473061,
-   "ended_at": "2026-11-25 07:37:33",
-   "pid": 37508,
-   "started": 1795610248.811698,
-   "started_at": "2026-11-25 07:37:28",
+   "ended": 1795651936.2742631,
+   "ended_at": "2026-11-25 19:12:16",
+   "pid": 35828,
+   "started": 1795651931.3123908,
+   "started_at": "2026-11-25 19:12:11",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "le_conte/area_streams.csv": [
-     1795610253234624600,
-     90181
+     1795651936018651908,
+     148507
     ],
     "le_conte/drainages.gpkg": [
-     1795610253470515527,
+     1795651936270818832,
      643072
     ],
     "le_conte/stream_drainage.csv": [
-     1795610253231442768,
-     265770
+     1795651936013592055,
+     437253
     ]
    }
   },
@@ -1215,39 +1638,39 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610266.4819121,
-   "ended_at": "2026-11-25 07:37:46",
-   "pid": 37998,
-   "started": 1795610263.973375,
-   "started_at": "2026-11-25 07:37:43",
+   "ended": 1795651950.065224,
+   "ended_at": "2026-11-25 19:12:30",
+   "pid": 36001,
+   "started": 1795651947.373173,
+   "started_at": "2026-11-25 19:12:27",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "nantahala/area_streams.csv": [
-     1795610266370456324,
-     41085
+     1795651949947977711,
+     64775
     ],
     "nantahala/drainages.gpkg": [
-     1795610266479693096,
+     1795651950062753036,
      360448
     ],
     "nantahala/stream_drainage.csv": [
-     1795610266368540883,
-     119555
+     1795651949945280098,
+     189656
     ]
    }
   },
@@ -1256,39 +1679,39 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610263.619723,
-   "ended_at": "2026-11-25 07:37:43",
-   "pid": 37934,
-   "started": 1795610261.489407,
-   "started_at": "2026-11-25 07:37:41",
+   "ended": 1795651947.0071669,
+   "ended_at": "2026-11-25 19:12:27",
+   "pid": 35992,
+   "started": 1795651944.81971,
+   "started_at": "2026-11-25 19:12:24",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "snowbird/area_streams.csv": [
-     1795610263455806778,
-     23375
+     1795651946842585933,
+     48297
     ],
     "snowbird/drainages.gpkg": [
-     1795610263617601494,
+     1795651947004166176,
      491520
     ],
     "snowbird/stream_drainage.csv": [
-     1795610263454308676,
-     55268
+     1795651946840516984,
+     112792
     ]
    }
   },
@@ -1297,39 +1720,39 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610261.120092,
-   "ended_at": "2026-11-25 07:37:41",
-   "pid": 37778,
-   "started": 1795610257.53709,
-   "started_at": "2026-11-25 07:37:37",
+   "ended": 1795651944.437645,
+   "ended_at": "2026-11-25 19:12:24",
+   "pid": 35947,
+   "started": 1795651940.682945,
+   "started_at": "2026-11-25 19:12:20",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "tellico/area_streams.csv": [
-     1795610260983635931,
-     50695
+     1795651944303482187,
+     76731
     ],
     "tellico/drainages.gpkg": [
-     1795610261117674887,
+     1795651944435414686,
      294912
     ],
     "tellico/stream_drainage.csv": [
-     1795610260981217068,
-     117686
+     1795651944300459909,
+     178245
     ]
    }
   },
@@ -1338,39 +1761,39 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610269.5921779,
-   "ended_at": "2026-11-25 07:37:49",
-   "pid": 38097,
-   "started": 1795610266.8645241,
-   "started_at": "2026-11-25 07:37:46",
+   "ended": 1795651953.363798,
+   "ended_at": "2026-11-25 19:12:33",
+   "pid": 36050,
+   "started": 1795651950.436836,
+   "started_at": "2026-11-25 19:12:30",
    "status": "ended",
    "step": "05c_drainages",
    "uncommitted": [],
    "wrote": {
     "tuckasegee/area_streams.csv": [
-     1795610269462204276,
-     45430
+     1795651953233579149,
+     72329
     ],
     "tuckasegee/drainages.gpkg": [
-     1795610269589919694,
+     1795651953361626873,
      385024
     ],
     "tuckasegee/stream_drainage.csv": [
-     1795610269460213751,
-     123519
+     1795651953230617828,
+     196334
     ]
    }
   },
@@ -1380,28 +1803,28 @@
    "code": {
     "scripts/05d_lakes.py": "e9214aa35d75435702ff49369fb48865e82b6969",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
     "scripts/lakedata.py": "0b386bdfe3a3764a19f03c283b5dd973aefdb5f2",
     "scripts/lakelidar.py": "ed09e8b68399713ed1567c3a4f1b1376cda415ef",
     "scripts/lakesources.py": "fffc3634c69f2bf6385c1a44f205381f7f412b49",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/map_drainages.js": "e3044253bf9d64ec5b310e65990c1b10e0d2f7a6",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_drainages.js": "309345a374c487c73dba8f1b158da67930cd9ea6",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/sources.py": "92948a5b33a24576037b89812fe95964385730c2",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589235.919574,
-   "ended_at": "2026-11-25 01:47:15",
-   "pid": 2470,
-   "started": 1795589200.8315752,
-   "started_at": "2026-11-25 01:46:40",
+   "ended": 1795651801.6493251,
+   "ended_at": "2026-11-25 19:10:01",
+   "pid": 34280,
+   "started": 1795651768.6736362,
+   "started_at": "2026-11-25 19:09:28",
    "status": "ended",
    "step": "05d_lakes",
    "uncommitted": [],
@@ -1412,104 +1835,110 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/05d_lakes.py": "e9214aa35d75435702ff49369fb48865e82b6969",
-    "scripts/06_map.py": "95ea2e649066a4a30794e8a3046d293e6fd765c9",
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/06_map.py": "ef89f7f21e59e3a8053f22e60c477c65ef7dd6fe",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/11_context.py": "e4986b21fffc18859101fdd2e1ba84ff3a2df829",
+    "scripts/11_context.py": "68106b948911b96dbf5d25cd3059141635cae740",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/creekprofiles.py": "a79760550600465a8328ce6cc0c87b9ab2d403ff",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/creekprofiles.py": "77ecbf015e9755d5d4b3a4e02e24559d5e15b819",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/labelpaths.py": "aa25a385b929dd0def6b665b7827c148d8fac225",
+    "scripts/labelpaths.py": "8a4e0e99968d6b209f849b595495a24059fc8a79",
     "scripts/lakedata.py": "0b386bdfe3a3764a19f03c283b5dd973aefdb5f2",
     "scripts/lakelidar.py": "ed09e8b68399713ed1567c3a4f1b1376cda415ef",
     "scripts/lakesources.py": "fffc3634c69f2bf6385c1a44f205381f7f412b49",
     "scripts/landnames.py": "c6cdb86dad886cd15e0cca2101dee4857def2a15",
-    "scripts/layer_order.js": "1428cbd5c7e1dcad29a14a1e40c048e54bd4413e",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/map_calendar.js": "7152d8c1596d0e2588f34792e38fcb67b28562c9",
-    "scripts/map_drainages.js": "e3044253bf9d64ec5b310e65990c1b10e0d2f7a6",
-    "scripts/map_filter.js": "2a7104e4cebf379c3042799c651f7e7cebd9f7d8",
+    "scripts/layer_order.js": "9aa27705ec7a697f1200613ffa41a25d2613dbe5",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_calendar.js": "cda9d765221d6d3887f527c8819ea72b4b72848e",
+    "scripts/map_coverage.js": "3af958c5b28b22baa79d5e5d32db0a7b39e756ab",
+    "scripts/map_drainages.js": "309345a374c487c73dba8f1b158da67930cd9ea6",
+    "scripts/map_filter.js": "f1cc354cfc5e93c6b4806d8d6d51b3abc13a942c",
+    "scripts/map_gauges.js": "25b9e82f9742b5728b7e5a4dd148685b00e5a7a1",
+    "scripts/map_land.js": "790d8df6f4aeeb7011aa6c0843eaf7f7d2cb19ed",
     "scripts/map_phone.css": "e9daf3539b10f5f870d835d99366cdc6ec1ddc13",
-    "scripts/map_phone.js": "82c0ed340b9272ee58b336b76c3c5988f19704bf",
+    "scripts/map_phone.js": "070c2870ce7dc9ae509ef7742650b7c90c78594e",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
     "scripts/map_score.js": "04977d1d79fbbbecce9ff502d5f59debd47fa77a",
+    "scripts/map_specs.js": "a8ea6fd8218a3965614e3d8e54c898c169a57ecb",
     "scripts/map_style.css": "532f63691b2250b947a8613df3dac2a5cf1bc581",
     "scripts/maplakes.py": "b8a99bad47d3b7d83948d4400e9ddca9976b94ce",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/publicland.py": "c6bc97b54f556d65fb1db2b4c28f0e74ddfae369",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
-    "scripts/scoring.py": "358ead07b53ff2e81944944d375446f8e250e74e",
+    "scripts/scoring.py": "5f91dfb508b94ff1dddf33f11c3b24544cb61cef",
     "scripts/sources.py": "92948a5b33a24576037b89812fe95964385730c2",
+    "scripts/streamspecs.py": "b497bf3d7c88b6b4091f3ab0a39f8883e390a81a",
     "scripts/troutcal.py": "a9c346b3b4fe7b494c420e8b6be6eb5fccadf737",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
+    "scripts/troutspecies.py": "b950813547c8c4f546922466fa92928a99b63d92",
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610621.2633321,
-   "ended_at": "2026-11-25 07:43:41",
-   "pid": 47453,
-   "started": 1795610561.71871,
-   "started_at": "2026-11-25 07:42:41",
+   "ended": 1795652438.8076138,
+   "ended_at": "2026-11-25 19:20:38",
+   "pid": 40128,
+   "started": 1795652373.860953,
+   "started_at": "2026-11-25 19:19:33",
    "status": "ended",
    "step": "06_map",
    "uncommitted": [],
    "wrote": {
     "lakes.csv": [
-     1795610614988800321,
+     1795652431143334592,
      70731
     ],
     "lakes.gpx": [
-     1795610614993101075,
+     1795652431147600199,
      44922
     ],
     "map3d_data.js": [
-     1795610621037508253,
-     27807325
+     1795652438460674869,
+     42755444
     ],
     "overview.json": [
-     1795610620500000387,
-     915745
+     1795652437487025518,
+     915744
     ],
     "routes_data.js": [
-     1795610620751080966,
-     786828
+     1795652437934851158,
+     1399754
     ],
     "stream_map.html": [
-     1795610621243482729,
-     19148253
+     1795652438736978061,
+     20121782
     ],
     "stream_map_3d.html": [
-     1795610621261335877,
-     9361800
+     1795652438804021306,
+     9555434
     ],
     "stream_reaches_ranked.csv": [
-     1795610567390328400,
-     7411937
+     1795652385174743542,
+     13290975
     ],
     "streams_drawn.gpkg": [
-     1795610565260287315,
-     20512768
+     1795652382210136640,
+     29712384
     ],
     "waterfall_candidates.csv": [
-     1795610567089033580,
-     1012752
+     1795652384624899312,
+     1020570
     ],
     "waterfall_candidates.gpx": [
-     1795610567402527113,
-     219634
+     1795652385187210570,
+     223158
     ]
    }
   },
@@ -1518,38 +1947,38 @@
    "changed_data": true,
    "code": {
     "scripts/07_road_closures.py": "8da0783a87d8452aaa8d3bb6430341a9862a6cd1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610353.89938,
-   "ended_at": "2026-11-25 07:39:13",
-   "pid": 40662,
-   "started": 1795610346.718295,
-   "started_at": "2026-11-25 07:39:06",
+   "ended": 1795652047.444598,
+   "ended_at": "2026-11-25 19:14:07",
+   "pid": 36967,
+   "started": 1795652039.1311202,
+   "started_at": "2026-11-25 19:13:59",
    "status": "ended",
    "step": "07_road_closures",
    "uncommitted": [],
    "wrote": {
     "gated_roads.gpkg": [
-     1795610353895000380,
+     1795652047440327815,
      655360
     ],
     "road_closures.csv": [
-     1795610353871820925,
-     7232
+     1795652047415366343,
+     7511
     ],
     "road_closures.gpkg": [
-     1795610353869087225,
+     1795652047413144061,
      344064
     ],
     "road_closures.json": [
-     1795610353872426558,
+     1795652047415956257,
      97
     ]
    }
@@ -1558,52 +1987,52 @@
    "box": "cades_cove",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610374.7922199,
-   "ended_at": "2026-11-25 07:39:34",
-   "pid": 40887,
-   "started": 1795610354.995132,
-   "started_at": "2026-11-25 07:39:14",
+   "ended": 1795652071.9806569,
+   "ended_at": "2026-11-25 19:14:31",
+   "pid": 37050,
+   "started": 1795652048.66348,
+   "started_at": "2026-11-25 19:14:08",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "cades_cove/hike_drops.csv": [
-     1795610372465451365,
-     16619
+     1795652069170092089,
+     17009
     ],
     "cades_cove/hike_lakes.csv": [
-     1795610372467025477,
+     1795652069172515494,
      4077
     ],
     "cades_cove/hike_route_starts.csv": [
-     1795610374778016432,
-     141085
+     1795652071956711905,
+     253182
     ],
     "cades_cove/hike_routes.gpkg": [
-     1795610374773317027,
-     1110016
+     1795652071948922022,
+     1929216
     ],
     "cades_cove/hike_streams.csv": [
-     1795610372464539840,
-     227122
+     1795652069168655137,
+     429125
     ],
     "cades_cove/trailheads.gpkg": [
-     1795610372480327199,
-     307200
+     1795652069189102129,
+     389120
     ]
    }
   },
@@ -1611,52 +2040,52 @@
    "box": "cataloochee",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610419.8779168,
-   "ended_at": "2026-11-25 07:40:19",
-   "pid": 42407,
-   "started": 1795610404.292696,
-   "started_at": "2026-11-25 07:40:04",
+   "ended": 1795652128.06219,
+   "ended_at": "2026-11-25 19:15:28",
+   "pid": 37646,
+   "started": 1795652109.817782,
+   "started_at": "2026-11-25 19:15:09",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "cataloochee/hike_drops.csv": [
-     1795610418002452791,
-     33733
+     1795652125773179297,
+     33973
     ],
     "cataloochee/hike_lakes.csv": [
-     1795610418004080744,
+     1795652125774626374,
      957
     ],
     "cataloochee/hike_route_starts.csv": [
-     1795610419868860325,
-     114405
+     1795652128047191052,
+     186681
     ],
     "cataloochee/hike_routes.gpkg": [
-     1795610419864752832,
-     819200
+     1795652128041308745,
+     1368064
     ],
     "cataloochee/hike_streams.csv": [
-     1795610418000835922,
-     175062
+     1795652125771432930,
+     308084
     ],
     "cataloochee/trailheads.gpkg": [
-     1795610418018528985,
-     290816
+     1795652125790032473,
+     348160
     ]
    }
   },
@@ -1664,52 +2093,52 @@
    "box": "le_conte",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610401.030796,
-   "ended_at": "2026-11-25 07:40:01",
-   "pid": 41626,
-   "started": 1795610377.674589,
-   "started_at": "2026-11-25 07:39:37",
+   "ended": 1795652105.378863,
+   "ended_at": "2026-11-25 19:15:05",
+   "pid": 37330,
+   "started": 1795652075.9476511,
+   "started_at": "2026-11-25 19:14:35",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "le_conte/hike_drops.csv": [
-     1795610398177828696,
+     1795652102223370799,
      30136
     ],
     "le_conte/hike_lakes.csv": [
-     1795610398179393429,
-     1436
+     1795652102225473582,
+     1435
     ],
     "le_conte/hike_route_starts.csv": [
-     1795610401012624302,
-     148307
+     1795652105354343130,
+     236866
     ],
     "le_conte/hike_routes.gpkg": [
-     1795610401006840859,
-     1175552
+     1795652105346895330,
+     1863680
     ],
     "le_conte/hike_streams.csv": [
-     1795610398176288587,
-     236684
+     1795652102221274975,
+     395322
     ],
     "le_conte/trailheads.gpkg": [
-     1795610398193448362,
-     331776
+     1795652102242728713,
+     409600
     ]
    }
   },
@@ -1717,52 +2146,52 @@
    "box": "nantahala",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610455.3124359,
-   "ended_at": "2026-11-25 07:40:55",
-   "pid": 43755,
-   "started": 1795610445.6091762,
-   "started_at": "2026-11-25 07:40:45",
+   "ended": 1795652172.300736,
+   "ended_at": "2026-11-25 19:16:12",
+   "pid": 38123,
+   "started": 1795652159.877101,
+   "started_at": "2026-11-25 19:15:59",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "nantahala/hike_drops.csv": [
-     1795610454021906237,
-     13686
+     1795652170576246181,
+     13844
     ],
     "nantahala/hike_lakes.csv": [
-     1795610454023549877,
+     1795652170578974377,
      1101
     ],
     "nantahala/hike_route_starts.csv": [
-     1795610455306039591,
-     65140
+     1795652172286371684,
+     100461
     ],
     "nantahala/hike_routes.gpkg": [
-     1795610455303250314,
-     548864
+     1795652172281617289,
+     913408
     ],
     "nantahala/hike_streams.csv": [
-     1795610454020909061,
-     105698
+     1795652170574870812,
+     183346
     ],
     "nantahala/trailheads.gpkg": [
-     1795610454034295060,
-     229376
+     1795652170594169018,
+     249856
     ]
    }
   },
@@ -1770,52 +2199,52 @@
    "box": "snowbird",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610444.053219,
-   "ended_at": "2026-11-25 07:40:44",
-   "pid": 43533,
-   "started": 1795610437.872378,
-   "started_at": "2026-11-25 07:40:37",
+   "ended": 1795652157.796509,
+   "ended_at": "2026-11-25 19:15:57",
+   "pid": 38026,
+   "started": 1795652150.068205,
+   "started_at": "2026-11-25 19:15:50",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "snowbird/hike_drops.csv": [
-     1795610443244054676,
-     6054
+     1795652156665071671,
+     7406
     ],
     "snowbird/hike_lakes.csv": [
-     1795610443245509770,
+     1795652156667097995,
      619
     ],
     "snowbird/hike_route_starts.csv": [
-     1795610444049823355,
-     37601
+     1795652157788601441,
+     75333
     ],
     "snowbird/hike_routes.gpkg": [
-     1795610444045381110,
-     409600
+     1795652157784760124,
+     741376
     ],
     "snowbird/hike_streams.csv": [
-     1795610443243223586,
-     60829
+     1795652156663701302,
+     143814
     ],
     "snowbird/trailheads.gpkg": [
-     1795610443254478884,
-     163840
+     1795652156679546398,
+     192512
     ]
    }
   },
@@ -1823,52 +2252,52 @@
    "box": "tellico",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610435.647634,
-   "ended_at": "2026-11-25 07:40:35",
-   "pid": 43040,
-   "started": 1795610422.406156,
-   "started_at": "2026-11-25 07:40:22",
+   "ended": 1795652147.232468,
+   "ended_at": "2026-11-25 19:15:47",
+   "pid": 37866,
+   "started": 1795652131.380002,
+   "started_at": "2026-11-25 19:15:31",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "tellico/hike_drops.csv": [
-     1795610434185406833,
-     8037
+     1795652145192990184,
+     9086
     ],
     "tellico/hike_lakes.csv": [
-     1795610434186877175,
+     1795652145194861967,
      2356
     ],
     "tellico/hike_route_starts.csv": [
-     1795610435642154863,
-     79728
+     1795652147222745312,
+     119888
     ],
     "tellico/hike_routes.gpkg": [
-     1795610435639172761,
-     643072
+     1795652147218290165,
+     1064960
     ],
     "tellico/hike_streams.csv": [
-     1795610434184574744,
-     130737
+     1795652145191955063,
+     216925
     ],
     "tellico/trailheads.gpkg": [
-     1795610434197996282,
-     258048
+     1795652145210131983,
+     282624
     ]
    }
   },
@@ -1876,52 +2305,52 @@
    "box": "tuckasegee",
    "changed_data": true,
    "code": {
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610468.320854,
-   "ended_at": "2026-11-25 07:41:08",
-   "pid": 44179,
-   "started": 1795610457.264092,
-   "started_at": "2026-11-25 07:40:57",
+   "ended": 1795652187.9058418,
+   "ended_at": "2026-11-25 19:16:27",
+   "pid": 38281,
+   "started": 1795652174.9997592,
+   "started_at": "2026-11-25 19:16:14",
    "status": "ended",
    "step": "08_hike",
    "uncommitted": [],
    "wrote": {
     "tuckasegee/hike_drops.csv": [
-     1795610467227234230,
-     16843
+     1795652186492352304,
+     17400
     ],
     "tuckasegee/hike_lakes.csv": [
-     1795610467228702370,
+     1795652186494424795,
      1354
     ],
     "tuckasegee/hike_route_starts.csv": [
-     1795610468315474629,
-     69526
+     1795652187898806404,
+     107583
     ],
     "tuckasegee/hike_routes.gpkg": [
-     1795610468312903729,
-     335872
+     1795652187895265420,
+     557056
     ],
     "tuckasegee/hike_streams.csv": [
-     1795610467226194428,
-     112237
+     1795652186491043560,
+     183047
     ],
     "tuckasegee/trailheads.gpkg": [
-     1795610467240428529,
-     299008
+     1795652186516473156,
+     344064
     ]
    }
   },
@@ -1930,52 +2359,52 @@
    "changed_data": true,
    "code": {
     "scripts/09_drive.py": "c07b33f83553bf4cf006c68ced44bb3f4bda7c5c",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610475.2358851,
-   "ended_at": "2026-11-25 07:41:15",
-   "pid": 44554,
-   "started": 1795610470.501475,
-   "started_at": "2026-11-25 07:41:10",
+   "ended": 1795652195.755092,
+   "ended_at": "2026-11-25 19:16:35",
+   "pid": 38445,
+   "started": 1795652190.677002,
+   "started_at": "2026-11-25 19:16:30",
    "status": "ended",
    "step": "09_drive",
    "uncommitted": [],
    "wrote": {
     "cades_cove/trailheads.gpkg": [
-     1795610475161665326,
-     307200
+     1795652195655312567,
+     430080
     ],
     "cataloochee/trailheads.gpkg": [
-     1795610475190304287,
-     290816
+     1795652195696125261,
+     372736
     ],
     "le_conte/trailheads.gpkg": [
-     1795610475176630521,
-     331776
+     1795652195676142017,
+     442368
     ],
     "nantahala/trailheads.gpkg": [
-     1795610475221696526,
-     229376
+     1795652195736525582,
+     266240
     ],
     "snowbird/trailheads.gpkg": [
-     1795610475209856529,
-     163840
+     1795652195723839305,
+     200704
     ],
     "tellico/trailheads.gpkg": [
-     1795610475201655153,
-     258048
+     1795652195712809771,
+     303104
     ],
     "tuckasegee/trailheads.gpkg": [
-     1795610475235201248,
-     299008
+     1795652195753938130,
+     368640
     ]
    }
   },
@@ -1984,30 +2413,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610377.174022,
-   "ended_at": "2026-11-25 07:39:37",
-   "pid": 41527,
-   "started": 1795610375.4433112,
-   "started_at": "2026-11-25 07:39:35",
+   "ended": 1795652075.417436,
+   "ended_at": "2026-11-25 19:14:35",
+   "pid": 37281,
+   "started": 1795652072.7150238,
+   "started_at": "2026-11-25 19:14:32",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "cades_cove/sun_drops.csv": [
-     1795610377172852551,
+     1795652075416055030,
      7379
     ],
     "cades_cove/sun_streams.csv": [
-     1795610377172132052,
-     105205
+     1795652075415389950,
+     195133
     ]
    }
   },
@@ -2016,30 +2445,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610421.9057658,
-   "ended_at": "2026-11-25 07:40:21",
-   "pid": 42940,
-   "started": 1795610420.4538088,
-   "started_at": "2026-11-25 07:40:20",
+   "ended": 1795652130.851378,
+   "ended_at": "2026-11-25 19:15:30",
+   "pid": 37823,
+   "started": 1795652128.814271,
+   "started_at": "2026-11-25 19:15:28",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "cataloochee/sun_drops.csv": [
-     1795610421904638430,
+     1795652130850068296,
      14661
     ],
     "cataloochee/sun_streams.csv": [
-     1795610421903846389,
-     80586
+     1795652130849177800,
+     139889
     ]
    }
   },
@@ -2048,30 +2477,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610403.787462,
-   "ended_at": "2026-11-25 07:40:03",
-   "pid": 42401,
-   "started": 1795610401.772827,
-   "started_at": "2026-11-25 07:40:01",
+   "ended": 1795652109.3011131,
+   "ended_at": "2026-11-25 19:15:09",
+   "pid": 37641,
+   "started": 1795652106.274373,
+   "started_at": "2026-11-25 19:15:06",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "le_conte/sun_drops.csv": [
-     1795610403786297546,
+     1795652109299617769,
      12740
     ],
     "le_conte/sun_streams.csv": [
-     1795610403785518940,
-     107124
+     1795652109297932610,
+     178052
     ]
    }
   },
@@ -2080,30 +2509,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610456.771562,
-   "ended_at": "2026-11-25 07:40:56",
-   "pid": 44077,
-   "started": 1795610455.7740579,
-   "started_at": "2026-11-25 07:40:55",
+   "ended": 1795652174.4436,
+   "ended_at": "2026-11-25 19:16:14",
+   "pid": 38276,
+   "started": 1795652173.0322719,
+   "started_at": "2026-11-25 19:16:13",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "nantahala/sun_drops.csv": [
-     1795610456770399900,
+     1795652174442331504,
      5931
     ],
     "nantahala/sun_streams.csv": [
-     1795610456769648143,
-     48846
+     1795652174441645632,
+     77383
     ]
    }
   },
@@ -2112,30 +2541,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610445.151825,
-   "ended_at": "2026-11-25 07:40:45",
-   "pid": 43692,
-   "started": 1795610444.466635,
-   "started_at": "2026-11-25 07:40:44",
+   "ended": 1795652159.374977,
+   "ended_at": "2026-11-25 19:15:59",
+   "pid": 38115,
+   "started": 1795652158.262453,
+   "started_at": "2026-11-25 19:15:58",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "snowbird/sun_drops.csv": [
-     1795610445150728292,
+     1795652159373743499,
      2650
     ],
     "snowbird/sun_streams.csv": [
-     1795610445150308039,
-     28058
+     1795652159373167834,
+     58409
     ]
    }
   },
@@ -2144,30 +2573,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610437.379555,
-   "ended_at": "2026-11-25 07:40:37",
-   "pid": 43433,
-   "started": 1795610436.109503,
-   "started_at": "2026-11-25 07:40:36",
+   "ended": 1795652149.5423832,
+   "ended_at": "2026-11-25 19:15:49",
+   "pid": 38018,
+   "started": 1795652147.858753,
+   "started_at": "2026-11-25 19:15:47",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "tellico/sun_drops.csv": [
-     1795610437378475127,
+     1795652149541173412,
      3534
     ],
     "tellico/sun_streams.csv": [
-     1795610437378055499,
-     60524
+     1795652149540300166,
+     92126
     ]
    }
   },
@@ -2176,30 +2605,30 @@
    "changed_data": true,
    "code": {
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610469.970624,
-   "ended_at": "2026-11-25 07:41:09",
-   "pid": 44491,
-   "started": 1795610468.89259,
-   "started_at": "2026-11-25 07:41:08",
+   "ended": 1795652190.085408,
+   "ended_at": "2026-11-25 19:16:30",
+   "pid": 38423,
+   "started": 1795652188.62348,
+   "started_at": "2026-11-25 19:16:28",
    "status": "ended",
    "step": "10_sun",
    "uncommitted": [],
    "wrote": {
     "tuckasegee/sun_drops.csv": [
-     1795610469969530167,
+     1795652190084131218,
      7662
     ],
     "tuckasegee/sun_streams.csv": [
-     1795610469968964328,
-     53452
+     1795652190083395971,
+     85830
     ]
    }
   },
@@ -2208,141 +2637,142 @@
    "changed_data": true,
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
-    "scripts/05b_flow.py": "fbf46d63062928301489bcc8d253c877d8159810",
-    "scripts/05c_drainages.py": "db276abc1cf71f4fc78e54005313a339657fc568",
+    "scripts/05b_flow.py": "961f70311bab9070f6eb6a9ae157df9d46b4f68f",
+    "scripts/05c_drainages.py": "91f2cd967bf40dfcab9457accfe55c803f27ace6",
     "scripts/05d_lakes.py": "e9214aa35d75435702ff49369fb48865e82b6969",
-    "scripts/08_hike.py": "8caa8ba530460b02971e5c19893d0584e016e52b",
+    "scripts/08_hike.py": "905d970a2b599042ebc53d9107f49d17dc318d78",
     "scripts/10_sun.py": "e5e314054179e2eca929c760c13c3c83f2e4c8ac",
-    "scripts/11_context.py": "e4986b21fffc18859101fdd2e1ba84ff3a2df829",
+    "scripts/11_context.py": "68106b948911b96dbf5d25cd3059141635cae740",
     "scripts/approach_routes.py": "f5dccf9ca749621f83c43471dd9efbe072fa3e5a",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
     "scripts/flowpath.py": "ed624713c5e1a3442baacaa5541eda847b5e9e4d",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
     "scripts/lakedata.py": "0b386bdfe3a3764a19f03c283b5dd973aefdb5f2",
     "scripts/lakelidar.py": "ed09e8b68399713ed1567c3a4f1b1376cda415ef",
     "scripts/lakesources.py": "fffc3634c69f2bf6385c1a44f205381f7f412b49",
     "scripts/landnames.py": "c6cdb86dad886cd15e0cca2101dee4857def2a15",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/map_drainages.js": "e3044253bf9d64ec5b310e65990c1b10e0d2f7a6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_drainages.js": "309345a374c487c73dba8f1b158da67930cd9ea6",
     "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
     "scripts/map_score.js": "04977d1d79fbbbecce9ff502d5f59debd47fa77a",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/publicland.py": "c6bc97b54f556d65fb1db2b4c28f0e74ddfae369",
     "scripts/roadclosures.py": "ffaadfda2f2cd58c7cf970a926c7ec378afb90d7",
-    "scripts/scoring.py": "358ead07b53ff2e81944944d375446f8e250e74e",
+    "scripts/scoring.py": "5f91dfb508b94ff1dddf33f11c3b24544cb61cef",
     "scripts/sources.py": "92948a5b33a24576037b89812fe95964385730c2",
     "scripts/troutdata.py": "706d746fd288f9207d9fc5dfa1a69abea839b1a7",
+    "scripts/troutspecies.py": "b950813547c8c4f546922466fa92928a99b63d92",
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610550.200449,
-   "ended_at": "2026-11-25 07:42:30",
-   "pid": 44721,
-   "started": 1795610475.883418,
-   "started_at": "2026-11-25 07:41:15",
+   "ended": 1795652277.761006,
+   "ended_at": "2026-11-25 19:17:57",
+   "pid": 38516,
+   "started": 1795652196.463638,
+   "started_at": "2026-11-25 19:16:36",
    "status": "ended",
    "step": "11_context",
    "uncommitted": [],
    "wrote": {
     "cades_cove/context_drops.csv": [
-     1795610526283369065,
+     1795652242863513166,
      11396
     ],
     "cades_cove/context_streams.csv": [
-     1795610526282716100,
-     266530
+     1795652242862748669,
+     454935
     ],
     "cataloochee/context_drops.csv": [
-     1795610537828888763,
+     1795652260298699432,
      45535
     ],
     "cataloochee/context_streams.csv": [
-     1795610537827475706,
-     312749
+     1795652260297224563,
+     517395
     ],
     "context/cpad_restricted.gpkg": [
-     1795610497089895468,
+     1795652211633950664,
      2256896
     ],
     "context/critical_habitat.gpkg": [
-     1795610502493794891,
+     1795652216970921384,
      487424
     ],
     "context/fires.gpkg": [
-     1795610478110100257,
+     1795652197602843227,
      376832
     ],
     "context/gauges.gpkg": [
-     1795610521210461932,
+     1795652235209121966,
      98304
     ],
     "context/non_fs_land.gpkg": [
-     1795610494088837129,
+     1795652208757586329,
      6287360
     ],
     "context/springs.gpkg": [
-     1795610478599929067,
+     1795652198169716840,
      98304
     ],
     "context/trout_evidence.gpkg": [
-     1795610518793872228,
+     1795652233202344819,
      290816
     ],
     "context/wild_trout_waters.gpkg": [
-     1795610504641341963,
+     1795652218691054510,
      14401536
     ],
     "context/wilderness.gpkg": [
-     1795610478612840742,
+     1795652198183052989,
      274432
     ],
     "le_conte/context_drops.csv": [
-     1795610532983401834,
+     1795652252912369003,
      42277
     ],
     "le_conte/context_streams.csv": [
-     1795610532981846401,
-     416193
+     1795652252910285887,
+     645181
     ],
     "nantahala/context_drops.csv": [
-     1795610546704599216,
+     1795652272963311091,
      22681
     ],
     "nantahala/context_streams.csv": [
-     1795610546703847208,
-     170158
+     1795652272960337896,
+     259883
     ],
     "snowbird/context_drops.csv": [
-     1795610543590301120,
+     1795652268592448839,
      7342
     ],
     "snowbird/context_streams.csv": [
-     1795610543589823740,
-     99057
+     1795652268591638967,
+     190987
     ],
     "tellico/context_drops.csv": [
-     1795610541421815010,
+     1795652265205372851,
      12146
     ],
     "tellico/context_streams.csv": [
-     1795610541421195711,
-     193815
+     1795652265204644479,
+     275139
     ],
     "tuckasegee/context_drops.csv": [
-     1795610550199021968,
+     1795652277755940016,
      19582
     ],
     "tuckasegee/context_streams.csv": [
-     1795610550198140167,
-     184282
+     1795652277755169020,
+     274902
     ]
    }
   },
@@ -2353,61 +2783,158 @@
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
     "scripts/11b_calendar.py": "1b7e7667e27b2471c243c38ca4810c678f7a75fc",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/map_calendar.js": "7152d8c1596d0e2588f34792e38fcb67b28562c9",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_calendar.js": "cda9d765221d6d3887f527c8819ea72b4b72848e",
     "scripts/map_score.js": "04977d1d79fbbbecce9ff502d5f59debd47fa77a",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/troutcal.py": "a9c346b3b4fe7b494c420e8b6be6eb5fccadf737",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610561.2212422,
-   "ended_at": "2026-11-25 07:42:41",
-   "pid": 47131,
-   "started": 1795610552.475085,
-   "started_at": "2026-11-25 07:42:32",
+   "ended": 1795652348.152054,
+   "ended_at": "2026-11-25 19:19:08",
+   "pid": 39777,
+   "started": 1795652335.211929,
+   "started_at": "2026-11-25 19:18:55",
    "status": "ended",
    "step": "11b_calendar",
    "uncommitted": [],
    "wrote": {
     "cades_cove/calendar_streams.csv": [
-     1795610561200764650,
-     111916
+     1795652348124044674,
+     207116
     ],
     "calendar.json": [
-     1795610561220514067,
+     1795652348151737759,
      8460
     ],
     "cataloochee/calendar_streams.csv": [
-     1795610561207695848,
-     85070
+     1795652348135460832,
+     147545
     ],
     "le_conte/calendar_streams.csv": [
-     1795610561204582732,
-     113588
+     1795652348130240146,
+     188596
     ],
     "nantahala/calendar_streams.csv": [
-     1795610561215559973,
-     51667
+     1795652348145042414,
+     81895
     ],
     "snowbird/calendar_streams.csv": [
-     1795610561213442034,
-     29784
+     1795652348142275343,
+     61876
     ],
     "tellico/calendar_streams.csv": [
-     1795610561211567972,
-     64961
+     1795652348139454231,
+     98813
     ],
     "tuckasegee/calendar_streams.csv": [
-     1795610561217920415,
-     56428
+     1795652348148044859,
+     90530
+    ]
+   }
+  },
+  "11c_land/all": {
+   "box": "all",
+   "changed_data": true,
+   "code": {
+    "scripts/11c_land.py": "43bbbb005c11a5a936582b4af712ab3f6183dc07",
+    "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/county_viewers.csv": "14c866aadfc9148d50a57aa0143ca93fe7e8e18f",
+    "scripts/land_contacts.csv": "dd2321bc1945d65ac20d049af7ae72b585dd5604",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_land.js": "790d8df6f4aeeb7011aa6c0843eaf7f7d2cb19ed",
+    "scripts/map_routes.js": "2ed49330f136080fa9fbf0992c9824235b07e3fa",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795652307.806178,
+   "ended_at": "2026-11-25 19:18:27",
+   "pid": 39237,
+   "started": 1795652278.284686,
+   "started_at": "2026-11-25 19:17:58",
+   "status": "ended",
+   "step": "11c_land",
+   "uncommitted": [],
+   "wrote": {
+    "land_data.js": [
+     1795652307805261416,
+     576675
+    ]
+   }
+  },
+  "11d_parcels/all": {
+   "box": "all",
+   "changed_data": true,
+   "code": {
+    "scripts/11d_parcels.py": "66ec1ec037806c82b168127aa9b8f1338c1af473",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/county_viewers.csv": "14c866aadfc9148d50a57aa0143ca93fe7e8e18f",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_land.js": "790d8df6f4aeeb7011aa6c0843eaf7f7d2cb19ed",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/parcel_sources.csv": "4dd85ec714fdc19fd2c545aaa2a4df073a012a52",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795652332.342332,
+   "ended_at": "2026-11-25 19:18:52",
+   "pid": 39530,
+   "started": 1795652308.2667599,
+   "started_at": "2026-11-25 19:18:28",
+   "status": "ended",
+   "step": "11d_parcels",
+   "uncommitted": [],
+   "wrote": {
+    "parcels_data.js": [
+     1795652332340521463,
+     2979855
+    ]
+   }
+  },
+  "11e_coverage/all": {
+   "box": "all",
+   "changed_data": true,
+   "code": {
+    "scripts/11e_coverage.py": "839d7d008f013c5ec739a2f83dc98cba3925f7af",
+    "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
+    "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_coverage.js": "3af958c5b28b22baa79d5e5d32db0a7b39e756ab",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
+    "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
+    "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
+   },
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
+   "edited_during": [],
+   "ended": 1795652373.22304,
+   "ended_at": "2026-11-25 19:19:33",
+   "pid": 39911,
+   "started": 1795652348.6574311,
+   "started_at": "2026-11-25 19:19:08",
+   "status": "ended",
+   "step": "11e_coverage",
+   "uncommitted": [],
+   "wrote": {
+    "coverage_data.js": [
+     1795652373221863519,
+     497300
     ]
    }
   },
@@ -2415,32 +2942,32 @@
    "box": "all",
    "changed_data": true,
    "code": {
-    "scripts/12_profiles.py": "e560530f564308dd893ddbf79089fdabf2023fa9",
+    "scripts/12_profiles.py": "a0cbdcb3397fe874c61ed4eb5e7809d4a277f5cd",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/creekprofiles.py": "a79760550600465a8328ce6cc0c87b9ab2d403ff",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/map_drainages.js": "e3044253bf9d64ec5b310e65990c1b10e0d2f7a6",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/creekprofiles.py": "77ecbf015e9755d5d4b3a4e02e24559d5e15b819",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_drainages.js": "309345a374c487c73dba8f1b158da67930cd9ea6",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610639.069709,
-   "ended_at": "2026-11-25 07:43:59",
-   "pid": 49333,
-   "started": 1795610622.839872,
-   "started_at": "2026-11-25 07:43:42",
+   "ended": 1795652469.909961,
+   "ended_at": "2026-11-25 19:21:09",
+   "pid": 40840,
+   "started": 1795652440.746021,
+   "started_at": "2026-11-25 19:20:40",
    "status": "ended",
    "step": "12_profiles",
    "uncommitted": [],
    "wrote": {
     "profiles_data.js": [
-     1795610639067202857,
-     10532412
+     1795652469908429612,
+     9917368
     ]
    }
   },
@@ -2449,25 +2976,25 @@
    "changed_data": false,
    "code": {
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
     "scripts/geomatch.py": "a79f22ad9be92a791bb2596bc5ee1708f4438d56",
     "scripts/lake_bathymetry.py": "5e52d9ee6e8454315b00c939957b526bc2d74d4f",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/map_drainages.js": "e3044253bf9d64ec5b310e65990c1b10e0d2f7a6",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/map_drainages.js": "309345a374c487c73dba8f1b158da67930cd9ea6",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
     "scripts/sources.py": "92948a5b33a24576037b89812fe95964385730c2",
     "scripts/units.py": "457d91b748911ac1641330db9f64539d2e8e7af5",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "e184127f99c4dce40f740d8c351909d267eb7350",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795589236.594615,
-   "ended_at": "2026-11-25 01:47:16",
-   "pid": 2633,
-   "started": 1795589236.5174441,
-   "started_at": "2026-11-25 01:47:16",
+   "ended": 1795651802.198242,
+   "ended_at": "2026-11-25 19:10:02",
+   "pid": 34554,
+   "started": 1795651802.1288,
+   "started_at": "2026-11-25 19:10:02",
    "status": "ended",
    "step": "lake_bathymetry",
    "uncommitted": [],
@@ -2479,23 +3006,23 @@
    "code": {
     "scripts/02g_greenness.py": "2a754353558a1aa32338ea60fa2a98ef474d6a03",
     "scripts/areaclip.py": "4e98d551965ef626fef4c2a2ca48880acde644a1",
-    "scripts/build_stamp.py": "9e10fe18a078cb7ff616b3eafee0097be550a6c0",
+    "scripts/build_stamp.py": "e1a29d4590cc71b5d9f5e80ba873c2414f620194",
     "scripts/config.py": "02dd51391d5f5ae054e84b37aee1ac40f9618b39",
-    "scripts/crossbox.py": "b65bf38af2590a8ddd1396c8e1bb79a73fde3486",
-    "scripts/flowlib.py": "bd0761af38d934798133e9d5ecb583de3b1a4070",
-    "scripts/map3d.html": "53698e47d66dc73483dc6dd8a89aecac473253ad",
-    "scripts/netfetch.py": "82647f516f8b11c56848826eea25a8a1836f5b9b",
+    "scripts/crossbox.py": "ea2f9ddc18c02f4735b21be98bc0d564ec346b10",
+    "scripts/flowlib.py": "1e0ccb80281b4bfd6f2c37761d9a4c7c9b4ad5f6",
+    "scripts/map3d.html": "ce65f03e32f537ac9aa964e5282ea35a912ab239",
+    "scripts/netfetch.py": "217f06a71066995d8c059e9d22fa8f8d2713f7f6",
     "scripts/profiles.html": "708940a7921c889bb3cdfe15de6894ed913d254e",
-    "scripts/watertemp.py": "a11ed48487426739c7849120c73f1e302e4475d8",
+    "scripts/watertemp.py": "1528af525a402d1de53d39a8b09cb221e087b116",
     "scripts/weblib.py": "5b9ce7b159b933e908cbb49e1097511e8e3863a4"
    },
-   "commit": "40575554f099c3863e6ed9e2fa14a692c102777e",
+   "commit": "01ab07ee137d0f35331bb7ca4e1b958ca1f35405",
    "edited_during": [],
-   "ended": 1795610552.0888479,
-   "ended_at": "2026-11-25 07:42:32",
-   "pid": 47027,
-   "started": 1795610550.754734,
-   "started_at": "2026-11-25 07:42:30",
+   "ended": 1795652334.8266308,
+   "ended_at": "2026-11-25 19:18:54",
+   "pid": 39771,
+   "started": 1795652333.349508,
+   "started_at": "2026-11-25 19:18:53",
    "status": "ended",
    "step": "watertemp",
    "uncommitted": [],
