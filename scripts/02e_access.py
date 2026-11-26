@@ -33,7 +33,7 @@ Writes data/raw/_shared/access_roads.gpkg and data/raw/_shared/parking_trailhead
 Map attribution: (c) OpenStreetMap contributors (ODbL), USFS.
 """
 import os, re, html, json, time, numpy as np, pandas as pd, geopandas as gpd, shapely
-from config import REGIONS, CRS, ROOT, SHARED, has, MIN_RELIEF_M
+from config import REGIONS, CRS, ROOT, SHARED, SHARED_DERIVED, has, MIN_RELIEF_M
 from geomatch import overpass, esri, relief_at, follow, wilderness_path
 import netfetch
 import trailrules
@@ -115,6 +115,12 @@ if len(fs_both):
     U = trailrules.usfs_only(shapely.intersection(fs_both.geometry.values, union), trailrules.map_ways(osm_here))
     cp = U.offset_copy.astype(bool).values
     copies, U = U[cp], U[~cp]
+    # a USFS record under a lake (a road the reservoir drowned) is no way across the water: 08_hike.py's open water is
+    # impassable, and a road's line through it would be a causeway (the Smokies: two pieces, 264 m in lakes)
+    if os.path.exists(f"{SHARED_DERIVED}/lakes.gpkg") and len(U):
+        wet = shapely.union_all(gpd.read_file(f"{SHARED_DERIVED}/lakes.gpkg").to_crs(CRS).geometry.values)
+        U = U.assign(geometry=[[p for p in shapely.get_parts(shapely.difference(g, wet)) if p.length >= 50]
+                               for g in U.geometry.values]).explode("geometry").dropna(subset=["geometry"])
     fs_name = lambda v: re.sub(r"\b[A-Z][A-Z']*\b", lambda m: m.group(0).capitalize(), v.strip()) \
         if isinstance(v, str) and v.strip() else None                 # "UPPER WINESPRINGS CR." -> "Upper Winesprings Cr."
     us = gpd.GeoDataFrame({"name": [fs_name(v) for v in fs_both["name"].values[U.line.values]],

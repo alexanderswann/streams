@@ -941,7 +941,11 @@ contours below low lake level, the chart datum (93.0 ft above sea level; the lak
 popup names the charts and NOAA's agreement, as it asks, and says the depths aren't for navigation.
 
 **Walking to lakes.** Lakes are impassable on foot off trails: a reach mapped through a lake is reached at the shore,
-a river through a big lake takes the time to the nearest shore. Times are a fit hiker's without stops (Tobler), a
+a river through a big lake takes the time to the nearest shore. A point in a lake takes the nearest shore cell that can
+be reached by land, or, where it is quicker, the quickest shore of the mainland (land joined to a road without crossing
+water, not an island's) with the walk along the shore for its extra distance beyond the nearest one charged at the
+off-trail pace (so a shore kilometres off never wins); a faster network can't make that second part slower. A Forest
+Service road record under a lake (a drowned road) is cut at the shore, not used as a causeway. Times are a fit hiker's without stops (Tobler), a
 little short where a 10 m grid cuts switchbacks. Boats aren't modelled, so in the Adirondacks, where many approaches
 are by canoe, routes go round lakes on foot, which raises remoteness and so fish scores.
 

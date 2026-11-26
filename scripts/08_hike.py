@@ -47,6 +47,7 @@ import roadclosures
 TRAIL_MAX_GRADE = 0.15
 FAINT_FACTOR = 0.6          # a faint trail (an agency's trail OSM lacks): this share of a trail's speed (open ground: 0.30)
 CHANNEL_FACTOR, OFFTRAIL_FACTOR = 0.45, 0.30
+SHORE_MAX_M = 3000.0        # a lake cell looks this far beyond its nearest mainland shore for a quicker one (below)
 # A creek bottom is walked up to this drainage; a bigger river along its bank, off trail. Since #7 a lake's outlet river
 # carries the water of the lake above it, and its channel counted as a creek bottom however big: the Raquette below
 # Long Lake, 171 km2, made 16,000 cells around Round Lake Outlet 3+ minutes nearer on foot (adk_northwest,
@@ -72,6 +73,9 @@ shape, T = dem.shape, src.transform
 def tobler(s):
     """km/h, symmetric (mean of walking up and down slope s)."""
     return 0.5 * (6 * np.exp(-3.5 * np.abs(s + 0.05)) + 6 * np.exp(-3.5 * np.abs(-s + 0.05)))
+
+
+SHORE_KMH = float(tobler(0.0)) * OFFTRAIL_FACTOR   # walking along a lake shore, off trail on the flat: 1.5 km/h
 
 gy, gx = np.gradient(np.where(nodata, np.nanmean(dem[~nodata]), dem), RES)
 slope = np.hypot(gx, gy)
@@ -299,12 +303,26 @@ pc = np.where(tbf >= 0, cc.ravel() - offs[np.clip(tbf, 0, None), 1], cc.ravel())
 parent = (np.clip(pr, 0, H - 1) * W + np.clip(pc, 0, W - 1)).astype(np.int64)
 del rr, cc, pr, pc
 cumf = cum.ravel()
+streams = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
+drops = gpd.read_file(f"{OUT}/waterfall_candidates.gpkg").to_crs(CRS)
+# a drop is reachable at its top or at its pool/base: use whichever is closer
+pool = gpd.GeoSeries(gpd.points_from_xy(drops.pool_lon, drops.pool_lat), crs=4326).to_crs(CRS)
+drops["geometry"] = [MultiPoint([a, b]) for a, b in zip(drops.geometry, pool)]
 JUMP = None           # lake cells and the shore cells they lead to (below), for the routes (approach_routes.py)
 # A point in a lake is reached at the lake's shore: every water cell takes the approach of the nearest shore cell of its
 # own lake that can be reached, and leads there, with no time or distance added (its lake's quickest shore where none
 # can). Without this, a reach mapped through a lake (an artificial path) cost the crossing of the impassable water: up
 # to 37 hours. With the quickest shore for every cell, a creek's mouth at the far end of a long reservoir was "reached"
-# at its quickest shore 20 km away (Panther Creek on Fontana Lake: 243 -> 2 min); boats aren't modelled
+# at its quickest shore 20 km away (Panther Creek on Fontana Lake: 243 -> 2 min); boats aren't modelled.
+# The nearest shore that qualifies can be slow where a shore a little farther is quick: the rule picks by distance, and
+# which shores qualify (a shore whose own fastest route crosses water doesn't) changes with the network, so a faster
+# network once moved Cheoah Reservoir's target to a nearer, slower shore (39 -> 128 min; Pine Lake 32 -> 64, with the
+# faint trails and Forest Service roads, 2026-11-25). So the lake cells the tables read (the reaches' and drops' sample
+# points) also take the quickest mainland shore of their lake (land joined to a road without crossing water, not an
+# island's), each charged the walk along the shore for its extra distance beyond the nearest one, at the off-trail pace
+# (SHORE_KMH: a shore 20 km off is 13 hours, so a far shore never wins), where that beats the rule above and the cell's
+# own crossing. The shores are fixed by the land and their times only drop as the network grows, so this part can only
+# get quicker; a jump that goes down in time can't close a circle.
 if LAKES is not None and lake_cells.any():
     from scipy import ndimage
     lab, nl = ndimage.label(lake_cells, structure=np.ones((3, 3), bool))
@@ -335,8 +353,46 @@ if LAKES is not None and lake_cells.any():
         own = lab.ravel()[li]
         tgt = near[li]
         tgt = np.where(ring[tgt] == own, tgt, best_i[own])            # the nearest shore cell is another lake's: quickest
-        li, tgt = li[tgt >= 0], tgt[tgt >= 0]
-        parent[li], cumf[li], tbf[li] = tgt, cumf[tgt], -1
+        val = np.where(tgt >= 0, cumf[np.maximum(tgt, 0)], np.inf)
+        land_lab, _ = ndimage.label(~lake_cells, structure=np.ones((3, 3), bool))
+        main_ids = np.unique(land_lab[source & ~lake_cells])
+        shore = np.flatnonzero((ring > 0) & np.isin(land_lab, main_ids[main_ids > 0]).ravel() & np.isfinite(cumf))
+        del land_lab
+        # the lake cells the tables read: every reach's and drop's sample points (as best() takes them)
+        def _cells(geoms, step=20):
+            xs, ys = [], []
+            for g in geoms:
+                pts = [g] if g.geom_type == "Point" else list(g.geoms) if g.geom_type == "MultiPoint" else \
+                    [g.interpolate(d) for d in np.arange(0, g.length + step, step)]
+                xs += [p.x for p in pts]; ys += [p.y for p in pts]
+            c_, r_ = ~T * (np.array(xs), np.array(ys))
+            return np.clip(r_.astype(int), 0, H - 1) * W + np.clip(c_.astype(int), 0, W - 1)
+        need = np.unique(np.r_[_cells(streams.geometry), _cells(drops.geometry)])
+        need = need[lake_cells.ravel()[need]]
+        pos = np.searchsorted(li, need)                                  # li is sorted (flatnonzero)
+        lam = 60.0 / (1000.0 * SHORE_KMH)                                # minutes per metre of shore walked
+        from scipy.spatial import cKDTree
+        for l in np.unique(lab.ravel()[need]):
+            s_ = shore[ring[shore] == l]
+            if not len(s_):
+                continue
+            k_ = need[lab.ravel()[need] == l]
+            xy_s = np.c_[s_ // W, s_ % W] * RES
+            xy_k = np.c_[k_ // W, k_ % W] * RES
+            tree, cs = cKDTree(xy_s), cumf[s_]
+            dn, i0 = tree.query(xy_k)
+            for n_, (kk, d0, j0) in enumerate(zip(k_, dn, i0)):
+                hits = np.asarray(tree.query_ball_point(xy_k[n_], min(d0 + (cs[j0] - cs.min()) / lam, d0 + SHORE_MAX_M)), int)
+                if not len(hits):
+                    hits = np.array([j0])
+                v = cs[hits] + lam * np.maximum(np.hypot(*(xy_s[hits] - xy_k[n_]).T) - d0, 0.0)
+                b = int(np.argmin(v))
+                p_ = pos[np.searchsorted(need, kk)]
+                if v[b] < val[p_] and v[b] <= cumf[kk]:                  # quicker, and down in time from the cell itself
+                    tgt[p_], val[p_] = s_[hits[b]], v[b]
+        ok_ = tgt >= 0
+        li, tgt, val = li[ok_], tgt[ok_], val[ok_]
+        parent[li], cumf[li], tbf[li] = tgt, val, -1
         JUMP = (li, tgt)
         del near
     del lab, ring
@@ -401,11 +457,6 @@ def table(gdf, key, cells=None):
                          th_x=xy(o)[0], th_y=xy(o)[1]))
     return pd.DataFrame(rows)
 
-streams = gpd.read_file(f"{OUT}/streams_scored.gpkg").to_crs(CRS)
-drops = gpd.read_file(f"{OUT}/waterfall_candidates.gpkg").to_crs(CRS)
-# a drop is reachable at its top or at its pool/base: use whichever is closer
-pool = gpd.GeoSeries(gpd.points_from_xy(drops.pool_lon, drops.pool_lat), crs=4326).to_crs(CRS)
-drops["geometry"] = [MultiPoint([a, b]) for a, b in zip(drops.geometry, pool)]
 start_cells = {"stream": [], "drop": [], "lake": []}     # approach cells, for the routes (approach_routes.py)
 start_ids = {"stream": streams.sid.values, "drop": drops.did.values, "lake": []}
 ts, td = table(streams, "sid", start_cells["stream"]), table(drops, "did", start_cells["drop"])
