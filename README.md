@@ -613,7 +613,9 @@ West Virginia DNR's). Road and trail downloads are cached for a week (`REFRESH=1
   those like it: mean annual flow within x/÷ 2 (drainage where either has no flow estimate), slope within x/÷ 1.5 (at
   least ±0.3 points) and the lower end within ±750 ft; each band a switch in a note by the layer panel, "order" (the same
   order) off at first, "wider" x/÷ 3, x/÷ 2 (±0.5) and ±1,500 ft. Among the streams the filters keep; it rides the 2D/3D
-  link as `&like=`. The one-file phone map shows the specs only.
+  link as `&like=`. The one-file phone map shows the specs only. The stream filters (`map_filter.js`) have a mean-flow
+  slider in cfs beside the drainage one (the user, 2026-11-25): any, 0.5, 1, 3, 5, 10, 15, 25, 50, 100, any, on the flow
+  the specs line shows; a stream with no flow estimate leaves the map while a flow limit is set; `&cfs=3-15` in the link.
 
 - **Approach routes** (the user, 2026-11-24). A tap on a reach draws its fastest route from the trailhead to its
   approach point, as `08_hike.py` found it (`map_routes.js`, in both maps): the bike leg orange; the walk raspberry,
