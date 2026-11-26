@@ -115,6 +115,41 @@ WRITERS = {"hike": "08_hike.py", "sun": "10_sun.py", "context": "11_context.py",
            "area": "05c_drainages.py"}
 
 
+# The terms a reach reads at its own place, which the pieces of a reach cut where a named NHD line ends (05_score.py's
+# name_cut) read as their line's: the length-weighted mean over its pieces (to each column's precision), as the uncut
+# reach read them along it or at its middle. The cut is for the names alone. Read at each piece, the short lower piece
+# at a confluence read the valley floor's open canopy, little terrain shade and warmer August air, and the road nearer
+# it: Lightning Creek's last 95 m (Jackson) 89 -> 78, Deer Creek's 71 -> 60, and Fall Creek's lower piece crossed the
+# heat gate at 85.5 F (39 -> 23; 2026-11-26).
+LINE_TERMS = {"sun_hours": 1, "shade_pct": 0, "northness": 2, "canopy_pct": 0, "air_aug": 1, "elev_m": 0,
+              "approach_med_min": 0, "bike_med_min": 0}
+def line_terms(s):
+    if "name_cut" not in s or "cut_sid" not in s or "len_m" not in s:
+        return s
+    nc = s["name_cut"].fillna(False).astype(bool).to_numpy()
+    if not nc.any():
+        return s
+    nxt = dict(zip(s["sid"], s["cut_sid"].where(s["cut_sid"].notna(), None)))
+    def end(x):                    # a line's last piece: the upper pieces name the rest of their line (cut_sid)
+        for _ in range(len(nxt)):
+            if not isinstance(nxt.get(x), str):
+                return x
+            x = nxt[x]
+        return x
+    s = s.copy()
+    line = pd.Series([end(x) for x in s["sid"].to_numpy()[nc]], index=s.index[nc])
+    w = pd.to_numeric(s.loc[nc, "len_m"], errors="coerce").fillna(0.0)
+    for c, d in LINE_TERMS.items():
+        if c not in s:
+            continue
+        v = pd.to_numeric(s.loc[nc, c], errors="coerce")
+        ok = v.notna() & (w > 0)
+        den = w.where(ok, 0.0).groupby(line).sum()
+        m = ((v.where(ok, 0.0) * w.where(ok, 0.0)).groupby(line).sum() / den.where(den > 0)).round(d)
+        s.loc[nc, c] = line.map(m).where(line.map(m).notna(), v).to_numpy()
+    return s
+
+
 def attach(gdf, key, region_dirs, kind):
     """Merge hike_/sun_/context_/flow_/area_ CSVs (kind = 'streams' or 'drops') and trailhead drive times onto gdf."""
     parts = {}
@@ -140,6 +175,8 @@ def attach(gdf, key, region_dirs, kind):
     out = gdf
     for t in parts.values():
         out = out.merge(t, on=key, how="left")
+    if kind == "streams":
+        out = line_terms(out)
     ths = [gpd.read_file(f"{d}/trailheads.gpkg") for d in region_dirs if os.path.exists(f"{d}/trailheads.gpkg")]
     if ths and "th_id" in out:
         th = pd.concat(ths, ignore_index=True)

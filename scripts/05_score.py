@@ -776,6 +776,114 @@ if _in_drawn.any():
 print(f"links cut at lake shores: {len(_pieces) - len(s)} cuts on {int((pd.Series(_src).value_counts() > 1).sum())} "
       f"of {len(s)} links; of them at the drawn shore where a lake's piece runs on through water the map draws no lake "
       f"in: {len(_ends)} ({sum(_ends) / 1000:.2f} km, drawn as streams)")
+# A creek piece is cut where a named NHD line ends along it. The routing can carry a creek on past the point where NHD
+# has it join a river, or where NHD's name for it stops, and a piece running on past that point read the creek's name
+# all along or not at all: Broadhead Creek (the Lexington map) joins the South River in NHD 800 m into a 1.6 km reach
+# whose second half runs down the floodplain beside the river, and the whole reach went unnamed once the main stem's
+# name stopped where NHD's line of it ends (2026-11-25). Cut there, the stretch along the named line reads its name and
+# the rest reads what NHD maps along it. The end of a named line is the downstream end of NHD's lines of that name,
+# merged as drawn, ditches, connectors and artificial paths included, so a name NHD carries on through a ditch doesn't
+# end there. It cuts a piece where it lies within MAIN_NEAR_M of it (Broadhead Creek's ends 75 m off the reach),
+# NAME_END_M or more from both of the piece's ends, when NAME_SHARE or more of the stretch above runs along NHD's lines
+# of that name and less of the stretch below lies within NAME_NEAR_M of them (a braid ends where it rejoins its river,
+# on a reach that runs on along the river), and NAME_SHARE or more of the piece's main stem above (the reach of most
+# water ending at each start, up to CUT_STEM_M of it) runs along them too, so the piece carries that stream's water:
+# a river's reach that starts at the routing's junction above NHD's confluence runs along the tributary's line at
+# first, and cut there its first stretch would read the tributary's name on the river's water (the Maury River below
+# Kerrs Creek, 1,246 km2).
+# And the piece's water must match that stream's size: its drainage, carried water included, at most CUT_SIZE times
+# the stream's own. That is NHDPlus's at the line's end where NHDPlus names the stream, else Hack's law on the length of
+# NHD's line of it ending there, A = (L / 1.4) ^ (1 / 0.6) km2. Where the routing runs a river along a small creek's
+# line, the creek's name went on the river's water: the Tuckasegee River, 210 km2, along Canoe Creek, NHDPlus's 1.2.
+# "Along" means the nearest NHD line is one of that name, within NAME_NEAR_M: a creek running beside a river within
+# 60 m is not the river. Not within NAME_END_M of the box's edge, where NHD's lines are cut off. A piece below such a
+# cut doesn't take its link's name when its own vote finds none (below).
+CUT_STEM_M, CUT_SIZE = 2000.0, 1.5
+from flowlib import FLOW
+_v2p = f"{FLOW}/nhdplus_v2.gpkg"
+_v2 = gpd.read_file(_v2p, columns=["gnis_name", "totdasqkm"]).to_crs(CRS) if os.path.exists(_v2p) else None
+_v2_by = {n_: (shapely.STRtree(g_.geometry.values), g_.totdasqkm.to_numpy(float))
+          for n_, g_ in _v2[_v2.gnis_name.notna()].groupby("gnis_name")} if _v2 is not None else {}
+def _stream_km2(n, e, part_m):
+    """The stream n's own drainage at its line's end e: NHDPlus's within 3 km of it, else Hack's law on part_m."""
+    if n in _v2_by:
+        t_, a_ = _v2_by[n]
+        k_ = t_.query(e, predicate="dwithin", distance=3000.0)
+        if len(k_):
+            return float(np.nanmax(a_[k_]))
+    return (part_m / 1000.0 / 1.4) ** (1 / 0.6)
+_named_nhd = nhd[nhd.gnis_name.notna()]
+_ne_pts, _ne_lines, _ne_names, _ne_km2 = [], [], [], []
+for _n, _grp in _named_nhd.groupby("gnis_name"):
+    _all = shapely.union_all(_grp.geometry.values)
+    _m = shapely.line_merge(_all, directed=True)
+    for _part in getattr(_m, "geoms", [_m]):
+        if _part.geom_type == "LineString" and not _part.is_empty:
+            _e = shapely.Point(_part.coords[-1][:2])
+            if range_box.boundary.distance(_e) >= NAME_END_M:
+                _ne_pts.append(_e); _ne_lines.append(_all); _ne_names.append(_n)
+                _ne_km2.append(_stream_km2(_n, _e, _part.length))
+_name_cuts = defaultdict(list)
+if _ne_pts:
+    _ptree = shapely.STRtree(np.array(_pieces, dtype=object))
+    _opts = [shapely.Point(q) for q in _own_xy]
+    _pfull = sample(area, _opts) + sample(carried_grid, _opts)
+    _pend = defaultdict(list)
+    for k_, g_ in enumerate(_pieces):
+        _pend[(round(g_.coords[-1][0], 1), round(g_.coords[-1][1], 1))].append(k_)
+    def _along(x, L):
+        p = shapely.line_interpolate_point(x, np.arange(0.0, x.length + 1e-6, 25.0))
+        return float(np.mean(shapely.distance(p, L) <= NAME_NEAR_M))
+    _nt_all, _nn_all = shapely.STRtree(nhd.geometry.values), nhd["gnis_name"].to_numpy(object)
+    def _nearest_is(x, n):
+        """The share of x's points (every 25 m) whose nearest NHD line is one named n, within NAME_NEAR_M."""
+        p = shapely.line_interpolate_point(x, np.arange(0.0, x.length + 1e-6, 25.0))
+        k_ = _nt_all.nearest(p)
+        return float(np.mean((_nn_all[k_] == n) & (shapely.distance(p, nhd.geometry.values[k_]) <= NAME_NEAR_M)))
+    def _stem(i):
+        """The main stem above piece i: the piece of most water ending at each start, up to CUT_STEM_M of it."""
+        out, j, n_ = [], i, 0.0
+        while n_ < CUT_STEM_M:
+            ups = _pend.get((round(_pieces[j].coords[0][0], 1), round(_pieces[j].coords[0][1], 1)), [])
+            if not ups:
+                break
+            j = max(ups, key=lambda k: _pfull[k])
+            out.append(_pieces[j]); n_ += _pieces[j].length
+        return shapely.line_merge(shapely.union_all(out)) if out else None
+    for _e, _L, _n, _km2 in zip(_ne_pts, _ne_lines, _ne_names, _ne_km2):
+        for i in _ptree.query(_e, predicate="dwithin", distance=MAIN_NEAR_M):
+            if _wet[i] or _pfull[i] > CUT_SIZE * _km2:
+                continue
+            g = _pieces[i]
+            d = g.project(_e)
+            if not (NAME_END_M <= d <= g.length - NAME_END_M):
+                continue
+            above, below = shapely.ops.substring(g, 0.0, d), shapely.ops.substring(g, d, g.length)
+            if _nearest_is(above, _n) >= NAME_SHARE > _along(below, _L):
+                st_ = _stem(i)
+                if st_ is None or _nearest_is(st_, _n) >= NAME_SHARE:
+                    _name_cuts[i].append(d)
+_below_name_cut = np.zeros(len(_pieces), bool)
+_name_line = np.full(len(_pieces), None, dtype=object)     # a piece cut by name: the piece it was cut from (else None)
+_name_own = [None] * len(_pieces)                           # ... and that piece's own cell (its gradient's end)
+_n_name_cuts = 0
+if _name_cuts:
+    _P, _S, _W, _O, _D, _B, _L0, _O0 = [], [], [], [], [], [], [], []
+    for i, g in enumerate(_pieces):
+        _keep = []
+        for d in sorted(_name_cuts.get(i, [])):          # cuts NAME_END_M or more apart
+            if not _keep or d - _keep[-1] >= NAME_END_M:
+                _keep.append(d)
+        _n_name_cuts += len(_keep)
+        bounds = [0.0] + _keep + [g.length]
+        for k_, (a_, b_) in enumerate(zip(bounds[:-1], bounds[1:])):
+            _P.append(g if len(bounds) == 2 else shapely.ops.substring(g, a_, b_))
+            _S.append(_src[i]); _W.append(_wet[i]); _D.append(_in_drawn[i])
+            _O.append(_own_xy[i] if b_ >= g.length else before_vertex(g, b_))
+            _B.append(k_ > 0); _L0.append(g if len(bounds) > 2 else None); _O0.append(_own_xy[i])
+    _pieces, _src, _wet, _own_xy, _in_drawn, _below_name_cut = _P, _S, _W, _O, np.array(_D, bool), np.array(_B, bool)
+    _name_line, _name_own = np.array(_L0 + [None], dtype=object)[:-1], _O0
+print(f"pieces cut where a named NHD line ends along them: {_n_name_cuts} cuts on {len(_name_cuts)} pieces")
 # The first LAKE_NEAR_M (200 m, 650 ft) below a lake is a reach of its own (flowlib.cut_below_lakes). A lake's outlet
 # runs at the temperature of its surface and the warmth fades fast below it, and a reach is scored on one water
 # temperature, the mean along it: a reach that started at a pond and ran on for half a mile read as a cool creek, its
@@ -811,6 +919,17 @@ def _mostly_lake(ii, pts):     # the line's lake water (it takes none on along t
 _pieces, _from, _wet = cut_below_lakes(_shore, _lake_km2, _wet, _lakes, keep=_mostly_lake, low=_low_sh)
 _from = np.asarray(_from, int)
 _in_drawn = _in_drawn[_from]
+_below_name_cut = _below_name_cut[_from]
+_name_line = _name_line[_from]
+_name_own = [_name_own[k] for k in _from]
+_ncut = np.array([x is not None for x in _name_line], bool)     # the pieces of a piece cut where a named line ends
+# ... the upper ones (the next row is a piece of the same cut piece): like a first stretch below a lake, each names the
+# rest of its line in cut_row / cut_sid, so the later steps read the line whole (05b_flow.py its flow evidence,
+# 11_context.py its trout records and waters, watertemp.py its drainage) and the cut moves only the names. Measured on
+# its own, Sycamore Creek's upper 2.1 km (Sespe box) matched another model line and read seasonal for "usually flows"
+# (fish 53 -> 43), and a creek's upper 983 m by Oak Glen matched none (2026-11-25).
+_nfirst = np.zeros(len(_pieces), bool)
+_nfirst[:-1] = _ncut[:-1] & np.array([_name_line[k + 1] is _name_line[k] for k in range(len(_pieces) - 1)], bool)
 _src = [_src[k] for k in _from]
 _cut = pd.Series(_from).duplicated(keep=False).to_numpy()          # both pieces of a line cut below a lake
 _first = pd.Series(_from).duplicated(keep="last").to_numpy()       # the upper one
@@ -818,6 +937,8 @@ _first = pd.Series(_from).duplicated(keep="last").to_numpy()       # the upper o
 # the upper one at a vertex of the line, its own cell the vertex before it
 _own_xy = [tuple(g.coords[-2][:2]) if f_ else tuple(_own_xy[k]) for k, f_, g in zip(_from, _first, _pieces)]
 s = gpd.GeoDataFrame(s.drop(columns="geometry").iloc[_src].reset_index(drop=True), geometry=_pieces, crs=CRS)
+s["name_cut"] = _ncut        # a piece of a piece cut where a named line ends (above): scoring.attach() reads the terms
+                             # each piece reads at its own place (sun, canopy, air, height, approach) as its line's
 # the link each piece was cut from (at the shores of the lakes the map draws, at opened outlets, 200 m below a lake):
 # 11_context.py reads the designated trout waters on all of a creek's pieces at once (creek_lines), as on the link
 s["link_id"] = [f"{REGION}:k{int(k)}" for k in _src]
@@ -856,6 +977,15 @@ if _cut.any():           # the two pieces of a line cut below a lake keep the li
           f"{int((_own[_first] > 8).sum())} (the line's: {int((s.gradient_pct.to_numpy(float)[_first] > 8).sum())})")
 else:
     print(f"creek lines cut {LAKE_NEAR_M:g} m below a lake: 0")
+# The pieces of a piece cut where a named line ends (above) keep its gradient and, below, its NHD class: the cut is for
+# the names alone. Read on each piece, the class came from other NHD lines than the whole one's: Tar Creek's 591 m by
+# Sespe Creek (31.5 km2) voted perennial whole and intermittent in both pieces, and read seasonal at fish 20 for
+# year-round at 71 (2026-11-25).
+if _ncut.any():
+    _g0 = _name_line[_ncut]
+    s.loc[_ncut, "gradient_pct"] = np.clip((sample(dem, [shapely.Point(g.coords[0]) for g in _g0])
+                                            - sample(dem, [shapely.Point(_name_own[k]) for k in np.flatnonzero(_ncut)]))
+                                           / shapely.length(_g0) * 100, 0, None).round(1)
 s["road_m"] = mid.distance(road_u).round(0)
 s["trail_m"] = mid.distance(trail_u).round(0)
 pts3 = vertices3(s.geometry, s.index)
@@ -866,6 +996,10 @@ if _cut.any():           # the two pieces of a line cut below a lake keep the li
     _lp = [gpd.GeoDataFrame(geometry=[vert(g, f) for g in _shore[_from[_cut]]], index=s.index[_cut], crs=CRS)
            for f in (0.25, 0.5, 0.75)]
     s.loc[_cut, "flow"] = vote(nhd_k, "flow", pts=_lp).fillna("unmapped").values
+if _ncut.any():          # ... and the pieces of a piece cut where a named line ends keep its NHD class (above)
+    _lp = [gpd.GeoDataFrame(geometry=[vert(g, f) for g in _name_line[_ncut]], index=s.index[_ncut], crs=CRS)
+           for f in (0.25, 0.5, 0.75)]
+    s.loc[_ncut, "flow"] = vote(nhd_k, "flow", pts=_lp).fillna("unmapped").values
 # ... and a creek piece cut from a link at the shores of the lakes the map draws, or at an opened outlet, whose own vote
 # fails (no two of its 25/50/75 % vertices agree) takes its link's: in the Stowe box a 0.4 km2 brook's first 25 m were cut
 # off at a pond's drawn shore, the 679 m creek piece's vote failed where the link's held ("perennial"), and it read
@@ -876,7 +1010,7 @@ if _need.any():
     _lpts = vertices3([_links_geom[k] for k in np.asarray(_src)[_need]], s.index[_need])
     _lf, _ln = vote(nhd_k, "flow", pts=_lpts), vote(nhd_k, "gnis_name", pts=_lpts)
     _ff = s.loc[_need, "flow"].eq("unmapped") & _lf.notna()
-    _fn = s.loc[_need, "name"].isna() & _ln.notna()
+    _fn = s.loc[_need, "name"].isna() & _ln.notna() & ~_below_name_cut[_need]   # not below a named line's end (above)
     s.loc[_ff[_ff].index, "flow"] = _lf[_ff]
     s.loc[_fn[_fn].index, "name"] = _ln[_fn]
     print(f"creek pieces whose own NHD vote failed, given their link's: class {int(_ff.sum())}, name {int(_fn.sum())}")
@@ -1026,6 +1160,11 @@ for _i, _n in _main:
 # -> usually flows, fish 43 -> 31). Not where it runs along a river of SIDE_RIVER_KM2 or more, SIDE_RATIO times its
 # size (SIDE_ON_RIVER of it within 150 m, as the floor's side channels).
 _vote_cls = s["flow"].to_numpy(object).copy()             # the 3-point class (with the cut pieces' link vote)
+# The pieces of a piece cut where a named line ends are read on that whole piece, so that they keep its class (the
+# cut is for the names alone): Tar Creek by Sespe Creek (31.5 km2) votes intermittent and reads perennial along its
+# 591 m; cut, neither piece read perennial along it, and both showed seasonal at fish 20-21 for year-round at 71.
+_Gw = np.array(list(_G), dtype=object)
+_Gw[_ncut] = _name_line[_ncut]
 # "Other" too, as "unmapped": the vote's line has no flow class (a connector, a stream line NHD leaves unclassified, in
 # LA an artificial path), unless it is a built channel's (a canal, ditch, pipeline or conduit, or a line named after
 # one: floor_lines()), which stays as voted. Hooks Creek above Lake Arrowhead (LA) lies on NHD's Hooks Creek all
@@ -1033,22 +1172,23 @@ _vote_cls = s["flow"].to_numpy(object).copy()             # the 3-point class (w
 # vertices read the connector, "other", and it showed seasonal for year-round (fish 44 -> 13).
 _oth = np.flatnonzero(_creek & (_vote_cls == "other"))
 _built_v = (vote(nhd.assign(built=nhd.ftype.isin(BUILT_FTYPES) | channel_word(nhd.gnis_name))[["built", "geometry"]]
-                 .reset_index(drop=True), "built", pts=vertices3(_G[_oth], s.index[_oth])).eq(True).to_numpy()
+                 .reset_index(drop=True), "built", pts=vertices3(_Gw[_oth], s.index[_oth])).eq(True).to_numpy()
             if len(_oth) else np.zeros(0, bool))
 _cand = np.flatnonzero(_creek & np.isin(_vote_cls, ["unmapped", "other", "ephemeral", "intermittent"]))
 _cand = np.setdiff1d(_cand, _oth[_built_v])
 _cls = _fl[_fl.fcode.isin([46006, 46003])]
-_per = name_by_share(_G[_cand], _cls[_cls.fcode.eq(46006)], col="flow", min_share=PERENNIAL_SHARE)
-_most = name_by_share(_G[_cand], _cls, col="flow")
+_per = name_by_share(_Gw[_cand], _cls[_cls.fcode.eq(46006)], col="flow", min_share=PERENNIAL_SHARE)
+_most = name_by_share(_Gw[_cand], _cls, col="flow")
 _fill, _held_cls = [], 0
 for _i, _p, _m in zip(_cand, _per, _most):
     _c = _p or (_m if _vote_cls[_i] in ("unmapped", "other", "ephemeral") else None)
     if _c is None or CLASS_RANK[_c] <= CLASS_RANK[_vote_cls[_i]]:
         continue
-    _big = [k for k in _tree.query(_G[_i], predicate="dwithin", distance=150)
-            if full_km2[k] >= max(SIDE_RIVER_KM2, SIDE_RATIO * full_km2[_i]) and (_lowp[_i] or not _lowp[k])]
-    _along = _G[_i].intersection(shapely.union_all(shapely.buffer(_G[_big], 150))).length if _big else 0.0
-    if _along >= SIDE_ON_RIVER * _G[_i].length and _big:
+    _big = [k for k in _tree.query(_Gw[_i], predicate="dwithin", distance=150)
+            if full_km2[k] >= max(SIDE_RIVER_KM2, SIDE_RATIO * full_km2[_i]) and (_lowp[_i] or not _lowp[k])
+            and not (_ncut[k] and _name_line[k] is _Gw[_i])]
+    _along = _Gw[_i].intersection(shapely.union_all(shapely.buffer(_G[_big], 150))).length if _big else 0.0
+    if _along >= SIDE_ON_RIVER * _Gw[_i].length and _big:
         _held_cls += 1
         continue
     _fill.append((_i, _c))
@@ -1262,7 +1402,8 @@ s["name"] = [new_name.get(i, n) for i, n in enumerate(names0)]
 s["side_of"] = [side_name[i] if i in side else None for i in range(len(s))]
 s["side_row"] = [side.get(i, -1) for i in range(len(s))]        # the river reach beside it (its row; a sid below)
 s["river_km2"] = [round(float(full_km2[side[i]]), 2) if i in side else np.nan for i in range(len(s))]
-s["cut_row"] = np.where(_first, np.arange(len(s)) + 1, -1)      # a first stretch below a lake: the rest of its line
+s["cut_row"] = np.where(_first | _nfirst, np.arange(len(s)) + 1, -1)      # a first stretch below a lake (or above a
+                                                                            # name's end, _nfirst): the rest of its line
 print(f"small reaches named after the river beside them: "
       f"{sum(v is not None and i not in side for i, v in new_name.items())} take the name of "
       f"the creek they end, {sum(v is None for v in new_name.values())} end an unnamed creek and lose the name, "
@@ -1328,6 +1469,23 @@ if sides:
     print(f"second outlets drawn as side channels of their lake's outlet creek: {len(told)}: " + ", ".join(told))
 s["side_lake"] = side_lake
 s = s.drop(columns="side_n")
+# A piece below a cut where a named NHD line ends (above) reads its name off NHD's lines along it, as any reach. Where
+# that is a stream SIDE_RATIO times its water or more (NHDPlus's drainage of that name within 3 km of its end, as the
+# cut's size test reads a stream), it is the creek's water running down the bigger stream's NHD line to where the
+# routing joins them, and it takes the creek's name, the piece above's, as the river-beside rule names a creek's end
+# beside a river: Hightower Branch's last 140 m read "Betty Creek" on 0.40 km2 against Betty Creek's 38.6, with
+# Betty Creek's designation (2026-11-26).
+_nm_ = s["name"].to_numpy(object).copy()
+_back = 0
+for _i in np.flatnonzero(_below_name_cut[:len(s)] & _ncut[:len(s)]):
+    if _i == 0 or _name_line[_i - 1] is not _name_line[_i] or not isinstance(_nm_[_i], str) or _nm_[_i] == _nm_[_i - 1]:
+        continue
+    _k = _stream_km2(_nm_[_i], shapely.Point(geoms[_i].coords[-1]), 0.0) if _nm_[_i] in _v2_by else np.nan
+    if np.isfinite(_k) and _k >= SIDE_RATIO * full_km2[_i]:
+        _nm_[_i] = _nm_[_i - 1]
+        _back += 1
+s["name"] = _nm_
+print(f"pieces below a named line's end on a stream {SIDE_RATIO:g} times their water or more, given the creek's name: {_back}")
 
 # Fishability score 0-100 (heuristic, tuned for SoCal trout water)
 def band(x, lo, hi, soft):  # 1 inside [lo,hi], linear falloff over `soft`

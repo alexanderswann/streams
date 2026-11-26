@@ -113,6 +113,9 @@ if "cut_sid" in s and s.cut_sid.notna().any():
         r_ = row_[s.cut_sid.iat[i]]
         geo_[r_] = shapely.LineString(list(geo_[i].coords) + list(geo_[r_].coords)[1:])
         cut_of[s.sid.iat[i]] = s.sid.iat[r_]
+    for k_ in list(cut_of):        # a line cut twice (below a lake and where a name ends): A -> B -> C reads C's row
+        while cut_of[k_] in cut_of:
+            cut_of[k_] = cut_of[cut_of[k_]]
     s = s.copy()
     s["geometry"] = gpd.GeoSeries(geo_, index=s.index, crs=s.crs)
     s = s[~first_].reset_index(drop=True)

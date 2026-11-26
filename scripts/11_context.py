@@ -413,7 +413,16 @@ def cut_lines(s):
     brook trout patch that starts lower down, and a record goes to the nearest reach: one piece. A reach that isn't
     cut is its own line. (Land and wilderness, read at a reach's middle, canopy and air stay each piece's own.)"""
     line = pd.Series(s.sid.values, index=s.index)
-    return line.where(s.cut_sid.isna(), s.cut_sid) if "cut_sid" in s else line
+    if "cut_sid" not in s:
+        return line
+    nxt = dict(zip(s.sid, s.cut_sid.where(s.cut_sid.notna(), None)))     # a line cut twice: A -> B -> C is C's
+    def end(x):
+        for _ in range(len(nxt)):
+            if not isinstance(nxt.get(x), str):
+                return x
+            x = nxt[x]
+        return x
+    return pd.Series([end(x) for x in s.sid], index=s.index)
 
 CREEK_SHARE = 0.25      # of a link's creek a designation must cover to be read on every creek piece of the link
 NAME_NEAR_M = 90.0      # a designation naming the reach's own creek is read this far: 05_score.py's name vote (60 m) + 30 m
@@ -510,8 +519,23 @@ def trout_attrs(s):
         return out
     h = pd.DataFrame(hits, columns=["sid", "e", "kind", "year", "trout", "label", "brook"])
     line = pd.DataFrame({"sid": s.sid.values, "line": cut_lines(s).values})   # a cut line's pieces: the whole line's
-    h = (h.merge(line, on="sid").drop(columns="sid").drop_duplicates(["line", "e"]).merge(line, on="line")
-         .drop(columns=["line", "e"]))
+    h = h.merge(line, on="sid")
+    # ... but on a line cut where a named NHD line ends (05_score.py's name_cut), whose pieces can carry two creeks'
+    # names, a record found for a named piece goes on only to the pieces of its name, or unnamed: the river's stocking
+    # list that the lower piece of Webb Creek (Smokies) reads by the river's name stayed off Webb Creek's own piece
+    # above (fish 70 -> 84 had it spread; 2026-11-26). One found for unnamed pieces alone (the nearest reach, a
+    # sighting) goes on to every piece, as on the uncut reach: an iNaturalist sighting by Double Gourd Branch's
+    # unnamed lower piece is Double Gourd Branch's.
+    nm_ = pd.Series(s["name"].to_numpy(object), index=s.sid.values)
+    by_ = h.assign(n_=h.sid.map(nm_)).groupby(["line", "e"]).n_.agg(lambda v: {x for x in v if isinstance(x, str)})
+    h = h.drop(columns="sid").drop_duplicates(["line", "e"]).merge(line, on="line")
+    if "name_cut" in s and s["name_cut"].fillna(False).astype(bool).any():
+        nc_ = pd.Series(s["name_cut"].fillna(False).astype(bool).to_numpy(), index=s.sid.values)
+        tn_ = h.sid.map(nm_)
+        ok_ = (~h.sid.map(nc_).fillna(False).astype(bool).to_numpy() | tn_.isna().to_numpy()
+               | np.array([not by_.get((l_, e_)) or t_ in by_[(l_, e_)] for t_, l_, e_ in zip(tn_, h.line, h.e)], dtype=bool))
+        h = h[ok_]
+    h = h.drop(columns=["line", "e"])
     pos, neg = h[h.trout], h[~h.trout & h.kind.str.endswith("survey")]
     out["trout_found"] = out.sid.map(pos.groupby("sid").year.max())
     out["trout_absent"] = out.sid.map(neg.groupby("sid").year.max())
@@ -824,8 +848,27 @@ def attrs(gdf, key, buf):
             nb_ = nb_.assign(geometry=g.geometry.reindex(nb_.index).values, cover=0.0,
                              label=(nb_.Designation + ": " + nb_.Name).str.replace(r": $", "", regex=True))
             t = pd.concat([t, nb_])
+        # ... and on a line cut where a named NHD line ends (05_score.py's name_cut), an unnamed piece reads the
+        # designations naming the creek its line's named pieces carry, read along them or by name, as the uncut reach
+        # did under the creek's name (Upper Double Branch's tail in the Smokies kept its GRSM trout stream). Not its own
+        # (own below): a label only
+        if len(t) and "name_cut" in gdf and "cut_sid" in gdf:
+            ln_ = cut_lines(gdf)
+            un_ = np.flatnonzero(gdf["name_cut"].fillna(False).astype(bool).to_numpy() & names.isna().to_numpy())
+            if len(un_):
+                src_ = t[np.array([same_water(a_, b_) for a_, b_ in zip(names.reindex(t.index), t.Name)], dtype=bool)]
+                src_ = src_.assign(_line=ln_.reindex(src_.index).to_numpy())
+                add_ = []
+                for i_ in gdf.index[un_]:
+                    m_ = src_[src_["_line"].to_numpy() == ln_[i_]].drop(columns="_line")
+                    if len(m_):
+                        add_.append(m_.assign(**{key: gdf.at[i_, key], "_line_own": True}).set_axis(pd.Index([i_] * len(m_))))
+                if add_:
+                    t = pd.concat([t] + add_)
     t["own"] = [same_water(a, b) for a, b in zip(names.reindex(t.index), t.Name)]
-    t = t.sort_values(["broad", "own", "cover"], ascending=[True, False, False])
+    # the label shown: the reach's own creek's first, its line's creek's on an unnamed piece of a cut line (above)
+    t["_lbl"] = t["own"].astype(bool) | (t["_line_own"].fillna(False).astype(bool) if "_line_own" in t else False)
+    t = t.sort_values(["broad", "_lbl", "cover"], ascending=[True, False, False])
     out["trout_water"] = out[key].map(t.groupby(key).label.first())
     # wild brook trout water, from any designation that covers the reach: a state's line (NY's class T, Georgia's
     # designated streams) is the label above and would hide the brook trout patch under it
