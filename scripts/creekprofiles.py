@@ -34,6 +34,7 @@ import geopandas as gpd
 from config import REGIONS, CRS, MAP_OUT, derived_dir
 
 MIN_KM = 2.0          # skip shorter creeks
+FORKS = True          # each fork of a creek MIN_KM or longer gets a profile of its own, not only its longest path
 IN_MAP_KM = 0.5       # ... and the piece of a creek the map's boxes cut that is shorter than this
 SEA_M = 0.5           # m: tidewater, where a profile ends (05c_drainages.SEA_M ends a drainage there; 05_score.py
                       # draws no reach on it)
@@ -51,7 +52,9 @@ GAP_M = 1000.0        # an unnamed line (or a run of them, or the creek's own di
 
 
 def main_stems(lines):
-    """Longest path through each connected piece of a creek's merged NHD lines."""
+    """Longest path through each connected piece of a creek's merged NHD lines, and with FORKS each fork of it MIN_KM or
+    longer: the longest path from where the fork leaves the stems already taken to its head (a piece of the rest that
+    meets them at one point only; one that meets them at two is an arm of a split, left out), longest first."""
     u = unary_union(list(lines))
     merged = u if u.geom_type == "LineString" else linemerge(u)
     parts = list(merged.geoms) if merged.geom_type == "MultiLineString" else [merged]
@@ -60,6 +63,15 @@ def main_stems(lines):
     for i, ln in enumerate(parts):
         a, b = key(ln.coords[0]), key(ln.coords[-1])
         G.add_edge(a, b, w=ln.length, i=i) if a != b else None
+
+    def line(sub, nodes):
+        coords = []
+        for u, v in zip(nodes[:-1], nodes[1:]):
+            seg = list(parts[sub[u][v]["i"]].coords)
+            if key(seg[0]) != u:
+                seg = seg[::-1]
+            coords += seg if not coords else seg[1:]
+        return LineString(coords) if len(coords) >= 2 else None
     out = []
     for comp in nx.connected_components(G):
         sub = G.subgraph(comp)
@@ -70,14 +82,31 @@ def main_stems(lines):
         d2, paths = nx.single_source_dijkstra(sub, far, weight="w")
         end = max(d2, key=d2.get)
         nodes = paths[end]
-        coords = []
-        for u, v in zip(nodes[:-1], nodes[1:]):
-            seg = list(parts[sub[u][v]["i"]].coords)
-            if key(seg[0]) != u:
-                seg = seg[::-1]
-            coords += seg if not coords else seg[1:]
-        if len(coords) >= 2:
-            out.append(LineString(coords))
+        ln = line(sub, nodes)
+        if ln is not None:
+            out.append(ln)
+        if not FORKS:
+            continue
+        used_n, used_e = set(nodes), {frozenset(e) for e in zip(nodes[:-1], nodes[1:])}
+        while True:
+            rest = sub.edge_subgraph([e for e in sub.edges if frozenset(e) not in used_e])
+            best = None
+            for c in nx.connected_components(rest):
+                at = [n for n in c if n in used_n]
+                if len(at) != 1:
+                    continue
+                dd, pp = nx.single_source_dijkstra(rest.subgraph(c), at[0], weight="w")
+                f = max(dd, key=dd.get)
+                if dd[f] >= MIN_KM * 1000 and (best is None or dd[f] > best[0]):
+                    best = (dd[f], pp[f])
+            if best is None:
+                break
+            fork = best[1][::-1]                        # head -> where it joins
+            ln = line(sub, fork)
+            if ln is not None:
+                out.append(ln)
+            used_n |= set(fork)
+            used_e |= {frozenset(e) for e in zip(fork[:-1], fork[1:])}
     return out
 
 
