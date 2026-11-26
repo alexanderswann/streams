@@ -43,10 +43,11 @@ CACHE_DAYS = 7
 os.makedirs(CACHE, exist_ok=True)
 
 
-def cached(name, fetch, days=CACHE_DAYS):
+def cached(name, fetch, days=CACHE_DAYS, need=()):
     """fetch() result cached as JSON (OSM elements) or GeoJSON (GeoDataFrame) under data/raw/_shared/cache. Written
     through a temporary file, and only from a whole answer (an empty one too); when a refresh fails, the earlier copy
-    is used (with a dated NOTE, netfetch.keep_old)."""
+    is used (with a dated NOTE, netfetch.keep_old). A GeoJSON copy without one of the columns in `need` (saved before
+    the step asked for them) is out of date however new it is."""
     import json
     import netfetch
     path = f"{CACHE}/{name}"
@@ -63,7 +64,9 @@ def cached(name, fetch, days=CACHE_DAYS):
         out = netfetch.keep_old(path, refresh, f"{name} (trails)")
         return json.load(open(path)) if out is None else out
     if fresh:
-        return gpd.read_file(path)
+        got = gpd.read_file(path)
+        if len(got) == 0 or all(c in got for c in need):
+            return got
     def refresh_gj():      # an empty answer is kept too (no closed USFS roads in NE Connecticut's box): it is the
         out = fetch()      # box's last good copy, and without one the step can't run offline
         out.to_file(path + ".tmp", driver="GeoJSON")
@@ -161,7 +164,8 @@ gu["source"] = "OSM"
 off_parts, gated_parts = [], []
 for key, bb in boxes.items():
     off_parts.append(cached(f"trails_usgs_{key}.geojson", lambda: esri_lines(
-        USGS, bb, "permanentidentifier,name,trailnumber,sourceoriginator,hikerpedestrian,bicycle,packsaddle,trailtype")))
+        USGS, bb, "permanentidentifier,name,trailnumber,sourceoriginator,hikerpedestrian,bicycle,packsaddle,trailtype,"
+                  "trailsurface"), need=("trailtype", "trailsurface")))
     gated_parts.append(cached(f"usfs_closed_roads_{key}.geojson", lambda: esri_lines(
         USFS_CLOSED_ROADS, bb, "objectid,id,name,openforuseto")))
 def stack(parts, key):
@@ -173,15 +177,22 @@ def stack(parts, key):
 off = stack(off_parts, "permanentidentifier")
 gated = stack(gated_parts, "objectid")
 # official water trails (canoe and paddle routes down a river: the Chattooga River and Toccoa canoe trails, the
-# Schuylkill River and Tidal Delaware water trails) are no walking trails: an OSM path along the bank doesn't take their
-# name, and they add no line. NDT's trail type says so; a copy saved before the type was asked for (2026-11-25) goes by
-# the name ("... canoe trail", "... water trail"; a canoe carry or portage is a trail on land and stays). They stay in
-# the list the ways are matched against, so a way between two land trails takes the one it took before
+# Schuylkill River and Tidal Delaware water trails, Tennessee's river segments such as "Little River | Peery's Mill to
+# Coulters Bridge", the Forest Service's Rochester water trail) are no walking or biking trails: an OSM path along the
+# bank doesn't take their name, and they add no line and no way in the approach times. NDT marks them: trail type
+# "Water Trail" or trail surface "Water". A line with no trail type (in a copy saved before the step asked for it:
+# cached(need=...) refreshes one when online, 2026-11-25) goes by the name ("... canoe trail", "... water trail"; a
+# canoe carry or portage is a trail on land and stays). They stay in the list the ways are matched against, so a way
+# between two land trails takes the one it took before
 water = np.zeros(len(off), bool)
 if len(off):
-    water = (off.get("trailtype", pd.Series(None, index=off.index)).eq("Water Trail") | off["name"].fillna("").str.contains(
-        r"\b(?:canoe|paddl\w*|kayak\w*|water)\s+(?:trail|route|way)\b|\bblueway\b", case=False)).values
-    print(f"official water trails left out: {int(water.sum())} lines, {round(off.length[water].sum() / 1000)} km")
+    col = lambda c: off[c] if c in off else pd.Series(None, index=off.index)
+    tagged = col("trailtype").eq("Water Trail") | col("trailsurface").eq("Water")
+    by_name = off["name"].fillna("").str.contains(r"\b(?:canoe|paddl\w*|kayak\w*|water)\s+(?:trail|route|way)\b|\bblueway\b",
+                                                  case=False) & col("trailtype").isna()     # a line with no type
+    water = (tagged | by_name).values
+    print(f"official water trails left out: {int(water.sum())} lines, {round(off.length[water].sum() / 1000)} km "
+          f"({int((by_name & ~tagged).sum())} of them by name, having no trail type)")
 print(f"official trail lines {len(off) - int(water.sum())}, gated USFS road lines {len(gated)}")
 
 

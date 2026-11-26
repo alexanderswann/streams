@@ -500,8 +500,9 @@ complete source in every test area. USGS National Digital Trails (public domain)
 agency and allowed uses to OSM ways that follow an official trail, and adds named official trails missing from OSM,
 dotted, as "agency records only; may be faint or abandoned" (the approach times walk them as faint trails, slower
 than a trail: `08_hike.py`); its water trails (canoe and paddle routes, such as the
-Chattooga River Canoe Trail) are no walking trails: they name no path and draw no line (their pieces stay in the data
-for the parking test). The USFS layer of roads closed to the public marks
+Chattooga River Canoe Trail or Tennessee's river segments: NDT's trail type "Water Trail" or surface "Water") are no
+walking or biking trails: they name no path, draw no line and aren't in the approach times (their pieces stay in the
+data for the parking test). The USFS layer of roads closed to the public marks
 gated fire roads. Left out: sidewalks; sidepaths (an unnamed footway, path or bike path within 20 m of a car road for
 60 % of its length: the road's own side path, often untagged in OSM) aren't drawn, though the approach times and the
 parking test still use them; on flat ground (under the area's relief
