@@ -13,7 +13,7 @@ Columns (metric, as the pipeline keeps them; the maps show imperial):
   km2, elev_m, grad_pct
   drive_min, drive_mi, park, bike_min, bike_check, hike_min
   sun_h, shade_pct, canopy_pct, aspect, air_f, water_f, water_pm_f, water_basis, tailwater
-  heat_factor (the heat gate's multiplier, 1 where none), trout (text), no_trout (a no-trout sample is the record),
+  heat_factor (the heat gate's multiplier, 1 where none), warm_factor (the warm-water gate's, 1 where none), trout (text), no_trout (a no-trout sample is the record),
   flags, burn, lat, lon, len_m
 """
 import os, re, sys
@@ -76,8 +76,12 @@ def parse(p):
     out["water_f"], out["water_pm_f"] = _f(m, 1), _f(m, 3)
     out["water_basis"] = m.group(2) if m else None
     out["tailwater"] = "tailwater below" in sun
-    m = re.search(rf"fish score × {NUM}", p.get("ht") or "")
+    # the Heat row holds the heat gate's line ("August air averages ...") and the warm-water gate's ("warm water: ..."),
+    # each ending in its own "fish score × <factor>"
+    m = re.search(rf"August air averages[^·]*· fish score × {NUM}", p.get("ht") or "")
     out["heat_factor"] = _f(m) if m else 1.0
+    m = re.search(rf"warm water:[^·]*· fish score × {NUM}", p.get("ht") or "")
+    out["warm_factor"] = _f(m) if m else 1.0
     tr = p.get("tr") or ""
     out["trout"] = tr
     out["no_trout"] = bool(tr) and "no trout" in tr.lower() and not re.search(

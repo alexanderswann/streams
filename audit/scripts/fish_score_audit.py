@@ -36,7 +36,8 @@ def terms(s):
     ridden = s.bike_med_min.fillna(0)
     remote = np.clip((s.approach_med_min.fillna(0) + ridden) / 120, 0, 1)
     base = 0.30 * size + 0.30 * s.thermal + 0.15 * grad + 0.25 * remote
-    mult = s.burn_factor * s.trout_factor * s.heat_factor * s.channel_factor
+    warm = s["warm_factor"].fillna(1.0) if "warm_factor" in s else 1.0     # the warm-water gate (since 2026-11-25)
+    mult = s.burn_factor * s.trout_factor * s.heat_factor * s.channel_factor * warm
     again = np.clip(100 * s.water_term * base * mult, 0, 100)
     return pd.DataFrame(dict(size=size, grad=grad, remote=remote, base=base, mult=mult, again=again))
 
@@ -68,7 +69,8 @@ def main(areas):
         # what each term is worth: its mean, its spread, and how much of the spread of the score it carries on its own
         stream = ~lake
         cols = dict(water=s.water_term, size=t["size"], thermal=s.thermal, gradient=t.grad, remoteness=t.remote,
-                    burn=s.burn_factor, trout=s.trout_factor, heat=s.heat_factor, channel=s.channel_factor)
+                    burn=s.burn_factor, trout=s.trout_factor, heat=s.heat_factor, channel=s.channel_factor,
+                    **({"warm": s.warm_factor.fillna(1.0)} if "warm_factor" in s else {}))
         for k, v in cols.items():
             v = v.to_numpy(float)[stream]
             T.append(dict(area=a, term=k, mean=np.nanmean(v), sd=np.nanstd(v), share_at_max_pct=100 * np.mean(v >= np.nanmax(v) - 1e-9),
@@ -76,6 +78,7 @@ def main(areas):
         # every rule that lowers
         wr = s.water_rule.astype(str)
         pen = {"no-trout sample: x0.5": (s.trout_factor == 0.5), "heat gate < 1": (s.heat_factor < 1),
+               "warm-water gate: x0.5": (s["warm_factor"] < 1) if "warm_factor" in s else pd.Series(False, index=s.index),
                "built channel by name: x0.2": (s.channel_factor < 1), "burn < 1": (s.burn_factor < 1),
                "bare channel -> seasonal at most": wr.eq("bare channel"), "gauge record (either way)": wr.eq("gauge"),
                "diversion gauge": s.water_by_gauge.astype(str).eq("True"), "reads as lake (water 0.3)": pd.Series(lake),

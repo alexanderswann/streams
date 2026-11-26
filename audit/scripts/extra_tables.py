@@ -66,7 +66,8 @@ def main(areas):
                         burned=int((t.burn_factor < 1).sum()), burned_no_severity=int(((t.burn_factor < 1) & t.burn_sev.isna()).sum())))
         # ---- score against survey results
         tt = terms(t)
-        base = 100 * t.water_term * tt.base * t.burn_factor * t.heat_factor * t.channel_factor
+        base = (100 * t.water_term * tt.base * t.burn_factor * t.heat_factor * t.channel_factor
+                * (t["warm_factor"].fillna(1.0) if "warm_factor" in t else 1.0))
         evt = t.trout_ev.astype(str)
         wild = found & evt.str.contains(r"wild|Rainbow Trout|rainbow trout \(|brook trout \(|cutthroat", case=False) & ~evt.str.contains("stocked with trout", case=False)
         P, N, W = found & ~lake, absent & ~lake, wild & ~lake

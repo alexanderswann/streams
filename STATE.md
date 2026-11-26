@@ -122,6 +122,7 @@ means it was measured on every map before it went in.
 | Burn | fire 2 years ago or less x0.4, 3-5 x0.7, 6-9 x0.9, scaled by the mapped soil burn severity; unmapped severity marks nothing down | `scripts/scoring.py:144` | `945d3ac` |
 | Heat | from 29 °C (84 °F) of August air down to x0.2 at 30.5 °C (87 °F); never where trout are known or below a dam | `scripts/scoring.py:165` | |
 | Built channel by name | x0.2, never where trout are recorded | `scripts/scoring.py:352` | |
+| Warm-water gate (the user's choice, 2026-11-25): the estimated summer water temperature at or over the value halves the score, except on a tailwater, where a survey found trout in the last 10 years (no later survey finding none), and on wild brook trout water | 74 °F (23.3 °C), x0.5 | `scripts/scoring.py:186` | (this commit) |
 | A minute ridden on the approach counts as this much remoteness (user's choice) | 2 minutes | `scripts/scoring.py:159` | |
 | Wild brook trout water is sized for brook trout: its drainage counts six times over, on a reach a wild brook trout designation covers or where a survey found wild brook trout in the last 10 years with no later survey finding none (the user's choice, audit decision 5d) | x6: credit from 0.06 sq mi, full from 3.2 sq mi | `scripts/scoring.py:164`, `scripts/scoring.py:329` | `f24e043` |
 

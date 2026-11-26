@@ -459,7 +459,8 @@ def same_water(a, b):
 
 def trout_attrs(s):
     """Per reach: latest year trout were found (CDFW survey, stocking, iNaturalist), latest CDFW survey year that
-    found none, latest year a survey found wild brook trout (brook_found), and a summary. Surveys and stocking count
+    found none, latest year a survey found wild brook trout (brook_found), latest year a survey found trout
+    (trout_survey), and a summary. Surveys and stocking count
     for the creek of the same name within 5 km of the point
     (else the nearest reach within 300 m and the same creek within 1.5 km); a sighting for its reach (within 150 m)
     and the same creek within 1.5 km.
@@ -515,6 +516,9 @@ def trout_attrs(s):
     out["trout_found"] = out.sid.map(pos.groupby("sid").year.max())
     out["trout_absent"] = out.sid.map(neg.groupby("sid").year.max())
     out["brook_found"] = out.sid.map(h[h.brook].groupby("sid").year.max())
+    # the latest year a survey (an agency's sampling, not a stocking list or an iNaturalist sighting) found trout: what
+    # scoring.py's warm-water gate takes as proof of trout in water its temperature estimate reads warm (2026-11-25)
+    out["trout_survey"] = out.sid.map(pos[pos.kind.str.endswith("survey")].groupby("sid").year.max())
     def summary(g):
         recs = g[g.kind != "iNaturalist"].sort_values("year", ascending=False)
         parts = list(dict.fromkeys(recs.label))[:3]

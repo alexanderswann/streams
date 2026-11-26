@@ -790,7 +790,7 @@ line of each route whose drive runs on them ("⚠ Teton Park Road closed for win
   waterfall-like step, yellow cascade, violet short fall, ink at mapped waterfalls), colour-blind safe.
 
 ## Fish score (0–100, heuristic; `scripts/scoring.py`)
-`water × (30% size + 30% thermal + 15% gradient + 25% remoteness) × burn × trout × heat × channel`, capped at 100.
+`water × (30% size + 30% thermal + 15% gradient + 25% remoteness) × burn × trout × heat × channel × warm`, capped at 100.
 It was tuned on LA's mostly dry channels; in the wet areas most reaches score over 50, so scores rank creeks within
 an area and aren't comparable between areas. The ranked table has `area_rank_pct`, the share of the area's reaches
 that score lower, and stream popups show it ("ahead of 93% of reaches here"): that is the number to compare. A reach
@@ -882,6 +882,14 @@ loses score only where the harm is near-certain; when unsure, a possible trout s
   they aren't gated. It uses air temperature because no stream-temperature model is good enough here (NorWeST and EPA
   StreamCat missed measured summer water temperatures by 4–6 °C), and Southern California trout also live in warm
   water. `data/validate_heat.py` (from `scripts/`, after `11_context.py`) reproduces the test.
+- **warm (warm-water gate, the user's choice 2026-11-25):** ×0.5 where the reach's estimated summer water temperature
+  (`watertemp.py`) is 74 °F (23.3 °C) or more, unless it is a tailwater, a survey found trout
+  on it in the last 10 years with no later survey finding none (`11_context.py`'s `trout_survey`: an agency's sampling,
+  not a stocking list or an iNaturalist sighting), or it is wild brook trout water. A designation, stocking or a
+  sighting alone doesn't exempt it. From the r/bluelining rules of thumb ("most trout above 1,600 ft" in the southern
+  Appalachians): on the maps of 2026-11-25 half of north Georgia's best water lay below 1,600 ft at an estimated
+  70–75 °F (`bluelining-bands-report.md` in the overview's notes). The popup's Heat row and the score's breakdown
+  ("Warm water ×0.5") say so.
 - **channel:** ×0.2 on a built conveyance, by name only: aqueduct, canal, flood-control channel, diversion, ditch,
   flume and the like, with no natural word in the name (creek, river, wash, brook, branch, fork, run) and no trout
   record (in LA the three aqueducts and the named flood channels). A natural name stays as it is, concrete or not

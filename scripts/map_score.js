@@ -3,7 +3,7 @@
 // (map_drainages.js and map3d.html, inlined by 06_map.py) and the one-file phone map (14_portable.py); it adds its
 // own styles. Each reach carries fx (06_map.py fs_parts): the terms scoring.score() combines, which fsParts multiplies
 // out as score() does, operation by operation, so the breakdown comes to the score shown:
-//   100 × water × (0.30 size + 0.30 thermal + 0.15 gradient + 0.25 remoteness) × burn × trout × heat × channel,
+//   100 × water × (0.30 size + 0.30 thermal + 0.15 gradient + 0.25 remoteness) × burn × trout × heat × channel × warm,
 //   capped at 100 and rounded (a half to the even number, as numpy does); thermal = 0.5 water temperature + 0.35 shade
 //   + 0.15 north-facing slope
 // Each line gives what the reach reads, in the popup's own words and imperial units (units.py), and what it adds or
@@ -27,10 +27,11 @@
     const t = p.fx.split(" ");
     const r = {W: num(t[0]), S: num(t[1]), wt: num(t[2]), cp: num(t[3]), sp: num(t[4]),
                nn: t[5] === "-" ? null : Number(t[5]) / 100, am: num(t[6]), bm: num(t[7]), gr: p.gr,
-               B: 1, H: 1, T: 1, Ch: 1, C: null, A: null, brook: false, tw: false};
+               B: 1, H: 1, T: 1, Ch: 1, K: 1, C: null, A: null, brook: false, tw: false};
     t.slice(8).forEach(k => {
       const v = Number(k.slice(1));
       if (k === "t") r.T = 1.2; else if (k === "c") r.Ch = 0.2; else if (k === "b") r.brook = true;
+      else if (k === "x") r.K = 0.5;            // the warm-water gate (scoring.warm_factor)
       else if (k === "w") r.tw = true; else if (k[0] === "B") r.B = v; else if (k[0] === "H") r.H = v;
       else if (k[0] === "C") r.C = v; else if (k[0] === "A") r.A = v; else if (k[0] === "G") r.gr = v;
       else if (k[0] === "N") r.nn = v;
@@ -45,7 +46,7 @@
     r.G = clip(1 - Math.max(Math.max(1 - r.gr, r.gr - 8), 0) / 10);
     r.R = clip(((r.am == null ? 0 : r.am) + (r.bm == null ? 0 : r.bm)) / 120);
     r.habitat = 0.30 * r.S + 0.30 * r.thermal + 0.15 * r.G + 0.25 * r.R;
-    r.raw = 100 * r.W * r.habitat * r.B * r.T * r.H * r.Ch;
+    r.raw = 100 * r.W * r.habitat * r.B * r.T * r.H * r.Ch * r.K;
     r.x = Math.min(Math.max(r.raw, 0), 100);
     r.score = rint(r.x);
     return r;
@@ -89,6 +90,8 @@
     if (r.B !== 1) mult.push(["Fire", "a fire since 2016 (see Fire)", r.B]);
     if (r.H !== 1) mult.push(["Heat", "desert heat gate (see Heat)", r.H]);
     if (r.Ch !== 1) mult.push(["Channel", "a built channel, by its name", r.Ch]);
+    // the warm-water gate: summer water estimated at 74 °F or more, with no tailwater, trout survey or wild brook trout
+    if (r.K !== 1) mult.push(["Warm water", `est. ${r.wt == null ? "?" : degf(r.wt)} in summer (see Heat)`, r.K]);
     h += mult.map(([a, b, v]) => row(a, esc(b), times(v))).join("");
     const half = r.x * 2 === Math.round(r.x * 2) && r.x % 1 !== 0;
     h += row("Score", `${hab.toFixed(1)} ${mult.map(m => times(m[2])).join(" ")} = ${r.raw.toFixed(1)}` +

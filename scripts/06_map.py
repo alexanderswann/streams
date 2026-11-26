@@ -613,7 +613,7 @@ LBL["acc_asof"] = ("Times for summer (mid-July)" if _rc is None else
 ACCESS = ["drive_min", "drive_km", "th_road", "th_lat", "th_lon", "bike_min", "bike_check", "bike_check_min", "walk_min",
           "approach_min", "th_closed"]
 CONTEXT = ["sun_hours", "shade_pct", "northness", "canopy_pct", "air_aug", "burn_fire", "burn_year", "burn_sev", "debris_flow",
-           "trout_water", "trout_found", "trout_absent", "trout_ev", "brook_water", "brook_found", "crit_habitat",
+           "trout_water", "trout_found", "trout_absent", "trout_survey", "trout_ev", "brook_water", "brook_found", "crit_habitat",
            "wilderness", "non_fs_land", "cpad_access", "spp_found", "spp_water"]
 FLOWC = ["water_class", "dry_cfs", "dry_cfs_drought", "flow_years", "flow_src", "below_dam",   # 05b_flow.py
          "below_div", "div_share", "div_years", "gauge_name", "gauge_share", "gauge_years", "green_p90",
@@ -626,7 +626,7 @@ for c_ in CONTEXT + FLOWC:   # older context files may lack a column
 kp_ll.drop(columns="geometry").to_csv(f"{MAP_OUT}/waterfall_candidates.csv", index=False)
 mid = s_ll.geometry.interpolate(0.5, normalized=True)
 s_ll.assign(lat=mid.y.round(6), lon=mid.x.round(6)).sort_values("fish_score", ascending=False)[
-    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, *[c_ for c_ in ("in_lake", "len_drawn_m") if c_ in s_ll], "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "brook_size", "heat_factor", "channel_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
+    ["sid", "region", "drainage", "fork", "name", "flow", *FLOWC, *[c_ for c_ in ("in_lake", "len_drawn_m") if c_ in s_ll], "water_term", "fish_score", "thermal", "water_aug", "water_outlet", "outlet_m", "tailwater", "burn_factor", "trout_factor", "brook_size", "heat_factor", "channel_factor", "warm_factor", "area_rank_pct", "area_km2", "area_edge_km2", "area_full_km2", "strahler", "elev_m",
      "gradient_pct", "len_m", "approach_med_min", "bike_med_min"] + ACCESS + CONTEXT + ["q_ann_cfs", "elev_low_m", "lat", "lon"]
 ].to_csv(f"{MAP_OUT}/stream_reaches_ranked.csv", index=False)
 
@@ -913,6 +913,14 @@ HOT = (tev[tev.trout.astype(bool) & ~tev.lake.astype(bool)].air_aug.max()
        if tev is not None and "air_aug" in tev else np.nan)
 
 
+def warm_line(w, k):
+    """The warm-water gate (scoring.warm_factor), for the popup's Heat row."""
+    if not (pd.notna(k) and k < 1):
+        return ""
+    return (f"warm water: summer water about {degf(w)} ({WT_HOW}), and no tailwater, trout survey or wild brook trout "
+            f"water here · fish score × {k:g}")
+
+
 def heat_line(air, f):
     if not (pd.notna(f) and f < 1):
         return ""
@@ -1193,7 +1201,7 @@ def side_text(r, sd_, lk_):
 # water temperature (°C, one decimal, as the popup shows it); tree canopy and terrain shade (%); northness
 # (hundredths); the typical approach (min) and the minutes of it ridden. "-" is a value missing: score() then takes
 # canopy 0, terrain 20, northness 0, approach 0. Then flags: t trout evidence (x 1.2), b sized as wild brook trout
-# water, w tailwater, c built channel (x 0.2); and, where they apply, B burn, H heat gate, C the water-temperature part
+# water, w tailwater, c built channel (x 0.2), x the warm-water gate (x 0.5, scoring.warm_factor); and, where they apply, B burn, H heat gate, C the water-temperature part
 # of the thermal term (where the temperature shown doesn't give it: 0 at 25 °C and up, 1 at 20 °C and under), A the
 # drainage the size term reads (where not the one shown), G the gradient (where not the one shown), N the northness
 # (where not in hundredths). The page reads the gradient from gr. Water, size, burn, heat and C carry three decimals,
@@ -1208,7 +1216,7 @@ def _fs_dec(v, d=None):
     return t.replace("0.", ".", 1) if t.startswith(("0.", "-0.")) else t
 
 
-def _fs_page(W, S, c1, cp, sp, nn, am, bm, gr, B, T, H, Ch):
+def _fs_page(W, S, c1, cp, sp, nn, am, bm, gr, B, T, H, Ch, K=1.0):
     """The score as map_score.js works it out, operation by operation as scoring.score() does, before rounding."""
     terrain, canopy = sp / 100, min(max(cp / 100, 0.0), 1.0)
     shade = min(max((1 - (1 - terrain) * (1 - 0.8 * canopy)) / 0.45, 0.0), 1.0)
@@ -1216,7 +1224,7 @@ def _fs_page(W, S, c1, cp, sp, nn, am, bm, gr, B, T, H, Ch):
     thermal = 0.5 * c1 + 0.35 * shade + 0.15 * north
     grad = min(max(1 - max(max(1 - gr, gr - 8), 0.0) / 10, 0.0), 1.0)
     remote = min(max((am + bm) / 120, 0.0), 1.0)
-    x = 100 * W * (0.30 * S + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * B * T * H * Ch
+    x = 100 * W * (0.30 * S + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * B * T * H * Ch * K
     return min(max(x, 0.0), 100.0)
 
 
@@ -1228,6 +1236,8 @@ def fs_parts(s):
     col = lambda c: (pd.to_numeric(s[c], errors="coerce") if c in s else pd.Series(np.nan, index=s.index)).to_numpy(float)
     W, S, C1, B, H, BIG = (col(c) for c in ("t_water", "t_size", "t_cool", "t_burn", "t_heat", "t_big"))
     T, CH, FS = col("trout_factor"), col("channel_factor"), col("fish_score")
+    K = col("warm_factor") if "warm_factor" in s else np.ones(len(s))
+    K = np.where(np.isnan(K), 1.0, K)
     CP, SP, NN, AM, BM = col("canopy_pct"), col("shade_pct"), col("northness"), col("approach_med_min"), col("bike_med_min")
     GR, WT = col("gradient_pct"), col("water_aug")
     A = s.area_full_km2.fillna(s.area_km2).astype(float).round(2).to_numpy()
@@ -1242,7 +1252,8 @@ def fs_parts(s):
             continue
         nn = 0.0 if np.isnan(NN[i]) else float(NN[i])
         k = int(round(nn * 100))
-        flags = [f for f, on in (("t", T[i] == 1.2), ("b", brook[i]), ("w", tw[i]), ("c", CH[i] == 0.2)) if on]
+        flags = [f for f, on in (("t", T[i] == 1.2), ("b", brook[i]), ("w", tw[i]), ("c", CH[i] == 0.2),
+                                 ("x", K[i] == 0.5)) if on]
         if round(float(GR[i]), 1) != GR[i]:          # the page reads gr, the gradient to one decimal
             flags.append("G" + _fs_dec(GR[i]))
         if k / 100 != nn:
@@ -1267,7 +1278,8 @@ def fs_parts(s):
             if H[i] != 1:
                 extra.append("H" + _fs_dec(H[i], d))
                 h_ = float(extra[-1][1:])
-            x = _fs_page(float(w_), float(s_), c1, cp, sp, nn, am, bm, float(GR[i]), b_, float(T[i]), h_, float(CH[i]))
+            x = _fs_page(float(w_), float(s_), c1, cp, sp, nn, am, bm, float(GR[i]), b_, float(T[i]), h_, float(CH[i]),
+                         float(K[i]))
             if round(x) == FS[i]:
                 out.append(" ".join([w_, s_] + head + extra))
                 break
@@ -1352,7 +1364,9 @@ props = pd.DataFrame({
             for h, p, n, cv, a, w, tw, wo, om in zip(s_show.sun_hours, s_show.shade_pct, s_show.northness, pd.to_numeric(s_show.canopy_pct),
                                                      pd.to_numeric(s_show.air_aug), pd.to_numeric(s_show.water_aug), s_show.tailwater,
                                                      pd.to_numeric(s_show.water_outlet), pd.to_numeric(s_show.outlet_m))],
-    "ht": [heat_line(a, f) for a, f in zip(pd.to_numeric(s_show.air_aug), s_show.heat_factor)],
+    "ht": [" · ".join(x for x in (heat_line(a, f), warm_line(w, k)) if x)
+           for a, f, w, k in zip(pd.to_numeric(s_show.air_aug), s_show.heat_factor, pd.to_numeric(s_show.water_aug),
+                                 s_show["warm_factor"] if "warm_factor" in s_show else [1.0] * len(s_show))],
     "burn": [" · ".join(x for x in (
                  f"{f} fire {y:.0f}" + (f" ({sev_label(sv)})" if pd.notna(sv) else "") if pd.notna(y) else "",
                  f"⚠ debris-flow hazard {dfl}" if isinstance(dfl, str) else "") if x)

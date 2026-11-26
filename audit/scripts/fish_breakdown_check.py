@@ -32,11 +32,12 @@ def rebuilt(p):
     val = lambda v, fill: fill if v == "-" else float(v)
     W, S, wt, cp, sp, am, bm = float(t[0]), float(t[1]), val(t[2], None), val(t[3], 0.0), val(t[4], 20.0), val(t[6], 0.0), val(t[7], 0.0)
     nn, gr = (0.0 if t[5] == "-" else int(t[5]) / 100), float(p["gr"])
-    B = H = T = CH = 1.0
+    B = H = T = CH = K = 1.0
     C, tw = None, False
     for k in t[8:]:
         if k == "t": T = 1.2
         elif k == "c": CH = 0.2
+        elif k == "x": K = 0.5
         elif k == "w": tw = True
         elif k[0] == "B": B = float(k[1:])
         elif k[0] == "H": H = float(k[1:])
@@ -49,7 +50,7 @@ def rebuilt(p):
     thermal = 0.5 * c1 + 0.35 * shade + 0.15 * north
     grad = clip(1 - max(max(1 - gr, gr - 8), 0.0) / 10)
     remote = clip((am + bm) / 120)
-    x = 100 * W * (0.30 * S + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * B * T * H * CH
+    x = 100 * W * (0.30 * S + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * B * T * H * CH * K
     return min(max(x, 0.0), 100.0)
 
 

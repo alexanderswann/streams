@@ -1,7 +1,7 @@
 """Attach access / sun / context attributes to reaches and drops and compute the final fish score.
 
 fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0.25 remoteness) x burn x trout x heat
-                     x channel
+                     x channel x warm
   water      dry-season flow from the flow model (02b_download_flow.py, 05b_flow.py: TNC's natural flows in California,
              elsewhere NHDPlus's mean flow scaled by the area's gauges): 0.05 + 0.95 x the share of years since 2011 the
              reach kept >= 0.1 cfs through July-October; 0.3 in a reservoir. 05b_flow.py takes NHD's class as a floor
@@ -79,6 +79,12 @@ fish_score (0-100) = 100 x water x (0.30 size + 0.30 thermal + 0.15 gradient + 0
   trout      evidence of trout, x1.2: trout found in the last 10 years (a state survey or stocking, an iNaturalist
              sighting) with no later survey finding none, or a designated trout water or wild trout patch. A survey
              that found none marks nothing down (trout_factor). Capped at 100
+  warm       warm-water gate (the user's choice, 2026-11-25, after the r/bluelining rules of thumb): x WARM_FACTOR
+             where the reach's estimated summer water temperature (watertemp.py) is WARM_GATE_F (23.3 C) or more, unless it is a tailwater, a survey found trout on it in the last 10 years with no
+             later survey finding none (11_context.py's trout_survey), or it is wild brook trout water (brook_water).
+             Stocking lists, iNaturalist sightings and designations alone don't exempt it: in north Georgia half the
+             best water of 2026-11-25 (2,354 mi) lay below 1,600 ft at an estimated 70-75 °F, much of it designated
+             trout water the state stocks or not at all (bluelining-bands-report.md)
   heat       desert heat gate, only where the water is near-certainly too warm (when unsure, a possible trout
              stream stays in): 1 up to an August mean air temperature (PRISM 1991-2020 normal, 800 m) of HEAT_START,
              falling to HEAT_FLOOR at HEAT_FULL and above. No creek in these ranges with a trout record is above
@@ -176,6 +182,7 @@ RIDE_REMOTENESS = 2.0    # a minute ridden on the approach counts as this many m
 # surveys 31 / 4.6 km^2 (80 and 287 records: 6.7), iNaturalist 59 / 9.8 km^2 (1,120 and 423: 6.0). The lower one
 BROOK_SCALE = 6.0
 HEAT_START, HEAT_FULL, HEAT_FLOOR = 29.0, 30.5, 0.2    # August mean air, C
+WARM_GATE_F, WARM_FACTOR = 74, 0.5      # warm-water gate (module docstring): summer water estimate, degrees F
 # Dry creeks the flow model rates flowing (water term, (1) and (2)): measured on the USGS gauges of all 12 areas,
 # 2026-11-20 (MULTI_AREA_LOG.md). None of the 221 gauged creeks that flow most summers is lowered
 DRY_MARGINAL_CFS = 0.45        # the model's typical summer low under this: it can't tell wet from dry there
@@ -359,6 +366,17 @@ def brook_water(s):
     found, absent = num(s, "brook_found"), num(s, "trout_absent")
     rec = (found >= THIS_YEAR - 10) & (absent.isna() | (found >= absent))
     return rec | (s["brook_water"].notna() if "brook_water" in s else False)
+
+
+def warm_factor(s, wt, tw):
+    """The warm-water gate (module docstring): WARM_FACTOR where the estimated summer water temperature wt (C) is
+    WARM_GATE_F or more, except on a tailwater (tw, tailwater()'s names), a reach a survey found trout on in the last 10
+    years with no later survey finding none, and wild brook trout water. The estimate as it is, not as the popups round
+    it to whole °F: the rule the user chose on its measured effect (bluelining-bands-report.md, option 2)."""
+    found, absent = num(s, "trout_survey"), num(s, "trout_absent")
+    surveyed = (found >= THIS_YEAR - 10) & (absent.isna() | (found >= absent))
+    warm = np.asarray(wt, float) * 9 / 5 + 32 >= WARM_GATE_F                # NaN (no estimate): never
+    return np.where(warm & tw.eq("").to_numpy() & ~surveyed.to_numpy() & ~np.asarray(brook_water(s), bool), WARM_FACTOR, 1.0)
 
 
 def trout_factor(s):
@@ -715,6 +733,7 @@ def score(s, left_out=None):
     sev = sev.where(num(s, "burn_year").notna() | d_year.isna(), d_sev)   # below a burn: the hazard is the severity
     burn = burn_factor(year, sev)
     trout, heat, chan = trout_factor(s), heat_factor(s), channel_factor(s)
+    warm_f = warm_factor(s, wt, tw)
     s = s.copy()
     s["model_class"] = model_class                 # the borrowed estimate's own class where the rules above lifted it
     changed = rule.ne("") & rule.ne("no estimate") & rule.ne("NHD class")
@@ -734,6 +753,7 @@ def score(s, left_out=None):
     s["heat_factor"] = np.round(heat, 2)
     s["tailwater"] = tw.where(tw.ne(""), None)
     s["channel_factor"] = chan
+    s["warm_factor"] = warm_f
     # a lake's second outlet on its creek's water (above), and the evidence behind it for the maps: its creek's, or the
     # line's below where that caps it
     s["on_outlet_creek"] = np.isin(np.arange(len(s)), sec) & ~np.isin(np.arange(len(s)), cap_)
@@ -749,5 +769,5 @@ def score(s, left_out=None):
     s["t_water"], s["t_size"], s["t_big"] = water.to_numpy(float), np.asarray(size, float), np.asarray(big, float)
     s["t_cool"], s["t_burn"], s["t_heat"] = np.where(tw.ne(""), 1.0, cool), np.asarray(burn, float), np.asarray(heat, float)
     s["fish_score"] = np.clip(100 * water * (0.30 * size + 0.30 * thermal + 0.15 * grad + 0.25 * remote) * burn * trout
-                              * heat * chan, 0, 100).round(0)
+                              * heat * chan * warm_f, 0, 100).round(0)
     return s
