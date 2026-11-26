@@ -639,7 +639,9 @@ West Virginia DNR's). Road and trail downloads are cached for a week (`REFRESH=1
   gauge) opens it, and "Show on map" goes to the gauge (`#lat,lon,zoom&on=gauges&gauge=<site>` opens its popup). The
   trout calendar's "now" on a reach with a USGS gauge on its creek (`05b_flow.py`'s `gauge_site`, stream property `g`)
   shows the gauge's reading under the flow note. LA's two CDEC gauges keep the build's reading (CDEC answers no other
-  site). In an iPhone's Home Screen app the list is the app's own, apart from Safari's.
+  site). In an iPhone's Home Screen app the list is the app's own, apart from Safari's. The build's own readings
+  (in a popup until the live one comes, and in the one-file map) show on the area's clock with its zone ("Nov 25,
+  7:30 AM EST"): `11_context.py` keeps gauge times in UTC.
 
 `07_road_closures.py` (per area) fetches **current road closures**: active now or starting in the next 7 days, in
 mountain terrain (≥150 m of relief within 1 km; park roads wherever they are). Run it, then `06_map.py`, for fresh

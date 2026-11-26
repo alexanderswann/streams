@@ -1976,10 +1976,42 @@ if gauges is not None and len(gauges):
     # with no connection when the phone has seen none newer. Its colour is the build's until the phone has a newer one.
     # (CDEC's server answers no other site, so LA's two CDEC gauges keep the build's reading.)
     LBL["gauges_when"] = (f"as of {STALE['gauges'][1]}; " if "gauges" in STALE else "") + "live on tap"
+
+    # A reading's time: 11_context.py writes a USGS reading's in UTC ("...Z", since 2026-11-26), a CDEC reading's as
+    # CDEC's Pacific clock time, and a gauges.gpkg from before 2026-11-26 holds Pacific clock time for every map. The
+    # popups' text shows it on the area's own clock with its zone ("Nov 25, 7:30 AM EST"): the trout calendar's zone
+    # (11b_calendar.py, from the states its reaches lie in), else UTC; the pages show map_gauges.js's in the phone's
+    # own time from LBL.gauge_list (UTC).
+    import zoneinfo
+    _ZONES = {(-5, True): "America/New_York", (-6, True): "America/Chicago", (-7, True): "America/Denver",
+              (-7, False): "America/Phoenix", (-8, True): "America/Los_Angeles", (-9, True): "America/Anchorage",
+              (-10, False): "Pacific/Honolulu"}
+    _cz = LBL.get("cal") or {}
+    _zone = _ZONES.get((_cz.get("tz"), bool(_cz.get("dst", True))))
+    _zone = zoneinfo.ZoneInfo(_zone) if _zone else zoneinfo.ZoneInfo("UTC")
+
+    def _when(t_):
+        """A reading's time as a UTC Timestamp, or None (unreadable; or in the hour Pacific clocks go back, which
+        could be either)."""
+        try:
+            ts_ = pd.Timestamp(t_)
+            if ts_.tzinfo is None:
+                ts_ = ts_.tz_localize("America/Los_Angeles", ambiguous="NaT", nonexistent="NaT")
+            return None if pd.isna(ts_) else ts_.tz_convert("UTC")
+        except (ValueError, TypeError):
+            return None
+
+    def _clock(t_):
+        """'Nov 25, 7:30 AM EST': the reading's time on the area's clock, or its text as written if unreadable."""
+        ts_ = _when(t_)
+        if ts_ is None:
+            return str(t_)
+        lt_ = ts_.tz_convert(_zone)
+        return f"{lt_:%b} {lt_.day}, {lt_.hour % 12 or 12}:{lt_:%M} {'AM' if lt_.hour < 12 else 'PM'} {lt_.tzname()}"
     gg = folium.FeatureGroup(name=f"<span style='color:#1c7ed6'>▲</span> {LBL['gauges']} ({LBL['gauges_when']})", show=False)
     for r in gauges.itertuples():
         usgs = not str(r.site).startswith("CDEC")
-        now_ = (f"{r.cfs:g} cfs at {r.time}<br>{r.status}"
+        now_ = (f"{r.cfs:g} cfs at {_clock(r.time)}<br>{r.status}"
                 + (f" · {r.pct_of_median:.0f}% of median for today" if pd.notna(r.pct_of_median) else "")
                 + (f"<br>Median for this date {r.p50:g} cfs" if pd.notna(r.p50) else ""))
         link_ = f"<a href='{r.url}' target='_blank'>{'USGS' if usgs else 'CDEC'} station page</a>"
@@ -1996,13 +2028,9 @@ if gauges is not None and len(gauges):
     gg.add_to(m)
 
     def _utc(t_):
-        """11_context.py writes a reading's time as Pacific clock time on every map (its latest()): as UTC, for the pages
-        to show in the phone's own time. None in the hour the clocks go back, which could be either."""
-        try:
-            return (pd.Timestamp(t_).tz_localize("America/Los_Angeles", ambiguous="NaT", nonexistent="NaT")
-                    .tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"))
-        except (ValueError, TypeError):
-            return None
+        """A reading's time in UTC, for the pages to show in the phone's own time (map_gauges.js), or None."""
+        ts_ = _when(t_)
+        return None if ts_ is None else ts_.strftime("%Y-%m-%dT%H:%M:%SZ")
     # the USGS gauges for map_gauges.js: site, name, where, and the build's reading with its words (shown offline when the
     # phone has seen none newer): [site, name, lat, lon, cfs, time (UTC), status, % of median, median (cfs)]
     LBL["gauge_list"] = [[str(r.site), r.name, round(r.geometry.y, 5), round(r.geometry.x, 5), float(r.cfs), _utc(r.time),

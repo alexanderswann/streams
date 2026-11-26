@@ -630,14 +630,16 @@ def answer(r, what):
         raise RuntimeError(f"no answer from USGS for {what}")
     return r.json()
 # Latest discharge of each gauge in the box that reported in the last 183 days: the API also keeps long-retired gauges
-# with their last reading (WaterServices' siteStatus=active left those out). Times come in UTC.
+# with their last reading (WaterServices' siteStatus=active left those out). Times come in UTC and are kept so
+# ("2026-11-25T07:00:00Z"); the map step shows them on the area's own clock (06_map.py). Until 2026-11-26 they were
+# written as Pacific clock time on every map, with no zone.
 def latest(lc):
     rows = []
     for ft in lc["features"]:
         pr, (lon, lat) = ft["properties"], ft["geometry"]["coordinates"][:2]
         rows.append(dict(site=pr["monitoring_location_id"].removeprefix("USGS-"), name="",
                          cfs=pd.to_numeric(pr["value"], errors="coerce"),
-                         time=pd.Timestamp(pr["time"]).tz_convert("America/Los_Angeles").strftime("%Y-%m-%d %H:%M"),
+                         time=pd.Timestamp(pr["time"]).tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
                          lon=lon, lat=lat))
     g = gpd.GeoDataFrame(rows, geometry=gpd.points_from_xy([r["lon"] for r in rows], [r["lat"] for r in rows]), crs=4326)
     g = g[g.to_crs(CRS).intersects(area_u)].sort_values("site").drop_duplicates("site")
@@ -732,6 +734,7 @@ for st_id, sens, name, lat, lon in CDEC:
     v = [x for x in js if x.get("stationId") == st_id and x.get("SENSOR_NUM") == sens
          and x.get("value") is not None and x["value"] > -9000]
     if v:
+        # (CDEC's time is its own Pacific clock time, as CDEC gives it: 06_map.py reads it as such)
         crow.append(dict(site=f"CDEC {st_id}", name=name, cfs=float(v[-1]["value"]), time=v[-1]["date"][:16],
                          status="no history", url=f"https://cdec.water.ca.gov/dynamicapp/staMeta?station_id={st_id}",
                          geometry=shapely.Point(lon, lat)))
