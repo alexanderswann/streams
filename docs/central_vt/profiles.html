@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Creek Profiles</title>
+<script src="../lib/streams/load.js"></script>
+<script>StreamsLoad.prefetch(["profiles_data.js"]);   // its download starts now, beside Plotly's</script>
 <script src="../lib/plotly-2.35.2/plotly.min.js"></script>
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
@@ -13,7 +15,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Streams">
 <script src="../offline.js"></script>
-<script src="profiles_data.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -145,6 +146,8 @@
 </main>
 
 <script>
+// profiles_data.js through lib/streams/load.js (the site keeps it gzip-compressed: weblib.pack), then this
+StreamsLoad(["profiles_data.js"], function () {
 const DATA = window.PROFILE_DATA;
 const P = DATA.profiles;
 // Imperial units: profiles_data.js (12_profiles.py) is in km, m and km². Each profile gets its distances in miles
@@ -487,6 +490,7 @@ fromHash();
 wireClick();
 window.addEventListener("hashchange", fromHash);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => current && (document.getElementById("legend").innerHTML = legendHTML(current), render(current)));
+});
 </script>
 <script>if (window.StreamsOffline) StreamsOffline.page();   // ../offline.js: the web app</script>
 </body>

@@ -21,3 +21,5 @@ plotly-2.35.2/                 plotly.js: MIT, (c) 2021 Plotly, Inc. (the file's
                                 that the npm package does not ship)
 glyphs/                        Noto Sans Medium and Italic as MapLibre glyph ranges (protomaps.github.io/basemaps-assets,
                                 fonts/), SIL Open Font License 1.1, (c) 2022 The Noto Project Authors: OFL.txt
+streams/                       our own: load.js (the pages' data files, unpacked from <name>.gz) and inflate.js (gunzip
+                                for browsers without DecompressionStream), written for these maps; no third-party code
