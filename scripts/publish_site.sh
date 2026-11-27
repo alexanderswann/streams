@@ -12,7 +12,9 @@
 #   docs/preview.jpg                    the card shown when the link is sent in iMessage etc. (15_preview.py, run by hand)
 #   docs/<area>/                        that area's 2D map, 3D map and data, creek profiles, hillshades, its build
 #                                       stamp (build_stamp.json: which committed code made each file), and
-#                                       offline.json (its files with sizes and hashes, for "Save for offline")
+#                                       offline.json (its files with sizes and hashes, for "Save for offline"); the
+#                                       big files (weblib.GZ: the maps' data and scripts) as <name>.gz, which the pages
+#                                       unpack (lib/streams/load.js; since 2026-11-25, for GitHub Pages' 1 GB limit)
 #   docs/sw.js, offline.js, manifest.webmanifest, icons/, lib/   the web app that keeps maps for use with no connection
 #                                       and the libraries the pages load (weblib.py; 13_overview.py puts them in output/)
 #   docs/offline.json                   the files at the root a saved area keeps too (the map of all areas, the credits
@@ -71,7 +73,7 @@ cp output/index.html $DEST/
 for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; print(' '.join(config.AREAS))"); do
   [[ -f output/$a/stream_map.html ]] || continue
   mkdir -p $DEST/$a
-  for f in stream_map.html stream_map_3d.html map3d_data.js routes_data.js land_data.js parcels_data.js coverage_data.js profiles.html profiles_data.js build_stamp.json; do
+  for f in stream_map.html stream_map.js stream_map_3d.html map3d_data.js map3d_layers.js routes_data.js land_data.js parcels_data.js coverage_data.js profiles.html profiles_data.js build_stamp.json; do
     [[ -f output/$a/$f ]] && cp output/$a/$f $DEST/$a/$f
   done
   for d in output/$a/*/hillshade.png(N); do mkdir -p $DEST/$a/${d:h:t}; cp $d $DEST/$a/${d:h:t}/hillshade.png; done
@@ -82,6 +84,8 @@ done
 # keeps too). The build gate below reads these as the web app's: their code (scripts/web/, weblib.py) committed
 for f in sw.js offline.js manifest.webmanifest; do cp output/$f $DEST/$f || exit 1; done
 cp -R output/lib output/icons $DEST/ || exit 1
+# the areas' big files as <name>.gz (weblib.GZ; the pages unpack them), before the lists, which then name the .gz files
+$PY scripts/weblib.py pack $DEST || exit 1
 $PY scripts/weblib.py lists $DEST || exit 1
 big=$(find $DEST -type f -size +95M | head -1)
 [[ -n $big ]] && { echo "STOP: $big is over 95 MB; GitHub refuses files over 100 MB"; exit 1; }

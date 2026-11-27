@@ -7,8 +7,9 @@
 // units) and a "See it on the map" link, which closes the popup and fits the whole route into view. On a phone the
 // popup covers most of the map, so the route stays when its popup closes, until the next tap on the map (the user,
 // 2026-11-24: "Keep + 'see it' link"); a tap on another reach draws that one's instead. The routes of a map are in
-// routes_data.js beside the page (06_map.py), loaded on the first click only; until then the line shows "…". Shared by
-// the 2D map (map_drainages.js: routesLeaflet) and the 3D map (map3d.html: routesMaplibre); inlined by 06_map.py.
+// routes_data.js beside the page (06_map.py), loaded on the first click only, through lib/streams/load.js where the page
+// has it (the site keeps the file gzip-compressed: weblib.pack); until then the line shows "…". Shared by the 2D map
+// (map_drainages.js: routesLeaflet) and the 3D map (map3d.html: routesMaplibre); inlined by 06_map.py.
 (function () {
   const STYLE = [{c: "#e8590c"}, {c: "#c2255c"}, {c: "#c2255c", d: "dash"}, {c: "#c2255c", d: "dot"}];  // kinds 0-3
   const on = () => !!((window.LBL || (window.MAP3D || {}).lbl || {}).routes);   // 06_map.py wrote routes_data.js
@@ -17,10 +18,13 @@
     if (!R && window.ROUTES) R = window.ROUTES;      // loaded already (a page or a test that carries it)
     if (R) return Promise.resolve(R);
     return wait || (wait = new Promise((ok, no) => {
+      const got = () => { R = window.ROUTES || null; if (R) ok(R); else { wait = null; no(new Error("no routes")); } };
+      const bad = () => { wait = null; no(new Error("routes_data.js did not load")); };
+      if (window.StreamsLoad) { StreamsLoad.script("routes_data.js").then(got, bad); return; }
       const s = document.createElement("script");
       s.src = "routes_data.js";
-      s.onload = () => { R = window.ROUTES || null; if (R) ok(R); else { wait = null; no(new Error("no routes")); } };
-      s.onerror = () => { wait = null; s.remove(); no(new Error("routes_data.js did not load")); };
+      s.onload = got;
+      s.onerror = () => { s.remove(); bad(); };
       document.head.appendChild(s);
     }));
   }

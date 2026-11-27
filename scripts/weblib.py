@@ -6,6 +6,7 @@ the 2D map, MapLibre and the label fonts for the 3D map, Plotly for the creek pr
 versions the pages loaded from CDNs, LICENSES.txt there), so no page needs a CDN. At the site's root sit sw.js (the
 service worker), offline.js (the "Save for offline" panel and the switch to the saved maps with no connection), the
 web app's manifest and its icons: on an iPhone, Safari's Add to Home Screen makes it an app, whose saved maps stay.
+  split_script(html, names)  a folium page's own script out of it, run by StreamsLoad(names) (06_map.py's 2D map)
   localize(html, up)  a page's CDN addresses -> lib/ (up: "../" from an area's folder, "" at the root); stops on any
                       script or stylesheet it doesn't know, so a new library can't quietly need the network again
   head(up)            the tags every page's <head> gets: the manifest, icons, theme colour and offline.js
@@ -19,9 +20,14 @@ web app's manifest and its icons: on an iPhone, Safari's Add to Home Screen make
                       offline.js, the manifest), listed apart because the map of all areas changes with every publish:
                       in each area's list it would rewrite all twelve each time (and send every area through
                       build_stamp.py's publish gate)
-Run as a script:  weblib.py lists <site dir>  |  weblib.py install <dir>
+  pack(site)          in a copy of the site (publish_site.sh: docs/; phone_sync.sh: phone/), each area's big files (GZ)
+                      replaced by <name>.gz, the very bytes gzip-compressed (2026-11-25: they came to 663 MB of the
+                      site's 717, 116 MB compressed; GitHub Pages' limit is 1 GB, and a phone keeps what it saves). The
+                      pages fetch and unpack them with lib/streams/load.js; output/ keeps them plain, for the pages
+                      opened from disk and for the checks. Run before lists(), which then lists the .gz files
+Run as a script:  weblib.py lists <site dir>  |  weblib.py install <dir>  |  weblib.py pack <site dir>
 """
-import hashlib, json, os, re, shutil, sys
+import concurrent.futures, hashlib, json, os, re, shutil, struct, sys, zlib
 
 WEB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 # the CDN addresses the pages used until 2026-11-24 -> their copies in lib/ (same versions; MapLibre was "@5", which
@@ -61,6 +67,17 @@ def localize(html, up):
     return html
 
 
+def split_script(html, names):
+    """A folium page and its own script apart: the <script> after </body> (06_map.py's 2D map: the map, its layers,
+    markers and popups) leaves the page, which runs StreamsLoad(names) (lib/streams/load.js) in its place; the caller
+    writes the script to the last of names. Returns (page, script)."""
+    i = html.rfind("</body>")
+    m = re.fullmatch(r"(\s*)<script>(.*)</script>(\s*</html>\s*)", html[i + 7:], re.S) if i >= 0 else None
+    if not m:
+        raise SystemExit("weblib.split_script: no <script> after </body>, as folium writes its page (folium changed?)")
+    return html[:i + 7] + m.group(1) + f"<script>StreamsLoad({json.dumps(list(names))});</script>" + m.group(3), m.group(2)
+
+
 def head(up):
     """The <head> tags of every page: the web app (manifest, icons, colour) and offline.js (which registers sw.js)."""
     return (f'<link rel="manifest" href="{up}manifest.webmanifest">\n'
@@ -70,6 +87,66 @@ def head(up):
             '<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n'
             '<meta name="apple-mobile-web-app-title" content="Streams">\n'
             f'<script src="{up}offline.js"></script>\n')
+
+
+# The files of an area that the site keeps gzip-compressed (pack): only those its pages load through lib/streams/load.js
+# (StreamsLoad), which fetches <name>.gz and runs it as the plain <name> would run. 06_map.py writes the first four
+# (stream_map.js: folium's script of the 2D page, with the 2D map's own layers; map3d_layers.js: the layers only the 3D
+# map draws), approach_routes.py routes_data.js, 12_profiles.py profiles_data.js, 11c_land.py land_data.js and
+# 11d_parcels.py parcels_data.js (map_land.js loads those two), 11e_coverage.py coverage_data.js (map_coverage.js).
+GZ = ("map3d_data.js", "stream_map.js", "map3d_layers.js", "routes_data.js", "profiles_data.js", "land_data.js",
+      "parcels_data.js", "coverage_data.js")
+LOADER = "lib/streams/load.js"      # the pages' <script src> (06_map.py, map3d.html, profiles.html), from an area: ../
+
+
+def gz_bytes(data):
+    """data as one gzip member that depends on nothing but data (and zlib's version): no name, no time, OS "unknown",
+    level 9. The same map published again gives the same bytes, so an unchanged area stays unchanged on the site."""
+    c = zlib.compressobj(9, zlib.DEFLATED, -15, 9)
+    body = c.compress(data) + c.flush()
+    return b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff" + body + struct.pack("<II", zlib.crc32(data), len(data) & 0xffffffff)
+
+
+def _pack_one(path):
+    with open(path, "rb") as f:
+        data = f.read()
+    z = gz_bytes(data)
+    if zlib.decompress(z, 31) != data:                    # 31: a gzip member; checked before the plain file goes
+        raise SystemExit(f"weblib.pack: {path}.gz does not unpack to {path}")
+    with open(path + ".gz", "wb") as f:
+        f.write(z)
+    os.remove(path)
+    return os.path.basename(path), len(data), len(z)
+
+
+_SRC = re.compile(r"""<script\b[^>]*?\bsrc\s*=\s*["']([^"']+)["']""", re.I)
+
+
+def pack(site):
+    """Every GZ file of each area folder of a copy of the site replaced by <name>.gz; a summary per kind of file. Stops
+    (SystemExit, nothing packed) if a page there loads one of them with a plain <script src>: a page from before
+    2026-11-25, which would find no file on the site (06_map.py rebuilds it)."""
+    areas = [k for k in sorted(os.listdir(site)) if os.path.isfile(os.path.join(site, k, "stream_map.html"))]
+    for k in areas:
+        for f in sorted(os.listdir(os.path.join(site, k))):
+            if f.endswith(".html"):
+                with open(os.path.join(site, k, f), encoding="utf-8", errors="replace") as h:
+                    old = sorted(set(_SRC.findall(h.read())) & set(GZ))
+                if old:
+                    raise SystemExit(f"weblib.pack: {k}/{f} loads {', '.join(old)} with a <script> tag, so the site would "
+                                     f"have nothing for it once packed: a page from before 2026-11-25; rebuild "
+                                     f"{'the map step (06_map.py)' if f.startswith('stream_map') else 'it from scripts/' + f}")
+    paths = [os.path.join(site, k, f) for k in areas for f in GZ if os.path.isfile(os.path.join(site, k, f))]
+    with concurrent.futures.ThreadPoolExecutor(4) as ex:   # zlib lets go of the GIL while it compresses
+        done = list(ex.map(_pack_one, paths))
+    kinds = {}
+    for name, a, b in done:
+        k = kinds.setdefault(name, [0, 0, 0])
+        k[0] += 1; k[1] += a; k[2] += b
+    print(f"packed {len(done)} files, {sum(v[1] for v in kinds.values()) / 1e6:.1f} -> "
+          f"{sum(v[2] for v in kinds.values()) / 1e6:.1f} MB: " +
+          ", ".join(f"{n} x{v[0]} {v[1] / 1e6:.1f} -> {v[2] / 1e6:.1f} MB" for n, v in kinds.items()))
+    return done
 
 
 def _put(path, data):
@@ -188,5 +265,7 @@ if __name__ == "__main__":
             raise SystemExit(f"weblib.py lists: no area folder in {where}")
     elif cmd == "install" and where:
         print(f"weblib.py install: {install(where)} files written in {where}")
+    elif cmd == "pack" and where:
+        pack(where)
     else:
-        raise SystemExit("usage: weblib.py lists <site dir> | install <dir>")
+        raise SystemExit("usage: weblib.py lists <site dir> | install <dir> | pack <site dir>")

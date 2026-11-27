@@ -2,7 +2,8 @@
 
 Sides to measure are picked by environment variables:
     SITE_DIR      folder holding <area>/map3d_data.js as published (default: the site clone's docs/ folder, the gh-pages
-                  branch of github.com/alexanderswann/streams; before 2026-11-23 the maps were in the personal site's streams/)
+                  branch of github.com/alexanderswann/streams; before 2026-11-23 the maps were in the personal site's streams/);
+                  the site keeps it as map3d_data.js.gz since 2026-11-25 (sitefile.py reads either)
     SITE_NAME     a label for the tables (default: the site clone's gh-pages commit)
     AUDIT_TABLES  folder the tables are written to (default: audit/tables)
     TABLES_DIR    (fish_score_audit.py, falls_lakes_checks.py) folder with <area>/stream_reaches_ranked.csv etc.,
@@ -11,6 +12,7 @@ config.py is not imported (it creates folders): its AREAS table is read from the
 """
 import ast, json, os, pickle, hashlib, subprocess, warnings
 import numpy as np
+import sitefile                       # a map file, plain or as the site keeps it (<name>.gz)
 
 warnings.filterwarnings("ignore")
 # the project this folder is in (a scratch copy's own, when run from one: the new-area test)
@@ -61,7 +63,7 @@ def boxes(area):
 def load_map(area, site_dir=None):
     """The MAP3D object of an area's published map3d_data.js (cached as a pickle keyed by the file's hash)."""
     path = f"{site_dir or SITE_DIR}/{area}/map3d_data.js"
-    raw = open(path, "rb").read()
+    raw = sitefile.read_bytes(path)
     key = hashlib.sha1(raw).hexdigest()[:16]
     pk = f"{CACHE}/map_{area}_{key}.pkl"
     if os.path.exists(pk):

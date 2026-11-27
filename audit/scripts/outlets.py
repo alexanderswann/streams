@@ -7,6 +7,7 @@ OLDDIR = _os.environ.get("OLDDIR")      # e.g. the published copy, to check new 
 NOWDIR = _os.environ.get("NOWDIR", f"{ROOT}/publish/streams-site/docs")
 
 import json, sys, os, glob, collections
+import sitefile                          # map3d_data.js plain or as the site keeps it (.gz, since 2026-11-25)
 import numpy as np, shapely, shapely.ops, geopandas as gpd, pandas as pd
 S = os.path.dirname(os.path.abspath(__file__))
 AREAS = "la jackson n_georgia central_vt ne_ct lexington_va se_pa smokies adk_high_peaks adk_northwest adk_southwest adk_southeast".split()
@@ -44,7 +45,7 @@ for a in areas:
     key = lambda p: (round(p.x), round(p.y))
     starts = collections.defaultdict(list)
     for i, p in enumerate(st): starts[key(p)].append(i)
-    Fo, Go, To = load(open((f"{OLDDIR}/{a}/map3d_data.js" if OLDDIR else f"{S}/old/{a}.js")).read(), crs); Fn, Gn, Tn = load(open(f"{NOWDIR}/{a}/map3d_data.js").read(), crs)
+    Fo, Go, To = load(sitefile.read_text(f"{OLDDIR}/{a}/map3d_data.js" if OLDDIR else f"{S}/old/{a}.js"), crs); Fn, Gn, Tn = load(sitefile.read_text(f"{NOWDIR}/{a}/map3d_data.js"), crs)
     LG = lk.geometry.values; lt = shapely.STRtree(LG)
     ni, li = lt.query(st, predicate="dwithin", distance=20.0)        # the NHD line begins in or at this lake
     cnt = collections.Counter(); seen_out = set()

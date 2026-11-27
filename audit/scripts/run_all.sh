@@ -30,21 +30,17 @@ for s in provenance_steps streams_vs_nhd area_vs_reference flow_vs_gauges drawn_
 done
 # the status the publish gate reads: which maps were measured (their sha1) and what failed
 $PY - $AUDIT_TABLES $maps $label "${(j:,:)failed}" ${=AUDIT_AREAS} <<'PY'
-import glob, hashlib, json, os, sys, time
+import glob, json, os, sys, time
+sys.path.insert(0, "audit/scripts")
+from sitefile import sha1, exists     # the plain map3d_data.js's sha1, also where the folder holds it as .gz (the site)
 tables, maps, label, failed, *areas = sys.argv[1:]
-areas = areas or sorted(os.path.basename(os.path.dirname(p)) for p in glob.glob(f"{maps}/*/map3d_data.js"))
-def sha1(p):
-    h = hashlib.sha1()
-    with open(p, "rb") as f:
-        for b in iter(lambda: f.read(1 << 20), b""):
-            h.update(b)
-    return h.hexdigest()
+areas = areas or sorted({os.path.basename(os.path.dirname(p)) for p in glob.glob(f"{maps}/*/map3d_data.js*")})
 golden = {"ran": False}
 if os.path.exists(f"{tables}/golden_check.json"):      # the golden places (golden_check.py), when it ran
     g = json.load(open(f"{tables}/golden_check.json"))
     golden = {"ran": True, "failed": [f"{r['row']} ({r.get('status')})" for r in g.get("rows", []) if r.get("status") != "holds"]}
 st = dict(label=label, maps=maps, finished=time.strftime("%Y-%m-%d %H:%M:%S"), failed=[f for f in failed.split(",") if f],
-          golden=golden, areas={a: sha1(f"{maps}/{a}/map3d_data.js") for a in areas if os.path.exists(f"{maps}/{a}/map3d_data.js")})
+          golden=golden, areas={a: sha1(f"{maps}/{a}/map3d_data.js") for a in areas if exists(f"{maps}/{a}/map3d_data.js")})
 with open(f"{tables}/run_all_status.json.tmp", "w") as f:
     json.dump(st, f, indent=1)
 os.replace(f"{tables}/run_all_status.json.tmp", f"{tables}/run_all_status.json")

@@ -1,13 +1,15 @@
 """Read-only: stream line drawn by default (Lakes on) on an older version with nothing drawn within 40 m now, and
 the other way round. gone_new.py <old_site_commit | -> [-v] [area ...]   (lengths in miles)
 Old maps: OLDDIR (a folder with <area>/map3d_data.js, e.g. publish/streams-site/docs) when set, else the old site
-commit in the personal site repo's streams/ (before the 2026-11-22 move). New maps: NOWDIR (default: the live copy)."""
+commit in the personal site repo's streams/ (before the 2026-11-22 move). New maps: NOWDIR (default: the live copy).
+Either folder may hold map3d_data.js.gz instead, as the site does since 2026-11-25 (sitefile.py)."""
 import os as _os
 ROOT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))   # the project this is in
 NOWDIR = _os.environ.get("NOWDIR", f"{ROOT}/publish/streams-site/docs")
 OLDDIR = _os.environ.get("OLDDIR")
 
 import json, subprocess, sys, collections
+import sitefile
 import numpy as np, shapely, geopandas as gpd
 SITE = f"{ROOT}/publish/alexanderswann.github.io"
 AREAS = "la jackson n_georgia central_vt ne_ct lexington_va se_pa smokies adk_high_peaks adk_northwest adk_southwest adk_southeast".split()
@@ -51,8 +53,8 @@ def f60(F, m):
     return m[fs >= 60].sum() / MI
 T = collections.Counter()
 for a in areas:
-    new = open(f"{NOWDIR}/{a}/map3d_data.js").read()
-    old = (open(f"{OLDDIR}/{a}/map3d_data.js").read() if OLDDIR else
+    new = sitefile.read_text(f"{NOWDIR}/{a}/map3d_data.js")
+    old = (sitefile.read_text(f"{OLDDIR}/{a}/map3d_data.js") if OLDDIR else
            subprocess.run(["git", "-C", SITE, "show", f"{old_c}:streams/{a}/map3d_data.js"], capture_output=True, text=True).stdout)
     Fn, gn, Gn, CRS = load(new); Fo, go, Go, _ = load(old, CRS)
     gm, grow = missing(Fo, go, Go, Gn); nm, nrow = missing(Fn, gn, Gn, Go)

@@ -22,6 +22,7 @@
   const lbl = () => window.LBL || (window.MAP3D || {}).lbl || {};
   let D = null, P = null, waitL = null, waitP = null;
   function script(src, ok, no) {
+    if (window.StreamsLoad) { StreamsLoad.script(src).then(ok, no); return; }   // lib/streams/load.js: <src>.gz on the site
     const s = document.createElement("script");
     s.src = src;
     s.onload = ok;

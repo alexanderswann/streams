@@ -155,7 +155,7 @@ def main(args):
     rows = read_rows(areas)
     out, bad = [], 0
     for area in sorted({r["area"] for r in rows}, key=lambda a: NAMES.index(a) if a in NAMES else 99):
-        if not os.path.exists(f"{SITE_DIR}/{area}/map3d_data.js"):
+        if not sitefile.exists(f"{SITE_DIR}/{area}/map3d_data.js"):
             for r in (r for r in rows if r["area"] == area):
                 out.append(dict(row=r["id"], area=area, status="no map", got=None))
             continue

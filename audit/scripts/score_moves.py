@@ -2,6 +2,7 @@
 (a point every 100 m on the old line, the nearest new line within 30 m). Also the water-temperature text of each.
 score_moves.py [area ...]   env OLDDIR, NOWDIR"""
 import json, sys, os, re, collections
+import sitefile                          # map3d_data.js plain or as the site keeps it (.gz, since 2026-11-25)
 import numpy as np, shapely, geopandas as gpd
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the project this is in
 OLDDIR = os.environ.get("OLDDIR", f"{ROOT}/publish/streams-site/docs")
@@ -17,7 +18,7 @@ def layer(t, key):
             d -= 1
             if d == 0: return json.loads(t[j:k+1])["features"]
 def load(path, crs=None):
-    F = layer(open(path).read(), "streams")
+    F = layer(sitefile.read_text(path), "streams")
     g = gpd.GeoSeries([shapely.LineString([c[:2] for c in f["geometry"]["coordinates"]]) for f in F], crs=4326)
     crs = crs or g.estimate_utm_crs()
     return F, g.to_crs(crs).values, crs

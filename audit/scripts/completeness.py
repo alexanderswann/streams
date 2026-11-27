@@ -3,7 +3,8 @@
 independent list we may use, per map. Read-only on the project; needs no network (reference copies that only a
 download can make are read from audit/reference/ when `completeness_fetch.py` has made them, and skipped otherwise).
 
-What is measured, all on the maps as published (SITE_DIR: <area>/map3d_data.js and <area>/stream_map_3d.html):
+What is measured, all on the maps as published (SITE_DIR: <area>/map3d_data.js and <area>/map3d_layers.js, inline in
+<area>/stream_map_3d.html before 2026-11-25; plain or .gz, sitefile.py):
   streams   NHD HR stream lines (StreamRiver) of every box: named ones, year-round (perennial) ones, all of them;
             OSM waterways (river, stream) and USGS 3DHP lines where audit/reference/<area>/ has a copy.
             A piece of reference line counts as drawn when a drawn line is within 150 m (500 ft). A miss is put in the
@@ -70,9 +71,12 @@ LICENCE = {"OpenStreetMap": "ODbL, credited", "USGS NHD": "public domain", "USGS
 
 # ---------------------------------------------------------------- the published map
 def page_layers(area, site_dir=None):
-    """The 3D page's own layers (lakes, falls, drops ...): the object stream_map_3d.html adds to window.MAP3D."""
-    path = f"{site_dir or SITE_DIR}/{area}/stream_map_3d.html"
-    raw = open(path, "rb").read()
+    """The 3D page's own layers (lakes, falls, drops ...): the object map3d_layers.js (before 2026-11-25: the 3D page
+    itself) adds to window.MAP3D."""
+    path = f"{site_dir or SITE_DIR}/{area}/map3d_layers.js"
+    if not sitefile.exists(path):
+        path = f"{site_dir or SITE_DIR}/{area}/stream_map_3d.html"
+    raw = sitefile.read_bytes(path)
     pk = f"{CACHE}/page_{area}_{hashlib.sha1(raw).hexdigest()[:16]}.pkl"
     if os.path.exists(pk):
         return pickle.load(open(pk, "rb"))

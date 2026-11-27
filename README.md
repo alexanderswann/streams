@@ -44,6 +44,21 @@ carry the maps:
   runs or when `output/` was written in the last 15 minutes (`push now` skips the wait), touches nothing outside
   `docs/` and stops on a file over 95 MB; GitHub Pages refuses a site over 1 GB. Never publish around it (`STATE.md`
   §7). The maps show each map's drive-time starting point (a ZIP and town).
+- **Compressed on the site** (`weblib.pack`, `scripts/web/lib/streams/`, 2026-11-25): the site keeps each area's big
+  files gzip-compressed, as `<name>.gz` (the very bytes of `<name>`, level 9, no name or time in it, so an unchanged
+  map gives the same bytes): `map3d_data.js`, `stream_map.js`, `map3d_layers.js`, `routes_data.js`,
+  `profiles_data.js`, `land_data.js`, `parcels_data.js` and `coverage_data.js` (`weblib.GZ`). They were 663 MB of the site's 717 MB, and are 119 MB so: the site went from 717 to
+  171 MB of GitHub Pages' 1 GB, and a saved area takes about a sixth of the room on the phone. Phones download about
+  what they did, since Pages already gzipped them on the way. `publish_site.sh` packs them after copying (and stops on
+  a page that still loads one of them with a plain `<script src>`, a page from before); `phone_sync.sh` does the same
+  for `phone/`. The pages load them through `lib/streams/load.js` (`StreamsLoad`): over the web it fetches
+  `<name>.gz` and unpacks it with the browser's `DecompressionStream` as it downloads (Safari 16.4, Chrome 80,
+  Firefox 113 and later; older browsers unpack it with `lib/streams/inflate.js`), then runs it as the plain script
+  would run; opened from disk (`output/`, `file://`), or where there is no `.gz`, it runs the plain file. So `output/`
+  keeps the plain files, and the checks read either (`audit/scripts/sitefile.py`; the publish gate reads a
+  `<name>.gz` as the `output/` file it was packed from). Since then the 2D page's own script (folium's map, its layers,
+  markers and popups) is `stream_map.js` beside the page, and the layers only the 3D map draws are `map3d_layers.js`
+  (they were inline in the pages). A page that can't load one says so at its top.
 - **Offline, as an app** (`scripts/weblib.py`, `scripts/web/`, 2026-11-24): the website is also a web app for use
   with no connection. The pages load their libraries from the site's `lib/` (copies of the Leaflet, jQuery, Bootstrap,
   folium plugin, MapLibre, label-font and Plotly versions they loaded from CDNs; licences in `lib/LICENSES.txt`), and
@@ -255,9 +270,11 @@ its words, with the imperial figure in brackets after each metric one (`units.im
 
 | File | What |
 |---|---|
-| `stream_map.html` | Combined interactive map. It loads `map3d_data.js`; keep it next to that file and the range folders, which hold the hillshade PNGs |
+| `stream_map.html` | Combined interactive map. It runs `map3d_data.js`, then `stream_map.js` (its own script: the map, its layers, markers and popups); keep it next to them and the range folders, which hold the hillshade PNGs. On the website these and the other big files are `<name>.gz` (Compressed on the site, above) |
+| `stream_map.js` | The 2D map's own script, written by folium (in the page until 2026-11-25) |
 | `map3d_data.js` | The layers both maps draw (streams, drainage fills and divides, the long trail, trails, roads, parking and their labels), loaded by both pages so they are stored once (the website's 1 GB limit) |
-| `stream_map_3d.html` | The same map in 3D (tilt, rotate, real terrain), with the layers only it draws inside the page; the rest comes from `map3d_data.js`. Keep it next to that file. Needs internet for MapLibre and the terrain tiles |
+| `stream_map_3d.html` | The same map in 3D (tilt, rotate, real terrain). It runs `map3d_data.js` and `map3d_layers.js` (the layers only it draws; inside the page until 2026-11-25); keep it next to them. Needs internet for the terrain tiles, unless saved for offline use |
+| `map3d_layers.js` | The layers only the 3D map draws (lakes, falls, drops, context layers ...) |
 | `stream_reaches_ranked.csv` | Every reach of every range, ranked by fish score: the DEM stream links draining 1 km² or more with the water carried to them, or 0.25 km² where NHD maps the creek perennial or names it, and those creeks on up from where NHD's line starts (step 3), cut at lake shores and 200 m below lakes (step 5), with the final score and its terms |
 | `waterfall_candidates.csv` | All detected drops with status, height, run, slope above/below, plunge-pool coordinates |
 | `waterfall_candidates.gpx` | The unmapped waterfall-like steps, cascades and short falls and the drops at mapped waterfalls, each with its pool. Import into Gaia, CalTopo or onX |

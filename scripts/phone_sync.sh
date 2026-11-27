@@ -11,7 +11,8 @@ $PY scripts/13_overview.py || exit 1
 for a in $($PY -c "import sys; sys.path.insert(0, 'scripts'); import config; print(' '.join(config.AREAS))"); do
   [[ -f output/$a/stream_map.html ]] || continue
   mkdir -p phone/$a
-  for f in stream_map.html stream_map_3d.html map3d_data.js routes_data.js land_data.js parcels_data.js coverage_data.js profiles.html profiles_data.js; do
+  rm -f phone/$a/*.gz                       # packed below again from these copies (as on the website)
+  for f in stream_map.html stream_map.js stream_map_3d.html map3d_data.js map3d_layers.js routes_data.js land_data.js parcels_data.js coverage_data.js profiles.html profiles_data.js; do
     [[ -f output/$a/$f ]] && cp output/$a/$f phone/$a/$f
   done
   for d in output/$a/*/hillshade.png(N); do mkdir -p phone/$a/${d:h:t}; cp $d phone/$a/${d:h:t}/hillshade.png; done
@@ -20,6 +21,7 @@ cp output/index.html phone/index.html
 # the web app and the pages' libraries (weblib.py), as on the website, and the areas' lists for "Save for offline"
 for f in sw.js offline.js manifest.webmanifest; do [[ -f output/$f ]] && cp output/$f phone/$f; done
 for d in lib icons; do [[ -d output/$d ]] && { rm -rf phone/$d; cp -R output/$d phone/$d; }; done
+$PY scripts/weblib.py pack phone > /dev/null || exit 1     # the big files as <name>.gz, as on the website
 $PY scripts/weblib.py lists phone > /dev/null
 [[ -f output/stream_maps_all.html ]] && cp output/stream_maps_all.html phone/stream_maps_all.html
 # the old LA copies at the top: forwarding pages (they keep the #lat,lon,zoom part of a bookmark), and the data

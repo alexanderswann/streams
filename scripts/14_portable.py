@@ -1,5 +1,6 @@
 """One file with every area in it, to send to a phone: output/stream_maps_all.html. No AREA needed; run it after
-the areas' 06_map.py (it reads each area's overview.json, map3d_data.js and the layers inline in stream_map_3d.html).
+the areas' 06_map.py (it reads each area's overview.json, map3d_data.js and map3d_layers.js: the layers only the 3D map
+draws, inline in stream_map_3d.html until 2026-11-25).
 
 output/index.html (13_overview.py) is only a front page: it opens each area's own map from the folders beside it,
 so sent to a phone by itself it has nothing behind its links. This file carries the detail inside it instead. It
@@ -40,8 +41,10 @@ for key in AREAS:
     with open(q) as f:
         s = f.read()
     d = json.loads(s[s.index("{"):s.rindex("}") + 1])
-    # the layers only the 3D map draws sit in its page, after map3d_data.js (06_map.py, 2026-11-20)
-    p3 = f"{OUT}/{key}/stream_map_3d.html"
+    # the layers only the 3D map draws: map3d_layers.js (06_map.py, 2026-11-25); before, inline in the 3D page
+    p3 = f"{OUT}/{key}/map3d_layers.js"
+    if not os.path.exists(p3):
+        p3 = f"{OUT}/{key}/stream_map_3d.html"
     if os.path.exists(p3):
         with open(p3) as f:
             h = f.read()

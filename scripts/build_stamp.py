@@ -35,6 +35,8 @@ reason) when, for an area with a changed file:
      log then);
   6. the standing checks have not passed on this map: no audit/tables/*/run_all_status.json (audit/scripts/run_all.sh
      writes it) holds this map3d_data.js's sha1 with no check script failed and no golden place broken.
+The site keeps an area's big files gzip-compressed (weblib.pack, 2026-11-25): docs/<area>/<file>.gz is read as the
+output/<area>/<file> it was packed from, and that file is checked.
 docs/index.html and docs/credits.html (13_overview.py, run by the publish itself) need 13_overview's code committed,
 and the web app's files (docs/sw.js, offline.js, manifest.webmanifest, lib/, icons/ and the offline.json lists, from
 weblib.py at the publish) need scripts/web/ and weblib.py committed; lib/ and icons/ are not areas.
@@ -50,6 +52,7 @@ SITE_STEPS = {"13_overview", "14_portable", "15_preview"}       # the site's pag
 TOLERATED = {"05d_lakes", "lake_bathymetry", "07_road_closures", "watertemp",
              "11b_calendar", "11c_land", "11d_parcels", "11e_coverage"}   # the drivers go on without them
 PUBLISHED = {"map3d_data.js": "06_map", "stream_map.html": "06_map", "stream_map_3d.html": "06_map",
+             "stream_map.js": "06_map", "map3d_layers.js": "06_map",   # the 2D page's script, the 3D map's own layers
              "routes_data.js": "06_map",                         # approach_routes.pack(), beside each map
              "profiles_data.js": "12_profiles", "hillshade.png": "05_score",
              "land_data.js": "11c_land", "parcels_data.js": "11d_parcels",
@@ -294,7 +297,10 @@ def gate(paths):
                 if dirty:
                     refuse.append(f"{parts[1]}: 13_overview.py's code has uncommitted changes ({', '.join(dirty)})")
             continue
-        by_area.setdefault(parts[1], []).append("/".join(parts[2:]))
+        f = "/".join(parts[2:])
+        if f.endswith(".gz") and os.path.basename(f[:-3]) in PUBLISHED:
+            f = f[:-3]                                        # packed by weblib.pack from output/<area>/<file>
+        by_area.setdefault(parts[1], []).append(f)
     if web:                                                   # as 13_overview's pages: their code committed
         code = sorted({"scripts/weblib.py"} | {os.path.relpath(os.path.join(d, f), ROOT)
                                                for d, _, fs in os.walk(f"{SCR}/web") for f in fs})

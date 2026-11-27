@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<!-- 3D stream map: MapLibre GL + AWS terrain tiles. 06_map.py writes it to output/<area>/stream_map_3d.html with the
-     layers only this map draws inline after the map3d_data.js line below; map3d_data.js holds the layers it shares
-     with the 2D map, which loads that file too. MapLibre and the label fonts come from the site's lib/ (weblib.py), the
-     web app's tags from weblib.head() where the webapp marker is, below. -->
+<!-- 3D stream map: MapLibre GL + AWS terrain tiles. 06_map.py writes it to output/<area>/stream_map_3d.html, beside
+     map3d_data.js (the layers it shares with the 2D map, which loads that file too) and map3d_layers.js (the layers only
+     this map draws). The script at the end runs both through lib/streams/load.js before it draws: the site keeps them
+     gzip-compressed (weblib.pack), and the page opened from disk runs the plain files. MapLibre and the label fonts come
+     from the site's lib/ (weblib.py), the web app's tags from weblib.head() where the webapp marker is, below. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -11,7 +12,7 @@
 <link rel="stylesheet" href="../lib/maplibre-gl-5.24.1/maplibre-gl.css">
 <script src="../lib/maplibre-gl-5.24.1/maplibre-gl.js"></script>
 <!--webapp-->
-<script src="map3d_data.js"></script>
+<script src="../lib/streams/load.js"></script>
 <style>
   html, body, #map { margin: 0; height: 100%; }
   body { font: 12px/1.4 system-ui, -apple-system, sans-serif; color: #212529; }
@@ -103,7 +104,7 @@
   </div>
 </div>
 <script>
-(function () {
+StreamsLoad(["map3d_data.js", "map3d_layers.js"], function () {     // lib/streams/load.js: the map's data, then this
   if (!window.maplibregl || !window.MAP3D) {
     const e = document.getElementById("err");
     e.style.display = "block";
@@ -1054,7 +1055,7 @@
       map.jumpTo({center: [h[1], h[0]], zoom: h[2] ? h[2] - 1 : 13, pitch: h.length > 3 ? h[3] : 60, bearing: h.length > 4 ? h[4] : map.getBearing()});
   }
   window.addEventListener("hashchange", go);
-})();
+});
 </script>
 </body>
 </html>

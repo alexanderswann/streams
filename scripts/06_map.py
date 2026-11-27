@@ -1660,13 +1660,16 @@ print("trails", len(t_feat), "ways |", t_feat.groupby("rk").size().to_dict(), "|
 # The layers both maps draw (streams, drainage fills and divides, the long trail, trails, roads, parking, their labels)
 # are written once, to map3d_data.js at the end of this script: this page loads that file and points the globals
 # map_drainages.js reads at its entries. They used to be inlined here as well, a second copy of the same data (231 MB
-# over the 12 areas, 2026-11-20); the published site has a 1 GB limit.
+# over the 12 areas, 2026-11-20); the published site has a 1 GB limit. Since 2026-11-25 the page's own script (folium's:
+# the map, its layers, markers and popups) is in stream_map.js beside it, after the line that points the globals
+# (POINT_2D), and lib/streams/load.js runs map3d_data.js and then stream_map.js once the page is parsed: the site keeps
+# both gzip-compressed (weblib.pack), and the page opened from disk runs the plain files.
 SHARED_3D = {"STREAMS": "streams", "STREAMS_LAKE": "streams_lake", "FORKS": "forks", "DIVIDES": "divides", "DRAINS": "drains", "LBL": "lbl",
              "PCT": "pct", "PCT_LABEL_LINES": "pct_labels", "TRAILS": "trails", "TRAIL_LABEL_LINES": "trail_labels",
              "ROADS": "roads", "PARKING": "parking"}
-m.get_root().header.add_child(folium.Element(
-    '<script src="map3d_data.js"></script>\n<script>(function (D) {'
-    + " ".join(f"window.{g} = D.{k};" for g, k in SHARED_3D.items()) + "})(window.MAP3D || {});</script>"))
+POINT_2D = ("(function (D) {" + " ".join(f"window.{g} = D.{k};" for g, k in SHARED_3D.items())
+            + "})(window.MAP3D || {});")
+m.get_root().header.add_child(folium.Element(f'<script src="../{weblib.LOADER}"></script>'))
 # map_phone.css/.js (the one-line credits on phones and the "my location" button) are shared with 13_overview.py and
 # 14_portable.py; map_score.js (the fish score's breakdown in the stream popups) with the 3D page and 14_portable.py
 _page_file = lambda f_: open(os.path.join(os.path.dirname(__file__), f_)).read()
@@ -2155,9 +2158,13 @@ m.save(f"{MAP_OUT}/stream_map.html")
 # folium's libraries from the site's lib/, not from CDNs (weblib.py): the map then needs no network once saved
 with open(f"{MAP_OUT}/stream_map.html", encoding="utf-8") as f:
     page2d = weblib.localize(f.read(), "../")
+# the page's own script to stream_map.js (above, at POINT_2D): the page runs it after map3d_data.js
+page2d, main2d = weblib.split_script(page2d, ["map3d_data.js", "stream_map.js"])
+with open(f"{MAP_OUT}/stream_map.js", "w", encoding="utf-8") as f:
+    f.write(POINT_2D + "\n" + main2d)
 with open(f"{MAP_OUT}/stream_map.html", "w", encoding="utf-8") as f:
     f.write(page2d)
-del page2d
+del page2d, main2d
 
 # ---- this area's part of the map of all areas (13_overview.py): drainage outlines and the main rivers ----
 def simplify_together(geoms, tol):
@@ -2203,26 +2210,29 @@ if _routes:
           f"{os.path.getsize(f'{MAP_OUT}/routes_data.js') / 1e6:.2f} MB")
 elif os.path.exists(f"{MAP_OUT}/routes_data.js"):
     os.remove(f"{MAP_OUT}/routes_data.js")           # no range has its routes (08_hike.py not run since): none drawn
-# 3D map: map3d_data.js holds the layers both maps draw (SHARED_3D; the 2D page loads it too). The layers only the 3D
-# map draws go into its page (map3d.html), right after its <script src="map3d_data.js">. Plain <script>s, so both maps
-# also work opened straight from disk. 14_portable.py reads both parts.
+# 3D map: map3d_data.js holds the layers both maps draw (SHARED_3D; the 2D page loads it too), map3d_layers.js the
+# layers only the 3D map draws (they were inline in its page until 2026-11-25). Its page (map3d.html) runs both with
+# lib/streams/load.js before it draws: the site keeps them gzip-compressed (weblib.pack); opened straight from disk, the
+# page runs the plain files. 14_portable.py reads both.
 with open(f"{MAP_OUT}/map3d_data.js", "w") as f:
     f.write("window.MAP3D=" + json.dumps({k: X3D[k] for k in SHARED_3D.values() if k in X3D}, separators=(",", ":"),
                                          default=str) + ";\n")
 only3d = json.dumps({k: v for k, v in X3D.items() if k not in SHARED_3D.values()}, separators=(",", ":"), default=str)
-only3d = only3d.replace("</", "<\\/").replace("<!--", "<\\u0021--")     # nothing in it can end or upset the <script>
+only3d = only3d.replace("</", "<\\/").replace("<!--", "<\\u0021--")     # as when it was inline in the page's <script>
+with open(f"{MAP_OUT}/map3d_layers.js", "w") as f:
+    f.write("if (window.MAP3D) Object.assign(window.MAP3D, " + only3d + ");\n")
 page3d = open(os.path.join(os.path.dirname(__file__), "map3d.html")).read()
 assert page3d.count("</head>") == 1, "map3d.html must have one </head>"
 page3d = page3d.replace("</head>", "<script>" + _page_file("map_filter.js") + "</script>\n<script>"   # the stream filters,
                         + _page_file("map_specs.js") + "</script>\n</head>")          # the specs and similar streams
 page3d = page3d.replace("</head>", "<script>" + _page_file("map_gauges.js") + "</script>\n</head>")   # live gauges
-tag3d = '<script src="map3d_data.js"></script>'
-assert page3d.count(tag3d) == 1, "map3d.html must load map3d_data.js once"
+tag3d = f'<script src="../{weblib.LOADER}"></script>'
+assert page3d.count(tag3d) == 1, "map3d.html must load lib/streams/load.js once"
+assert page3d.count('StreamsLoad(["map3d_data.js", "map3d_layers.js"]') == 1, "map3d.html must run its two data files"
 assert page3d.count("<!--webapp-->") == 1, "map3d.html must hold <!--webapp--> once (weblib.head goes there)"
 page3d = weblib.localize(page3d.replace("<!--webapp-->", weblib.head("../")), "../")
 with open(f"{MAP_OUT}/stream_map_3d.html", "w") as f:
-    f.write(page3d.replace(tag3d, tag3d + "\n<script>if (window.MAP3D) Object.assign(window.MAP3D, " + only3d
-                           + ");</script>\n<script>" + _page_file("map_score.js") + "</script>\n<script>"
+    f.write(page3d.replace(tag3d, tag3d + "\n<script>" + _page_file("map_score.js") + "</script>\n<script>"
                            + _page_file("layer_order.js") + "</script>\n<script>" + _page_file("map_routes.js") + "</script>\n<script>"
                            + _page_file("map_land.js") + "</script>"))
 

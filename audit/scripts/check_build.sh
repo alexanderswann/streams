@@ -79,7 +79,8 @@ fi
 # 6. against the live maps (areas that have one; a new area has nothing to compare with)
 cmp_areas=()
 for a in ${=AREAS:-$(ls $root/output)}; do
-  [[ -f $root/output/$a/map3d_data.js && -f $OLDMAPS/$a/map3d_data.js ]] && cmp_areas+=$a
+  [[ -f $root/output/$a/map3d_data.js && ( -f $OLDMAPS/$a/map3d_data.js || -f $OLDMAPS/$a/map3d_data.js.gz ) ]] &&
+    cmp_areas+=$a                           # the site keeps it as map3d_data.js.gz since 2026-11-25 (sitefile.py)
 done
 if (( ${#cmp_areas} )); then
   say ""; say "## Drawn lines, against the live maps (gone = nothing drawn within 40 m now)"

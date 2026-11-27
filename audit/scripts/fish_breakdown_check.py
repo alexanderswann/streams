@@ -13,6 +13,7 @@ if any, in fish_breakdown_mismatches.csv.
     SITE_DIR=<folder with <area>/map3d_data.js> python audit/scripts/fish_breakdown_check.py [area ...]
 """
 import csv, json, os, subprocess, sys, tempfile
+import sitefile                          # map3d_data.js plain or as the site keeps it (.gz, since 2026-11-25)
 
 ROOT = "/Users/mac/Fishing"
 SITE_DIR = os.environ.get("SITE_DIR", f"{ROOT}/publish/streams-site/docs")
@@ -79,7 +80,7 @@ def page_check(path):
     with tempfile.TemporaryDirectory() as d:
         open(f"{d}/pre.js", "w").write("var window = this;\n")
         open(f"{d}/drv.js", "w").write(DRIVER)
-        r = subprocess.run([JSC, f"{d}/pre.js", path, SCORE_JS, f"{d}/drv.js"], capture_output=True, text=True)
+        r = subprocess.run([JSC, f"{d}/pre.js", sitefile.plain(path, d), SCORE_JS, f"{d}/drv.js"], capture_output=True, text=True)
     if r.returncode or not r.stdout.strip():
         raise SystemExit(f"jsc failed on {path}: {r.stderr[-500:]}")
     return json.loads(r.stdout.strip().splitlines()[-1])
@@ -90,9 +91,9 @@ def main(areas):
     rows, bad = [], []
     for a in areas:
         path = f"{SITE_DIR}/{a}/map3d_data.js"
-        if not os.path.exists(path):
+        if not sitefile.exists(path):
             continue
-        s = open(path).read()
+        s = sitefile.read_text(path)
         d = json.loads(s[s.index("{"):s.rindex("}") + 1])
         n = nofx = mis = ties = capped = 0
         size = 0
@@ -136,5 +137,5 @@ def main(areas):
 
 
 if __name__ == "__main__":
-    names = sys.argv[1:] or sorted(a for a in os.listdir(SITE_DIR) if os.path.exists(f"{SITE_DIR}/{a}/map3d_data.js"))
+    names = sys.argv[1:] or sorted(a for a in os.listdir(SITE_DIR) if sitefile.exists(f"{SITE_DIR}/{a}/map3d_data.js"))
     sys.exit(main(names))

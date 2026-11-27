@@ -16,10 +16,14 @@
     if (!C && window.CELL) C = window.CELL;
     if (C) return Promise.resolve(C);
     return wait || (wait = new Promise((ok, no) => {
+      const got = () => { C = window.CELL || null; if (C) { failed = false; ok(C); } else { wait = null; failed = true; no(new Error("no coverage data")); } };
+      const bad = () => { wait = null; failed = true; no(new Error("coverage_data.js did not load")); };
+      // lib/streams/load.js where the page has it: the site keeps the file gzip-compressed (weblib.pack)
+      if (window.StreamsLoad) { StreamsLoad.script("coverage_data.js").then(got, bad); return; }
       const s = document.createElement("script");
       s.src = "coverage_data.js";
-      s.onload = () => { C = window.CELL || null; if (C) { failed = false; ok(C); } else { wait = null; failed = true; no(new Error("no coverage data")); } };
-      s.onerror = () => { s.remove(); wait = null; failed = true; no(new Error("coverage_data.js did not load")); };
+      s.onload = got;
+      s.onerror = () => { s.remove(); bad(); };
       document.head.appendChild(s);
     }));
   }

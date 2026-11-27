@@ -49,8 +49,8 @@ EXCLUDE = [re.compile(p) for p in (r"^data/\.hydro\.lock(/|$)", r"(^|/)__pycache
 TOLERATED = {"05d_lakes", "lake_bathymetry", "07_road_closures", "watertemp", "11b_calendar",
              "11e_coverage"}                                                                # the drivers' NOTEs
 STEP_PAT = r"run_[a-z_]+\.sh|[0-9][0-9][a-z]?_[a-z_]+\.py|watertemp\.py|lake_bathymetry\.py|fish_score_diagram\.py"
-PUBLISHED = {"map3d_data.js", "stream_map.html", "stream_map_3d.html", "profiles_data.js", "hillshade.png",
-             "coverage_data.js"}
+PUBLISHED = {"map3d_data.js", "stream_map.html", "stream_map_3d.html", "stream_map.js", "map3d_layers.js",
+             "profiles_data.js", "hillshade.png", "coverage_data.js"}
 SLOTS = os.environ.get("BUILDSLOT_DIR", "/private/tmp/fishing-build-slots")
 
 
@@ -348,7 +348,8 @@ def asof(clone, maps=None, logs=None, made=None):
             rows[k][area] = min(rows[k].get(area, copy), copy)
     wording = defaultdict(lambda: defaultdict(int))
     for m in maps or sorted(os.listdir(os.path.join(clone, "output"))):
-        for f in ("map3d_data.js", "stream_map.html"):
+        # the 2D page's own script and the 3D map's own layers have been files of their own since 2026-11-25
+        for f in ("map3d_data.js", "stream_map.html", "stream_map.js", "map3d_layers.js"):
             p = os.path.join(clone, "output", m, f)
             if os.path.exists(p) and os.stat(p).st_mtime > made:
                 for w in re.findall(r"\(as of [A-Z][a-z]{2} \d{1,2}(?:, \d{4})?\)|As of [A-Z][a-z]{2} \d{1,2}[^<\"]{0,80}",

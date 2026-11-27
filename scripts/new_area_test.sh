@@ -73,7 +73,7 @@ t1=$(date +%s)
   echo
   echo "## Words of other maps left in the page (each should be 0)"
   for w in "CA State Parks" "PCT" "Pacific Crest" "Santa Monica" "LA County"; do
-    echo "- \"$w\": $(cat $W/output/$area/{stream_map.html,stream_map_3d.html,map3d_data.js} 2>/dev/null | grep -o "$w" | wc -l | tr -d ' ')"
+    echo "- \"$w\": $(cat $W/output/$area/{stream_map.html,stream_map.js,stream_map_3d.html,map3d_data.js,map3d_layers.js} 2>/dev/null | grep -o "$w" | wc -l | tr -d ' ')"
   done
   echo
   echo "## The build check (audit/scripts/check_build.sh)"
